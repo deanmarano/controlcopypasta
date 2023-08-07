@@ -72,3 +72,5 @@ group :test do
 end
 
 gem "devise", "~> 4.9"
+
+gem "ember-cli-rails", "~> 0.12.1"

@@ -5,4 +5,5 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "public#index"
   get "about", to: "public#about"
+  mount_ember_app :frontend, to: "/app"
 end
