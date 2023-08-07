@@ -74,3 +74,5 @@ end
 gem "devise", "~> 4.9"
 
 gem "ember-cli-rails", "~> 0.12.1"
+
+gem "mailgun-ruby", "~> 1.2"
