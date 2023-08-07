@@ -1,0 +1,11 @@
+{
+  "name": "controlcopypasta",
+  "description": "Personalize the internet's recipes",
+  "keywords": [
+  ],
+  "scripts": {
+    "dokku": {
+      "postdeploy": "bundle exec rake db:migrate"
+    }
+  }
+}
