@@ -10,7 +10,7 @@ orbs:
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/configuration-reference/#jobs
 jobs:
-  build:
+  rspec:
     docker:
       - image: cimg/ruby:3.1.4
     executor: ruby/default
@@ -20,11 +20,29 @@ jobs:
           name: Which bundler?
           command: bundle -v
       - ruby/install-deps
+      - run:
+          name: Rspec
+          command: bundle exec rspec
+  ember:
+    docker:
+      - image: cimg/node:16.20.1
+    executor: node/default
+    steps:
+      - checkout
+      - run:
+          name: Which npm?
+          command: npm -v
+      - node/install-packages:
+          pkg-manager: yarn
+      - run:
+          command: yarn test
+          name: Run tests
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/configuration-reference/#workflows
 workflows:
-  sample: # This is the name of the workflow, feel free to change it to better match your workflow.
+  tests: # This is the name of the workflow, feel free to change it to better match your workflow.
     # Inside the workflow, you define the jobs you want to run.
     jobs:
-      - build
+      - rspec
+      - ember

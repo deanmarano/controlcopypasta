@@ -9,14 +9,15 @@
   },
   "scripts": {
     "start": "echo \"echoing for now\" && exit 0",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "cd frontend && yarn && ember test"
   },
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": "18.17.x"
+    "node": "16.20.1"
   },
   "dependencies": {
-    "yarn": "^1.22.19"
+    "yarn": "^1.22.19",
+    "ember-cli": "4.4.0"
   }
 }
