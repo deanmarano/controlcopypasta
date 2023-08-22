@@ -4,7 +4,7 @@ module.exports = function (environment) {
   let ENV = {
     modulePrefix: 'frontend',
     environment,
-    rootURL: '/app',
+    rootURL: '/app/',
     locationType: 'history',
     EmberENV: {
       FEATURES: {
