@@ -21,6 +21,19 @@ defmodule Controlcopypasta.Recipes.Recipe do
     field :archived_at, :utc_datetime
     field :ingredients_parsed_at, :utc_datetime
 
+    # Per-serving nutrition from Schema.org JSON-LD
+    field :nutrition_serving_size, :string
+    field :nutrition_calories, :decimal
+    field :nutrition_protein_g, :decimal
+    field :nutrition_fat_g, :decimal
+    field :nutrition_saturated_fat_g, :decimal
+    field :nutrition_trans_fat_g, :decimal
+    field :nutrition_carbohydrates_g, :decimal
+    field :nutrition_fiber_g, :decimal
+    field :nutrition_sugar_g, :decimal
+    field :nutrition_sodium_mg, :decimal
+    field :nutrition_cholesterol_mg, :decimal
+
     belongs_to :user, Controlcopypasta.Accounts.User
     many_to_many :tags, Controlcopypasta.Recipes.Tag, join_through: "recipe_tags"
 
@@ -41,7 +54,18 @@ defmodule Controlcopypasta.Recipes.Recipe do
     :servings,
     :notes,
     :user_id,
-    :ingredients_parsed_at
+    :ingredients_parsed_at,
+    :nutrition_serving_size,
+    :nutrition_calories,
+    :nutrition_protein_g,
+    :nutrition_fat_g,
+    :nutrition_saturated_fat_g,
+    :nutrition_trans_fat_g,
+    :nutrition_carbohydrates_g,
+    :nutrition_fiber_g,
+    :nutrition_sugar_g,
+    :nutrition_sodium_mg,
+    :nutrition_cholesterol_mg
   ]
 
   def changeset(recipe, attrs) do

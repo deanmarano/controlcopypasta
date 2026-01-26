@@ -174,7 +174,19 @@ defmodule Controlcopypasta.Scraper.ScrapeWorker do
           "cook_time_minutes" => recipe_data[:cook_time_minutes],
           "total_time_minutes" => recipe_data[:total_time_minutes],
           "servings" => recipe_data[:servings],
-          "user_id" => user.id
+          "user_id" => user.id,
+          # Nutrition from Schema.org JSON-LD
+          "nutrition_serving_size" => recipe_data[:nutrition_serving_size],
+          "nutrition_calories" => recipe_data[:nutrition_calories],
+          "nutrition_protein_g" => recipe_data[:nutrition_protein_g],
+          "nutrition_fat_g" => recipe_data[:nutrition_fat_g],
+          "nutrition_saturated_fat_g" => recipe_data[:nutrition_saturated_fat_g],
+          "nutrition_trans_fat_g" => recipe_data[:nutrition_trans_fat_g],
+          "nutrition_carbohydrates_g" => recipe_data[:nutrition_carbohydrates_g],
+          "nutrition_fiber_g" => recipe_data[:nutrition_fiber_g],
+          "nutrition_sugar_g" => recipe_data[:nutrition_sugar_g],
+          "nutrition_sodium_mg" => recipe_data[:nutrition_sodium_mg],
+          "nutrition_cholesterol_mg" => recipe_data[:nutrition_cholesterol_mg]
         }
 
         Recipes.create_recipe(attrs)

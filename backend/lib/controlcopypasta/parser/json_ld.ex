@@ -74,7 +74,7 @@ defmodule Controlcopypasta.Parser.JsonLd do
   defp is_recipe?(_), do: false
 
   defp normalize_recipe(recipe) do
-    %{
+    base = %{
       title: get_string(recipe, "name"),
       description: get_string(recipe, "description"),
       image_url: get_image_url(recipe),
@@ -85,6 +85,9 @@ defmodule Controlcopypasta.Parser.JsonLd do
       total_time_minutes: parse_duration(recipe["totalTime"]),
       servings: get_servings(recipe)
     }
+
+    # Add nutrition if present
+    Map.merge(base, normalize_nutrition(recipe["nutrition"]))
   end
 
   defp get_string(map, key) do
@@ -190,4 +193,48 @@ defmodule Controlcopypasta.Parser.JsonLd do
   defp get_servings(%{"recipeYield" => [yield | _]}) when is_binary(yield), do: yield
   defp get_servings(%{"recipeYield" => yield}) when is_integer(yield), do: "#{yield}"
   defp get_servings(_), do: nil
+
+  # Nutrition extraction from Schema.org nutritionInformation
+  defp normalize_nutrition(nil), do: %{}
+
+  defp normalize_nutrition(nutrition) when is_map(nutrition) do
+    %{
+      nutrition_serving_size: get_string(nutrition, "servingSize"),
+      nutrition_calories: parse_nutrition_value(nutrition["calories"]),
+      nutrition_protein_g: parse_nutrition_value(nutrition["proteinContent"]),
+      nutrition_fat_g: parse_nutrition_value(nutrition["fatContent"]),
+      nutrition_saturated_fat_g: parse_nutrition_value(nutrition["saturatedFatContent"]),
+      nutrition_trans_fat_g: parse_nutrition_value(nutrition["transFatContent"]),
+      nutrition_carbohydrates_g: parse_nutrition_value(nutrition["carbohydrateContent"]),
+      nutrition_fiber_g: parse_nutrition_value(nutrition["fiberContent"]),
+      nutrition_sugar_g: parse_nutrition_value(nutrition["sugarContent"]),
+      nutrition_sodium_mg: parse_nutrition_value(nutrition["sodiumContent"]),
+      nutrition_cholesterol_mg: parse_nutrition_value(nutrition["cholesterolContent"])
+    }
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Map.new()
+  end
+
+  defp normalize_nutrition(_), do: %{}
+
+  # Parse nutrition values like "151 calories", "16.3 g", "74.4 mg"
+  defp parse_nutrition_value(nil), do: nil
+
+  defp parse_nutrition_value(value) when is_number(value), do: Decimal.new("#{value}")
+
+  defp parse_nutrition_value(value) when is_binary(value) do
+    # Extract the numeric part from strings like "151 calories", "16.3 g"
+    case Regex.run(~r/^([\d.]+)/, String.trim(value)) do
+      [_, num_str] ->
+        case Decimal.parse(num_str) do
+          {decimal, _} -> decimal
+          :error -> nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp parse_nutrition_value(_), do: nil
 end
