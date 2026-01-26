@@ -103,15 +103,24 @@ if config_env() == :prod do
   smtp_host = System.get_env("SMTP_HOST")
 
   if smtp_host && smtp_host != "" do
-    config :controlcopypasta, Controlcopypasta.Mailer,
+    smtp_config = [
       adapter: Swoosh.Adapters.SMTP,
       relay: smtp_host,
       port: String.to_integer(System.get_env("SMTP_PORT") || "587"),
-      username: System.get_env("SMTP_USERNAME"),
-      password: System.get_env("SMTP_PASSWORD"),
       ssl: System.get_env("SMTP_SSL") == "true",
       tls: :if_available,
       auth: :if_available
+    ]
+
+    # Only add auth credentials if username is set (for authenticated SMTP)
+    smtp_config =
+      case System.get_env("SMTP_USERNAME") do
+        nil -> smtp_config
+        "" -> smtp_config
+        username -> smtp_config ++ [username: username, password: System.get_env("SMTP_PASSWORD")]
+      end
+
+    config :controlcopypasta, Controlcopypasta.Mailer, smtp_config
   end
 
   # Oban configuration - allow configuring scraper concurrency
