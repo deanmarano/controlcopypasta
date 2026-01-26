@@ -83,7 +83,8 @@ defmodule Controlcopypasta.Recipes.Recipe do
       url ->
         case URI.parse(url) do
           %URI{host: host} when is_binary(host) ->
-            put_change(changeset, :source_domain, host)
+            normalized = host |> String.downcase() |> String.replace(~r/^www\./, "")
+            put_change(changeset, :source_domain, normalized)
 
           _ ->
             changeset
