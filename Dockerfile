@@ -8,7 +8,7 @@ ARG VITE_API_URL=/api
 RUN npm run build
 
 # Build backend
-FROM hexpm/elixir:1.18.4-erlang-27.2-debian-bookworm-20250113-slim AS backend-builder
+FROM hexpm/elixir:1.18.2-erlang-27.2-debian-bookworm-20250113-slim AS backend-builder
 RUN apt-get update && apt-get install -y build-essential git && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV MIX_ENV=prod
