@@ -100,12 +100,35 @@ defmodule Controlcopypasta.Scraper.ScrapeWorker do
   end
 
   defp fetch_html(url) do
-    # Use the browser pool for fetching
-    alias Controlcopypasta.Browser.Pool
+    # Try Browser Pool first (for JS-heavy sites), fall back to simple HTTP
+    if browser_pool_available?() do
+      alias Controlcopypasta.Browser.Pool
 
-    case Pool.fetch_html(url) do
-      {:ok, html} ->
-        {:ok, html}
+      case Pool.fetch_html(url) do
+        {:ok, html} -> {:ok, html}
+        {:error, _} -> fetch_html_simple(url)
+      end
+    else
+      fetch_html_simple(url)
+    end
+  end
+
+  defp browser_pool_available? do
+    # Check if Browser.Pool process is running
+    case Process.whereis(Controlcopypasta.Browser.Pool) do
+      nil -> false
+      _pid -> true
+    end
+  end
+
+  defp fetch_html_simple(url) do
+    # Simple HTTP fetch using Req - works for sites with JSON-LD in static HTML
+    case Req.get(url, follow_redirects: true, max_redirects: 5) do
+      {:ok, %{status: 200, body: body}} when is_binary(body) ->
+        {:ok, body}
+
+      {:ok, %{status: status}} ->
+        {:error, "HTTP #{status}"}
 
       {:error, reason} ->
         {:error, "Failed to fetch URL: #{inspect(reason)}"}
