@@ -130,9 +130,24 @@ defmodule Controlcopypasta.Scraper.LinkExtractor do
   defp recipe_path?(path) do
     path_lower = String.downcase(path)
 
+    # Match explicit recipe patterns OR root-level slugs (like /5-minute-kale-pesto)
     Enum.any?(@recipe_patterns, fn pattern ->
       Regex.match?(pattern, path_lower)
-    end)
+    end) or root_level_slug?(path_lower)
+  end
+
+  # Matches root-level slugs that look like blog posts/recipes
+  # e.g., /5-minute-kale-pesto, /chicken-tikka-masala
+  defp root_level_slug?(path) do
+    # Single path segment with hyphens (typical blog post/recipe slug)
+    case String.split(path, "/", trim: true) do
+      [slug] ->
+        # Must contain hyphens (word separators) and be reasonably long
+        String.contains?(slug, "-") and String.length(slug) > 10
+
+      _ ->
+        false
+    end
   end
 
   # Paths to skip (non-recipe content)
