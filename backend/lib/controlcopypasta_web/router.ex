@@ -87,6 +87,7 @@ defmodule ControlcopypastaWeb.Router do
     get "/browse/domains", BrowseController, :domains
     get "/browse/domains/:domain", BrowseController, :recipes_by_domain
     get "/browse/domains/:domain/recipes/:id", BrowseController, :show_recipe
+    get "/browse/domains/:domain/recipes/:id/nutrition", BrowseController, :nutrition
 
     # Import endpoints
     post "/import/copymethat", ImportController, :copy_me_that

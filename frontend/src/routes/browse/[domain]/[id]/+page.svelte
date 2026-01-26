@@ -3,7 +3,8 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { browse, recipes, type Recipe } from '$lib/api/client';
+	import { browse, recipes, type Recipe, type RecipeNutrition } from '$lib/api/client';
+	import NutritionPanel from '$lib/components/NutritionPanel.svelte';
 
 	let recipe = $state<Recipe | null>(null);
 	let loading = $state(true);
@@ -11,6 +12,12 @@
 	let scale = $state(1);
 	let adding = $state(false);
 	let added = $state(false);
+
+	// Nutrition state
+	let nutrition = $state<RecipeNutrition | null>(null);
+	let loadingNutrition = $state(false);
+	let nutritionError = $state('');
+	let showNutrition = $state(false);
 
 	const domain = $derived($page.params.domain);
 	const recipeId = $derived($page.params.id);
@@ -185,6 +192,32 @@
 	function setScale(newScale: number) {
 		scale = Math.max(0.25, Math.min(4, newScale));
 	}
+
+	async function loadNutrition() {
+		const token = authStore.getToken();
+		if (!token || !domain || !recipeId) return;
+
+		// Don't reload if we already have nutrition data
+		if (nutrition) return;
+
+		loadingNutrition = true;
+		nutritionError = '';
+		try {
+			const result = await browse.nutrition(token, domain, recipeId);
+			nutrition = result.data;
+		} catch (e) {
+			nutritionError = 'Could not load nutrition data';
+		} finally {
+			loadingNutrition = false;
+		}
+	}
+
+	function toggleNutrition() {
+		showNutrition = !showNutrition;
+		if (showNutrition && !nutrition && !loadingNutrition) {
+			loadNutrition();
+		}
+	}
 </script>
 
 {#if loading}
@@ -286,6 +319,22 @@
 				<p>{recipe.notes}</p>
 			</section>
 		{/if}
+
+		<section class="nutrition-section no-print">
+			<button class="nutrition-toggle" onclick={toggleNutrition}>
+				<span class="toggle-icon">{showNutrition ? '▼' : '▶'}</span>
+				<h2>Nutrition Information</h2>
+			</button>
+			{#if showNutrition}
+				<div class="nutrition-content">
+					<NutritionPanel
+						nutrition={nutrition}
+						loading={loadingNutrition}
+						error={nutritionError}
+					/>
+				</div>
+			{/if}
+		</section>
 	</article>
 {/if}
 
@@ -533,6 +582,46 @@
 	.notes p {
 		margin: 0;
 		line-height: var(--leading-relaxed);
+	}
+
+	/* Nutrition section */
+	.nutrition-section {
+		margin-top: var(--space-8);
+		padding-top: var(--space-6);
+		border-top: var(--border-width-thin) solid var(--border-light);
+	}
+
+	.nutrition-toggle {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0;
+		width: 100%;
+		text-align: left;
+	}
+
+	.nutrition-toggle:hover {
+		opacity: 0.8;
+	}
+
+	.nutrition-toggle h2 {
+		margin: 0;
+		padding-bottom: 0;
+		border-bottom: none;
+	}
+
+	.toggle-icon {
+		font-size: var(--text-sm);
+		color: var(--color-marinara-600);
+		width: 1em;
+	}
+
+	.nutrition-content {
+		margin-top: var(--space-4);
+		max-width: 400px;
 	}
 
 	/* Print styles */

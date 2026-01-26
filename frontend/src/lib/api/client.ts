@@ -452,7 +452,14 @@ export const browse = {
   },
 
   getRecipe: (token: string, domain: string, id: string) =>
-    request<{ data: Recipe }>(`/browse/domains/${encodeURIComponent(domain)}/recipes/${id}`, { token })
+    request<{ data: Recipe }>(`/browse/domains/${encodeURIComponent(domain)}/recipes/${id}`, { token }),
+
+  nutrition: (token: string, domain: string, id: string, params?: { servings?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.servings) searchParams.set('servings', params.servings.toString());
+    const query = searchParams.toString();
+    return request<{ data: RecipeNutrition }>(`/browse/domains/${encodeURIComponent(domain)}/recipes/${id}/nutrition${query ? `?${query}` : ''}`, { token });
+  }
 };
 
 // Tags API
