@@ -1,0 +1,923 @@
+/* ============================================
+   ControlCopyPasta Design System
+   A spaghetti-inspired color palette
+   ============================================ */
+
+:root {
+  /* ==========================================
+     COLOR PALETTE - Spaghetti Inspired
+     ========================================== */
+
+  /* --- Pasta (Egg Yolk Yellow Tones) ---
+     Used for: backgrounds, neutral surfaces, subtle accents */
+  --color-pasta-50: #fffef5;
+  --color-pasta-100: #fefce8;
+  --color-pasta-200: #fef8c3;
+  --color-pasta-300: #fef08a;
+  --color-pasta-400: #fadb5f;
+  --color-pasta-500: #eab308;  /* Primary pasta - egg yolk */
+  --color-pasta-600: #ca8a04;
+  --color-pasta-700: #a16207;
+  --color-pasta-800: #854d0e;
+  --color-pasta-900: #713f12;
+
+  /* --- Marinara (Rich Red Tones) ---
+     Used for: primary actions, CTA buttons, important accents */
+  --color-marinara-50: #fef2f2;
+  --color-marinara-100: #fee2e2;
+  --color-marinara-200: #fecaca;
+  --color-marinara-300: #fca5a5;
+  --color-marinara-400: #f87171;
+  --color-marinara-500: #dc4a3d;  /* Primary marinara */
+  --color-marinara-600: #c53030;
+  --color-marinara-700: #a32828;
+  --color-marinara-800: #862020;
+  --color-marinara-900: #6b1a1a;
+
+  /* --- Basil (Fresh Green Tones) ---
+     Used for: success states, secondary actions, fresh accents */
+  --color-basil-50: #f0fdf4;
+  --color-basil-100: #dcfce7;
+  --color-basil-200: #bbf7d0;
+  --color-basil-300: #86efac;
+  --color-basil-400: #4ade80;
+  --color-basil-500: #2d8c4e;  /* Primary basil */
+  --color-basil-600: #228b22;  /* Forest green */
+  --color-basil-700: #1a6b1a;
+  --color-basil-800: #155815;
+  --color-basil-900: #104510;
+
+  /* --- Neutral/Utility Colors --- */
+  --color-black: #1a1814;
+  --color-white: #ffffff;
+  --color-gray-50: #fafaf9;
+  --color-gray-100: #f5f5f4;
+  --color-gray-200: #e7e5e4;
+  --color-gray-300: #d6d3d1;
+  --color-gray-400: #a8a29e;
+  --color-gray-500: #78716c;
+  --color-gray-600: #57534e;
+  --color-gray-700: #44403c;
+  --color-gray-800: #292524;
+  --color-gray-900: #1c1917;
+
+  /* ==========================================
+     SEMANTIC COLOR TOKENS
+     ========================================== */
+
+  /* Background colors */
+  --bg-primary: var(--color-gray-100);
+  --bg-secondary: var(--color-gray-200);
+  --bg-surface: var(--color-gray-50);
+  --bg-card: var(--color-white);
+  --bg-header: var(--color-marinara-800);
+  --bg-footer: var(--color-marinara-900);
+  --bg-accent: var(--color-pasta-200);
+
+  /* Text colors */
+  --text-primary: var(--color-gray-800);
+  --text-secondary: var(--color-gray-600);
+  --text-muted: var(--color-gray-500);
+  --text-inverse: var(--color-white);
+  --text-link: var(--color-marinara-600);
+  --text-link-hover: var(--color-marinara-700);
+
+  /* Border colors */
+  --border-light: var(--color-gray-200);
+  --border-default: var(--color-gray-300);
+  --border-strong: var(--color-gray-400);
+  --border-focus: var(--color-marinara-500);
+
+  /* State colors */
+  --color-success: var(--color-basil-500);
+  --color-success-bg: var(--color-basil-100);
+  --color-warning: #d97706;
+  --color-warning-bg: #fef3c7;
+  --color-error: var(--color-marinara-600);
+  --color-error-bg: var(--color-marinara-100);
+  --color-info: #0284c7;
+  --color-info-bg: #e0f2fe;
+
+  /* ==========================================
+     TYPOGRAPHY
+     ========================================== */
+
+  /* Font families */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-mono: 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', monospace;
+
+  /* Font sizes */
+  --text-xs: 0.75rem;      /* 12px */
+  --text-sm: 0.875rem;     /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg: 1.125rem;     /* 18px */
+  --text-xl: 1.25rem;      /* 20px */
+  --text-2xl: 1.5rem;      /* 24px */
+  --text-3xl: 1.875rem;    /* 30px */
+  --text-4xl: 2.25rem;     /* 36px */
+  --text-5xl: 3rem;        /* 48px */
+
+  /* Font weights */
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Line heights */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 2;
+
+  /* Letter spacing */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
+
+  /* ==========================================
+     SPACING
+     ========================================== */
+
+  --space-0: 0;
+  --space-1: 0.25rem;    /* 4px */
+  --space-2: 0.5rem;     /* 8px */
+  --space-3: 0.75rem;    /* 12px */
+  --space-4: 1rem;       /* 16px */
+  --space-5: 1.25rem;    /* 20px */
+  --space-6: 1.5rem;     /* 24px */
+  --space-8: 2rem;       /* 32px */
+  --space-10: 2.5rem;    /* 40px */
+  --space-12: 3rem;      /* 48px */
+  --space-16: 4rem;      /* 64px */
+  --space-20: 5rem;      /* 80px */
+  --space-24: 6rem;      /* 96px */
+
+  /* ==========================================
+     BORDERS & RADIUS
+     ========================================== */
+
+  --radius-none: 0;
+  --radius-sm: 0.25rem;    /* 4px */
+  --radius-md: 0.5rem;     /* 8px */
+  --radius-lg: 0.75rem;    /* 12px */
+  --radius-xl: 1rem;       /* 16px */
+  --radius-2xl: 1.5rem;    /* 24px */
+  --radius-full: 9999px;
+
+  --border-width-thin: 1px;
+  --border-width-default: 2px;
+  --border-width-thick: 4px;
+
+  /* ==========================================
+     SHADOWS
+     ========================================== */
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+
+  /* Colored shadows for depth */
+  --shadow-marinara: 0 4px 14px 0 rgba(220, 74, 61, 0.25);
+  --shadow-basil: 0 4px 14px 0 rgba(45, 140, 78, 0.25);
+  --shadow-pasta: 0 4px 14px 0 rgba(201, 173, 133, 0.35);
+
+  /* ==========================================
+     TRANSITIONS
+     ========================================== */
+
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 350ms ease;
+  --transition-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* ==========================================
+     Z-INDEX LAYERS
+     ========================================== */
+
+  --z-below: -1;
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+
+  /* ==========================================
+     LAYOUT
+     ========================================== */
+
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1200px;
+  --container-2xl: 1400px;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+}
+
+/* ============================================
+   TYPOGRAPHY COMPONENTS
+   ============================================ */
+
+.heading-1 {
+  font-family: var(--font-serif);
+  font-size: var(--text-4xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  color: var(--color-marinara-800);
+  letter-spacing: var(--tracking-tight);
+}
+
+.heading-2 {
+  font-family: var(--font-serif);
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  color: var(--color-marinara-700);
+}
+
+.heading-3 {
+  font-family: var(--font-sans);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+  color: var(--text-primary);
+}
+
+.heading-4 {
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+  color: var(--text-primary);
+}
+
+.body-large {
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+  color: var(--text-primary);
+}
+
+.body-default {
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+}
+
+.body-small {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--text-secondary);
+}
+
+.caption {
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+/* ============================================
+   BUTTON COMPONENTS
+   ============================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  line-height: 1;
+  text-decoration: none;
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(220, 74, 61, 0.3);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary Button - Marinara */
+.btn-primary {
+  background-color: var(--color-marinara-500);
+  color: var(--color-white);
+  border-color: var(--color-marinara-500);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-marinara-600);
+  border-color: var(--color-marinara-600);
+  box-shadow: var(--shadow-marinara);
+}
+
+.btn-primary:active:not(:disabled) {
+  background-color: var(--color-marinara-700);
+}
+
+/* Secondary Button - Basil */
+.btn-secondary {
+  background-color: var(--color-basil-500);
+  color: var(--color-white);
+  border-color: var(--color-basil-500);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-basil-600);
+  border-color: var(--color-basil-600);
+  box-shadow: var(--shadow-basil);
+}
+
+.btn-secondary:active:not(:disabled) {
+  background-color: var(--color-basil-700);
+}
+
+/* Outline Button */
+.btn-outline {
+  background-color: transparent;
+  color: var(--color-marinara-600);
+  border-color: var(--color-marinara-500);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background-color: var(--color-marinara-50);
+  color: var(--color-marinara-700);
+}
+
+/* Ghost Button */
+.btn-ghost {
+  background-color: transparent;
+  color: var(--text-primary);
+  border-color: transparent;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background-color: var(--color-pasta-200);
+}
+
+/* Danger Button */
+.btn-danger {
+  background-color: var(--color-marinara-600);
+  color: var(--color-white);
+  border-color: var(--color-marinara-600);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-marinara-700);
+}
+
+/* Button Sizes */
+.btn-sm {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+}
+
+.btn-lg {
+  padding: var(--space-4) var(--space-8);
+  font-size: var(--text-base);
+}
+
+/* ============================================
+   CARD COMPONENT
+   ============================================ */
+
+.card {
+  background-color: var(--bg-card);
+  border: var(--border-width-thin) solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.card-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-bottom: var(--border-width-thin) solid var(--border-light);
+}
+
+.card-body {
+  padding: var(--space-5);
+}
+
+.card-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.card-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0;
+}
+
+.card-footer {
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--color-pasta-100);
+  border-top: var(--border-width-thin) solid var(--border-light);
+}
+
+/* Recipe card variant */
+.card-recipe {
+  position: relative;
+}
+
+.card-recipe .card-image {
+  height: 180px;
+}
+
+.card-recipe-time {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================
+   FORM COMPONENTS
+   ============================================ */
+
+.form-group {
+  margin-bottom: var(--space-5);
+}
+
+.form-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.form-input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  background-color: var(--color-white);
+  border: var(--border-width-default) solid var(--border-default);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.form-input:hover {
+  border-color: var(--border-strong);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(220, 74, 61, 0.15);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2357534e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-4) center;
+  padding-right: var(--space-10);
+}
+
+.form-hint {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+.form-error {
+  font-size: var(--text-xs);
+  color: var(--color-error);
+  margin-top: var(--space-1);
+}
+
+.form-input-error {
+  border-color: var(--color-error);
+}
+
+.form-input-error:focus {
+  box-shadow: 0 0 0 3px rgba(197, 48, 48, 0.15);
+}
+
+/* ============================================
+   TAG/BADGE COMPONENTS
+   ============================================ */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.tag-basil {
+  background-color: var(--color-basil-100);
+  color: var(--color-basil-700);
+}
+
+.tag-marinara {
+  background-color: var(--color-marinara-100);
+  color: var(--color-marinara-700);
+}
+
+.tag-pasta {
+  background-color: var(--color-pasta-200);
+  color: var(--color-pasta-800);
+}
+
+/* Badge for counts */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
+  border-radius: var(--radius-full);
+  background-color: var(--color-marinara-500);
+  color: var(--color-white);
+}
+
+/* ============================================
+   ALERT COMPONENTS
+   ============================================ */
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border-left: var(--border-width-thick) solid;
+}
+
+.alert-success {
+  background-color: var(--color-success-bg);
+  border-left-color: var(--color-success);
+  color: var(--color-basil-800);
+}
+
+.alert-warning {
+  background-color: var(--color-warning-bg);
+  border-left-color: var(--color-warning);
+  color: #92400e;
+}
+
+.alert-error {
+  background-color: var(--color-error-bg);
+  border-left-color: var(--color-error);
+  color: var(--color-marinara-800);
+}
+
+.alert-info {
+  background-color: var(--color-info-bg);
+  border-left-color: var(--color-info);
+  color: #075985;
+}
+
+/* ============================================
+   NAVIGATION COMPONENTS
+   ============================================ */
+
+.nav-header {
+  background-color: var(--bg-header);
+  padding: var(--space-4) var(--space-6);
+  box-shadow: var(--shadow-md);
+}
+
+.nav-brand {
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--color-pasta-300);
+  text-decoration: none;
+}
+
+.nav-link {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-gray-200);
+  text-decoration: none;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.nav-link:hover {
+  color: var(--color-white);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link-active {
+  color: var(--color-white);
+  background-color: var(--color-marinara-600);
+}
+
+/* ============================================
+   MODAL COMPONENT
+   ============================================ */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(26, 24, 20, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-modal-backdrop);
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background-color: var(--bg-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  z-index: var(--z-modal);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5);
+  border-bottom: var(--border-width-thin) solid var(--border-light);
+}
+
+.modal-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.modal-body {
+  padding: var(--space-5);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--color-pasta-100);
+  border-top: var(--border-width-thin) solid var(--border-light);
+}
+
+/* ============================================
+   LIST COMPONENTS
+   ============================================ */
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-width-thin) solid var(--border-light);
+  transition: background-color var(--transition-fast);
+}
+
+.list-item:last-child {
+  border-bottom: none;
+}
+
+.list-item:hover {
+  background-color: var(--color-pasta-100);
+}
+
+/* Ingredient list variant */
+.list-ingredients .list-item {
+  padding: var(--space-2) 0;
+}
+
+.list-ingredients .list-item::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-marinara-400);
+  flex-shrink: 0;
+}
+
+/* Instruction list variant */
+.list-instructions {
+  counter-reset: step;
+}
+
+.list-instructions .list-item {
+  counter-increment: step;
+  align-items: flex-start;
+}
+
+.list-instructions .list-item::before {
+  content: counter(step);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background-color: var(--color-basil-500);
+  color: var(--color-white);
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Text alignment */
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+/* Font weights */
+.font-normal { font-weight: var(--font-normal); }
+.font-medium { font-weight: var(--font-medium); }
+.font-semibold { font-weight: var(--font-semibold); }
+.font-bold { font-weight: var(--font-bold); }
+
+/* Colors */
+.text-marinara { color: var(--color-marinara-600); }
+.text-basil { color: var(--color-basil-600); }
+.text-pasta { color: var(--color-pasta-700); }
+.text-muted { color: var(--text-muted); }
+
+.bg-marinara { background-color: var(--color-marinara-500); }
+.bg-basil { background-color: var(--color-basil-500); }
+.bg-pasta { background-color: var(--color-pasta-300); }
+
+/* Spacing utilities */
+.mt-1 { margin-top: var(--space-1); }
+.mt-2 { margin-top: var(--space-2); }
+.mt-4 { margin-top: var(--space-4); }
+.mt-6 { margin-top: var(--space-6); }
+.mt-8 { margin-top: var(--space-8); }
+
+.mb-1 { margin-bottom: var(--space-1); }
+.mb-2 { margin-bottom: var(--space-2); }
+.mb-4 { margin-bottom: var(--space-4); }
+.mb-6 { margin-bottom: var(--space-6); }
+.mb-8 { margin-bottom: var(--space-8); }
+
+.p-4 { padding: var(--space-4); }
+.p-6 { padding: var(--space-6); }
+.px-4 { padding-left: var(--space-4); padding-right: var(--space-4); }
+.py-4 { padding-top: var(--space-4); padding-bottom: var(--space-4); }
+
+/* Flex utilities */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: var(--space-2); }
+.gap-4 { gap: var(--space-4); }
+.gap-6 { gap: var(--space-6); }
+
+/* Grid utilities */
+.grid { display: grid; }
+.grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+
+/* Container */
+.container {
+  width: 100%;
+  max-width: var(--container-xl);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+@media (max-width: 768px) {
+  :root {
+    --text-4xl: 1.875rem;
+    --text-3xl: 1.5rem;
+    --text-2xl: 1.25rem;
+  }
+
+  .container {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+
+  .grid-cols-2,
+  .grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background-color: white;
+    color: black;
+  }
+
+  .card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+}

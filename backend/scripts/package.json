@@ -1,0 +1,10 @@
+{
+  "name": "cmt-scraper",
+  "type": "module",
+  "scripts": {
+    "scrape": "node scrape-cmt.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  }
+}

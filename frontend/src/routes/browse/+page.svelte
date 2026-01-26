@@ -1,0 +1,129 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { authStore, isAuthenticated } from '$lib/stores/auth';
+	import { browse, type DomainInfo } from '$lib/api/client';
+
+	let domains = $state<DomainInfo[]>([]);
+	let loading = $state(true);
+	let error = $state('');
+
+	$effect(() => {
+		if (!$isAuthenticated) {
+			goto('/login');
+		}
+	});
+
+	onMount(async () => {
+		await loadDomains();
+	});
+
+	async function loadDomains() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		loading = true;
+		error = '';
+
+		try {
+			const result = await browse.domains(token);
+			domains = result.data;
+		} catch (err) {
+			error = 'Failed to load domains';
+		} finally {
+			loading = false;
+		}
+	}
+
+	function formatDomain(domain: string): string {
+		return domain.replace(/^www\./, '');
+	}
+</script>
+
+<div class="browse-page">
+	<header class="page-header">
+		<h1>Browse Recipes</h1>
+		<p class="subtitle">Discover recipes from various sources</p>
+	</header>
+
+	{#if loading}
+		<div class="loading">Loading sources...</div>
+	{:else if error}
+		<div class="error">{error}</div>
+	{:else if domains.length === 0}
+		<div class="empty">
+			<p>No recipe sources available yet.</p>
+		</div>
+	{:else}
+		<div class="domain-grid">
+			{#each domains as domain}
+				<a href="/browse/{encodeURIComponent(formatDomain(domain.domain))}" class="domain-card">
+					<h2>{formatDomain(domain.domain)}</h2>
+					<span class="count">{domain.count} recipes</span>
+				</a>
+			{/each}
+		</div>
+	{/if}
+</div>
+
+<style>
+	.browse-page {
+		max-width: 100%;
+	}
+
+	.page-header {
+		margin-bottom: var(--space-8);
+	}
+
+	h1 {
+		margin: 0 0 var(--space-2);
+		color: var(--color-marinara-800);
+	}
+
+	.subtitle {
+		color: var(--text-secondary);
+		margin: 0;
+	}
+
+	.loading,
+	.error,
+	.empty {
+		text-align: center;
+		padding: var(--space-12);
+	}
+
+	.error {
+		color: var(--color-error);
+	}
+
+	.domain-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+		gap: var(--space-6);
+	}
+
+	.domain-card {
+		background: var(--bg-card);
+		border-radius: var(--radius-lg);
+		padding: var(--space-6);
+		box-shadow: var(--shadow-md);
+		text-decoration: none;
+		transition: all var(--transition-normal);
+	}
+
+	.domain-card:hover {
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-lg);
+	}
+
+	.domain-card h2 {
+		margin: 0 0 var(--space-2);
+		color: var(--color-marinara-800);
+		font-size: var(--text-xl);
+	}
+
+	.domain-card .count {
+		color: var(--text-muted);
+		font-size: var(--text-sm);
+	}
+</style>

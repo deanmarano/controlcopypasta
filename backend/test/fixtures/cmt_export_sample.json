@@ -1,0 +1,22 @@
+[
+  {
+    "cookTime": "30 mins",
+    "description": "A sample recipe description",
+    "image": "https://example.com/image.jpg",
+    "ingredients": [
+      "1 cup all-purpose flour",
+      "2 large eggs",
+      "1/2 cup sugar"
+    ],
+    "instructions": "Step 1. Preheat oven to 350°F.\nStep 2. Mix dry ingredients.\nStep 3. Add wet ingredients and stir.",
+    "name": "Sample Recipe",
+    "prepTime": "15 mins",
+    "tags": [
+      "dessert",
+      "easy"
+    ],
+    "totalTime": "45 mins",
+    "url": "https://example.com/recipe",
+    "yield": "4 servings"
+  }
+]

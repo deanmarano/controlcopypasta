@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ControlCopyPasta</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup">
+    <header>
+      <h1>ControlCopyPasta</h1>
+    </header>
+
+    <div id="login-section" class="section hidden">
+      <p>Please configure your server and login.</p>
+      <button id="open-options">Settings</button>
+    </div>
+
+    <div id="loading-section" class="section hidden">
+      <div class="spinner"></div>
+      <p>Detecting recipe...</p>
+    </div>
+
+    <div id="no-recipe-section" class="section hidden">
+      <p>No recipe detected on this page.</p>
+      <p class="hint">Try navigating to a recipe page.</p>
+    </div>
+
+    <div id="recipe-section" class="section hidden">
+      <div class="recipe-preview">
+        <img id="recipe-image" src="" alt="" class="hidden">
+        <h2 id="recipe-title"></h2>
+        <p id="recipe-meta"></p>
+      </div>
+      <button id="save-recipe" class="primary">Save Recipe</button>
+    </div>
+
+    <div id="saving-section" class="section hidden">
+      <div class="spinner"></div>
+      <p>Saving recipe...</p>
+    </div>
+
+    <div id="success-section" class="section hidden">
+      <div class="success-icon">&#10004;</div>
+      <p>Recipe saved!</p>
+      <a id="view-recipe" href="#" target="_blank">View in ControlCopyPasta</a>
+    </div>
+
+    <div id="error-section" class="section hidden">
+      <div class="error-icon">&#10006;</div>
+      <p id="error-message">An error occurred.</p>
+      <button id="try-again">Try Again</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

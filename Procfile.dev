@@ -1,0 +1,7 @@
+# Development Procfile - includes infrastructure
+# Run with: overmind start -f Procfile.dev
+# Or: foreman start -f Procfile.dev
+
+infra: sudo docker compose up
+backend: cd backend && mix phx.server
+frontend: cd frontend && npm run dev -- --host 0.0.0.0

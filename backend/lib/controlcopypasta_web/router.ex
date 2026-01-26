@@ -1,0 +1,123 @@
+defmodule ControlcopypastaWeb.Router do
+  use ControlcopypastaWeb, :router
+
+  alias ControlcopypastaWeb.Plugs.Auth
+
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  # Health check endpoint (no auth required)
+  scope "/api", ControlcopypastaWeb do
+    pipe_through :api
+
+    get "/health", HealthController, :index
+  end
+
+  pipeline :api_auth do
+    plug :accepts, ["json"]
+    plug Auth
+  end
+
+  pipeline :api_authenticated do
+    plug :accepts, ["json"]
+    plug Auth
+    plug :require_auth
+  end
+
+  defp require_auth(conn, _opts), do: Auth.require_auth(conn, [])
+
+  # Public auth endpoints
+  scope "/api/auth", ControlcopypastaWeb do
+    pipe_through :api
+
+    post "/magic-link", AuthController, :request_magic_link
+    post "/magic-link/verify", AuthController, :verify_magic_link
+
+    # Public passkey endpoints (for authentication)
+    post "/passkeys/authenticate/options", PasskeyController, :authenticate_options
+    post "/passkeys/authenticate", PasskeyController, :authenticate
+  end
+
+  # Auth endpoints that need optional auth
+  scope "/api/auth", ControlcopypastaWeb do
+    pipe_through :api_auth
+
+    post "/refresh", AuthController, :refresh
+    post "/logout", AuthController, :logout
+    get "/me", AuthController, :me
+  end
+
+  # Authenticated passkey management endpoints
+  scope "/api/auth/passkeys", ControlcopypastaWeb do
+    pipe_through :api_authenticated
+
+    post "/register/options", PasskeyController, :register_options
+    post "/register", PasskeyController, :register
+    get "/", PasskeyController, :index
+    delete "/:id", PasskeyController, :delete
+  end
+
+  # Protected API endpoints (require authentication)
+  scope "/api", ControlcopypastaWeb do
+    pipe_through :api_authenticated
+
+    resources "/recipes", RecipeController, except: [:new, :edit]
+    post "/recipes/parse", RecipeController, :parse
+    post "/recipes/:id/archive", RecipeController, :archive
+    post "/recipes/:id/unarchive", RecipeController, :unarchive
+    get "/recipes/:id/similar", RecipeController, :similar
+    get "/recipes/:id/compare/:compare_id", RecipeController, :compare
+    get "/recipes/:id/nutrition", RecipeController, :nutrition
+
+    resources "/tags", TagController, only: [:index, :create, :delete]
+
+    # Avoided ingredients
+    resources "/avoided-ingredients", AvoidedIngredientController, only: [:index, :create, :delete]
+
+    # Ingredients catalog and scaling
+    get "/ingredients", IngredientController, :index
+    get "/ingredients/:id", IngredientController, :show
+    post "/ingredients/lookup", IngredientController, :lookup
+    post "/ingredients/scale", IngredientController, :scale
+    post "/ingredients/scale_bulk", IngredientController, :scale_bulk
+    get "/ingredients/:id/package_sizes", IngredientController, :package_sizes
+
+    # Browse recipes by domain
+    get "/browse/domains", BrowseController, :domains
+    get "/browse/domains/:domain", BrowseController, :recipes_by_domain
+    get "/browse/domains/:domain/recipes/:id", BrowseController, :show_recipe
+
+    # Import endpoints
+    post "/import/copymethat", ImportController, :copy_me_that
+
+    # Shopping lists
+    resources "/shopping-lists", ShoppingListController, except: [:new, :edit]
+    post "/shopping-lists/:id/archive", ShoppingListController, :archive
+    post "/shopping-lists/:id/clear-checked", ShoppingListController, :clear_checked
+    post "/shopping-lists/:id/add-recipe", ShoppingListController, :add_recipe
+
+    # Shopping list items
+    post "/shopping-lists/:id/items", ShoppingListController, :create_item
+    put "/shopping-lists/:id/items/:item_id", ShoppingListController, :update_item
+    delete "/shopping-lists/:id/items/:item_id", ShoppingListController, :delete_item
+    post "/shopping-lists/:id/items/:item_id/check", ShoppingListController, :check_item
+    post "/shopping-lists/:id/items/:item_id/uncheck", ShoppingListController, :uncheck_item
+  end
+
+  # Enable LiveDashboard in development
+  if Application.compile_env(:controlcopypasta, :dev_routes) do
+    # If you want to use the LiveDashboard in production, you should put
+    # it behind authentication and allow only admins to access it.
+    # If your application does not have an admins-only section yet,
+    # you can use Plug.BasicAuth to set up some basic authentication
+    # as long as you are also using SSL (which you should anyway).
+    import Phoenix.LiveDashboard.Router
+
+    scope "/dev" do
+      pipe_through [:fetch_session, :protect_from_forgery]
+
+      live_dashboard "/dashboard", metrics: ControlcopypastaWeb.Telemetry
+    end
+  end
+end
