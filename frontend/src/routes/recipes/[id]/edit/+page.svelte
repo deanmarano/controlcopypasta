@@ -188,7 +188,7 @@
 			</div>
 
 			<div class="form-group">
-				<label>Tags</label>
+				<span class="form-label">Tags</span>
 				<div class="tags-list">
 					{#each allTags as tag}
 						<button
@@ -205,7 +205,7 @@
 
 			<div class="form-group">
 				<div class="section-header">
-					<label>Ingredients</label>
+					<span class="form-label">Ingredients</span>
 					<button type="button" class="btn btn-sm" onclick={addIngredient}>+ Add</button>
 				</div>
 				<div class="list-items">
@@ -224,7 +224,7 @@
 
 			<div class="form-group">
 				<div class="section-header">
-					<label>Instructions</label>
+					<span class="form-label">Instructions</span>
 					<button type="button" class="btn btn-sm" onclick={addInstruction}>+ Add</button>
 				</div>
 				<div class="list-items">
@@ -305,7 +305,8 @@
 		margin-bottom: var(--space-6);
 	}
 
-	label {
+	label,
+	.form-label {
 		display: block;
 		font-weight: var(--font-medium);
 		margin-bottom: var(--space-2);
@@ -382,7 +383,7 @@
 		margin-bottom: var(--space-2);
 	}
 
-	.section-header label {
+	.section-header .form-label {
 		margin-bottom: 0;
 	}
 

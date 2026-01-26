@@ -212,7 +212,7 @@
 
 		{#if availableTags.length > 0}
 			<div class="form-group">
-				<label>Tags</label>
+				<span class="form-label">Tags</span>
 				<div class="tag-selector">
 					{#each availableTags as tag}
 						<label class="tag-option">
@@ -344,7 +344,8 @@
 		}
 	}
 
-	label {
+	label,
+	.form-label {
 		display: block;
 		margin-bottom: var(--space-2);
 		font-weight: var(--font-medium);

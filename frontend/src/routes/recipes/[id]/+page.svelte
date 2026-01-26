@@ -4,6 +4,7 @@
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { recipes, ingredients as ingredientsApi, shoppingLists, type Recipe, type Ingredient, type SimilarRecipe, type ScaledIngredient, type ShoppingList, type RecipeNutrition } from '$lib/api/client';
 	import NutritionPanel from '$lib/components/NutritionPanel.svelte';
+	import Modal from '$lib/components/Modal.svelte';
 
 	let recipe = $state<Recipe | null>(null);
 	let loading = $state(true);
@@ -655,53 +656,42 @@
 		</section>
 	</article>
 
-	{#if showShoppingModal}
-		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-		<div class="modal-overlay" onclick={closeShoppingModal} role="dialog" aria-modal="true">
-			<div class="modal" onclick={(e) => e.stopPropagation()}>
-				<div class="modal-header">
-					<h3>Add to Shopping List</h3>
-					<button class="modal-close" onclick={closeShoppingModal}>&times;</button>
-				</div>
-				<div class="modal-body">
-					{#if scale !== 1}
-						<p class="scale-note">Adding ingredients at {scale}x scale</p>
-					{/if}
+	<Modal bind:open={showShoppingModal} title="Add to Shopping List" onclose={closeShoppingModal}>
+		{#if scale !== 1}
+			<p class="scale-note">Adding ingredients at {scale}x scale</p>
+		{/if}
 
-					{#if loadingLists}
-						<p>Loading lists...</p>
-					{:else if availableLists.length > 0}
-						<div class="list-options">
-							{#each availableLists as list}
-								<button
-									class="list-option"
-									onclick={() => addToList(list.id)}
-									disabled={addingToList}
-								>
-									{list.name}
-								</button>
-							{/each}
-						</div>
-					{/if}
-
-					<div class="create-new">
-						<p class="create-label">Or create a new list:</p>
-						<form onsubmit={(e) => { e.preventDefault(); createAndAddToList(); }}>
-							<input
-								type="text"
-								bind:value={newListName}
-								placeholder="New list name..."
-								disabled={addingToList}
-							/>
-							<button type="submit" disabled={addingToList || !newListName.trim()}>
-								{addingToList ? 'Adding...' : 'Create & Add'}
-							</button>
-						</form>
-					</div>
-				</div>
+		{#if loadingLists}
+			<p>Loading lists...</p>
+		{:else if availableLists.length > 0}
+			<div class="list-options">
+				{#each availableLists as list}
+					<button
+						class="list-option"
+						onclick={() => addToList(list.id)}
+						disabled={addingToList}
+					>
+						{list.name}
+					</button>
+				{/each}
 			</div>
+		{/if}
+
+		<div class="create-new">
+			<p class="create-label">Or create a new list:</p>
+			<form onsubmit={(e) => { e.preventDefault(); createAndAddToList(); }}>
+				<input
+					type="text"
+					bind:value={newListName}
+					placeholder="New list name..."
+					disabled={addingToList}
+				/>
+				<button type="submit" disabled={addingToList || !newListName.trim()}>
+					{addingToList ? 'Adding...' : 'Create & Add'}
+				</button>
+			</form>
 		</div>
-	{/if}
+	</Modal>
 {/if}
 
 <style>
@@ -1225,63 +1215,7 @@
 		border-color: var(--color-basil-600);
 	}
 
-	/* Modal styles */
-	.modal-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: rgba(26, 24, 20, 0.6);
-		backdrop-filter: blur(4px);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: var(--z-modal-backdrop);
-	}
-
-	.modal {
-		background: var(--bg-card);
-		border-radius: var(--radius-xl);
-		max-width: 400px;
-		width: 90%;
-		max-height: 80vh;
-		overflow-y: auto;
-		box-shadow: var(--shadow-xl);
-	}
-
-	.modal-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: var(--space-4);
-		border-bottom: var(--border-width-thin) solid var(--border-light);
-	}
-
-	.modal-header h3 {
-		margin: 0;
-		font-size: var(--text-lg);
-		font-family: var(--font-serif);
-	}
-
-	.modal-close {
-		background: none;
-		border: none;
-		font-size: var(--text-2xl);
-		cursor: pointer;
-		color: var(--text-muted);
-		line-height: 1;
-		padding: 0;
-	}
-
-	.modal-close:hover {
-		color: var(--text-primary);
-	}
-
-	.modal-body {
-		padding: var(--space-4);
-	}
-
+	/* Modal content styles */
 	.scale-note {
 		background: var(--color-basil-100);
 		padding: var(--space-2);

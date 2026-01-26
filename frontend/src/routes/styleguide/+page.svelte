@@ -1,7 +1,9 @@
 <script>
-  let inputValue = '';
-  let textareaValue = '';
-  let showModal = false;
+  import Modal from '$lib/components/Modal.svelte';
+
+  let inputValue = $state('');
+  let textareaValue = $state('');
+  let showModal = $state(false);
 </script>
 
 <svelte:head>
@@ -318,32 +320,24 @@
     <h2>Modal</h2>
     <p class="section-description">Dialog overlay for focused interactions.</p>
 
-    <button class="btn btn-primary" on:click={() => showModal = true}>Open Modal</button>
+    <button class="btn btn-primary" onclick={() => showModal = true}>Open Modal</button>
 
-    {#if showModal}
-      <div class="modal-backdrop" on:click={() => showModal = false}></div>
-      <div class="modal">
-        <div class="modal-header">
-          <h3 class="modal-title">Add to Shopping List</h3>
-          <button class="btn btn-ghost btn-sm" on:click={() => showModal = false}>X</button>
-        </div>
-        <div class="modal-body">
-          <p>Would you like to add all ingredients from this recipe to your shopping list?</p>
-          <div class="form-group">
-            <label class="form-label" for="list-select">Select List</label>
-            <select id="list-select" class="form-input form-select">
-              <option>Weekly Groceries</option>
-              <option>Party Prep</option>
-              <option>Create New List...</option>
-            </select>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-ghost" on:click={() => showModal = false}>Cancel</button>
-          <button class="btn btn-primary" on:click={() => showModal = false}>Add Ingredients</button>
-        </div>
+    <Modal bind:open={showModal} title="Add to Shopping List">
+      <p>Would you like to add all ingredients from this recipe to your shopping list?</p>
+      <div class="form-group">
+        <label class="form-label" for="list-select">Select List</label>
+        <select id="list-select" class="form-input form-select">
+          <option>Weekly Groceries</option>
+          <option>Party Prep</option>
+          <option>Create New List...</option>
+        </select>
       </div>
-    {/if}
+
+      {#snippet footer()}
+        <button class="btn btn-ghost" onclick={() => showModal = false}>Cancel</button>
+        <button class="btn btn-primary" onclick={() => showModal = false}>Add Ingredients</button>
+      {/snippet}
+    </Modal>
   </section>
 
   <!-- Navigation Section -->
