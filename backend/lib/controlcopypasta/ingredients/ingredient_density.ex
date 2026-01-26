@@ -40,8 +40,9 @@ defmodule Controlcopypasta.Ingredients.IngredientDensity do
   @foreign_key_type :binary_id
 
   # Volume units plus "each"/"whole" for countable items (eggs, lemons, etc.)
-  @valid_volume_units ~w(cup tbsp tsp fl oz pint quart gallon ml liter each whole)
-  @valid_sources ~w(usda manual calculated)
+  # Note: "oz" is included because recipes often use it for fluid ounces
+  @valid_volume_units ["cup", "tbsp", "tsp", "fl oz", "oz", "pint", "quart", "gallon", "ml", "liter", "each", "whole"]
+  @valid_sources ~w(usda fatsecret manual calculated)
   @valid_preparations ~w(packed sifted chopped diced minced sliced grated shredded whole)
 
   schema "ingredient_densities" do
@@ -53,11 +54,20 @@ defmodule Controlcopypasta.Ingredients.IngredientDensity do
     field :source, :string
     field :notes, :string
 
+    # Provenance tracking (matching IngredientNutrition pattern)
+    field :source_id, :string          # USDA portion ID or FatSecret serving_id
+    field :source_url, :string         # Link to source data
+    field :confidence, :decimal        # 0.0-1.0 data quality score
+    field :data_points, :integer       # USDA: number of measurements
+    field :retrieved_at, :utc_datetime # When fetched from API
+    field :last_checked_at, :utc_datetime
+
     timestamps()
   end
 
   @required_fields [:canonical_ingredient_id, :volume_unit, :grams_per_unit, :source]
-  @optional_fields [:preparation, :notes]
+  @optional_fields [:preparation, :notes, :source_id, :source_url, :confidence, :data_points,
+                    :retrieved_at, :last_checked_at]
 
   @doc """
   Creates a changeset for an ingredient density.
@@ -70,6 +80,8 @@ defmodule Controlcopypasta.Ingredients.IngredientDensity do
     |> validate_inclusion(:source, @valid_sources)
     |> validate_inclusion(:preparation, @valid_preparations ++ [nil])
     |> validate_number(:grams_per_unit, greater_than: 0)
+    |> validate_number(:confidence, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)
+    |> validate_number(:data_points, greater_than_or_equal_to: 0)
     |> unique_constraint([:canonical_ingredient_id, :volume_unit, :preparation],
       name: :ingredient_densities_unique_combo
     )

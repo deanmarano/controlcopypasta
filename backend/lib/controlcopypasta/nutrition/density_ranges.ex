@@ -57,36 +57,73 @@ defmodule Controlcopypasta.Nutrition.DensityRanges do
 
   # Known count items with explicit min/max ranges (in grams per item)
   # Based on USDA data and typical grocery store ranges
+  # Names should match canonical ingredient names in the database
   @count_item_ranges %{
     # Eggs
-    "egg" => %{min: 44, best: 50, max: 63},             # Small to large
+    "egg" => %{min: 44, best: 50, max: 63},
     "egg white" => %{min: 30, best: 33, max: 38},
     "egg yolk" => %{min: 14, best: 17, max: 20},
 
     # Citrus
-    "lemon" => %{min: 58, best: 84, max: 140},
-    "lime" => %{min: 44, best: 67, max: 100},
-    "orange" => %{min: 96, best: 131, max: 184},
+    "lemon" => %{min: 58, best: 85, max: 140},
+    "lime" => %{min: 44, best: 65, max: 100},
+    "orange" => %{min: 96, best: 130, max: 184},
 
-    # Common produce
-    "garlic clove" => %{min: 3, best: 4, max: 6},
-    "onion" => %{min: 110, best: 150, max: 200},        # Medium onion
-    "potato" => %{min: 150, best: 213, max: 300},       # Medium potato
-    "tomato" => %{min: 91, best: 123, max: 182},        # Medium tomato
-    "apple" => %{min: 150, best: 182, max: 220},
-    "banana" => %{min: 100, best: 118, max: 150},
-    "avocado" => %{min: 136, best: 170, max: 230},
-    "bell pepper" => %{min: 120, best: 165, max: 200},
-    "carrot" => %{min: 50, best: 72, max: 100},
-    "celery stalk" => %{min: 35, best: 45, max: 55},
+    # Common produce (names match canonical ingredients)
+    "garlic" => %{min: 3, best: 4, max: 6},
+    "onion" => %{min: 110, best: 150, max: 200},
+    "shallot" => %{min: 20, best: 30, max: 45},
+    "green onion" => %{min: 10, best: 15, max: 20},
+    "potato" => %{min: 120, best: 150, max: 200},
+    "sweet potato" => %{min: 100, best: 130, max: 180},
+    "tomato" => %{min: 91, best: 123, max: 182},
+    "cherry tomato" => %{min: 12, best: 17, max: 25},
+    "apple" => %{min: 150, best: 180, max: 220},
+    "banana" => %{min: 100, best: 120, max: 150},
+    "avocado" => %{min: 120, best: 150, max: 200},
+    "mango" => %{min: 150, best: 200, max: 280},
+    "bell pepper" => %{min: 90, best: 119, max: 160},
+    "red bell pepper" => %{min: 90, best: 119, max: 160},
+    "green bell pepper" => %{min: 90, best: 119, max: 160},
+    "yellow bell pepper" => %{min: 90, best: 119, max: 160},
+    "jalapeno" => %{min: 10, best: 14, max: 20},
+    "serrano chile" => %{min: 4, best: 6, max: 10},
+    "habanero" => %{min: 5, best: 8, max: 12},
+    "carrot" => %{min: 45, best: 60, max: 85},
+    "celery" => %{min: 30, best: 40, max: 55},
+    "cucumber" => %{min: 200, best: 301, max: 400},
+    "zucchini" => %{min: 150, best: 196, max: 250},
+    "eggplant" => %{min: 350, best: 458, max: 600},
+    "broccoli" => %{min: 100, best: 148, max: 200},
+    "cauliflower" => %{min: 400, best: 575, max: 750},
+    "leek" => %{min: 60, best: 89, max: 120},
+    "artichoke" => %{min: 90, best: 120, max: 160},
+    "mushroom" => %{min: 12, best: 18, max: 25},
+    "beet" => %{min: 60, best: 82, max: 110},
+    "radish" => %{min: 3, best: 4.5, max: 7},
+    "peach" => %{min: 120, best: 150, max: 200},
+    "pear" => %{min: 140, best: 178, max: 220},
+    "plum" => %{min: 50, best: 66, max: 90},
+    "apricot" => %{min: 25, best: 35, max: 50},
+    "dates" => %{min: 18, best: 24, max: 35},
+    "figs" => %{min: 35, best: 50, max: 70},
+    "olives" => %{min: 2.5, best: 3.5, max: 5},
 
     # Proteins
     "chicken breast" => %{min: 120, best: 174, max: 220},
     "chicken thigh" => %{min: 80, best: 116, max: 150},
+    "chicken leg" => %{min: 130, best: 167, max: 210},
+    "chicken wing" => %{min: 25, best: 34, max: 45},
     "salmon fillet" => %{min: 140, best: 170, max: 200},
+    "bacon" => %{min: 6, best: 8, max: 12},
+    "sausage" => %{min: 50, best: 68, max: 90},
+    "hot dog" => %{min: 35, best: 45, max: 60},
 
-    # Bread and baked
-    "bread slice" => %{min: 25, best: 32, max: 45}
+    # Canned goods (per standard can)
+    "canned tomatoes" => %{min: 400, best: 794, max: 800},
+
+    # Dried peppers
+    "red pepper flakes" => %{min: 0.3, best: 0.5, max: 1.0}
   }
 
   @doc """

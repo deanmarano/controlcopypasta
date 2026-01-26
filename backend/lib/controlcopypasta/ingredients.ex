@@ -183,11 +183,28 @@ defmodule Controlcopypasta.Ingredients do
 
   @doc """
   Creates a canonical ingredient.
+
+  Automatically queues density enrichment to fetch density data from APIs
+  (disabled in test environment to avoid blocking tests).
   """
   def create_canonical_ingredient(attrs \\ %{}) do
-    %CanonicalIngredient{}
-    |> CanonicalIngredient.changeset(attrs)
-    |> Repo.insert()
+    result =
+      %CanonicalIngredient{}
+      |> CanonicalIngredient.changeset(attrs)
+      |> Repo.insert()
+
+    # Queue density enrichment for new ingredient (skip in test environment)
+    case result do
+      {:ok, ingredient} ->
+        unless Application.get_env(:controlcopypasta, :env) == :test do
+          Controlcopypasta.Nutrition.DensityEnrichmentWorker.enqueue(ingredient.id)
+        end
+
+        {:ok, ingredient}
+
+      error ->
+        error
+    end
   end
 
   @doc """
@@ -1225,7 +1242,9 @@ defmodule Controlcopypasta.Ingredients do
     %IngredientDensity{}
     |> IngredientDensity.changeset(attrs)
     |> Repo.insert(
-      on_conflict: {:replace, [:grams_per_unit, :source, :notes, :updated_at]},
+      on_conflict: {:replace, [:grams_per_unit, :source, :notes, :source_id, :source_url,
+                               :confidence, :data_points, :retrieved_at, :last_checked_at,
+                               :updated_at]},
       conflict_target: [:canonical_ingredient_id, :volume_unit, :preparation]
     )
   end

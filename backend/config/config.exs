@@ -72,7 +72,7 @@ config :controlcopypasta, :scraping,
 config :controlcopypasta, Oban,
   repo: Controlcopypasta.Repo,
   # Only 1 concurrent job per queue to respect rate limits
-  queues: [scraper: 1, scheduled: 1, fatsecret: 1],
+  queues: [scraper: 1, scheduled: 1, fatsecret: 1, density: 1],
   plugins: [
     # Rate limit scraper to ~75/hour (1 job per 48 seconds)
     {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)},
@@ -90,6 +90,12 @@ config :controlcopypasta, Oban,
 
 # FatSecret API rate limiting (free tier: 5,000 calls/month)
 config :controlcopypasta, :fatsecret,
+  max_per_hour: 150,
+  max_per_day: 4000,
+  delay_ms: 3000
+
+# Density enrichment rate limiting (uses both FatSecret and USDA)
+config :controlcopypasta, :density,
   max_per_hour: 150,
   max_per_day: 4000,
   delay_ms: 3000

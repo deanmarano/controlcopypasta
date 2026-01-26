@@ -318,4 +318,166 @@ defmodule Controlcopypasta.Nutrition.USDAClient do
   Returns the mapping of our nutrient fields to USDA nutrient IDs.
   """
   def nutrient_ids, do: @nutrient_ids
+
+  @doc """
+  Extracts density data from USDA foodPortions.
+  Returns list of maps ready for IngredientDensity creation.
+
+  ## Parameters
+
+  - `food_response` - Parsed food response from USDA API (get_food/1 result)
+  - `canonical_ingredient_id` - ID of the canonical ingredient
+
+  ## Examples
+
+      iex> {:ok, food} = USDAClient.get_food(171287)
+      iex> densities = USDAClient.extract_densities(food, ingredient.id)
+      [%{volume_unit: "cup", grams_per_unit: 140.0, source: "usda", ...}, ...]
+  """
+  def extract_densities(food_response, canonical_ingredient_id) do
+    fdc_id = food_response[:fdc_id] || food_response["fdcId"]
+
+    # Get raw food data - need to fetch again if we only have parsed data
+    # For now, assume we're getting the raw response
+    portions = get_portions_from_response(food_response)
+
+    portions
+    |> Enum.map(fn portion ->
+      volume_unit = normalize_volume_unit(portion["portionDescription"] || portion["modifier"])
+      grams = portion["gramWeight"]
+
+      if volume_unit && grams && grams > 0 do
+        %{
+          canonical_ingredient_id: canonical_ingredient_id,
+          volume_unit: volume_unit,
+          grams_per_unit: grams,
+          preparation: extract_preparation(portion["modifier"]),
+          source: "usda",
+          source_id: "#{fdc_id}:#{portion["id"]}",
+          source_url: "https://fdc.nal.usda.gov/fdc-app.html#/food-details/#{fdc_id}",
+          confidence: calculate_usda_confidence(portion),
+          data_points: portion["dataPoints"],
+          retrieved_at: DateTime.utc_now(),
+          notes: portion["portionDescription"]
+        }
+      else
+        nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp get_portions_from_response(%{} = response) when is_map(response) do
+    # Handle both atom-keyed (from parse_food_detail) and string-keyed (raw) responses
+    response["foodPortions"] || response[:food_portions] || []
+  end
+
+  @doc """
+  Extracts densities from raw USDA API response (before parse_food_detail).
+  Use this when you have the raw API response.
+  """
+  def extract_densities_from_raw(raw_response, canonical_ingredient_id) do
+    fdc_id = raw_response["fdcId"]
+    portions = raw_response["foodPortions"] || []
+
+    portions
+    |> Enum.map(fn portion ->
+      volume_unit = normalize_volume_unit(portion["portionDescription"] || portion["modifier"])
+      grams = portion["gramWeight"]
+
+      if volume_unit && grams && grams > 0 do
+        %{
+          canonical_ingredient_id: canonical_ingredient_id,
+          volume_unit: volume_unit,
+          grams_per_unit: grams,
+          preparation: extract_preparation(portion["modifier"]),
+          source: "usda",
+          source_id: "#{fdc_id}:#{portion["id"]}",
+          source_url: "https://fdc.nal.usda.gov/fdc-app.html#/food-details/#{fdc_id}",
+          confidence: calculate_usda_confidence(portion),
+          data_points: portion["dataPoints"],
+          retrieved_at: DateTime.utc_now(),
+          notes: portion["portionDescription"]
+        }
+      else
+        nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  @doc """
+  Fetches a food and returns both parsed nutrition data and raw response for density extraction.
+  """
+  def get_food_with_raw(fdc_id, opts \\ []) do
+    api_key = opts[:api_key] || get_api_key()
+
+    url = "#{@base_url}/food/#{fdc_id}"
+    url = if api_key, do: "#{url}?api_key=#{api_key}", else: url
+
+    case http_get(url) do
+      {:ok, raw_food} ->
+        {:ok, %{parsed: parse_food_detail(raw_food), raw: raw_food}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  # Normalize USDA portion descriptions to standard volume units
+  defp normalize_volume_unit(nil), do: nil
+
+  defp normalize_volume_unit(description) when is_binary(description) do
+    desc = String.downcase(description)
+
+    cond do
+      String.contains?(desc, "cup") -> "cup"
+      String.contains?(desc, "tablespoon") or String.contains?(desc, "tbsp") -> "tbsp"
+      String.contains?(desc, "teaspoon") or String.contains?(desc, "tsp") -> "tsp"
+      String.contains?(desc, "fl oz") or String.contains?(desc, "fluid ounce") -> "fl oz"
+      String.contains?(desc, "pint") -> "pint"
+      String.contains?(desc, "quart") -> "quart"
+      String.contains?(desc, "gallon") -> "gallon"
+      String.contains?(desc, "ml") or String.contains?(desc, "milliliter") -> "ml"
+      String.contains?(desc, "liter") -> "liter"
+      Regex.match?(~r/\b(medium|large|small|whole|piece|unit|each)\b/, desc) -> "each"
+      true -> nil
+    end
+  end
+
+  # Extract preparation method from modifier
+  defp extract_preparation(nil), do: nil
+
+  defp extract_preparation(modifier) when is_binary(modifier) do
+    mod = String.downcase(modifier)
+
+    cond do
+      String.contains?(mod, "packed") -> "packed"
+      String.contains?(mod, "sifted") -> "sifted"
+      String.contains?(mod, "chopped") -> "chopped"
+      String.contains?(mod, "diced") -> "diced"
+      String.contains?(mod, "minced") -> "minced"
+      String.contains?(mod, "sliced") -> "sliced"
+      String.contains?(mod, "grated") -> "grated"
+      String.contains?(mod, "shredded") -> "shredded"
+      true -> nil
+    end
+  end
+
+  # Calculate confidence based on USDA data quality
+  defp calculate_usda_confidence(portion) do
+    # Base confidence 0.95 for USDA, adjusted by data points
+    base = 0.95
+    points = portion["dataPoints"] || 1
+
+    confidence =
+      cond do
+        points >= 10 -> base
+        points >= 5 -> base - 0.05
+        points >= 2 -> base - 0.10
+        true -> base - 0.15
+      end
+
+    Decimal.from_float(confidence)
+  end
 end

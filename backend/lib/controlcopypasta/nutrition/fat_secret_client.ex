@@ -374,4 +374,187 @@ defmodule Controlcopypasta.Nutrition.FatSecretClient do
   def credentials_configured? do
     get_client_id() != nil and get_client_secret() != nil
   end
+
+  @doc """
+  Extracts density data from FatSecret servings.
+  FatSecret returns multiple serving options per food - extract all valid ones.
+
+  ## Parameters
+
+  - `food_response` - Parsed food response from FatSecret API (get_food/1 result)
+  - `canonical_ingredient_id` - ID of the canonical ingredient
+
+  ## Examples
+
+      iex> {:ok, food} = FatSecretClient.get_food("33181")
+      iex> densities = FatSecretClient.extract_densities(food, ingredient.id)
+      [%{volume_unit: "cup", grams_per_unit: 30.0, source: "fatsecret", ...}, ...]
+  """
+  def extract_densities(food_response, canonical_ingredient_id) do
+    _food_id = food_response[:food_id] || food_response["food_id"]
+    food_url = food_response[:food_url] || food_response["food_url"]
+
+    # Get all servings from the response
+    servings = get_all_servings_from_response(food_response)
+
+    servings
+    |> Enum.map(fn serving ->
+      # Skip per-100g servings (they're for nutrition, not density)
+      metric_amount = serving["metric_serving_amount"]
+      metric_unit = serving["metric_serving_unit"]
+
+      if metric_unit == "g" and metric_amount == "100" do
+        nil
+      else
+        volume_unit = parse_volume_unit(serving["serving_description"])
+        grams = parse_gram_weight(serving)
+
+        if volume_unit && grams && grams > 0 do
+          %{
+            canonical_ingredient_id: canonical_ingredient_id,
+            volume_unit: volume_unit,
+            grams_per_unit: grams,
+            preparation: extract_density_preparation(serving["serving_description"]),
+            source: "fatsecret",
+            source_id: serving["serving_id"],
+            source_url: food_url,
+            confidence: Decimal.new("0.80"),  # FatSecret base confidence
+            retrieved_at: DateTime.utc_now(),
+            notes: serving["serving_description"]
+          }
+        else
+          nil
+        end
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  @doc """
+  Extracts density data from raw FatSecret API response (before parse_food_detail).
+  Use this when you have the raw API response.
+  """
+  def extract_densities_from_raw(raw_food, canonical_ingredient_id) do
+    _food_id = raw_food["food_id"]
+    food_url = raw_food["food_url"]
+    servings = get_servings(raw_food)
+
+    servings
+    |> Enum.map(fn serving ->
+      # Skip per-100g servings (they're for nutrition, not density)
+      metric_amount = serving["metric_serving_amount"]
+      metric_unit = serving["metric_serving_unit"]
+
+      if metric_unit == "g" and metric_amount == "100" do
+        nil
+      else
+        volume_unit = parse_volume_unit(serving["serving_description"])
+        grams = parse_gram_weight(serving)
+
+        if volume_unit && grams && grams > 0 do
+          %{
+            canonical_ingredient_id: canonical_ingredient_id,
+            volume_unit: volume_unit,
+            grams_per_unit: grams,
+            preparation: extract_density_preparation(serving["serving_description"]),
+            source: "fatsecret",
+            source_id: serving["serving_id"],
+            source_url: food_url,
+            confidence: Decimal.new("0.80"),
+            retrieved_at: DateTime.utc_now(),
+            notes: serving["serving_description"]
+          }
+        else
+          nil
+        end
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  @doc """
+  Fetches a food and returns both parsed data and raw response for density extraction.
+  """
+  def get_food_with_raw(food_id, _opts \\ []) do
+    params = %{
+      method: "food.get.v4",
+      food_id: food_id,
+      format: "json"
+    }
+
+    case api_request(params) do
+      {:ok, %{"food" => food}} ->
+        {:ok, %{parsed: parse_food_detail(food), raw: food}}
+
+      {:ok, %{"error" => error}} ->
+        Logger.warning("FatSecret error: #{inspect(error)}")
+        {:error, :not_found}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  # Get servings from parsed response (with atom or string keys)
+  defp get_all_servings_from_response(response) when is_map(response) do
+    # Handle the parsed response structure
+    case response do
+      # If it has the raw "servings" key
+      %{"servings" => %{"serving" => servings}} when is_list(servings) -> servings
+      %{"servings" => %{"serving" => serving}} when is_map(serving) -> [serving]
+      # Try to extract from parsed structure (doesn't include raw servings)
+      _ -> []
+    end
+  end
+
+  # Parse volume unit from serving description
+  defp parse_volume_unit(nil), do: nil
+
+  defp parse_volume_unit(description) when is_binary(description) do
+    desc = String.downcase(description)
+
+    cond do
+      Regex.match?(~r/\bcup\b/, desc) -> "cup"
+      Regex.match?(~r/\b(tbsp|tablespoon)\b/, desc) -> "tbsp"
+      Regex.match?(~r/\b(tsp|teaspoon)\b/, desc) -> "tsp"
+      Regex.match?(~r/\bfl oz\b/, desc) -> "fl oz"
+      Regex.match?(~r/\b(piece|whole|medium|large|small|each)\b/, desc) -> "each"
+      true -> nil
+    end
+  end
+
+  # Parse gram weight from serving
+  defp parse_gram_weight(serving) do
+    # FatSecret includes metric_serving_amount for gram equivalents
+    metric_amount = serving["metric_serving_amount"]
+    metric_unit = serving["metric_serving_unit"]
+
+    if metric_unit == "g" and metric_amount do
+      case parse_number(metric_amount) do
+        nil -> nil
+        num -> num
+      end
+    else
+      nil
+    end
+  end
+
+  # Extract preparation from serving description
+  defp extract_density_preparation(nil), do: nil
+
+  defp extract_density_preparation(description) when is_binary(description) do
+    desc = String.downcase(description)
+
+    cond do
+      String.contains?(desc, "packed") -> "packed"
+      String.contains?(desc, "sifted") -> "sifted"
+      String.contains?(desc, "chopped") -> "chopped"
+      String.contains?(desc, "diced") -> "diced"
+      String.contains?(desc, "minced") -> "minced"
+      String.contains?(desc, "sliced") -> "sliced"
+      String.contains?(desc, "grated") -> "grated"
+      String.contains?(desc, "shredded") -> "shredded"
+      true -> nil
+    end
+  end
 end
