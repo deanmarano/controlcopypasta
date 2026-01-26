@@ -37,6 +37,9 @@
 		try {
 			const result = await ingredientsApi.get(token, id);
 			ingredient = result.data;
+			// Select the primary nutrition source by default
+			const primaryIndex = ingredient.all_nutrition?.findIndex(n => n.is_primary) ?? -1;
+			selectedSourceIndex = primaryIndex >= 0 ? primaryIndex : 0;
 		} catch {
 			error = 'Failed to load ingredient';
 		} finally {
