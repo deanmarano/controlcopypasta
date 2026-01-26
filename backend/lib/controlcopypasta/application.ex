@@ -7,18 +7,25 @@ defmodule Controlcopypasta.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      ControlcopypastaWeb.Telemetry,
-      Controlcopypasta.Repo,
-      {DNSCluster, query: Application.get_env(:controlcopypasta, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: Controlcopypasta.PubSub},
-      # Browser pool for scraping
-      Controlcopypasta.Browser.Pool,
-      # Oban job queue for background scraping
-      {Oban, Application.fetch_env!(:controlcopypasta, Oban)},
-      # Start to serve requests, typically the last entry
-      ControlcopypastaWeb.Endpoint
-    ]
+    children =
+      [
+        ControlcopypastaWeb.Telemetry,
+        Controlcopypasta.Repo,
+        {DNSCluster, query: Application.get_env(:controlcopypasta, :dns_cluster_query) || :ignore},
+        {Phoenix.PubSub, name: Controlcopypasta.PubSub}
+      ] ++
+        # Browser pool for scraping (optional - disabled if DISABLE_BROWSER_POOL is set)
+        if System.get_env("DISABLE_BROWSER_POOL") do
+          []
+        else
+          [Controlcopypasta.Browser.Pool]
+        end ++
+        [
+          # Oban job queue for background scraping
+          {Oban, Application.fetch_env!(:controlcopypasta, Oban)},
+          # Start to serve requests, typically the last entry
+          ControlcopypastaWeb.Endpoint
+        ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
