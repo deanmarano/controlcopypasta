@@ -100,6 +100,10 @@ defmodule Controlcopypasta.Scraper.LinkExtractor do
       uri.scheme not in ["http", "https"] ->
         false
 
+      # Skip URLs with fragments (comments, anchors, etc.)
+      not is_nil(uri.fragment) ->
+        false
+
       # Skip common non-recipe paths
       skip_path?(uri.path) ->
         false
