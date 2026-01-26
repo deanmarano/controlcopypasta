@@ -3,7 +3,6 @@ defmodule Controlcopypasta.Accounts.Email do
 
   alias Controlcopypasta.Mailer
 
-  @from_email "noreply@controlcopypasta.local"
   @from_name "ControlCopyPasta"
 
   def send_magic_link(email, token, base_url \\ nil) do
@@ -11,7 +10,7 @@ defmodule Controlcopypasta.Accounts.Email do
 
     new()
     |> to(email)
-    |> from({@from_name, @from_email})
+    |> from({@from_name, from_email()})
     |> subject("Sign in to ControlCopyPasta")
     |> html_body("""
     <h1>Sign in to ControlCopyPasta</h1>
@@ -36,5 +35,19 @@ defmodule Controlcopypasta.Accounts.Email do
   defp build_magic_link_url(token, base_url) do
     frontend_url = base_url || Application.get_env(:controlcopypasta, :frontend_url, "http://localhost:5173")
     "#{frontend_url}/auth/verify?token=#{token}"
+  end
+
+  defp from_email do
+    # Use FROM_EMAIL env var, or derive from PHX_HOST, or fall back to local
+    case System.get_env("FROM_EMAIL") do
+      nil ->
+        case System.get_env("PHX_HOST") do
+          nil -> "noreply@controlcopypasta.local"
+          host -> "noreply@#{host}"
+        end
+
+      email ->
+        email
+    end
   end
 end
