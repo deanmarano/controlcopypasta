@@ -64,7 +64,7 @@ config :controlcopypasta, :scraping,
   # Random additional delay up to this amount (ms)
   max_random_delay_ms: 5000,
   # Maximum pages to scrape per hour per domain
-  max_per_hour: 75,
+  max_per_hour: 150,
   # Maximum pages to scrape per day per domain
   max_per_day: 2500
 
