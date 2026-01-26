@@ -81,24 +81,33 @@ defmodule ControlcopypastaWeb.RecipeJSON do
     }
   end
 
+  # Format nutrition data - handles both range maps and scalar values
   defp nutrition_data(nutrients) do
     %{
-      calories: nutrients[:calories],
-      protein_g: nutrients[:protein_g],
-      fat_total_g: nutrients[:fat_total_g],
-      fat_saturated_g: nutrients[:fat_saturated_g],
-      carbohydrates_g: nutrients[:carbohydrates_g],
-      fiber_g: nutrients[:fiber_g],
-      sugar_g: nutrients[:sugar_g],
-      sodium_mg: nutrients[:sodium_mg],
-      cholesterol_mg: nutrients[:cholesterol_mg],
-      potassium_mg: nutrients[:potassium_mg],
-      calcium_mg: nutrients[:calcium_mg],
-      iron_mg: nutrients[:iron_mg],
-      vitamin_a_mcg: nutrients[:vitamin_a_mcg],
-      vitamin_c_mg: nutrients[:vitamin_c_mg],
-      vitamin_d_mcg: nutrients[:vitamin_d_mcg]
+      calories: format_nutrient_value(nutrients[:calories]),
+      protein_g: format_nutrient_value(nutrients[:protein_g]),
+      fat_total_g: format_nutrient_value(nutrients[:fat_total_g]),
+      fat_saturated_g: format_nutrient_value(nutrients[:fat_saturated_g]),
+      carbohydrates_g: format_nutrient_value(nutrients[:carbohydrates_g]),
+      fiber_g: format_nutrient_value(nutrients[:fiber_g]),
+      sugar_g: format_nutrient_value(nutrients[:sugar_g]),
+      sodium_mg: format_nutrient_value(nutrients[:sodium_mg]),
+      cholesterol_mg: format_nutrient_value(nutrients[:cholesterol_mg]),
+      potassium_mg: format_nutrient_value(nutrients[:potassium_mg]),
+      calcium_mg: format_nutrient_value(nutrients[:calcium_mg]),
+      iron_mg: format_nutrient_value(nutrients[:iron_mg]),
+      vitamin_a_mcg: format_nutrient_value(nutrients[:vitamin_a_mcg]),
+      vitamin_c_mg: format_nutrient_value(nutrients[:vitamin_c_mg]),
+      vitamin_d_mcg: format_nutrient_value(nutrients[:vitamin_d_mcg])
     }
+  end
+
+  # Format a nutrient value - pass through range maps, convert scalars
+  defp format_nutrient_value(%{min: _, best: _, max: _, confidence: _} = range), do: range
+  defp format_nutrient_value(nil), do: nil
+  defp format_nutrient_value(value) when is_number(value) do
+    # Legacy scalar value - convert to range format for consistency
+    %{min: value, best: value, max: value, confidence: 1.0}
   end
 
   defp ingredient_nutrition_data(ing) do
@@ -108,12 +117,14 @@ defmodule ControlcopypastaWeb.RecipeJSON do
       canonical_name: ing.canonical_name,
       canonical_id: ing.canonical_id,
       quantity: ing.quantity,
+      quantity_min: ing[:quantity_min],
+      quantity_max: ing[:quantity_max],
       unit: ing.unit,
-      grams: ing.grams,
-      calories: ing.calories,
-      protein_g: ing.protein_g,
-      carbohydrates_g: ing.carbohydrates_g,
-      fat_total_g: ing.fat_total_g,
+      grams: format_nutrient_value(ing.grams),
+      calories: format_nutrient_value(ing.calories),
+      protein_g: format_nutrient_value(ing.protein_g),
+      carbohydrates_g: format_nutrient_value(ing.carbohydrates_g),
+      fat_total_g: format_nutrient_value(ing.fat_total_g),
       error: ing.error
     }
   end

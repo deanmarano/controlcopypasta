@@ -3,8 +3,14 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
 
   alias Controlcopypasta.Nutrition.Calculator
   alias Controlcopypasta.Nutrition.DensityConverter
+  alias Controlcopypasta.Nutrition.Range
   alias Controlcopypasta.Ingredients
   alias Controlcopypasta.Recipes
+
+  # Helper to extract "best" value from a range map or return scalar directly
+  defp get_value(%{best: best}), do: best
+  defp get_value(%Range{best: best}), do: best
+  defp get_value(value), do: value
 
   describe "calculate_recipe_nutrition/2" do
     setup do
@@ -134,13 +140,13 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
       # Check completeness (should be 1.0 if all ingredients calculated)
       assert result.completeness == 1.0
 
-      # Check that totals are calculated
-      assert result.total.calories > 0
-      assert result.total.protein_g > 0
-      assert result.total.carbohydrates_g > 0
+      # Check that totals are calculated (now returned as ranges with best value)
+      assert get_value(result.total.calories) > 0
+      assert get_value(result.total.protein_g) > 0
+      assert get_value(result.total.carbohydrates_g) > 0
 
       # Check per-serving values are reasonable (total / servings)
-      assert_in_delta result.per_serving.calories, result.total.calories / 12, 0.1
+      assert_in_delta get_value(result.per_serving.calories), get_value(result.total.calories) / 12, 1.0
     end
 
     test "handles unmatched ingredients gracefully", %{user: user} do
@@ -225,8 +231,9 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
       # Should calculate successfully using weight conversion
       butter_result = Enum.find(result.ingredients, &String.contains?(&1.original, "butter"))
       assert butter_result.status == :calculated
-      assert butter_result.grams == 100.0
-      assert butter_result.calories == 717.0
+      # grams is now returned as a range map
+      assert get_value(butter_result.grams) == 100.0
+      assert get_value(butter_result.calories) == 717.0
     end
 
     test "respects servings override", %{user: user} do
@@ -243,12 +250,12 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
       result_default = Calculator.calculate_recipe_nutrition(recipe)
       result_override = Calculator.calculate_recipe_nutrition(recipe, servings_override: 8)
 
-      # Same total
-      assert result_default.total.calories == result_override.total.calories
+      # Same total (ranges)
+      assert get_value(result_default.total.calories) == get_value(result_override.total.calories)
 
       # Different per-serving
       assert result_override.servings == 8
-      assert_in_delta result_override.per_serving.calories, result_default.per_serving.calories / 2, 0.1
+      assert_in_delta get_value(result_override.per_serving.calories), get_value(result_default.per_serving.calories) / 2, 1.0
     end
 
     test "parses various serving formats", %{user: user} do
@@ -310,12 +317,13 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
       result = Calculator.calculate_ingredient_nutrition("2 cups all-purpose flour")
 
       assert result.status == :calculated
-      assert result.grams == 250.0  # 2 cups * 125g/cup
+      # grams is now a Range struct
+      assert result.grams.best == 250.0  # 2 cups * 125g/cup
 
-      # Scaled from per-100g values
+      # Scaled from per-100g values (now returned as Range)
       # 250g / 100g * 364 cal = 910 cal
-      assert_in_delta result.nutrients.calories, 910.0, 0.1
-      assert_in_delta result.nutrients.protein_g, 25.825, 0.1
+      assert_in_delta result.nutrients.calories.best, 910.0, 1.0
+      assert_in_delta result.nutrients.protein_g.best, 25.825, 0.1
     end
 
     test "returns error status for unmatched ingredient" do

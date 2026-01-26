@@ -14,9 +14,17 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
      b. Base density for ingredient (no preparation)
      c. Category average density
      d. Return error if no density available
+
+  ## Range Support
+
+  The `to_grams_range/6` function returns a Range struct that accounts for:
+  - Quantity ranges from the recipe (e.g., "5 to 6 ounces")
+  - Density variations based on ingredient category
+  - Preparation-based adjustments (packed vs loose, etc.)
   """
 
   alias Controlcopypasta.Ingredients
+  alias Controlcopypasta.Nutrition.{Range, DensityRanges}
 
   # Weight conversions to grams
   @weight_to_grams %{
@@ -156,6 +164,199 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
       # Unknown unit
       true ->
         {:error, :invalid_unit}
+    end
+  end
+
+  @doc """
+  Converts a quantity range to a grams range, accounting for density variation.
+
+  This function combines:
+  - Quantity ranges from the recipe (qty_min to qty_max)
+  - Density variations based on ingredient category and preparation
+
+  ## Parameters
+
+  - `canonical_id` - The canonical ingredient ID
+  - `qty` - The best quantity estimate
+  - `qty_min` - Minimum quantity (from recipe range like "5 to 6")
+  - `qty_max` - Maximum quantity
+  - `unit` - The unit of measurement
+  - `opts` - Options:
+    - `:preparation` - The preparation method
+    - `:category` - The ingredient category
+
+  ## Returns
+
+  - `{:ok, Range.t()}` - A range with min/best/max grams
+  - `{:error, reason}` - If conversion fails
+
+  ## Examples
+
+      iex> to_grams_range(salmon_id, 5.5, 5.0, 6.0, "oz", category: "seafood")
+      {:ok, %Range{min: 140.0, best: 156.0, max: 170.0, confidence: 1.0}}
+  """
+  def to_grams_range(canonical_id, qty, qty_min, qty_max, unit, opts \\ [])
+
+  def to_grams_range(_canonical_id, nil, _qty_min, _qty_max, _unit, _opts), do: {:error, :no_quantity}
+
+  # Handle nil/count units (e.g., "3 eggs" with no unit)
+  def to_grams_range(canonical_id, qty, qty_min, qty_max, nil, opts) do
+    convert_count_to_grams_range(canonical_id, qty, qty_min, qty_max, opts)
+  end
+
+  def to_grams_range(canonical_id, qty, qty_min, qty_max, unit, opts) do
+    normalized_unit = normalize_unit(unit)
+    # Default min/max to qty if not specified
+    qty_min = qty_min || qty
+    qty_max = qty_max || qty
+
+    cond do
+      # Direct weight conversion - very low variation
+      weight_unit?(normalized_unit) ->
+        convert_weight_to_grams_range(qty, qty_min, qty_max, normalized_unit)
+
+      # Volume unit - apply category-based density variation
+      volume_unit?(normalized_unit) ->
+        convert_volume_to_grams_range(canonical_id, qty, qty_min, qty_max, normalized_unit, opts)
+
+      # Count units (each, whole, etc.)
+      count_unit?(normalized_unit) ->
+        convert_count_to_grams_range(canonical_id, qty, qty_min, qty_max, opts)
+
+      # Unknown unit
+      true ->
+        {:error, :invalid_unit}
+    end
+  end
+
+  # Weight conversion with range - weights have minimal variation
+  defp convert_weight_to_grams_range(qty, qty_min, qty_max, unit) do
+    case Map.get(@weight_to_grams, unit) do
+      nil ->
+        {:error, :invalid_unit}
+
+      factor ->
+        range = Range.from_range(
+          to_float(qty_min) * factor,
+          to_float(qty) * factor,
+          to_float(qty_max) * factor
+        )
+        {:ok, range}
+    end
+  end
+
+  # Volume conversion with range - applies density variation
+  defp convert_volume_to_grams_range(canonical_id, qty, qty_min, qty_max, unit, opts) do
+    preparation = Keyword.get(opts, :preparation)
+    category = Keyword.get(opts, :category)
+
+    canonical_volume_unit = Map.get(@volume_unit_canonical, unit)
+
+    # Try to get density from database
+    case get_density_grams_per_unit(canonical_id, canonical_volume_unit, preparation) do
+      {:ok, grams_per_unit} ->
+        # Get density range with category variation
+        density_range = DensityRanges.density_to_range(grams_per_unit, category, preparation)
+
+        # Convert quantity range to base unit
+        qty_min_base = convert_volume_quantity(qty_min, unit, canonical_volume_unit)
+        qty_base = convert_volume_quantity(qty, unit, canonical_volume_unit)
+        qty_max_base = convert_volume_quantity(qty_max, unit, canonical_volume_unit)
+
+        # Create quantity range
+        qty_range = Range.from_range(qty_min_base, qty_base, qty_max_base)
+
+        # Multiply quantity range by density range
+        grams_range = Range.multiply_ranges(qty_range, density_range)
+
+        {:ok, grams_range}
+
+      {:error, :not_found} ->
+        # Try to derive from cup density
+        derive_from_cup_density_range(canonical_id, qty, qty_min, qty_max, unit, canonical_volume_unit, category)
+    end
+  end
+
+  defp derive_from_cup_density_range(canonical_id, qty, qty_min, qty_max, _unit, canonical_volume_unit, category) do
+    # If we don't have the exact unit, try to find cup density and derive
+    case Ingredients.get_any_density(canonical_id, "cup") do
+      {:ok, cup_density} ->
+        grams_per_cup = Decimal.to_float(cup_density.grams_per_unit)
+        density_range = DensityRanges.density_to_range(grams_per_cup, category, nil)
+
+        # Convert quantity to cups
+        qty_min_cups = convert_to_cups(qty_min, canonical_volume_unit)
+        qty_cups = convert_to_cups(qty, canonical_volume_unit)
+        qty_max_cups = convert_to_cups(qty_max, canonical_volume_unit)
+
+        qty_range = Range.from_range(qty_min_cups, qty_cups, qty_max_cups)
+        grams_range = Range.multiply_ranges(qty_range, density_range)
+
+        {:ok, grams_range}
+
+      {:error, :not_found} ->
+        # Fall back to category average
+        if category do
+          grams_per_cup = category_density(category)
+          density_range = DensityRanges.density_to_range(grams_per_cup, category, nil)
+
+          qty_min_cups = convert_to_cups(qty_min, canonical_volume_unit)
+          qty_cups = convert_to_cups(qty, canonical_volume_unit)
+          qty_max_cups = convert_to_cups(qty_max, canonical_volume_unit)
+
+          qty_range = Range.from_range(qty_min_cups, qty_cups, qty_max_cups)
+          grams_range = Range.multiply_ranges(qty_range, density_range)
+
+          {:ok, grams_range}
+        else
+          {:error, :no_density}
+        end
+    end
+  end
+
+  # Count-based conversion with range
+  defp convert_count_to_grams_range(canonical_id, qty, qty_min, qty_max, opts) do
+    category = Keyword.get(opts, :category)
+    canonical_name = Keyword.get(opts, :canonical_name)
+
+    # Try "each" first, then "whole"
+    case Ingredients.get_density(canonical_id, "each", nil) do
+      {:ok, density} ->
+        grams_per_item = Decimal.to_float(density.grams_per_unit)
+
+        # Try to get explicit count item range, or use density with category variation
+        density_range =
+          if canonical_name do
+            DensityRanges.count_item_range_or_fallback(canonical_name, grams_per_item, category)
+          else
+            DensityRanges.density_to_range(grams_per_item, category, nil)
+          end
+
+        qty_range = Range.from_range(to_float(qty_min), to_float(qty), to_float(qty_max))
+        grams_range = Range.multiply_ranges(qty_range, density_range)
+
+        {:ok, grams_range}
+
+      {:error, :not_found} ->
+        case Ingredients.get_density(canonical_id, "whole", nil) do
+          {:ok, density} ->
+            grams_per_item = Decimal.to_float(density.grams_per_unit)
+
+            density_range =
+              if canonical_name do
+                DensityRanges.count_item_range_or_fallback(canonical_name, grams_per_item, category)
+              else
+                DensityRanges.density_to_range(grams_per_item, category, nil)
+              end
+
+            qty_range = Range.from_range(to_float(qty_min), to_float(qty), to_float(qty_max))
+            grams_range = Range.multiply_ranges(qty_range, density_range)
+
+            {:ok, grams_range}
+
+          {:error, :not_found} ->
+            {:error, :no_count_density}
+        end
     end
   end
 

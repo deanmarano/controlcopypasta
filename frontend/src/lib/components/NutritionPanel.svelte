@@ -1,19 +1,63 @@
 <script lang="ts">
-	import type { RecipeNutrition, NutrientData } from '$lib/api/client';
+	import type { RecipeNutrition, NutrientData, NutrientRange } from '$lib/api/client';
+	import { getNutrientValue, isNutrientRange } from '$lib/api/client';
+	import NutrientRangeBar from './NutrientRangeBar.svelte';
 
 	interface Props {
 		nutrition: RecipeNutrition | null;
 		loading?: boolean;
 		error?: string;
+		showRangeBars?: boolean;
 	}
 
-	let { nutrition, loading = false, error = '' }: Props = $props();
+	let { nutrition, loading = false, error = '', showRangeBars = true }: Props = $props();
 
 	let showIngredientDetails = $state(false);
 
-	function formatNumber(value: number | null, decimals: number = 0): string {
-		if (value === null || value === undefined) return '-';
-		return value.toFixed(decimals);
+	// Extract "best" value from a NutrientRange or scalar
+	function getValue(value: NutrientRange | number | null): number | null {
+		return getNutrientValue(value);
+	}
+
+	function formatNumber(value: NutrientRange | number | null, decimals: number = 0): string {
+		const num = getValue(value);
+		if (num === null || num === undefined) return '-';
+		return num.toFixed(decimals);
+	}
+
+	// Format a range showing min-max if there's meaningful variation
+	function formatRange(value: NutrientRange | number | null, decimals: number = 0): string {
+		if (value === null) return '-';
+		if (!isNutrientRange(value)) return value.toFixed(decimals);
+
+		const range = value;
+		if (range.best === null) return '-';
+
+		// If min and max are the same (or very close), just show the single value
+		if (range.min === null || range.max === null ||
+		    Math.abs(range.max - range.min) < 0.5) {
+			return range.best.toFixed(decimals);
+		}
+
+		const minStr = range.min.toFixed(decimals);
+		const maxStr = range.max.toFixed(decimals);
+		const bestStr = range.best.toFixed(decimals);
+
+		return `${bestStr} (${minStr}-${maxStr})`;
+	}
+
+	// Get NutrientRange object from a value (converts scalars to range format)
+	function toRange(value: NutrientRange | number | null): NutrientRange | null {
+		if (value === null) return null;
+		if (isNutrientRange(value)) return value;
+		return { min: value, best: value, max: value, confidence: 1.0 };
+	}
+
+	// Check if a nutrient has meaningful range variation
+	function hasRange(value: NutrientRange | number | null): boolean {
+		if (value === null || !isNutrientRange(value)) return false;
+		if (value.min === null || value.max === null) return false;
+		return Math.abs(value.max - value.min) >= 0.5;
 	}
 
 	function getStatusColor(status: string): string {
@@ -67,12 +111,31 @@
 		potassium_mg: 4700
 	};
 
-	function getDailyPercent(key: keyof NutrientData, value: number | null): string | null {
+	function getDailyPercent(key: keyof NutrientData, value: NutrientRange | number | null): string | null {
 		const dv = dailyValues[key];
-		if (!dv || value === null) return null;
-		const percent = Math.round((value / dv) * 100);
+		const num = getValue(value);
+		if (!dv || num === null) return null;
+		const percent = Math.round((num / dv) * 100);
 		return `${percent}%`;
 	}
+
+	// Get average confidence across all nutrient ranges
+	const avgConfidence = $derived(() => {
+		if (!nutrition) return 1.0;
+		const nutrients = nutrition.per_serving;
+		let total = 0;
+		let count = 0;
+
+		for (const key of Object.keys(nutrients) as (keyof NutrientData)[]) {
+			const value = nutrients[key];
+			if (isNutrientRange(value) && value.confidence !== undefined) {
+				total += value.confidence;
+				count++;
+			}
+		}
+
+		return count > 0 ? total / count : 1.0;
+	});
 </script>
 
 {#if loading}
@@ -108,7 +171,19 @@
 			<div class="calories-row">
 				<span class="label">Calories</span>
 				<span class="value">{formatNumber(nutrition.per_serving.calories)}</span>
+				{#if hasRange(nutrition.per_serving.calories)}
+					<span class="range-indicator" title="Range: {formatRange(nutrition.per_serving.calories)}">~</span>
+				{/if}
 			</div>
+
+			{#if showRangeBars && toRange(nutrition.per_serving.calories)}
+				{@const calRange = toRange(nutrition.per_serving.calories)}
+				{#if calRange}
+					<div class="calories-range-bar">
+						<NutrientRangeBar range={calRange} unit="" label="" maxValue={2000} />
+					</div>
+				{/if}
+			{/if}
 
 			<div class="divider thick"></div>
 
@@ -187,6 +262,12 @@
 				</div>
 			</div>
 
+			{#if avgConfidence() < 0.9}
+				<div class="confidence-note">
+					Data confidence: {Math.round(avgConfidence() * 100)}%
+				</div>
+			{/if}
+
 			<div class="footnote">
 				*The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.
 			</div>
@@ -206,6 +287,7 @@
 					<thead>
 						<tr>
 							<th>Ingredient</th>
+							<th class="num">Qty</th>
 							<th class="num">Grams</th>
 							<th class="num">Cal</th>
 							<th>Status</th>
@@ -216,6 +298,17 @@
 							<tr class="status-{ing.status}">
 								<td class="ingredient-name" title={ing.original}>
 									{ing.canonical_name || ing.original}
+								</td>
+								<td class="num qty-cell">
+									{#if ing.quantity}
+										{ing.quantity}
+										{#if ing.quantity_min !== ing.quantity_max && ing.quantity_min && ing.quantity_max}
+											<span class="qty-range">({ing.quantity_min}-{ing.quantity_max})</span>
+										{/if}
+										{#if ing.unit}{ing.unit}{/if}
+									{:else}
+										-
+									{/if}
 								</td>
 								<td class="num">{ing.grams ? formatNumber(ing.grams, 0) : '-'}</td>
 								<td class="num">{ing.calories ? formatNumber(ing.calories, 0) : '-'}</td>
@@ -230,10 +323,11 @@
 					<tfoot>
 						<tr class="total-row">
 							<td><strong>Total</strong></td>
+							<td class="num"></td>
 							<td class="num">
 								<strong>
 									{formatNumber(
-										nutrition.ingredients.reduce((sum, i) => sum + (i.grams || 0), 0),
+										nutrition.ingredients.reduce((sum, i) => sum + (getValue(i.grams) || 0), 0),
 										0
 									)}
 								</strong>
@@ -494,6 +588,34 @@
 
 	.total-row td {
 		border-top: 2px solid var(--border-default);
+	}
+
+	.range-indicator {
+		color: var(--color-pasta-500);
+		font-size: var(--text-xs);
+		margin-left: var(--space-1);
+	}
+
+	.calories-range-bar {
+		margin: var(--space-1) 0;
+	}
+
+	.confidence-note {
+		font-size: var(--text-xs);
+		color: var(--text-muted);
+		text-align: right;
+		padding: var(--space-1) 0;
+		font-style: italic;
+	}
+
+	.qty-cell {
+		white-space: nowrap;
+	}
+
+	.qty-range {
+		font-size: var(--text-xs);
+		color: var(--text-muted);
+		margin-left: 2px;
 	}
 
 	/* Print styles */

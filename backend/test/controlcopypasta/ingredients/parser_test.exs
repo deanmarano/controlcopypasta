@@ -37,10 +37,35 @@ defmodule Controlcopypasta.Ingredients.ParserTest do
       assert result.unit == "cup"
     end
 
-    test "parses range quantities as average" do
+    test "parses range quantities with hyphen and preserves min/max" do
       result = Parser.parse("2-3 cups flour", match_canonical: false)
       assert result.quantity == 2.5
+      assert result.quantity_min == 2.0
+      assert result.quantity_max == 3.0
       assert result.unit == "cup"
+    end
+
+    test "parses range with 'or' pattern" do
+      result = Parser.parse("2 or 3 cups flour", match_canonical: false)
+      assert result.quantity == 2.5
+      assert result.quantity_min == 2.0
+      assert result.quantity_max == 3.0
+      assert result.unit == "cup"
+    end
+
+    test "parses range with 'to' pattern" do
+      result = Parser.parse("5 to 6 ounces salmon", match_canonical: false)
+      assert result.quantity == 5.5
+      assert result.quantity_min == 5.0
+      assert result.quantity_max == 6.0
+      assert result.unit == "oz"
+    end
+
+    test "single quantities have equal min/max" do
+      result = Parser.parse("2 cups flour", match_canonical: false)
+      assert result.quantity == 2.0
+      assert result.quantity_min == 2.0
+      assert result.quantity_max == 2.0
     end
 
     test "handles no quantity" do

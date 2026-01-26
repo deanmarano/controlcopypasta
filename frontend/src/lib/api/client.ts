@@ -230,22 +230,64 @@ export interface RecipeComparison {
 }
 
 // Recipe Nutrition types
+
+// A nutrient range with uncertainty tracking
+export interface NutrientRange {
+  min: number | null;
+  best: number | null;
+  max: number | null;
+  confidence: number;
+}
+
+// Helper to extract the "best" value from a range or scalar
+export function getNutrientValue(value: NutrientRange | number | null): number | null {
+  if (value === null) return null;
+  if (typeof value === 'number') return value;
+  return value.best;
+}
+
+// Check if a value is a NutrientRange
+export function isNutrientRange(value: unknown): value is NutrientRange {
+  return typeof value === 'object' && value !== null &&
+    'min' in value && 'best' in value && 'max' in value && 'confidence' in value;
+}
+
+// Nutrient data with range support - each nutrient can be a range or scalar
 export interface NutrientData {
-  calories: number | null;
-  protein_g: number | null;
-  fat_total_g: number | null;
-  fat_saturated_g: number | null;
-  carbohydrates_g: number | null;
-  fiber_g: number | null;
-  sugar_g: number | null;
-  sodium_mg: number | null;
-  cholesterol_mg: number | null;
-  potassium_mg: number | null;
-  calcium_mg: number | null;
-  iron_mg: number | null;
-  vitamin_a_mcg: number | null;
-  vitamin_c_mg: number | null;
-  vitamin_d_mcg: number | null;
+  calories: NutrientRange | number | null;
+  protein_g: NutrientRange | number | null;
+  fat_total_g: NutrientRange | number | null;
+  fat_saturated_g: NutrientRange | number | null;
+  carbohydrates_g: NutrientRange | number | null;
+  fiber_g: NutrientRange | number | null;
+  sugar_g: NutrientRange | number | null;
+  sodium_mg: NutrientRange | number | null;
+  cholesterol_mg: NutrientRange | number | null;
+  potassium_mg: NutrientRange | number | null;
+  calcium_mg: NutrientRange | number | null;
+  iron_mg: NutrientRange | number | null;
+  vitamin_a_mcg: NutrientRange | number | null;
+  vitamin_c_mg: NutrientRange | number | null;
+  vitamin_d_mcg: NutrientRange | number | null;
+}
+
+// All-range version of NutrientData for strongly-typed usage
+export interface NutrientDataWithRanges {
+  calories: NutrientRange | null;
+  protein_g: NutrientRange | null;
+  fat_total_g: NutrientRange | null;
+  fat_saturated_g: NutrientRange | null;
+  carbohydrates_g: NutrientRange | null;
+  fiber_g: NutrientRange | null;
+  sugar_g: NutrientRange | null;
+  sodium_mg: NutrientRange | null;
+  cholesterol_mg: NutrientRange | null;
+  potassium_mg: NutrientRange | null;
+  calcium_mg: NutrientRange | null;
+  iron_mg: NutrientRange | null;
+  vitamin_a_mcg: NutrientRange | null;
+  vitamin_c_mg: NutrientRange | null;
+  vitamin_d_mcg: NutrientRange | null;
 }
 
 export interface IngredientNutritionResult {
@@ -254,12 +296,14 @@ export interface IngredientNutritionResult {
   canonical_name: string | null;
   canonical_id: string | null;
   quantity: number | null;
+  quantity_min: number | null;
+  quantity_max: number | null;
   unit: string | null;
-  grams: number | null;
-  calories: number | null;
-  protein_g: number | null;
-  carbohydrates_g: number | null;
-  fat_total_g: number | null;
+  grams: NutrientRange | number | null;
+  calories: NutrientRange | number | null;
+  protein_g: NutrientRange | number | null;
+  carbohydrates_g: NutrientRange | number | null;
+  fat_total_g: NutrientRange | number | null;
   error: string | null;
 }
 

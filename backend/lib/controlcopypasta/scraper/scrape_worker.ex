@@ -26,6 +26,12 @@ defmodule Controlcopypasta.Scraper.ScrapeWorker do
     end
   end
 
+  def perform(%Oban.Job{args: %{"url" => url}}) do
+    # Fallback for jobs without scrape_url_id (shouldn't happen normally)
+    Logger.warning("Scrape job missing scrape_url_id for URL: #{url}")
+    {:error, "Missing scrape_url_id"}
+  end
+
   defp do_scrape(url, scrape_url_id) do
     # Apply polite delay before fetching
     apply_polite_delay()
@@ -69,12 +75,6 @@ defmodule Controlcopypasta.Scraper.ScrapeWorker do
       error ->
         handle_failure(scrape_url_id, inspect(error))
     end
-  end
-
-  def perform(%Oban.Job{args: %{"url" => url}}) do
-    # Fallback for jobs without scrape_url_id (shouldn't happen normally)
-    Logger.warning("Scrape job missing scrape_url_id for URL: #{url}")
-    {:error, "Missing scrape_url_id"}
   end
 
   defp parse_and_save_recipe(html, url) do

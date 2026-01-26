@@ -35,6 +35,8 @@ defmodule Controlcopypasta.Ingredients.Parser do
       :canonical_id,
       :form,
       :quantity,
+      :quantity_min,
+      :quantity_max,
       :unit,
       :container,
       :alt_quantity,
@@ -52,6 +54,8 @@ defmodule Controlcopypasta.Ingredients.Parser do
             canonical_id: String.t() | nil,
             form: String.t() | nil,
             quantity: float() | nil,
+            quantity_min: float() | nil,
+            quantity_max: float() | nil,
             unit: String.t() | nil,
             container: map() | nil,
             alt_quantity: float() | nil,
@@ -332,8 +336,8 @@ defmodule Controlcopypasta.Ingredients.Parser do
   defp parse_ingredient(text, original, opts) do
     text = normalize_text(text)
 
-    # Extract components
-    {quantity, container, rest} = extract_quantity_and_container(text)
+    # Extract components (with quantity range support)
+    {quantity, quantity_min, quantity_max, container, rest} = extract_quantity_and_container(text)
     {unit, rest} = extract_unit(rest)
 
     # If no unit was extracted but we have a container with size_unit, use that
@@ -385,6 +389,8 @@ defmodule Controlcopypasta.Ingredients.Parser do
       canonical_id: canonical_id,
       form: form,
       quantity: quantity,
+      quantity_min: quantity_min,
+      quantity_max: quantity_max,
       unit: unit,
       container: container,
       alt_quantity: alt_quantity,
@@ -411,6 +417,8 @@ defmodule Controlcopypasta.Ingredients.Parser do
       canonical_id: nil,
       form: nil,
       quantity: nil,
+      quantity_min: nil,
+      quantity_max: nil,
       unit: nil,
       container: nil,
       alt_quantity: nil,
@@ -434,6 +442,8 @@ defmodule Controlcopypasta.Ingredients.Parser do
       "form" => parsed.form,
       "quantity" => %{
         "value" => parsed.quantity,
+        "min" => parsed.quantity_min,
+        "max" => parsed.quantity_max,
         "unit" => parsed.unit
       },
       "preparations" => parsed.preparations,
@@ -522,7 +532,8 @@ defmodule Controlcopypasta.Ingredients.Parser do
           size_unit: canonical_size_unit
         }
 
-        {qty_float, container, String.trim(rest)}
+        # Container patterns have exact quantities (no range)
+        {qty_float, qty_float, qty_float, container, String.trim(rest)}
 
       match = Regex.run(container_pattern_no_parens, text) ->
         # "1 14 ounce can coconut milk" -> qty=1, size=14, unit=oz, container=can
@@ -538,16 +549,18 @@ defmodule Controlcopypasta.Ingredients.Parser do
           size_unit: canonical_size_unit
         }
 
-        # Return total quantity with the size unit, plus container info
-        {total_quantity, container, String.trim(rest)}
+        # Container patterns have exact quantities (no range)
+        {total_quantity, total_quantity, total_quantity, container, String.trim(rest)}
 
       true ->
-        # Try standard quantity extraction
-        {qty, rest} = extract_standard_quantity(text)
-        {qty, nil, rest}
+        # Try standard quantity extraction (may return range)
+        {qty, qty_min, qty_max, rest} = extract_standard_quantity(text)
+        {qty, qty_min, qty_max, nil, rest}
     end
   end
 
+  # Returns {quantity_best, quantity_min, quantity_max, rest}
+  # For ranges like "2-3 cups", preserves min/max for uncertainty tracking
   defp extract_standard_quantity(text) do
     cond do
       # Mixed number with + (from Unicode fraction): "2+0.333"
@@ -555,50 +568,53 @@ defmodule Controlcopypasta.Ingredients.Parser do
         [_, whole, frac, rest] = match
         {frac_val, _} = Float.parse(frac)
         quantity = String.to_integer(whole) + frac_val
-        {quantity, String.trim(rest)}
+        {quantity, quantity, quantity, String.trim(rest)}
 
       # Mixed number: "1 1/2" or "1-1/2"
       match = Regex.run(~r/^(\d+)\s*[-\s]\s*(\d+)\/(\d+)\s*(.*)$/, text) ->
         [_, whole, num, den, rest] = match
         quantity = String.to_integer(whole) + String.to_integer(num) / String.to_integer(den)
-        {quantity, String.trim(rest)}
+        {quantity, quantity, quantity, String.trim(rest)}
 
       # Fraction: "1/2"
       match = Regex.run(~r/^(\d+)\/(\d+)\s*(.*)$/, text) ->
         [_, num, den, rest] = match
         quantity = String.to_integer(num) / String.to_integer(den)
-        {quantity, String.trim(rest)}
+        {quantity, quantity, quantity, String.trim(rest)}
 
-      # Range with hyphen: "2-3" (take the average)
+      # Range with hyphen: "2-3" (preserve min/max, use average as best)
       match = Regex.run(~r/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s+(.*)$/, text) ->
         [_, low, high, rest] = match
         {low_f, _} = Float.parse(low)
         {high_f, _} = Float.parse(high)
-        {(low_f + high_f) / 2, String.trim(rest)}
+        best = (low_f + high_f) / 2
+        {best, low_f, high_f, String.trim(rest)}
 
-      # Range with "or": "2 or 3" (take the average)
+      # Range with "or": "2 or 3" (preserve min/max, use average as best)
       match = Regex.run(~r/^(\d+(?:\.\d+)?)\s+or\s+(\d+(?:\.\d+)?)\s+(.*)$/i, text) ->
         [_, low, high, rest] = match
         {low_f, _} = Float.parse(low)
         {high_f, _} = Float.parse(high)
-        {(low_f + high_f) / 2, String.trim(rest)}
+        best = (low_f + high_f) / 2
+        {best, low_f, high_f, String.trim(rest)}
 
-      # Range with "to": "3 to 4" (take the average)
+      # Range with "to": "3 to 4" (preserve min/max, use average as best)
       match = Regex.run(~r/^(\d+(?:\.\d+)?)\s+to\s+(\d+(?:\.\d+)?)\s+(.*)$/i, text) ->
         [_, low, high, rest] = match
         {low_f, _} = Float.parse(low)
         {high_f, _} = Float.parse(high)
-        {(low_f + high_f) / 2, String.trim(rest)}
+        best = (low_f + high_f) / 2
+        {best, low_f, high_f, String.trim(rest)}
 
-      # Decimal or integer: "2.5" or "2"
+      # Decimal or integer: "2.5" or "2" (no range, min = max = best)
       match = Regex.run(~r/^(\d+(?:\.\d+)?)\s*(.*)$/, text) ->
         [_, num, rest] = match
         {val, _} = Float.parse(num)
-        {val, String.trim(rest)}
+        {val, val, val, String.trim(rest)}
 
       # No quantity found
       true ->
-        {nil, text}
+        {nil, nil, nil, text}
     end
   end
 

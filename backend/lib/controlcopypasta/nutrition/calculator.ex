@@ -31,7 +31,7 @@ defmodule Controlcopypasta.Nutrition.Calculator do
 
   alias Controlcopypasta.Ingredients
   alias Controlcopypasta.Ingredients.{Parser, IngredientNutrition}
-  alias Controlcopypasta.Nutrition.DensityConverter
+  alias Controlcopypasta.Nutrition.{DensityConverter, Range}
   alias Controlcopypasta.Recipes.Recipe
 
   # Nutrient fields we calculate
@@ -89,13 +89,28 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     warnings = generate_warnings(ingredient_results, completeness)
 
     %{
-      total: totals,
-      per_serving: per_serving,
+      total: format_nutrients_map(totals),
+      per_serving: format_nutrients_map(per_serving),
       servings: servings,
       completeness: Float.round(completeness, 2),
       ingredients: Enum.map(ingredient_results, &format_ingredient_result/1),
       warnings: warnings
     }
+  end
+
+  # Format all nutrients in a map
+  defp format_nutrients_map(nutrients) do
+    nutrients
+    |> Enum.map(fn {field, value} ->
+      formatted = case value do
+        %Range{best: nil} -> nil
+        %Range{} = range -> format_range_or_value(range)
+        nil -> nil
+        num when is_number(num) -> num
+      end
+      {field, formatted}
+    end)
+    |> Map.new()
   end
 
   @doc """
@@ -153,37 +168,53 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     canonical = Ingredients.get_canonical_ingredient(parsed.canonical_id)
     category = if canonical, do: canonical.category, else: nil
 
-    # Convert to grams
+    # Convert to grams range (accounts for quantity ranges and density variation)
     preparation = List.first(parsed.preparations)
 
-    case DensityConverter.to_grams(
+    case DensityConverter.to_grams_range(
            parsed.canonical_id,
            parsed.quantity,
+           parsed.quantity_min,
+           parsed.quantity_max,
            parsed.unit,
            preparation: preparation,
-           category: category
+           category: category,
+           canonical_name: parsed.canonical_name
          ) do
-      {:ok, grams} ->
+      {:ok, grams_range} ->
         # Look up nutrition data
         case Ingredients.get_nutrition(parsed.canonical_id) do
           {:ok, nutrition} ->
-            nutrients = scale_nutrients(nutrition, grams)
-            %{result | status: :calculated, grams: Float.round(grams, 1), nutrients: nutrients}
+            # Scale nutrients with range propagation
+            nutrients = scale_nutrients_with_range(nutrition, grams_range)
+            %{result |
+              status: :calculated,
+              grams: Range.round_range(grams_range, 1),
+              nutrients: nutrients
+            }
 
           {:error, :not_found} ->
             %{result |
               status: :no_nutrition,
-              grams: Float.round(grams, 1),
+              grams: Range.round_range(grams_range, 1),
               error: "No nutrition data available"
             }
         end
 
       {:error, :no_density} ->
         # We might have nutrition but no density - try alternate method
-        case try_nutrition_with_weight_unit(result, parsed) do
+        case try_nutrition_with_weight_unit_range(result, parsed) do
           {:ok, updated_result} -> updated_result
           :error ->
             %{result | status: :no_density, error: "No density data to convert volume to grams"}
+        end
+
+      {:error, :no_count_density} ->
+        # Same fallback for count items
+        case try_nutrition_with_weight_unit_range(result, parsed) do
+          {:ok, updated_result} -> updated_result
+          :error ->
+            %{result | status: :no_density, error: "No density data for count item"}
         end
 
       {:error, reason} ->
@@ -192,14 +223,24 @@ defmodule Controlcopypasta.Nutrition.Calculator do
   end
 
   # If the unit is already a weight unit, we don't need density
-  defp try_nutrition_with_weight_unit(result, parsed) do
+  defp try_nutrition_with_weight_unit_range(result, parsed) do
     if DensityConverter.weight_unit?(parsed.unit) do
-      case DensityConverter.to_grams(parsed.canonical_id, parsed.quantity, parsed.unit) do
-        {:ok, grams} ->
+      case DensityConverter.to_grams_range(
+             parsed.canonical_id,
+             parsed.quantity,
+             parsed.quantity_min,
+             parsed.quantity_max,
+             parsed.unit
+           ) do
+        {:ok, grams_range} ->
           case Ingredients.get_nutrition(parsed.canonical_id) do
             {:ok, nutrition} ->
-              nutrients = scale_nutrients(nutrition, grams)
-              {:ok, %{result | status: :calculated, grams: Float.round(grams, 1), nutrients: nutrients}}
+              nutrients = scale_nutrients_with_range(nutrition, grams_range)
+              {:ok, %{result |
+                status: :calculated,
+                grams: Range.round_range(grams_range, 1),
+                nutrients: nutrients
+              }}
 
             {:error, _} ->
               :error
@@ -213,40 +254,98 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     end
   end
 
-  # Scale nutrition values from per-100g to actual grams
-  defp scale_nutrients(%IngredientNutrition{} = nutrition, grams) do
+  # Scale nutrition values with range propagation
+  # Takes a grams range and returns nutrient ranges
+  defp scale_nutrients_with_range(%IngredientNutrition{} = nutrition, %Range{} = grams_range) do
     serving_size = Decimal.to_float(nutrition.serving_size_value)
-    scale_factor = grams / serving_size
+
+    # Get the confidence from nutrition source
+    nutrition_confidence = get_nutrition_confidence(nutrition)
 
     @nutrient_fields
     |> Enum.map(fn field ->
       value = Map.get(nutrition, field)
-      scaled = if value, do: Float.round(Decimal.to_float(value) * scale_factor, 2), else: nil
-      {field, scaled}
+
+      range =
+        if value do
+          base_per_serving = Decimal.to_float(value)
+
+          # Calculate scaled values for min/best/max grams
+          scaled_range = Range.from_range(
+            (grams_range.min / serving_size) * base_per_serving,
+            (grams_range.best / serving_size) * base_per_serving,
+            (grams_range.max / serving_size) * base_per_serving,
+            grams_range.confidence * nutrition_confidence
+          )
+
+          Range.round_range(scaled_range, 2)
+        else
+          Range.from_single(nil, 0.0)
+        end
+
+      {field, range}
     end)
     |> Map.new()
   end
 
-  # Sum nutrients across all ingredients
+  # Get confidence from nutrition source
+  defp get_nutrition_confidence(%IngredientNutrition{} = nutrition) do
+    case nutrition.confidence do
+      %Decimal{} = conf -> Decimal.to_float(conf)
+      conf when is_float(conf) -> conf
+      conf when is_integer(conf) -> conf * 1.0
+      nil ->
+        # Fallback based on source
+        case nutrition.source do
+          :usda -> 0.95
+          :manual -> 0.85
+          :fatsecret -> 0.80
+          :open_food_facts -> 0.70
+          :nutritionix -> 0.75
+          :estimated -> 0.30
+          _ -> 0.50
+        end
+    end
+  end
+
+  # Sum nutrients across all ingredients (handles both Range and scalar values)
   defp sum_nutrients(ingredient_results) do
     @nutrient_fields
     |> Enum.map(fn field ->
-      sum =
+      ranges =
         ingredient_results
         |> Enum.map(fn r -> get_in(r, [:nutrients, field]) end)
-        |> Enum.filter(&(&1 != nil))
-        |> Enum.sum()
+        |> Enum.filter(fn
+          %Range{best: nil} -> false
+          %Range{} -> true
+          nil -> false
+          _ -> false
+        end)
 
-      {field, round_number(sum, 2)}
+      sum_range =
+        if Enum.empty?(ranges) do
+          Range.from_single(0, 1.0)
+        else
+          Range.sum_ranges(ranges)
+          |> Range.round_range(2)
+        end
+
+      {field, sum_range}
     end)
     |> Map.new()
   end
 
-  # Divide nutrients by servings
+  # Divide nutrients by servings (handles Range values)
   defp divide_nutrients(totals, servings) when servings > 0 do
     totals
     |> Enum.map(fn {field, value} ->
-      {field, if(value, do: round_number(value / servings, 2), else: nil)}
+      divided =
+        case value do
+          %Range{} = range -> Range.divide(range, servings) |> Range.round_range(2)
+          nil -> nil
+          num when is_number(num) -> round_number(num / servings, 2)
+        end
+      {field, divided}
     end)
     |> Map.new()
   end
@@ -264,7 +363,7 @@ defmodule Controlcopypasta.Nutrition.Calculator do
 
   defp empty_nutrients do
     @nutrient_fields
-    |> Enum.map(&{&1, nil})
+    |> Enum.map(&{&1, Range.from_single(nil, 0.0)})
     |> Map.new()
   end
 
@@ -319,21 +418,42 @@ defmodule Controlcopypasta.Nutrition.Calculator do
   end
 
   defp format_ingredient_result(result) do
+    grams = format_range_or_value(result.grams)
+
     %{
       original: result.original,
       status: result.status,
       canonical_name: get_in(result, [:parsed, Access.key(:canonical_name)]),
       canonical_id: get_in(result, [:parsed, Access.key(:canonical_id)]),
       quantity: get_in(result, [:parsed, Access.key(:quantity)]),
+      quantity_min: get_in(result, [:parsed, Access.key(:quantity_min)]),
+      quantity_max: get_in(result, [:parsed, Access.key(:quantity_max)]),
       unit: get_in(result, [:parsed, Access.key(:unit)]),
-      grams: result.grams,
-      calories: get_in(result, [:nutrients, :calories]),
-      protein_g: get_in(result, [:nutrients, :protein_g]),
-      carbohydrates_g: get_in(result, [:nutrients, :carbohydrates_g]),
-      fat_total_g: get_in(result, [:nutrients, :fat_total_g]),
+      grams: grams,
+      calories: format_nutrient_range(get_in(result, [:nutrients, :calories])),
+      protein_g: format_nutrient_range(get_in(result, [:nutrients, :protein_g])),
+      carbohydrates_g: format_nutrient_range(get_in(result, [:nutrients, :carbohydrates_g])),
+      fat_total_g: format_nutrient_range(get_in(result, [:nutrients, :fat_total_g])),
       error: result.error
     }
   end
+
+  # Format a Range to a map for JSON serialization
+  defp format_range_or_value(%Range{} = range) do
+    %{
+      min: range.min,
+      best: range.best,
+      max: range.max,
+      confidence: range.confidence
+    }
+  end
+
+  defp format_range_or_value(value), do: value
+
+  defp format_nutrient_range(%Range{best: nil}), do: nil
+  defp format_nutrient_range(%Range{} = range), do: format_range_or_value(range)
+  defp format_nutrient_range(nil), do: nil
+  defp format_nutrient_range(value) when is_number(value), do: value
 
   defp parse_servings(nil), do: 1
   defp parse_servings(servings) when is_integer(servings), do: max(servings, 1)
