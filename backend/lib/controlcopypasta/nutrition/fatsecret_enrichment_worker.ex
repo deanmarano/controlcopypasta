@@ -189,6 +189,9 @@ defmodule Controlcopypasta.Nutrition.FatSecretEnrichmentWorker do
   defp save_nutrition(ingredient, food_data) do
     nutrients = food_data.nutrients
 
+    # Demote any existing primary sources for this ingredient
+    demote_existing_primary(ingredient.id)
+
     attrs = %{
       canonical_ingredient_id: ingredient.id,
       source: :fatsecret,
@@ -216,7 +219,7 @@ defmodule Controlcopypasta.Nutrition.FatSecretEnrichmentWorker do
       vitamin_a_mcg: to_decimal(nutrients[:vitamin_a_mcg]),
       vitamin_c_mg: to_decimal(nutrients[:vitamin_c_mg]),
       vitamin_d_mcg: to_decimal(nutrients[:vitamin_d_mcg]),
-      is_primary: false,  # Don't override existing primary source
+      is_primary: true,  # FatSecret is now the preferred source
       retrieved_at: DateTime.utc_now()
     }
 
@@ -229,6 +232,14 @@ defmodule Controlcopypasta.Nutrition.FatSecretEnrichmentWorker do
         Logger.error("Failed to save FatSecret nutrition for #{ingredient.name}: #{inspect(changeset.errors)}")
         {:error, changeset}
     end
+  end
+
+  # Demote any existing primary nutrition sources for this ingredient
+  defp demote_existing_primary(canonical_ingredient_id) do
+    from(n in IngredientNutrition,
+      where: n.canonical_ingredient_id == ^canonical_ingredient_id and n.is_primary == true
+    )
+    |> Repo.update_all(set: [is_primary: false])
   end
 
   # Normalize serving size to per 100g for consistency
