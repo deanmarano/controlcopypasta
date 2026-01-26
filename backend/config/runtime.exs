@@ -123,12 +123,21 @@ if config_env() == :prod do
     config :controlcopypasta, Controlcopypasta.Mailer, smtp_config
   end
 
-  # Oban configuration - allow configuring scraper concurrency
-  scraper_concurrency = String.to_integer(System.get_env("OBAN_SCRAPER_CONCURRENCY") || "2")
+  # Oban configuration - all queues including scraper, fatsecret, density
+  scraper_concurrency = String.to_integer(System.get_env("OBAN_SCRAPER_CONCURRENCY") || "1")
 
   config :controlcopypasta, Oban,
     repo: Controlcopypasta.Repo,
-    queues: [scraper: scraper_concurrency]
+    queues: [scraper: scraper_concurrency, scheduled: 1, fatsecret: 1, density: 1],
+    plugins: [
+      {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)},
+      {Oban.Plugins.Cron,
+       crontab: [
+         {"*/5 * * * *", Controlcopypasta.Workers.ScraperUnpauser},
+         {"0 2 * * *", Controlcopypasta.Workers.ImageSeeder},
+         {"0 3 * * 0", Controlcopypasta.Workers.UsageCountUpdater}
+       ]}
+    ]
 
   # ## SSL Support
   #
