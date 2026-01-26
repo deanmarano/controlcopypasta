@@ -71,8 +71,8 @@ config :controlcopypasta, :scraping,
 # Oban job queue configuration
 config :controlcopypasta, Oban,
   repo: Controlcopypasta.Repo,
-  # Only 1 concurrent scraper to reduce bandwidth/rate
-  queues: [scraper: 1, scheduled: 1],
+  # Only 1 concurrent job per queue to respect rate limits
+  queues: [scraper: 1, scheduled: 1, fatsecret: 1],
   plugins: [
     # Rate limit scraper to ~75/hour (1 job per 48 seconds)
     {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)},
@@ -87,6 +87,12 @@ config :controlcopypasta, Oban,
        {"0 3 * * 0", Controlcopypasta.Workers.UsageCountUpdater}
      ]}
   ]
+
+# FatSecret API rate limiting (free tier: 5,000 calls/month)
+config :controlcopypasta, :fatsecret,
+  max_per_hour: 150,
+  max_per_day: 4000,
+  delay_ms: 3000
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

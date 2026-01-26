@@ -11,15 +11,20 @@ defmodule ControlcopypastaWeb.IngredientJSON do
   @doc """
   Renders a single ingredient with package sizes and nutrition.
   """
+  def show(%{ingredient: ingredient, package_sizes: package_sizes, nutrition: nutrition, all_nutrition: all_nutrition}) do
+    data = ingredient_data(ingredient)
+      |> Map.put(:package_sizes, Enum.map(package_sizes, &package_size_data/1))
+      |> Map.put(:nutrition, if(nutrition, do: nutrition_data(nutrition), else: nil))
+      |> Map.put(:all_nutrition, Enum.map(all_nutrition, &nutrition_data/1))
+
+    %{data: data}
+  end
+
   def show(%{ingredient: ingredient, package_sizes: package_sizes, nutrition: nutrition}) do
     data = ingredient_data(ingredient)
       |> Map.put(:package_sizes, Enum.map(package_sizes, &package_size_data/1))
-
-    data = if nutrition do
-      Map.put(data, :nutrition, nutrition_data(nutrition))
-    else
-      Map.put(data, :nutrition, nil)
-    end
+      |> Map.put(:nutrition, if(nutrition, do: nutrition_data(nutrition), else: nil))
+      |> Map.put(:all_nutrition, [])
 
     %{data: data}
   end
@@ -29,6 +34,7 @@ defmodule ControlcopypastaWeb.IngredientJSON do
       data: ingredient_data(ingredient)
       |> Map.put(:package_sizes, Enum.map(package_sizes, &package_size_data/1))
       |> Map.put(:nutrition, nil)
+      |> Map.put(:all_nutrition, [])
     }
   end
 

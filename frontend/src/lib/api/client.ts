@@ -565,6 +565,7 @@ export interface CanonicalIngredient {
   usage_count: number;
   package_sizes?: PackageSize[];
   nutrition?: IngredientNutrition | null;
+  all_nutrition?: IngredientNutrition[];
 }
 
 // Ingredients API

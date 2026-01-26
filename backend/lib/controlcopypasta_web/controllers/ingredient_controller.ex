@@ -32,11 +32,15 @@ defmodule ControlcopypastaWeb.IngredientController do
 
       ingredient ->
         package_sizes = Ingredients.list_package_sizes(id)
-        nutrition = case Ingredients.get_nutrition(id) do
-          {:ok, n} -> n
-          {:error, :not_found} -> nil
-        end
-        render(conn, :show, ingredient: ingredient, package_sizes: package_sizes, nutrition: nutrition)
+        all_nutrition = Ingredients.list_nutrition_sources(id)
+        # Primary nutrition for backwards compatibility
+        primary_nutrition = Enum.find(all_nutrition, &(&1.is_primary)) || List.first(all_nutrition)
+        render(conn, :show,
+          ingredient: ingredient,
+          package_sizes: package_sizes,
+          nutrition: primary_nutrition,
+          all_nutrition: all_nutrition
+        )
     end
   end
 
@@ -50,11 +54,14 @@ defmodule ControlcopypastaWeb.IngredientController do
     case Ingredients.find_canonical_ingredient(name) do
       {:ok, ingredient} ->
         package_sizes = Ingredients.list_package_sizes(ingredient.id)
-        nutrition = case Ingredients.get_nutrition(ingredient.id) do
-          {:ok, n} -> n
-          {:error, :not_found} -> nil
-        end
-        render(conn, :show, ingredient: ingredient, package_sizes: package_sizes, nutrition: nutrition)
+        all_nutrition = Ingredients.list_nutrition_sources(ingredient.id)
+        primary_nutrition = Enum.find(all_nutrition, &(&1.is_primary)) || List.first(all_nutrition)
+        render(conn, :show,
+          ingredient: ingredient,
+          package_sizes: package_sizes,
+          nutrition: primary_nutrition,
+          all_nutrition: all_nutrition
+        )
 
       {:error, :not_found} ->
         conn

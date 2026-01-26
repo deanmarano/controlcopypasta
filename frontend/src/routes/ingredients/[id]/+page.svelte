@@ -3,11 +3,12 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { ingredients as ingredientsApi, type CanonicalIngredient } from '$lib/api/client';
+	import { ingredients as ingredientsApi, type CanonicalIngredient, type IngredientNutrition } from '$lib/api/client';
 
 	let ingredient = $state<CanonicalIngredient | null>(null);
 	let loading = $state(true);
 	let error = $state('');
+	let selectedSourceIndex = $state(0);
 
 	$effect(() => {
 		if (!$isAuthenticated) {
@@ -50,14 +51,32 @@
 
 	function getSourceLabel(source: string): string {
 		const labels: Record<string, string> = {
-			usda: 'USDA FoodData Central',
-			manual: 'Manually Verified',
+			usda: 'USDA',
+			manual: 'Manual',
 			open_food_facts: 'Open Food Facts',
 			nutritionix: 'Nutritionix',
+			fatsecret: 'FatSecret',
 			estimated: 'Estimated'
 		};
 		return labels[source] || source;
 	}
+
+	function getSourceColor(source: string): string {
+		const colors: Record<string, string> = {
+			usda: 'var(--color-basil-600)',
+			fatsecret: 'var(--color-marinara-600)',
+			open_food_facts: 'var(--color-pasta-600)',
+			manual: 'var(--color-gray-600)',
+			estimated: 'var(--color-gray-400)'
+		};
+		return colors[source] || 'var(--color-gray-500)';
+	}
+
+	let selectedNutrition = $derived(
+		ingredient?.all_nutrition?.[selectedSourceIndex] || ingredient?.nutrition || null
+	);
+
+	let nutritionSources = $derived(ingredient?.all_nutrition || []);
 </script>
 
 <div class="ingredient-page">
@@ -94,14 +113,32 @@
 		<div class="content-grid">
 			<!-- Nutrition Facts Panel -->
 			<div class="nutrition-panel">
+				{#if nutritionSources.length > 1}
+					<div class="source-tabs">
+						{#each nutritionSources as source, index}
+							<button
+								class="source-tab"
+								class:active={selectedSourceIndex === index}
+								style="--source-color: {getSourceColor(source.source)}"
+								onclick={() => selectedSourceIndex = index}
+							>
+								{getSourceLabel(source.source)}
+								{#if source.is_primary}
+									<span class="primary-badge">Primary</span>
+								{/if}
+							</button>
+						{/each}
+					</div>
+				{/if}
+
 				<div class="nutrition-label">
 					<h2>Nutrition Facts</h2>
-					{#if ingredient.nutrition}
+					{#if selectedNutrition}
 						<p class="serving-size">
-							Serving Size: {ingredient.nutrition.serving_size_value}{ingredient.nutrition
+							Serving Size: {selectedNutrition.serving_size_value}{ingredient.nutrition
 								.serving_size_unit}
-							{#if ingredient.nutrition.serving_description}
-								({ingredient.nutrition.serving_description})
+							{#if selectedNutrition.serving_description}
+								({selectedNutrition.serving_description})
 							{/if}
 						</p>
 
@@ -110,8 +147,8 @@
 						<div class="nutrient-row calories">
 							<span class="label">Calories</span>
 							<span class="value"
-								>{ingredient.nutrition.calories !== null
-									? Math.round(ingredient.nutrition.calories)
+								>{selectedNutrition.calories !== null
+									? Math.round(selectedNutrition.calories)
 									: '-'}</span
 							>
 						</div>
@@ -120,26 +157,26 @@
 
 						<div class="nutrient-row">
 							<span class="label bold">Total Fat</span>
-							<span class="value">{formatValue(ingredient.nutrition.fat_total_g, 'g')}</span>
+							<span class="value">{formatValue(selectedNutrition.fat_total_g, 'g')}</span>
 						</div>
 						<div class="nutrient-row indent">
 							<span class="label">Saturated Fat</span>
-							<span class="value">{formatValue(ingredient.nutrition.fat_saturated_g, 'g')}</span>
+							<span class="value">{formatValue(selectedNutrition.fat_saturated_g, 'g')}</span>
 						</div>
 						<div class="nutrient-row indent">
 							<span class="label">Trans Fat</span>
-							<span class="value">{formatValue(ingredient.nutrition.fat_trans_g, 'g')}</span>
+							<span class="value">{formatValue(selectedNutrition.fat_trans_g, 'g')}</span>
 						</div>
 						<div class="nutrient-row indent">
 							<span class="label">Polyunsaturated Fat</span>
 							<span class="value"
-								>{formatValue(ingredient.nutrition.fat_polyunsaturated_g, 'g')}</span
+								>{formatValue(selectedNutrition.fat_polyunsaturated_g, 'g')}</span
 							>
 						</div>
 						<div class="nutrient-row indent">
 							<span class="label">Monounsaturated Fat</span>
 							<span class="value"
-								>{formatValue(ingredient.nutrition.fat_monounsaturated_g, 'g')}</span
+								>{formatValue(selectedNutrition.fat_monounsaturated_g, 'g')}</span
 							>
 						</div>
 
@@ -147,31 +184,31 @@
 
 						<div class="nutrient-row">
 							<span class="label bold">Cholesterol</span>
-							<span class="value">{formatValue(ingredient.nutrition.cholesterol_mg, 'mg', 0)}</span>
+							<span class="value">{formatValue(selectedNutrition.cholesterol_mg, 'mg', 0)}</span>
 						</div>
 						<div class="nutrient-row">
 							<span class="label bold">Sodium</span>
-							<span class="value">{formatValue(ingredient.nutrition.sodium_mg, 'mg', 0)}</span>
+							<span class="value">{formatValue(selectedNutrition.sodium_mg, 'mg', 0)}</span>
 						</div>
 
 						<div class="nutrition-divider"></div>
 
 						<div class="nutrient-row">
 							<span class="label bold">Total Carbohydrate</span>
-							<span class="value">{formatValue(ingredient.nutrition.carbohydrates_g, 'g')}</span>
+							<span class="value">{formatValue(selectedNutrition.carbohydrates_g, 'g')}</span>
 						</div>
 						<div class="nutrient-row indent">
 							<span class="label">Dietary Fiber</span>
-							<span class="value">{formatValue(ingredient.nutrition.fiber_g, 'g')}</span>
+							<span class="value">{formatValue(selectedNutrition.fiber_g, 'g')}</span>
 						</div>
 						<div class="nutrient-row indent">
 							<span class="label">Total Sugars</span>
-							<span class="value">{formatValue(ingredient.nutrition.sugar_g, 'g')}</span>
+							<span class="value">{formatValue(selectedNutrition.sugar_g, 'g')}</span>
 						</div>
-						{#if ingredient.nutrition.sugar_added_g !== null}
+						{#if selectedNutrition.sugar_added_g !== null}
 							<div class="nutrient-row indent-2">
 								<span class="label">Includes Added Sugars</span>
-								<span class="value">{formatValue(ingredient.nutrition.sugar_added_g, 'g')}</span>
+								<span class="value">{formatValue(selectedNutrition.sugar_added_g, 'g')}</span>
 							</div>
 						{/if}
 
@@ -179,7 +216,7 @@
 
 						<div class="nutrient-row">
 							<span class="label bold">Protein</span>
-							<span class="value">{formatValue(ingredient.nutrition.protein_g, 'g')}</span>
+							<span class="value">{formatValue(selectedNutrition.protein_g, 'g')}</span>
 						</div>
 
 						<div class="nutrition-divider thick"></div>
@@ -188,77 +225,77 @@
 						<div class="vitamins-minerals">
 							<div class="nutrient-row">
 								<span class="label">Vitamin A</span>
-								<span class="value">{formatValue(ingredient.nutrition.vitamin_a_mcg, 'mcg', 0)}</span
+								<span class="value">{formatValue(selectedNutrition.vitamin_a_mcg, 'mcg', 0)}</span
 								>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Vitamin C</span>
-								<span class="value">{formatValue(ingredient.nutrition.vitamin_c_mg, 'mg')}</span>
+								<span class="value">{formatValue(selectedNutrition.vitamin_c_mg, 'mg')}</span>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Vitamin D</span>
-								<span class="value">{formatValue(ingredient.nutrition.vitamin_d_mcg, 'mcg')}</span>
+								<span class="value">{formatValue(selectedNutrition.vitamin_d_mcg, 'mcg')}</span>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Vitamin E</span>
-								<span class="value">{formatValue(ingredient.nutrition.vitamin_e_mg, 'mg')}</span>
+								<span class="value">{formatValue(selectedNutrition.vitamin_e_mg, 'mg')}</span>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Vitamin K</span>
-								<span class="value">{formatValue(ingredient.nutrition.vitamin_k_mcg, 'mcg')}</span>
+								<span class="value">{formatValue(selectedNutrition.vitamin_k_mcg, 'mcg')}</span>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Vitamin B6</span>
-								<span class="value">{formatValue(ingredient.nutrition.vitamin_b6_mg, 'mg')}</span>
+								<span class="value">{formatValue(selectedNutrition.vitamin_b6_mg, 'mg')}</span>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Vitamin B12</span>
-								<span class="value">{formatValue(ingredient.nutrition.vitamin_b12_mcg, 'mcg')}</span>
+								<span class="value">{formatValue(selectedNutrition.vitamin_b12_mcg, 'mcg')}</span>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Thiamin</span>
-								<span class="value">{formatValue(ingredient.nutrition.thiamin_mg, 'mg')}</span>
+								<span class="value">{formatValue(selectedNutrition.thiamin_mg, 'mg')}</span>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Riboflavin</span>
-								<span class="value">{formatValue(ingredient.nutrition.riboflavin_mg, 'mg')}</span>
+								<span class="value">{formatValue(selectedNutrition.riboflavin_mg, 'mg')}</span>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Niacin</span>
-								<span class="value">{formatValue(ingredient.nutrition.niacin_mg, 'mg')}</span>
+								<span class="value">{formatValue(selectedNutrition.niacin_mg, 'mg')}</span>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Folate</span>
-								<span class="value">{formatValue(ingredient.nutrition.folate_mcg, 'mcg', 0)}</span>
+								<span class="value">{formatValue(selectedNutrition.folate_mcg, 'mcg', 0)}</span>
 							</div>
 
 							<div class="nutrition-divider"></div>
 
 							<div class="nutrient-row">
 								<span class="label">Calcium</span>
-								<span class="value">{formatValue(ingredient.nutrition.calcium_mg, 'mg', 0)}</span>
+								<span class="value">{formatValue(selectedNutrition.calcium_mg, 'mg', 0)}</span>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Iron</span>
-								<span class="value">{formatValue(ingredient.nutrition.iron_mg, 'mg')}</span>
+								<span class="value">{formatValue(selectedNutrition.iron_mg, 'mg')}</span>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Potassium</span>
-								<span class="value">{formatValue(ingredient.nutrition.potassium_mg, 'mg', 0)}</span>
+								<span class="value">{formatValue(selectedNutrition.potassium_mg, 'mg', 0)}</span>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Magnesium</span>
-								<span class="value">{formatValue(ingredient.nutrition.magnesium_mg, 'mg', 0)}</span>
+								<span class="value">{formatValue(selectedNutrition.magnesium_mg, 'mg', 0)}</span>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Phosphorus</span>
 								<span class="value"
-									>{formatValue(ingredient.nutrition.phosphorus_mg, 'mg', 0)}</span
+									>{formatValue(selectedNutrition.phosphorus_mg, 'mg', 0)}</span
 								>
 							</div>
 							<div class="nutrient-row">
 								<span class="label">Zinc</span>
-								<span class="value">{formatValue(ingredient.nutrition.zinc_mg, 'mg')}</span>
+								<span class="value">{formatValue(selectedNutrition.zinc_mg, 'mg')}</span>
 							</div>
 						</div>
 
@@ -266,9 +303,9 @@
 
 						<div class="source">
 							<p>
-								Source: {getSourceLabel(ingredient.nutrition.source)}
-								{#if ingredient.nutrition.source_url}
-									<a href={ingredient.nutrition.source_url} target="_blank" rel="noopener"
+								Source: {getSourceLabel(selectedNutrition.source)}
+								{#if selectedNutrition.source_url}
+									<a href={selectedNutrition.source_url} target="_blank" rel="noopener"
 										>View source</a
 									>
 								{/if}
@@ -477,6 +514,44 @@
 	.nutrition-panel {
 		position: sticky;
 		top: var(--space-4);
+	}
+
+	.source-tabs {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
+		margin-bottom: var(--space-4);
+	}
+
+	.source-tab {
+		padding: var(--space-2) var(--space-3);
+		border: 2px solid var(--border-default);
+		background: var(--bg-card);
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+		font-weight: var(--font-medium);
+		cursor: pointer;
+		transition: all var(--transition-fast);
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+
+	.source-tab:hover {
+		border-color: var(--source-color, var(--color-marinara-500));
+	}
+
+	.source-tab.active {
+		border-color: var(--source-color, var(--color-marinara-500));
+		background: color-mix(in srgb, var(--source-color, var(--color-marinara-500)) 10%, white);
+	}
+
+	.primary-badge {
+		font-size: var(--text-xs);
+		padding: 2px 6px;
+		background: var(--color-basil-500);
+		color: white;
+		border-radius: var(--radius-sm);
 	}
 
 	.nutrition-label {
