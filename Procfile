@@ -1,2 +1,2 @@
-web: cd backend && bin/controlcopypasta start
-release: cd backend && bin/controlcopypasta eval "Controlcopypasta.Release.migrate()"
+web: /start.sh
+release: /app/backend/bin/controlcopypasta eval "Controlcopypasta.Release.migrate()"
