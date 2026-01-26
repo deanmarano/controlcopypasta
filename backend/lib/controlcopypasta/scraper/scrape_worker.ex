@@ -16,11 +16,12 @@ defmodule Controlcopypasta.Scraper.ScrapeWorker do
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"url" => url, "scrape_url_id" => scrape_url_id}}) do
-    # Check rate limits - if exceeded, pause queue and exit cleanly
-    if rate_limit_exceeded?() do
-      Logger.info("Rate limit exceeded, pausing scraper queue")
-      Oban.pause_queue(queue: :scraper)
-      {:cancel, :rate_limited}
+    domain = extract_domain(url)
+
+    # Check rate limits per domain - if exceeded, snooze job to retry later
+    if rate_limit_exceeded?(domain) do
+      Logger.info("Rate limit exceeded for #{domain}, snoozing job")
+      {:snooze, 3600}  # Retry in 1 hour
     else
       do_scrape(url, scrape_url_id)
     end
@@ -236,25 +237,31 @@ defmodule Controlcopypasta.Scraper.ScrapeWorker do
     Process.sleep(delay)
   end
 
-  defp rate_limit_exceeded? do
+  defp rate_limit_exceeded?(domain) do
     config = Application.get_env(:controlcopypasta, :scraping, [])
     max_per_hour = Keyword.get(config, :max_per_hour, 0)
     max_per_day = Keyword.get(config, :max_per_day, 0)
 
     cond do
-      max_per_hour > 0 && count_completed_since(hours: 1) >= max_per_hour -> true
-      max_per_day > 0 && count_completed_since(hours: 24) >= max_per_day -> true
+      max_per_hour > 0 && count_completed_since(domain, hours: 1) >= max_per_hour -> true
+      max_per_day > 0 && count_completed_since(domain, hours: 24) >= max_per_day -> true
       true -> false
     end
   end
 
-  defp count_completed_since(hours: hours) do
+  defp count_completed_since(domain, hours: hours) do
     import Ecto.Query
     since = DateTime.utc_now() |> DateTime.add(-hours * 3600, :second)
+    normalized_domain = normalize_domain(domain)
 
     Controlcopypasta.Scraper.ScrapeUrl
     |> where([s], s.status == "completed")
     |> where([s], s.updated_at >= ^since)
+    |> where([s], fragment("replace(lower(?), 'www.', '') = ?", s.domain, ^normalized_domain))
     |> Repo.aggregate(:count)
+  end
+
+  defp extract_domain(url) do
+    URI.parse(url).host || ""
   end
 end

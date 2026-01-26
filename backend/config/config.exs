@@ -56,17 +56,17 @@ config :controlcopypasta, :webauthn,
 # Browser pool configuration for scraping
 config :controlcopypasta, :browser_pool_size, 1
 
-# Scraping rate limits (be a good citizen)
-# Target: ~50k pages/month = ~1,700/day = ~70/hour
+# Scraping rate limits per domain (be a good citizen)
+# These limits apply independently to each domain
 config :controlcopypasta, :scraping,
   # Minimum delay between requests (ms)
   min_delay_ms: 3000,
   # Random additional delay up to this amount (ms)
   max_random_delay_ms: 5000,
-  # Maximum pages to scrape per hour (pauses queue when exceeded)
+  # Maximum pages to scrape per hour per domain
   max_per_hour: 75,
-  # Maximum pages to scrape per day (pauses queue when exceeded)
-  max_per_day: 1700
+  # Maximum pages to scrape per day per domain
+  max_per_day: 2500
 
 # Oban job queue configuration
 config :controlcopypasta, Oban,
