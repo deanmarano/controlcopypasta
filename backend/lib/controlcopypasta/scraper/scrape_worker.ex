@@ -136,10 +136,11 @@ defmodule Controlcopypasta.Scraper.ScrapeWorker do
 
   defp add_source_info(recipe_data, url) do
     uri = URI.parse(url)
+    domain = normalize_domain(uri.host)
 
     recipe_data
     |> Map.put(:source_url, url)
-    |> Map.put(:source_domain, uri.host)
+    |> Map.put(:source_domain, domain)
   end
 
   defp get_or_create_domain_user(domain) do
