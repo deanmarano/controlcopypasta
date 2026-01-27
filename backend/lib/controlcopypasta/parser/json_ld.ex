@@ -93,9 +93,18 @@ defmodule Controlcopypasta.Parser.JsonLd do
   defp get_string(map, key) do
     case Map.get(map, key) do
       nil -> nil
-      value when is_binary(value) -> String.trim(value)
+      value when is_binary(value) -> sanitize_text(value)
       _ -> nil
     end
+  end
+
+  # Strips HTML tags, decodes entities, and normalizes whitespace
+  defp sanitize_text(text) do
+    text
+    |> String.replace(~r/<[^>]*>/, "")
+    |> HtmlEntities.decode()
+    |> String.replace(~r/\s+/, " ")
+    |> String.trim()
   end
 
   defp get_image_url(%{"image" => image}) when is_binary(image), do: image
@@ -150,6 +159,7 @@ defmodule Controlcopypasta.Parser.JsonLd do
   defp normalize_text(text) when is_binary(text) do
     text
     |> String.replace(~r/<[^>]*>/, "")
+    |> HtmlEntities.decode()
     |> String.replace(~r/\s+/, " ")
     |> String.trim()
   end

@@ -357,6 +357,10 @@
 			<span class="link-title">Manage Ingredients</span>
 			<span class="link-description">Set animal types and categories for ingredients</span>
 		</a>
+		<a href="/admin/scraping" class="settings-link">
+			<span class="link-title">Manage Scraping</span>
+			<span class="link-description">View domains, queue status, and rate limits</span>
+		</a>
 	</section>
 
 	<section class="avoided-section">

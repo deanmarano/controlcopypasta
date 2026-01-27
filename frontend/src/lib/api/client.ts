@@ -908,8 +908,92 @@ export interface AdminIngredientOptions {
   animal_types: string[];
 }
 
+// Admin API types
+export interface DomainStats {
+  domain: string;
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+  total: number;
+}
+
+export interface QueueStats {
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+  total: number;
+}
+
+export interface RateLimitStatus {
+  hourly: { count: number; limit: number; remaining: number };
+  daily: { count: number; limit: number; remaining: number };
+  config: {
+    min_delay_ms: number;
+    max_random_delay_ms: number;
+    browser_pool_size: number;
+    queue_concurrency: number;
+  };
+}
+
+export interface FailedUrl {
+  id: string;
+  url: string;
+  domain: string;
+  error: string;
+  attempts: number;
+  updated_at: string;
+}
+
 // Admin API
 export const admin = {
+  scraper: {
+    domains: (token: string) =>
+      request<{ data: DomainStats[] }>('/admin/scraper/domains', { token }),
+
+    addDomain: (token: string, domain: string, seedUrls: string[]) =>
+      request<{ data: { domain: string; enqueued: number; errors: number } }>('/admin/scraper/domains', {
+        method: 'POST',
+        token,
+        body: { domain, seed_urls: seedUrls }
+      }),
+
+    queueStats: (token: string) =>
+      request<{ data: QueueStats }>('/admin/scraper/queue', { token }),
+
+    rateLimits: (token: string) =>
+      request<{ data: RateLimitStatus }>('/admin/scraper/rate-limits', { token }),
+
+    pause: (token: string) =>
+      request<{ data: { cancelled_jobs: number } }>('/admin/scraper/pause', {
+        method: 'POST',
+        token
+      }),
+
+    resume: (token: string, limit?: number) =>
+      request<{ data: { resumed: number } }>('/admin/scraper/resume', {
+        method: 'POST',
+        token,
+        body: limit ? { limit } : {}
+      }),
+
+    failed: (token: string, params?: { domain?: string; limit?: number }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.domain) searchParams.set('domain', params.domain);
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      const query = searchParams.toString();
+      return request<{ data: FailedUrl[] }>(`/admin/scraper/failed${query ? `?${query}` : ''}`, { token });
+    },
+
+    retryFailed: (token: string, domain?: string) =>
+      request<{ data: { retried: number } }>('/admin/scraper/retry-failed', {
+        method: 'POST',
+        token,
+        body: domain ? { domain } : {}
+      })
+  },
+
   ingredients: {
     list: (token: string, params?: { category?: string; animal_type?: string; missing_animal_type?: boolean; search?: string }) => {
       const searchParams = new URLSearchParams();

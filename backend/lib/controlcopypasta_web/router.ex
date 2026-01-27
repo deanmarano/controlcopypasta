@@ -125,9 +125,20 @@ defmodule ControlcopypastaWeb.Router do
   scope "/api", ControlcopypastaWeb do
     pipe_through :api_admin
 
+    # Ingredient management
     get "/admin/ingredients", Admin.IngredientController, :index
     put "/admin/ingredients/:id", Admin.IngredientController, :update
     get "/admin/ingredients/options", Admin.IngredientController, :options
+
+    # Scraper management
+    get "/admin/scraper/domains", Admin.ScraperController, :domains
+    post "/admin/scraper/domains", Admin.ScraperController, :add_domain
+    get "/admin/scraper/queue", Admin.ScraperController, :queue_stats
+    get "/admin/scraper/rate-limits", Admin.ScraperController, :rate_limits
+    post "/admin/scraper/pause", Admin.ScraperController, :pause
+    post "/admin/scraper/resume", Admin.ScraperController, :resume
+    get "/admin/scraper/failed", Admin.ScraperController, :failed
+    post "/admin/scraper/retry-failed", Admin.ScraperController, :retry_failed
   end
 
   # Enable LiveDashboard in development

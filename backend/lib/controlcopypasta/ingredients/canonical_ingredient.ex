@@ -103,7 +103,7 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
   @valid_categories ~w(protein dairy produce grain spice herb condiment oil sweetener leavening nut legume beverage other)
   @valid_allergen_groups ~w(dairy eggs peanuts tree_nuts wheat gluten soy fish shellfish sesame)
   @valid_dietary_flags ~w(vegetarian vegan gluten_free dairy_free keto paleo)
-  @valid_animal_types ~w(chicken turkey duck beef pork lamb goat venison bison rabbit salmon tuna cod shrimp crab lobster scallop clam mussel oyster anchovy sardine mackerel trout tilapia halibut bass)
+  @valid_animal_types ~w(chicken turkey duck beef pork lamb goat venison bison rabbit egg salmon tuna cod sole shrimp crab lobster scallop clam mussel oyster octopus squid anchovy sardine mackerel trout tilapia halibut bass)
 
   @doc """
   Creates a changeset for a canonical ingredient.

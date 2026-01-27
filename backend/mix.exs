@@ -66,7 +66,9 @@ defmodule Controlcopypasta.MixProject do
       # WebAuthn/Passkey authentication
       {:wax_, "~> 0.6"},
       # Load .env files automatically
-      {:dotenvy, "~> 0.8"}
+      {:dotenvy, "~> 0.8"},
+      # HTML entity decoding for recipe parsing
+      {:html_entities, "~> 0.5"}
     ]
   end
 
