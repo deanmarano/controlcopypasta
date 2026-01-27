@@ -212,27 +212,42 @@
 		<!-- Rate Limits -->
 		{#if rateLimits}
 			<section class="stats-section">
-				<h2>Rate Limits</h2>
-				<div class="rate-limits">
-					<div class="rate-limit">
-						<h3>Hourly</h3>
-						<p>
-							{rateLimits.hourly.count} / {rateLimits.hourly.limit}
-							<span class="remaining">({rateLimits.hourly.remaining} remaining)</span>
-						</p>
-					</div>
-					<div class="rate-limit">
-						<h3>Daily</h3>
-						<p>
-							{rateLimits.daily.count} / {rateLimits.daily.limit}
-							<span class="remaining">({rateLimits.daily.remaining} remaining)</span>
-						</p>
-					</div>
-				</div>
-				<div class="config-info">
+				<h2>Rate Limits (per domain)</h2>
+				<div class="config-info" style="margin-bottom: var(--space-4)">
+					<span>Limit: {rateLimits.config.max_per_hour}/hour, {rateLimits.config.max_per_day}/day per domain</span>
 					<span>Delay: {rateLimits.config.min_delay_ms}-{rateLimits.config.min_delay_ms + rateLimits.config.max_random_delay_ms}ms</span>
 					<span>Concurrency: {rateLimits.config.queue_concurrency}</span>
 				</div>
+				{#if rateLimits.per_domain.length === 0}
+					<p class="empty">No active domains</p>
+				{:else}
+					<table class="rate-limits-table">
+						<thead>
+							<tr>
+								<th>Domain</th>
+								<th class="num">Hourly</th>
+								<th class="num">Daily</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each rateLimits.per_domain as domain}
+								<tr>
+									<td>{domain.domain}</td>
+									<td class="num">
+										<span class:at-limit={domain.hourly.remaining === 0}>
+											{domain.hourly.count} / {domain.hourly.limit}
+										</span>
+									</td>
+									<td class="num">
+										<span class:at-limit={domain.daily.remaining === 0}>
+											{domain.daily.count} / {domain.daily.limit}
+										</span>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				{/if}
 			</section>
 		{/if}
 
@@ -497,6 +512,35 @@
 		gap: var(--space-4);
 		color: var(--text-muted);
 		font-size: var(--text-sm);
+		flex-wrap: wrap;
+	}
+
+	.rate-limits-table {
+		width: 100%;
+		border-collapse: collapse;
+	}
+
+	.rate-limits-table th,
+	.rate-limits-table td {
+		padding: var(--space-2) var(--space-3);
+		text-align: left;
+	}
+
+	.rate-limits-table th {
+		border-bottom: var(--border-width-default) solid var(--border-default);
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+		font-weight: var(--font-medium);
+	}
+
+	.rate-limits-table td {
+		border-bottom: var(--border-width-thin) solid var(--border-light);
+		font-size: var(--text-sm);
+	}
+
+	.at-limit {
+		color: var(--color-marinara-600);
+		font-weight: var(--font-medium);
 	}
 
 	/* Add Domain Form */

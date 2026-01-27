@@ -270,36 +270,67 @@ defmodule Controlcopypasta.Scraper do
   end
 
   @doc """
-  Gets current rate limit status.
+  Gets current rate limit status per domain.
 
-  Returns hourly/daily counts vs limits.
+  Returns hourly/daily counts vs limits for each active domain.
   """
   def get_rate_limit_status do
     config = Application.get_env(:controlcopypasta, :scraping, [])
     max_per_hour = Keyword.get(config, :max_per_hour, 0)
     max_per_day = Keyword.get(config, :max_per_day, 0)
 
-    hourly_count = get_completed_count_since(hours_ago(1))
-    daily_count = get_completed_count_since(hours_ago(24))
+    # Get per-domain counts
+    domains = get_active_domains()
+
+    per_domain =
+      Enum.map(domains, fn domain ->
+        hourly_count = get_completed_count_since_for_domain(domain, hours_ago(1))
+        daily_count = get_completed_count_since_for_domain(domain, hours_ago(24))
+
+        %{
+          domain: domain,
+          hourly: %{
+            count: hourly_count,
+            limit: max_per_hour,
+            remaining: max(0, max_per_hour - hourly_count)
+          },
+          daily: %{
+            count: daily_count,
+            limit: max_per_day,
+            remaining: max(0, max_per_day - daily_count)
+          }
+        }
+      end)
 
     %{
-      hourly: %{
-        count: hourly_count,
-        limit: max_per_hour,
-        remaining: max(0, max_per_hour - hourly_count)
-      },
-      daily: %{
-        count: daily_count,
-        limit: max_per_day,
-        remaining: max(0, max_per_day - daily_count)
-      },
+      per_domain: per_domain,
       config: %{
+        max_per_hour: max_per_hour,
+        max_per_day: max_per_day,
         min_delay_ms: Keyword.get(config, :min_delay_ms, 2000),
         max_random_delay_ms: Keyword.get(config, :max_random_delay_ms, 3000),
         browser_pool_size: Application.get_env(:controlcopypasta, :browser_pool_size, 1),
         queue_concurrency: get_queue_concurrency()
       }
     }
+  end
+
+  defp get_active_domains do
+    ScrapeUrl
+    |> where([s], s.status in ["pending", "processing", "paused"])
+    |> select([s], s.domain)
+    |> distinct(true)
+    |> Repo.all()
+  end
+
+  defp get_completed_count_since_for_domain(domain, since) do
+    normalized = String.replace(String.downcase(domain), ~r/^www\./, "")
+
+    ScrapeUrl
+    |> where([s], s.status == "completed")
+    |> where([s], s.updated_at >= ^since)
+    |> where([s], fragment("replace(lower(?), 'www.', '') = ?", s.domain, ^normalized))
+    |> Repo.aggregate(:count)
   end
 
   @doc """
@@ -352,13 +383,6 @@ defmodule Controlcopypasta.Scraper do
 
     ok_count = Enum.count(results, &match?({:ok, _}, &1))
     {:ok, %{resumed: ok_count}}
-  end
-
-  defp get_completed_count_since(since) do
-    ScrapeUrl
-    |> where([s], s.status == "completed")
-    |> where([s], s.updated_at >= ^since)
-    |> Repo.aggregate(:count)
   end
 
   defp hours_ago(hours) do

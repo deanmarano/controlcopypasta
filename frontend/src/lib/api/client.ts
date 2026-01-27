@@ -927,10 +927,17 @@ export interface QueueStats {
   total: number;
 }
 
-export interface RateLimitStatus {
+export interface DomainRateLimit {
+  domain: string;
   hourly: { count: number; limit: number; remaining: number };
   daily: { count: number; limit: number; remaining: number };
+}
+
+export interface RateLimitStatus {
+  per_domain: DomainRateLimit[];
   config: {
+    max_per_hour: number;
+    max_per_day: number;
     min_delay_ms: number;
     max_random_delay_ms: number;
     browser_pool_size: number;
