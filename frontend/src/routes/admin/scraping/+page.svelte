@@ -8,7 +8,8 @@
 		type QueueStats,
 		type RateLimitStatus,
 		type FailedUrl,
-		type BrowserStatus
+		type BrowserStatus,
+		type ExecutingWorker
 	} from '$lib/api/client';
 
 	let domains = $state<DomainStats[]>([]);
@@ -16,6 +17,7 @@
 	let rateLimits = $state<RateLimitStatus | null>(null);
 	let failedUrls = $state<FailedUrl[]>([]);
 	let browserStatus = $state<BrowserStatus | null>(null);
+	let executingWorkers = $state<ExecutingWorker[]>([]);
 	let loading = $state(true);
 	let error = $state('');
 	let message = $state('');
@@ -43,7 +45,7 @@
 	async function loadAll() {
 		loading = true;
 		error = '';
-		await Promise.all([loadDomains(), loadQueueStats(), loadRateLimits(), loadFailed(), loadBrowserStatus()]);
+		await Promise.all([loadDomains(), loadQueueStats(), loadRateLimits(), loadFailed(), loadBrowserStatus(), loadWorkers()]);
 		loading = false;
 	}
 
@@ -103,6 +105,17 @@
 		} catch {
 			// Browser status not critical, just set to null
 			browserStatus = null;
+		}
+	}
+
+	async function loadWorkers() {
+		const token = authStore.getToken();
+		if (!token) return;
+		try {
+			const result = await admin.scraper.workers(token);
+			executingWorkers = result.data;
+		} catch {
+			executingWorkers = [];
 		}
 	}
 
@@ -349,6 +362,27 @@
 					<button onclick={resetStale} class="btn-secondary">Reset Stale Processing</button>
 					<button onclick={parseAllIngredients} class="btn-secondary">Parse All Ingredients</button>
 				</div>
+
+				<!-- Executing Workers -->
+				{#if executingWorkers.length > 0}
+					<div class="workers-section">
+						<h3>Active Workers ({executingWorkers.length})</h3>
+						<div class="workers-list">
+							{#each executingWorkers as worker}
+								<div class="worker-item">
+									<span class="worker-id">#{worker.id}</span>
+									<span class="worker-url" title={worker.url}>{worker.url}</span>
+									<span class="worker-time">{new Date(worker.started_at).toLocaleTimeString()}</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{:else}
+					<div class="workers-section">
+						<h3>Active Workers</h3>
+						<p class="empty">No workers currently executing</p>
+					</div>
+				{/if}
 			</section>
 		{/if}
 
@@ -756,6 +790,53 @@
 	.actions {
 		display: flex;
 		gap: var(--space-3);
+	}
+
+	.workers-section {
+		margin-top: var(--space-4);
+		padding-top: var(--space-4);
+		border-top: var(--border-width-thin) solid var(--border-light);
+	}
+
+	.workers-section h3 {
+		margin: 0 0 var(--space-3);
+		font-size: var(--text-base);
+		color: var(--text-secondary);
+	}
+
+	.workers-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.worker-item {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+	}
+
+	.worker-id {
+		font-weight: var(--font-medium);
+		color: var(--text-muted);
+		min-width: 70px;
+	}
+
+	.worker-url {
+		flex: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		color: var(--text-primary);
+	}
+
+	.worker-time {
+		color: var(--text-muted);
+		font-size: var(--text-xs);
 	}
 
 	.btn-warning {

@@ -963,6 +963,12 @@ export interface BrowserStatus {
   stats: BrowserStats | null;
 }
 
+export interface ExecutingWorker {
+  id: number;
+  url: string;
+  started_at: string;
+}
+
 export interface DomainRateLimit {
   domain: string;
   hourly: { count: number; limit: number; remaining: number };
@@ -1045,6 +1051,9 @@ export const admin = {
 
     browserStatus: (token: string) =>
       request<{ data: BrowserStatus }>('/admin/scraper/browser-status', { token }),
+
+    workers: (token: string) =>
+      request<{ data: ExecutingWorker[] }>('/admin/scraper/workers', { token }),
 
     resetStale: (token: string, thresholdMinutes?: number) =>
       request<{ data: { reset: number } }>('/admin/scraper/reset-stale', {

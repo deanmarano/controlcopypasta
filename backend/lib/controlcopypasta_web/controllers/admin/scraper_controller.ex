@@ -4,6 +4,8 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
   alias Controlcopypasta.Scraper
   alias Controlcopypasta.Browser.Pool, as: BrowserPool
   alias Controlcopypasta.Workers.IngredientParser
+  alias Controlcopypasta.Repo
+  import Ecto.Query
 
   action_fallback ControlcopypastaWeb.FallbackController
 
@@ -110,6 +112,32 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
   def browser_status(conn, _params) do
     status = BrowserPool.status()
     json(conn, %{data: status})
+  end
+
+  @doc """
+  Gets currently executing scraper workers and their URLs.
+  """
+  def executing_workers(conn, _params) do
+    workers =
+      from(j in "oban_jobs",
+        where: j.state == "executing" and j.queue == "scraper",
+        select: %{
+          id: j.id,
+          args: j.args,
+          attempted_at: j.attempted_at
+        },
+        order_by: [asc: j.attempted_at]
+      )
+      |> Repo.all()
+      |> Enum.map(fn job ->
+        %{
+          id: job.id,
+          url: get_in(job.args, ["url"]),
+          started_at: job.attempted_at
+        }
+      end)
+
+    json(conn, %{data: workers})
   end
 
   @doc """

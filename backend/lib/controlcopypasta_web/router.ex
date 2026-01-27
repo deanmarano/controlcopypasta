@@ -149,6 +149,7 @@ defmodule ControlcopypastaWeb.Router do
     post "/admin/scraper/retry-failed", Admin.ScraperController, :retry_failed
     post "/admin/scraper/domains/:domain/screenshot", Admin.ScraperController, :capture_screenshot
     get "/admin/scraper/browser-status", Admin.ScraperController, :browser_status
+    get "/admin/scraper/workers", Admin.ScraperController, :executing_workers
     post "/admin/scraper/parse-ingredients", Admin.ScraperController, :parse_ingredients
     post "/admin/scraper/reset-stale", Admin.ScraperController, :reset_stale
   end
