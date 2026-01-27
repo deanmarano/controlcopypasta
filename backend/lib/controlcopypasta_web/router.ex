@@ -149,6 +149,7 @@ defmodule ControlcopypastaWeb.Router do
     post "/admin/scraper/retry-failed", Admin.ScraperController, :retry_failed
     post "/admin/scraper/domains/:domain/screenshot", Admin.ScraperController, :capture_screenshot
     get "/admin/scraper/browser-status", Admin.ScraperController, :browser_status
+    post "/admin/scraper/parse-ingredients", Admin.ScraperController, :parse_ingredients
   end
 
   # Enable LiveDashboard in development

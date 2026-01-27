@@ -3,6 +3,7 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
 
   alias Controlcopypasta.Scraper
   alias Controlcopypasta.Browser.Pool, as: BrowserPool
+  alias Controlcopypasta.Workers.IngredientParser
 
   action_fallback ControlcopypastaWeb.FallbackController
 
@@ -127,6 +128,31 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
         conn
         |> put_status(:unprocessable_entity)
         |> json(%{error: "Failed to capture screenshot: #{inspect(reason)}"})
+    end
+  end
+
+  @doc """
+  Triggers ingredient parsing for recipes.
+
+  Body:
+  - `{"domain": "cooking.nytimes.com"}` - Parse all recipes for a domain
+  - `{}` - Parse all unparsed recipes
+  """
+  def parse_ingredients(conn, params) do
+    job_args =
+      case params do
+        %{"domain" => domain} -> %{"domain" => domain}
+        _ -> %{}
+      end
+
+    case Oban.insert(IngredientParser.new(job_args)) do
+      {:ok, _job} ->
+        json(conn, %{data: %{status: "started", params: job_args}})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: "Failed to start parsing: #{inspect(reason)}"})
     end
   end
 end
