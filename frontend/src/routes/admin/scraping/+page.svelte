@@ -17,6 +17,7 @@
 	let loading = $state(true);
 	let error = $state('');
 	let message = $state('');
+	let accessDenied = $state(false);
 
 	// Add domain form
 	let newDomain = $state('');
@@ -49,7 +50,7 @@
 			domains = result.data;
 		} catch (e) {
 			if (e instanceof Error && 'status' in e && (e as { status: number }).status === 403) {
-				error = 'Admin access required.';
+				accessDenied = true;
 			}
 		}
 	}
@@ -158,7 +159,13 @@
 <div class="admin-page">
 	<h1>Admin: Scraping</h1>
 
-	{#if error}
+	{#if accessDenied}
+		<div class="access-denied">
+			<h2>Access Denied</h2>
+			<p>You do not have permission to view this page. Admin access is required.</p>
+			<a href="/settings">Back to Settings</a>
+		</div>
+	{:else if error}
 		<p class="error">{error}</p>
 	{/if}
 
@@ -166,9 +173,9 @@
 		<p class="message">{message}</p>
 	{/if}
 
-	{#if loading}
+	{#if !accessDenied && loading}
 		<p class="loading">Loading...</p>
-	{:else}
+	{:else if !accessDenied}
 		<!-- Queue Stats -->
 		{#if queueStats}
 			<section class="stats-section">
@@ -360,6 +367,29 @@
 		padding: var(--space-5);
 		margin-bottom: var(--space-5);
 		box-shadow: var(--shadow-sm);
+	}
+
+	.access-denied {
+		background: var(--bg-card);
+		border-radius: var(--radius-lg);
+		padding: var(--space-8);
+		text-align: center;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.access-denied h2 {
+		color: var(--color-marinara-600);
+		margin: 0 0 var(--space-3);
+	}
+
+	.access-denied p {
+		color: var(--text-secondary);
+		margin: 0 0 var(--space-4);
+	}
+
+	.access-denied a {
+		color: var(--color-basil-600);
+		font-weight: var(--font-medium);
 	}
 
 	.error {

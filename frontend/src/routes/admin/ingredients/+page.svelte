@@ -8,6 +8,7 @@
 	let options = $state<AdminIngredientOptions | null>(null);
 	let loading = $state(true);
 	let error = $state('');
+	let accessDenied = $state(false);
 
 	// Filters
 	let categoryFilter = $state('protein');
@@ -62,7 +63,7 @@
 			ingredients = result.data;
 		} catch (e) {
 			if (e instanceof Error && 'status' in e && (e as { status: number }).status === 403) {
-				error = 'Admin access required. You do not have permission to view this page.';
+				accessDenied = true;
 			} else {
 				error = 'Failed to load ingredients';
 			}
@@ -134,6 +135,14 @@
 
 <div class="admin-page">
 	<h1>Admin: Ingredients</h1>
+
+	{#if accessDenied}
+		<div class="access-denied">
+			<h2>Access Denied</h2>
+			<p>You do not have permission to view this page. Admin access is required.</p>
+			<a href="/settings">Back to Settings</a>
+		</div>
+	{:else}
 
 	<section class="filters">
 		<div class="filter-row">
@@ -260,6 +269,7 @@
 			</tbody>
 		</table>
 	{/if}
+	{/if}
 </div>
 
 <style>
@@ -270,6 +280,29 @@
 	h1 {
 		margin: 0 0 var(--space-6);
 		color: var(--color-marinara-800);
+	}
+
+	.access-denied {
+		background: var(--bg-card);
+		border-radius: var(--radius-lg);
+		padding: var(--space-8);
+		text-align: center;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.access-denied h2 {
+		color: var(--color-marinara-600);
+		margin: 0 0 var(--space-3);
+	}
+
+	.access-denied p {
+		color: var(--text-secondary);
+		margin: 0 0 var(--space-4);
+	}
+
+	.access-denied a {
+		color: var(--color-basil-600);
+		font-weight: var(--font-medium);
 	}
 
 	.filters {
