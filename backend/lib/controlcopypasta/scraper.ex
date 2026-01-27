@@ -89,7 +89,7 @@ defmodule Controlcopypasta.Scraper do
     total = Enum.sum(Map.values(stats))
 
     Map.merge(
-      %{"pending" => 0, "processing" => 0, "completed" => 0, "failed" => 0, "total" => total},
+      %{"pending" => 0, "processing" => 0, "paused" => 0, "completed" => 0, "failed" => 0, "total" => total},
       stats
     )
   end
@@ -235,6 +235,27 @@ defmodule Controlcopypasta.Scraper do
       status: "failed",
       error: error
     })
+  end
+
+  @doc """
+  Resets stale processing URLs back to pending.
+
+  URLs stuck in "processing" for longer than the threshold (default 1 hour)
+  are assumed to be orphaned from crashed workers and reset to "pending".
+
+  Returns `{:ok, %{reset: count}}`.
+  """
+  def reset_stale_processing(opts \\ []) do
+    threshold_minutes = Keyword.get(opts, :threshold_minutes, 60)
+    cutoff = DateTime.utc_now() |> DateTime.add(-threshold_minutes * 60, :second)
+
+    {count, _} =
+      ScrapeUrl
+      |> where([s], s.status == "processing")
+      |> where([s], s.updated_at < ^cutoff)
+      |> Repo.update_all(set: [status: "pending", error: "Reset from stale processing"])
+
+    {:ok, %{reset: count}}
   end
 
   @doc """

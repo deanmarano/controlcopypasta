@@ -189,6 +189,37 @@
 			capturingScreenshot = null;
 		}
 	}
+
+	async function resetStale() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		error = '';
+		message = '';
+
+		try {
+			const result = await admin.scraper.resetStale(token);
+			message = `Reset ${result.data.reset} stale processing URLs to pending`;
+			await loadAll();
+		} catch {
+			error = 'Failed to reset stale URLs';
+		}
+	}
+
+	async function parseAllIngredients() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		error = '';
+		message = '';
+
+		try {
+			await admin.scraper.parseIngredients(token);
+			message = 'Started parsing ingredients for all unparsed recipes';
+		} catch {
+			error = 'Failed to start ingredient parsing';
+		}
+	}
 </script>
 
 <div class="admin-page">
@@ -254,6 +285,10 @@
 						<span class="stat-label">Processing</span>
 					</div>
 					<div class="stat">
+						<span class="stat-value">{formatNumber(queueStats.paused || 0)}</span>
+						<span class="stat-label">Paused</span>
+					</div>
+					<div class="stat">
 						<span class="stat-value">{formatNumber(queueStats.completed)}</span>
 						<span class="stat-label">Completed</span>
 					</div>
@@ -269,6 +304,8 @@
 				<div class="actions">
 					<button onclick={pauseScraping} class="btn-warning">Pause Scraping</button>
 					<button onclick={resumeScraping} class="btn-success">Resume Scraping</button>
+					<button onclick={resetStale} class="btn-secondary">Reset Stale Processing</button>
+					<button onclick={parseAllIngredients} class="btn-secondary">Parse All Ingredients</button>
 				</div>
 			</section>
 		{/if}
@@ -603,6 +640,20 @@
 
 	.btn-success:hover {
 		background: var(--color-basil-600);
+	}
+
+	.btn-secondary {
+		background: var(--color-gray-500);
+		color: white;
+		border: none;
+		padding: var(--space-2) var(--space-4);
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		font-weight: var(--font-medium);
+	}
+
+	.btn-secondary:hover {
+		background: var(--color-gray-600);
 	}
 
 	/* Rate Limits */

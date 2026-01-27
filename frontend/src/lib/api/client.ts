@@ -938,6 +938,7 @@ export interface DomainStats {
 export interface QueueStats {
   pending: number;
   processing: number;
+  paused: number;
   completed: number;
   failed: number;
   total: number;
@@ -1031,7 +1032,21 @@ export const admin = {
       }),
 
     browserStatus: (token: string) =>
-      request<{ data: BrowserStatus }>('/admin/scraper/browser-status', { token })
+      request<{ data: BrowserStatus }>('/admin/scraper/browser-status', { token }),
+
+    resetStale: (token: string, thresholdMinutes?: number) =>
+      request<{ data: { reset: number } }>('/admin/scraper/reset-stale', {
+        method: 'POST',
+        token,
+        body: thresholdMinutes ? { threshold_minutes: thresholdMinutes } : {}
+      }),
+
+    parseIngredients: (token: string, domain?: string) =>
+      request<{ data: { status: string; params: Record<string, string> } }>('/admin/scraper/parse-ingredients', {
+        method: 'POST',
+        token,
+        body: domain ? { domain } : {}
+      })
   },
 
   ingredients: {

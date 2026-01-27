@@ -132,6 +132,17 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
   end
 
   @doc """
+  Resets stale processing URLs back to pending.
+
+  URLs stuck in "processing" for longer than threshold are reset.
+  """
+  def reset_stale(conn, params) do
+    threshold = Map.get(params, "threshold_minutes", 60)
+    {:ok, result} = Scraper.reset_stale_processing(threshold_minutes: threshold)
+    json(conn, %{data: result})
+  end
+
+  @doc """
   Triggers ingredient parsing for recipes.
 
   Body:

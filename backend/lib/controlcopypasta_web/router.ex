@@ -150,6 +150,7 @@ defmodule ControlcopypastaWeb.Router do
     post "/admin/scraper/domains/:domain/screenshot", Admin.ScraperController, :capture_screenshot
     get "/admin/scraper/browser-status", Admin.ScraperController, :browser_status
     post "/admin/scraper/parse-ingredients", Admin.ScraperController, :parse_ingredients
+    post "/admin/scraper/reset-stale", Admin.ScraperController, :reset_stale
   end
 
   # Enable LiveDashboard in development
