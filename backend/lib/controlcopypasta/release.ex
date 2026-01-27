@@ -65,7 +65,8 @@ defmodule Controlcopypasta.Release do
   end
 
   defp infer_animal_type(ingredient, valid_animal_types) do
-    case ingredient.subcategory do
+    # First try subcategory
+    result = case ingredient.subcategory do
       "beef" -> "beef"
       "pork" -> "pork"
       "lamb" -> "lamb"
@@ -73,6 +74,32 @@ defmodule Controlcopypasta.Release do
       "fish" -> infer_fish_type(ingredient, valid_animal_types)
       "shellfish" -> infer_shellfish_type(ingredient, valid_animal_types)
       _ -> nil
+    end
+
+    # If subcategory didn't match, try name and tags
+    result || infer_from_name_and_tags(ingredient, valid_animal_types)
+  end
+
+  defp infer_from_name_and_tags(ingredient, valid_animal_types) do
+    name = String.downcase(ingredient.name)
+    tags = ingredient.tags || []
+
+    # Check each valid animal type against name and tags
+    Enum.find(valid_animal_types, fn animal_type ->
+      String.contains?(name, animal_type) or animal_type in tags
+    end)
+    |> case do
+      nil ->
+        # Special cases not covered by direct matching
+        cond do
+          String.contains?(name, "oxtail") -> "beef"
+          "pork" in tags -> "pork"
+          "beef" in tags -> "beef"
+          "chicken" in tags -> "chicken"
+          "anchovy" in tags -> "anchovy"
+          true -> nil
+        end
+      match -> match
     end
   end
 
