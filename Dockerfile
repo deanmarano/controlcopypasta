@@ -12,6 +12,7 @@ FROM node:22-slim AS scripts-builder
 WORKDIR /app/scripts
 COPY scripts/package*.json ./
 RUN npm ci
+COPY scripts/*.js ./
 # Install Playwright Chromium browser
 RUN npx playwright install chromium
 
