@@ -209,48 +209,6 @@
 			</section>
 		{/if}
 
-		<!-- Rate Limits -->
-		{#if rateLimits}
-			<section class="stats-section">
-				<h2>Rate Limits (per domain)</h2>
-				<div class="config-info" style="margin-bottom: var(--space-4)">
-					<span>Limit: {rateLimits.config.max_per_hour}/hour, {rateLimits.config.max_per_day}/day per domain</span>
-					<span>Delay: {rateLimits.config.min_delay_ms}-{rateLimits.config.min_delay_ms + rateLimits.config.max_random_delay_ms}ms</span>
-					<span>Concurrency: {rateLimits.config.queue_concurrency}</span>
-				</div>
-				{#if rateLimits.per_domain.length === 0}
-					<p class="empty">No active domains</p>
-				{:else}
-					<table class="rate-limits-table">
-						<thead>
-							<tr>
-								<th>Domain</th>
-								<th class="num">Hourly</th>
-								<th class="num">Daily</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each rateLimits.per_domain as domain}
-								<tr>
-									<td>{domain.domain}</td>
-									<td class="num">
-										<span class:at-limit={domain.hourly.remaining === 0}>
-											{domain.hourly.count} / {domain.hourly.limit}
-										</span>
-									</td>
-									<td class="num">
-										<span class:at-limit={domain.daily.remaining === 0}>
-											{domain.daily.count} / {domain.daily.limit}
-										</span>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				{/if}
-			</section>
-		{/if}
-
 		<!-- Add Domain -->
 		<section class="add-section">
 			<h2>Add Domain</h2>
@@ -284,6 +242,13 @@
 		<!-- Domains Table -->
 		<section class="domains-section">
 			<h2>Domains ({domains.length})</h2>
+			{#if rateLimits}
+				<div class="config-info" style="margin-bottom: var(--space-4)">
+					<span>Rate limit: {rateLimits.config.max_per_hour}/hour, {rateLimits.config.max_per_day}/day per domain</span>
+					<span>Delay: {rateLimits.config.min_delay_ms}-{rateLimits.config.min_delay_ms + rateLimits.config.max_random_delay_ms}ms</span>
+					<span>Concurrency: {rateLimits.config.queue_concurrency}</span>
+				</div>
+			{/if}
 			{#if domains.length === 0}
 				<p class="empty">No domains registered yet.</p>
 			{:else}
@@ -296,10 +261,13 @@
 							<th class="num">Completed</th>
 							<th class="num">Failed</th>
 							<th class="num">Total</th>
+							<th class="num">Hourly</th>
+							<th class="num">Daily</th>
 						</tr>
 					</thead>
 					<tbody>
 						{#each domains as domain}
+							{@const rateLimit = rateLimits?.per_domain.find(r => r.domain === domain.domain)}
 							<tr>
 								<td class="domain-name">{domain.domain}</td>
 								<td class="num">{formatNumber(domain.pending)}</td>
@@ -307,6 +275,24 @@
 								<td class="num">{formatNumber(domain.completed)}</td>
 								<td class="num failed-count">{formatNumber(domain.failed)}</td>
 								<td class="num">{formatNumber(domain.total)}</td>
+								<td class="num">
+									{#if rateLimit}
+										<span class:at-limit={rateLimit.hourly.remaining === 0}>
+											{rateLimit.hourly.count}/{rateLimit.hourly.limit}
+										</span>
+									{:else}
+										<span class="inactive">-</span>
+									{/if}
+								</td>
+								<td class="num">
+									{#if rateLimit}
+										<span class:at-limit={rateLimit.daily.remaining === 0}>
+											{rateLimit.daily.count}/{rateLimit.daily.limit}
+										</span>
+									{:else}
+										<span class="inactive">-</span>
+									{/if}
+								</td>
 							</tr>
 						{/each}
 					</tbody>
@@ -515,32 +501,13 @@
 		flex-wrap: wrap;
 	}
 
-	.rate-limits-table {
-		width: 100%;
-		border-collapse: collapse;
-	}
-
-	.rate-limits-table th,
-	.rate-limits-table td {
-		padding: var(--space-2) var(--space-3);
-		text-align: left;
-	}
-
-	.rate-limits-table th {
-		border-bottom: var(--border-width-default) solid var(--border-default);
-		font-size: var(--text-sm);
-		color: var(--text-secondary);
-		font-weight: var(--font-medium);
-	}
-
-	.rate-limits-table td {
-		border-bottom: var(--border-width-thin) solid var(--border-light);
-		font-size: var(--text-sm);
-	}
-
 	.at-limit {
 		color: var(--color-marinara-600);
 		font-weight: var(--font-medium);
+	}
+
+	.inactive {
+		color: var(--text-muted);
 	}
 
 	/* Add Domain Form */
