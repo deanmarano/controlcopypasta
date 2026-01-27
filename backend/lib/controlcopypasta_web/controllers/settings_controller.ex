@@ -2,6 +2,7 @@ defmodule ControlcopypastaWeb.SettingsController do
   use ControlcopypastaWeb, :controller
 
   alias Controlcopypasta.Accounts
+  alias ControlcopypastaWeb.Plugs.AdminAuth
 
   action_fallback ControlcopypastaWeb.FallbackController
 
@@ -11,7 +12,8 @@ defmodule ControlcopypastaWeb.SettingsController do
   def show_preferences(conn, _params) do
     user = conn.assigns.current_user
     preferences = Accounts.get_user_preferences(user)
-    render(conn, :preferences, preferences: preferences)
+    is_admin = AdminAuth.admin?(user.email)
+    render(conn, :preferences, preferences: preferences, is_admin: is_admin)
   end
 
   @doc """

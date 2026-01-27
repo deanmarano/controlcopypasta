@@ -558,6 +558,7 @@ export const avoidedIngredients = {
 // Settings API
 export interface UserPreferences {
   hide_avoided_ingredients: boolean;
+  is_admin?: boolean;
 }
 
 export const settings = {

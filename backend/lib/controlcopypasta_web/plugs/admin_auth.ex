@@ -20,4 +20,10 @@ defmodule ControlcopypastaWeb.Plugs.AdminAuth do
         |> halt()
     end
   end
+
+  @doc """
+  Checks if an email is an admin.
+  """
+  def admin?(email) when is_binary(email), do: email in @admin_emails
+  def admin?(_), do: false
 end
