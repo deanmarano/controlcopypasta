@@ -65,6 +65,14 @@ defmodule ControlcopypastaWeb.Router do
     delete "/:id", PasskeyController, :delete
   end
 
+  # Public API endpoints (no auth required)
+  scope "/api", ControlcopypastaWeb do
+    pipe_through :api
+
+    # Domain screenshots (public for <img> tags)
+    get "/browse/domains/:domain/screenshot", BrowseController, :domain_screenshot
+  end
+
   # Protected API endpoints (require authentication)
   scope "/api", ControlcopypastaWeb do
     pipe_through :api_authenticated
@@ -101,7 +109,6 @@ defmodule ControlcopypastaWeb.Router do
     # Browse recipes by domain
     get "/browse/domains", BrowseController, :domains
     get "/browse/domains/:domain", BrowseController, :recipes_by_domain
-    get "/browse/domains/:domain/screenshot", BrowseController, :domain_screenshot
     get "/browse/domains/:domain/recipes/:id", BrowseController, :show_recipe
     get "/browse/domains/:domain/recipes/:id/nutrition", BrowseController, :nutrition
 
