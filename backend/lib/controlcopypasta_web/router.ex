@@ -25,6 +25,13 @@ defmodule ControlcopypastaWeb.Router do
     plug :require_auth
   end
 
+  pipeline :api_admin do
+    plug :accepts, ["json"]
+    plug Auth
+    plug :require_auth
+    plug ControlcopypastaWeb.Plugs.AdminAuth
+  end
+
   defp require_auth(conn, _opts), do: Auth.require_auth(conn, [])
 
   # Public auth endpoints
@@ -112,6 +119,15 @@ defmodule ControlcopypastaWeb.Router do
     delete "/shopping-lists/:id/items/:item_id", ShoppingListController, :delete_item
     post "/shopping-lists/:id/items/:item_id/check", ShoppingListController, :check_item
     post "/shopping-lists/:id/items/:item_id/uncheck", ShoppingListController, :uncheck_item
+  end
+
+  # Admin endpoints (require admin role)
+  scope "/api", ControlcopypastaWeb do
+    pipe_through :api_admin
+
+    get "/admin/ingredients", Admin.IngredientController, :index
+    put "/admin/ingredients/:id", Admin.IngredientController, :update
+    get "/admin/ingredients/options", Admin.IngredientController, :options
   end
 
   # Enable LiveDashboard in development

@@ -35,6 +35,9 @@
 	// Allergen selection
 	let selectedAllergen = $state('');
 
+	// Animal type selection
+	let selectedAnimal = $state('');
+
 	// Preference toggle
 	let savingPreferences = $state(false);
 
@@ -184,6 +187,22 @@
 		}
 	}
 
+	// Add avoided animal type
+	async function addAnimal() {
+		if (!selectedAnimal) return;
+		const token = authStore.getToken();
+		if (!token) return;
+
+		error = '';
+		try {
+			const result = await avoidedIngredients.createByAnimal(token, selectedAnimal);
+			items = [...items, result.data].sort((a, b) => a.display_name.localeCompare(b.display_name));
+			selectedAnimal = '';
+		} catch {
+			error = 'Failed to add animal type (may already exist in your list)';
+		}
+	}
+
 	async function removeIngredient(id: string) {
 		const token = authStore.getToken();
 		if (!token) return;
@@ -295,6 +314,8 @@
 				return 'Category';
 			case 'allergen':
 				return 'Allergen';
+			case 'animal':
+				return 'Animal';
 			default:
 				return 'Ingredient';
 		}
@@ -305,7 +326,7 @@
 	}
 
 	function isExpandable(item: AvoidedIngredient): boolean {
-		return item.avoidance_type === 'category' || item.avoidance_type === 'allergen';
+		return item.avoidance_type === 'category' || item.avoidance_type === 'allergen' || item.avoidance_type === 'animal';
 	}
 
 	// Close search results when clicking outside
@@ -327,6 +348,14 @@
 		<a href="/settings/passkeys" class="settings-link">
 			<span class="link-title">Passkeys</span>
 			<span class="link-description">Manage passkeys for quick, secure sign-in</span>
+		</a>
+	</section>
+
+	<section class="settings-section">
+		<h2>Admin</h2>
+		<a href="/admin/ingredients" class="settings-link">
+			<span class="link-title">Manage Ingredients</span>
+			<span class="link-description">Set animal types and categories for ingredients</span>
 		</a>
 	</section>
 
@@ -419,6 +448,22 @@
 				</div>
 			{/if}
 
+			<!-- Animal Type Selection -->
+			{#if options?.animal_types}
+				<div class="add-method">
+					<h3>Avoid Animal Type</h3>
+					<div class="select-wrapper">
+						<select bind:value={selectedAnimal}>
+							<option value="">Select an animal...</option>
+							{#each options.animal_types as animal}
+								<option value={animal}>{formatLabel(animal)}</option>
+							{/each}
+						</select>
+						<button onclick={addAnimal} disabled={!selectedAnimal}>Add Animal</button>
+					</div>
+				</div>
+			{/if}
+
 			<!-- Text-based input (fallback) -->
 			<div class="add-method">
 				<h3>Add by Name</h3>
@@ -456,6 +501,9 @@
 							{/if}
 							{#if item.allergen_group}
 								<span class="detail">All {formatLabel(item.allergen_group)} allergens</span>
+							{/if}
+							{#if item.animal_type}
+								<span class="detail">All {formatLabel(item.animal_type)} products</span>
 							{/if}
 							{#if item.exception_count && item.exception_count > 0}
 								<span class="exception-badge">{item.exception_count} allowed</span>
@@ -834,6 +882,11 @@
 	.type-allergen .type-badge {
 		background: var(--color-marinara-100);
 		color: var(--color-marinara-700);
+	}
+
+	.type-animal .type-badge {
+		background: var(--color-pasta-200);
+		color: var(--color-pasta-800);
 	}
 
 	.name {

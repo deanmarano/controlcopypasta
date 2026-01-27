@@ -407,7 +407,7 @@ export const recipes = {
 };
 
 // Avoided Ingredients API
-export type AvoidanceType = 'ingredient' | 'category' | 'allergen';
+export type AvoidanceType = 'ingredient' | 'category' | 'allergen' | 'animal';
 
 export interface CanonicalIngredientRef {
   id: string;
@@ -429,7 +429,9 @@ export interface AvoidedIngredient {
   category?: string;
   // For allergen avoidance
   allergen_group?: string;
-  // For category/allergen avoidance - list of allowed exceptions
+  // For animal avoidance
+  animal_type?: string;
+  // For category/allergen/animal avoidance - list of allowed exceptions
   exceptions?: string[];
   exception_count?: number;
 }
@@ -455,6 +457,7 @@ export interface AvoidanceOptions {
   avoidance_types: AvoidanceType[];
   categories: string[];
   allergen_groups: string[];
+  animal_types: string[];
 }
 
 export const avoidedIngredients = {
@@ -509,6 +512,19 @@ export const avoidedIngredients = {
         avoided_ingredient: {
           avoidance_type: 'allergen',
           allergen_group: allergenGroup
+        }
+      }
+    }),
+
+  // Create avoided animal type
+  createByAnimal: (token: string, animalType: string) =>
+    request<{ data: AvoidedIngredient }>('/avoided-ingredients', {
+      method: 'POST',
+      token,
+      body: {
+        avoided_ingredient: {
+          avoidance_type: 'animal',
+          animal_type: animalType
         }
       }
     }),
@@ -873,6 +889,48 @@ export const shoppingLists = {
       method: 'POST',
       token
     })
+};
+
+// Admin API types
+export interface AdminIngredient {
+  id: string;
+  name: string;
+  display_name: string;
+  category: string | null;
+  subcategory: string | null;
+  animal_type: string | null;
+  tags: string[];
+  usage_count: number;
+}
+
+export interface AdminIngredientOptions {
+  categories: string[];
+  animal_types: string[];
+}
+
+// Admin API
+export const admin = {
+  ingredients: {
+    list: (token: string, params?: { category?: string; animal_type?: string; missing_animal_type?: boolean; search?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.category) searchParams.set('category', params.category);
+      if (params?.animal_type) searchParams.set('animal_type', params.animal_type);
+      if (params?.missing_animal_type) searchParams.set('missing_animal_type', 'true');
+      if (params?.search) searchParams.set('search', params.search);
+      const query = searchParams.toString();
+      return request<{ data: AdminIngredient[] }>(`/admin/ingredients${query ? `?${query}` : ''}`, { token });
+    },
+
+    update: (token: string, id: string, attrs: { animal_type?: string | null; category?: string; subcategory?: string; tags?: string[] }) =>
+      request<{ data: AdminIngredient }>(`/admin/ingredients/${id}`, {
+        method: 'PUT',
+        token,
+        body: { ingredient: attrs }
+      }),
+
+    options: (token: string) =>
+      request<AdminIngredientOptions>('/admin/ingredients/options', { token })
+  }
 };
 
 export { ApiError };

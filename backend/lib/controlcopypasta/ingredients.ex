@@ -100,6 +100,12 @@ defmodule Controlcopypasta.Ingredients do
     |> apply_filters(rest)
   end
 
+  defp apply_filters(query, [{:missing_animal_type, true} | rest]) do
+    query
+    |> where([i], i.category == "protein" and is_nil(i.animal_type))
+    |> apply_filters(rest)
+  end
+
   defp apply_filters(query, [{:dietary_flag, flag} | rest]) when is_binary(flag) do
     query
     |> where([i], ^flag in i.dietary_flags)
