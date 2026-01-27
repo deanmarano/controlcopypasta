@@ -60,6 +60,10 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
     # Dietary info
     field :dietary_flags, {:array, :string}, default: []
 
+    # Animal type for grouping animal-derived ingredients
+    # e.g., "chicken", "beef", "pork", "turkey", "salmon", etc.
+    field :animal_type, :string
+
     # Matching
     field :aliases, {:array, :string}, default: []
 
@@ -88,6 +92,7 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
     :is_allergen,
     :allergen_groups,
     :dietary_flags,
+    :animal_type,
     :aliases,
     :brand,
     :parent_company,
@@ -98,6 +103,7 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
   @valid_categories ~w(protein dairy produce grain spice herb condiment oil sweetener leavening nut legume beverage other)
   @valid_allergen_groups ~w(dairy eggs peanuts tree_nuts wheat gluten soy fish shellfish sesame)
   @valid_dietary_flags ~w(vegetarian vegan gluten_free dairy_free keto paleo)
+  @valid_animal_types ~w(chicken turkey duck beef pork lamb goat venison bison rabbit salmon tuna cod shrimp crab lobster scallop clam mussel oyster anchovy sardine mackerel trout tilapia halibut bass)
 
   @doc """
   Creates a changeset for a canonical ingredient.
@@ -109,6 +115,7 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
     |> validate_length(:name, min: 1, max: 255)
     |> validate_length(:display_name, min: 1, max: 255)
     |> validate_inclusion(:category, @valid_categories ++ [nil])
+    |> validate_inclusion(:animal_type, @valid_animal_types ++ [nil])
     |> validate_array_subset(:allergen_groups, @valid_allergen_groups)
     |> validate_array_subset(:dietary_flags, @valid_dietary_flags)
     |> normalize_name()
@@ -148,4 +155,9 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
   Returns valid dietary flag values.
   """
   def valid_dietary_flags, do: @valid_dietary_flags
+
+  @doc """
+  Returns valid animal type values.
+  """
+  def valid_animal_types, do: @valid_animal_types
 end

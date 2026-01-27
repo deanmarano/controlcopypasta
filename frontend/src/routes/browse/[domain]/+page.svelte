@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { browse, type Recipe } from '$lib/api/client';
+	import { browse, settings, type Recipe, type UserPreferences } from '$lib/api/client';
 
 	let recipeList = $state<Recipe[]>([]);
 	let loading = $state(true);
@@ -11,6 +11,10 @@
 	let total = $state(0);
 	let currentPage = $state(1);
 	const pageSize = 24;
+
+	// Avoided ingredients filtering
+	let hideAvoided = $state(false);
+	let preferencesLoaded = $state(false);
 
 	const domain = $derived($page.params.domain);
 	const totalPages = $derived(Math.ceil(total / pageSize));
@@ -22,10 +26,32 @@
 	});
 
 	$effect(() => {
-		if (domain) {
+		if (domain && preferencesLoaded) {
 			loadRecipes();
 		}
 	});
+
+	// Load user preferences on mount
+	$effect(() => {
+		if ($isAuthenticated && !preferencesLoaded) {
+			loadPreferences();
+		}
+	});
+
+	async function loadPreferences() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		try {
+			const result = await settings.getPreferences(token);
+			hideAvoided = result.data.hide_avoided_ingredients;
+		} catch {
+			// Default to not hiding if preferences can't be loaded
+			hideAvoided = false;
+		} finally {
+			preferencesLoaded = true;
+		}
+	}
 
 	async function loadRecipes() {
 		const token = authStore.getToken();
@@ -35,9 +61,10 @@
 		error = '';
 
 		try {
-			const params: { q?: string; limit: number; offset: number } = {
+			const params: { q?: string; limit: number; offset: number; hide_avoided?: boolean } = {
 				limit: pageSize,
-				offset: (currentPage - 1) * pageSize
+				offset: (currentPage - 1) * pageSize,
+				hide_avoided: hideAvoided
 			};
 			if (searchQuery) params.q = searchQuery;
 			const result = await browse.recipesByDomain(token, domain, params);
@@ -62,6 +89,12 @@
 		window.scrollTo({ top: 0, behavior: 'smooth' });
 	}
 
+	async function toggleHideAvoided() {
+		hideAvoided = !hideAvoided;
+		currentPage = 1;
+		await loadRecipes();
+	}
+
 	function formatTime(minutes: number | null): string {
 		if (!minutes) return '';
 		if (minutes < 60) return `${minutes}m`;
@@ -77,10 +110,17 @@
 		<h1>{domain}</h1>
 	</header>
 
-	<form class="search-form" onsubmit={handleSearch}>
-		<input type="search" bind:value={searchQuery} placeholder="Search recipes..." />
-		<button type="submit">Search</button>
-	</form>
+	<div class="filters-bar">
+		<form class="search-form" onsubmit={handleSearch}>
+			<input type="search" bind:value={searchQuery} placeholder="Search recipes..." />
+			<button type="submit">Search</button>
+		</form>
+
+		<label class="filter-toggle">
+			<input type="checkbox" checked={hideAvoided} onchange={toggleHideAvoided} />
+			<span>Hide avoided</span>
+		</label>
+	</div>
 
 	{#if loading}
 		<div class="loading">Loading recipes...</div>
@@ -89,10 +129,20 @@
 	{:else if recipeList.length === 0}
 		<div class="empty">
 			<p>No recipes found{searchQuery ? ` matching "${searchQuery}"` : ' for this source'}.</p>
+			{#if hideAvoided}
+				<p class="empty-hint">
+					Some recipes may be hidden due to your avoided ingredients settings.
+					<button class="text-link" onclick={toggleHideAvoided}>Show all recipes</button>
+				</p>
+			{/if}
 		</div>
 	{:else}
 		<div class="results-info">
-			Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, total)} of {total} recipes
+			Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, total)} of {total}
+			recipes
+			{#if hideAvoided}
+				<span class="filter-note">(hiding avoided ingredients)</span>
+			{/if}
 		</div>
 
 		<div class="recipe-grid">
@@ -142,7 +192,7 @@
 					{#each Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
 						const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
 						return start + i;
-					}).filter(p => p <= totalPages) as pageNum}
+					}).filter((p) => p <= totalPages) as pageNum}
 						<button
 							onclick={() => goToPage(pageNum)}
 							class="page-btn"
@@ -178,7 +228,7 @@
 	}
 
 	.page-header {
-		margin-bottom: var(--space-8);
+		margin-bottom: var(--space-6);
 	}
 
 	.back-link {
@@ -198,10 +248,19 @@
 		color: var(--color-marinara-800);
 	}
 
+	.filters-bar {
+		display: flex;
+		gap: var(--space-4);
+		align-items: center;
+		margin-bottom: var(--space-6);
+		flex-wrap: wrap;
+	}
+
 	.search-form {
 		display: flex;
 		gap: var(--space-2);
-		margin-bottom: var(--space-8);
+		flex: 1;
+		min-width: 200px;
 	}
 
 	.search-form input {
@@ -233,6 +292,32 @@
 		background: var(--color-marinara-600);
 	}
 
+	.filter-toggle {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-4);
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		user-select: none;
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+		border: var(--border-width-default) solid var(--border-default);
+		transition: all var(--transition-fast);
+	}
+
+	.filter-toggle:hover {
+		background: var(--color-pasta-50);
+		border-color: var(--color-pasta-200);
+	}
+
+	.filter-toggle input[type='checkbox'] {
+		width: 16px;
+		height: 16px;
+		accent-color: var(--color-marinara-500);
+	}
+
 	.loading,
 	.error,
 	.empty {
@@ -242,6 +327,26 @@
 
 	.error {
 		color: var(--color-error);
+	}
+
+	.empty-hint {
+		margin-top: var(--space-2);
+		font-size: var(--text-sm);
+		color: var(--text-muted);
+	}
+
+	.text-link {
+		background: none;
+		border: none;
+		color: var(--color-marinara-600);
+		text-decoration: underline;
+		cursor: pointer;
+		font-size: inherit;
+		padding: 0;
+	}
+
+	.text-link:hover {
+		color: var(--color-marinara-700);
 	}
 
 	.recipe-grid {
@@ -308,6 +413,11 @@
 		color: var(--text-secondary);
 		font-size: var(--text-sm);
 		margin-bottom: var(--space-4);
+	}
+
+	.filter-note {
+		color: var(--color-marinara-500);
+		font-style: italic;
 	}
 
 	.pagination {

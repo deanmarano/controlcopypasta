@@ -407,17 +407,65 @@ export const recipes = {
 };
 
 // Avoided Ingredients API
+export type AvoidanceType = 'ingredient' | 'category' | 'allergen';
+
+export interface CanonicalIngredientRef {
+  id: string;
+  name: string;
+  display_name: string;
+  category: string | null;
+}
+
 export interface AvoidedIngredient {
   id: string;
-  canonical_name: string;
   display_name: string;
+  avoidance_type: AvoidanceType;
   inserted_at: string;
+  // For ingredient avoidance
+  canonical_name?: string;
+  canonical_ingredient_id?: string;
+  canonical_ingredient?: CanonicalIngredientRef;
+  // For category avoidance
+  category?: string;
+  // For allergen avoidance
+  allergen_group?: string;
+  // For category/allergen avoidance - list of allowed exceptions
+  exceptions?: string[];
+  exception_count?: number;
+}
+
+export interface AvoidanceIngredientItem {
+  id: string;
+  name: string;
+  display_name: string;
+  category: string | null;
+  is_exception: boolean;
+}
+
+export interface AvoidanceIngredientsResponse {
+  avoidance_id: string;
+  avoidance_type: AvoidanceType;
+  display_name: string;
+  ingredients: AvoidanceIngredientItem[];
+  total_count: number;
+  exception_count: number;
+}
+
+export interface AvoidanceOptions {
+  avoidance_types: AvoidanceType[];
+  categories: string[];
+  allergen_groups: string[];
 }
 
 export const avoidedIngredients = {
   list: (token: string) =>
     request<{ data: AvoidedIngredient[] }>('/avoided-ingredients', { token }),
 
+  // Get available options for avoidance types, categories, and allergen groups
+  options: (token: string) =>
+    request<AvoidanceOptions>('/avoided-ingredients/options', { token }),
+
+  // Create text-based ingredient avoidance (legacy)
   create: (token: string, displayName: string) =>
     request<{ data: AvoidedIngredient }>('/avoided-ingredients', {
       method: 'POST',
@@ -425,10 +473,86 @@ export const avoidedIngredients = {
       body: { avoided_ingredient: { display_name: displayName } }
     }),
 
+  // Create avoided ingredient by canonical ingredient ID (precise)
+  createByIngredient: (token: string, canonicalIngredientId: string, displayName: string) =>
+    request<{ data: AvoidedIngredient }>('/avoided-ingredients', {
+      method: 'POST',
+      token,
+      body: {
+        avoided_ingredient: {
+          avoidance_type: 'ingredient',
+          canonical_ingredient_id: canonicalIngredientId,
+          display_name: displayName
+        }
+      }
+    }),
+
+  // Create avoided category
+  createByCategory: (token: string, category: string) =>
+    request<{ data: AvoidedIngredient }>('/avoided-ingredients', {
+      method: 'POST',
+      token,
+      body: {
+        avoided_ingredient: {
+          avoidance_type: 'category',
+          category
+        }
+      }
+    }),
+
+  // Create avoided allergen group
+  createByAllergen: (token: string, allergenGroup: string) =>
+    request<{ data: AvoidedIngredient }>('/avoided-ingredients', {
+      method: 'POST',
+      token,
+      body: {
+        avoided_ingredient: {
+          avoidance_type: 'allergen',
+          allergen_group: allergenGroup
+        }
+      }
+    }),
+
   delete: (token: string, id: string) =>
     request<null>(`/avoided-ingredients/${id}`, {
       method: 'DELETE',
       token
+    }),
+
+  // Get ingredients included in a category or allergen avoidance
+  getIngredients: (token: string, avoidanceId: string) =>
+    request<{ data: AvoidanceIngredientsResponse }>(`/avoided-ingredients/${avoidanceId}/ingredients`, { token }),
+
+  // Add an exception (allow an ingredient despite category/allergen avoidance)
+  addException: (token: string, avoidanceId: string, canonicalIngredientId: string) =>
+    request<{ data: AvoidedIngredient }>(`/avoided-ingredients/${avoidanceId}/exceptions`, {
+      method: 'POST',
+      token,
+      body: { canonical_ingredient_id: canonicalIngredientId }
+    }),
+
+  // Remove an exception (avoid the ingredient again as part of category/allergen)
+  removeException: (token: string, avoidanceId: string, canonicalIngredientId: string) =>
+    request<{ data: AvoidedIngredient }>(`/avoided-ingredients/${avoidanceId}/exceptions/${canonicalIngredientId}`, {
+      method: 'DELETE',
+      token
+    })
+};
+
+// Settings API
+export interface UserPreferences {
+  hide_avoided_ingredients: boolean;
+}
+
+export const settings = {
+  getPreferences: (token: string) =>
+    request<{ data: UserPreferences }>('/settings/preferences', { token }),
+
+  updatePreferences: (token: string, preferences: Partial<UserPreferences>) =>
+    request<{ data: UserPreferences }>('/settings/preferences', {
+      method: 'PUT',
+      token,
+      body: { preferences }
     })
 };
 
@@ -442,11 +566,12 @@ export const browse = {
   domains: (token: string) =>
     request<{ data: DomainInfo[] }>('/browse/domains', { token }),
 
-  recipesByDomain: (token: string, domain: string, params?: { q?: string; limit?: number; offset?: number }) => {
+  recipesByDomain: (token: string, domain: string, params?: { q?: string; limit?: number; offset?: number; hide_avoided?: boolean }) => {
     const searchParams = new URLSearchParams();
     if (params?.q) searchParams.set('q', params.q);
     if (params?.limit) searchParams.set('limit', params.limit.toString());
     if (params?.offset) searchParams.set('offset', params.offset.toString());
+    if (params?.hide_avoided !== undefined) searchParams.set('hide_avoided', params.hide_avoided.toString());
     const query = searchParams.toString();
     return request<{ data: Recipe[]; total: number }>(`/browse/domains/${encodeURIComponent(domain)}${query ? `?${query}` : ''}`, { token });
   },

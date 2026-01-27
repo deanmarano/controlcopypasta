@@ -71,6 +71,7 @@ defmodule Controlcopypasta.Recipes do
     |> where([r], r.source_domain == ^domain or r.source_domain == ^"www.#{domain}")
     |> apply_archived_filter(params)
     |> apply_search(params)
+    |> apply_avoided_filter(params)
     |> apply_pagination(params)
     |> preload(:tags)
     |> Repo.all()
@@ -81,6 +82,7 @@ defmodule Controlcopypasta.Recipes do
     |> where([r], r.source_domain == ^domain or r.source_domain == ^"www.#{domain}")
     |> apply_archived_filter(params)
     |> apply_search(params)
+    |> apply_avoided_filter(params)
     |> Repo.aggregate(:count)
   end
 
@@ -162,6 +164,23 @@ defmodule Controlcopypasta.Recipes do
   end
 
   defp apply_search(query, _), do: query
+
+  # Filter out recipes that contain any of the avoided canonical ingredient IDs
+  defp apply_avoided_filter(query, %{"exclude_ingredient_ids" => ids})
+       when is_list(ids) and ids != [] do
+    # Convert MapSet to list if needed
+    id_list = if is_struct(ids, MapSet), do: MapSet.to_list(ids), else: ids
+
+    from r in query,
+      where:
+        fragment(
+          "NOT EXISTS (SELECT 1 FROM jsonb_array_elements(?) AS elem WHERE elem->>'canonical_id' = ANY(?))",
+          r.ingredients,
+          ^id_list
+        )
+  end
+
+  defp apply_avoided_filter(query, _), do: query
 
   defp apply_pagination(query, params) do
     limit = Map.get(params, "limit", "50") |> parse_int(50) |> min(100)

@@ -74,6 +74,14 @@ defmodule ControlcopypastaWeb.Router do
 
     # Avoided ingredients
     resources "/avoided-ingredients", AvoidedIngredientController, only: [:index, :create, :delete]
+    get "/avoided-ingredients/options", AvoidedIngredientController, :options
+    get "/avoided-ingredients/:id/ingredients", AvoidedIngredientController, :show_ingredients
+    post "/avoided-ingredients/:id/exceptions", AvoidedIngredientController, :add_exception
+    delete "/avoided-ingredients/:id/exceptions/:canonical_ingredient_id", AvoidedIngredientController, :remove_exception
+
+    # Settings / Preferences
+    get "/settings/preferences", SettingsController, :show_preferences
+    put "/settings/preferences", SettingsController, :update_preferences
 
     # Ingredients catalog and scaling
     get "/ingredients", IngredientController, :index

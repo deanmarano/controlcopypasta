@@ -68,25 +68,9 @@ config :controlcopypasta, :scraping,
   # Maximum pages to scrape per day per domain
   max_per_day: 2500
 
-# Oban job queue configuration
-config :controlcopypasta, Oban,
-  repo: Controlcopypasta.Repo,
-  # Only 1 concurrent job per queue to respect rate limits
-  queues: [scraper: 1, scheduled: 1, fatsecret: 1, density: 1],
-  plugins: [
-    # Rate limit scraper to ~75/hour (1 job per 48 seconds)
-    {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)},
-    # Run scheduled jobs via cron
-    {Oban.Plugins.Cron,
-     crontab: [
-       # Check if scraper can be resumed every 5 minutes
-       {"*/5 * * * *", Controlcopypasta.Workers.ScraperUnpauser},
-       # Seed ingredient images daily at 2 AM UTC
-       {"0 2 * * *", Controlcopypasta.Workers.ImageSeeder},
-       # Update ingredient usage counts weekly on Sunday at 3 AM UTC
-       {"0 3 * * 0", Controlcopypasta.Workers.UsageCountUpdater}
-     ]}
-  ]
+# Oban job queue configuration is set in runtime.exs based on environment
+# Dev: scraping disabled by default (set ENABLE_SCRAPING=true to enable)
+# Prod: scraping enabled by default (set ENABLE_SCRAPING=false to disable)
 
 # FatSecret API rate limiting (free tier: 5,000 calls/month)
 config :controlcopypasta, :fatsecret,

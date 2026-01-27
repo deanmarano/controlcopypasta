@@ -94,6 +94,12 @@ defmodule Controlcopypasta.Ingredients do
     |> apply_filters(rest)
   end
 
+  defp apply_filters(query, [{:animal_type, animal_type} | rest]) when is_binary(animal_type) do
+    query
+    |> where([i], i.animal_type == ^animal_type)
+    |> apply_filters(rest)
+  end
+
   defp apply_filters(query, [{:dietary_flag, flag} | rest]) when is_binary(flag) do
     query
     |> where([i], ^flag in i.dietary_flags)
@@ -432,6 +438,39 @@ defmodule Controlcopypasta.Ingredients do
     |> where([i], fragment("? && ?", i.allergen_groups, ^allergen_groups))
     |> select([i], i.name)
     |> Repo.all()
+  end
+
+  @doc """
+  Returns a MapSet of canonical ingredient IDs for ingredients in the given categories.
+  """
+  def list_canonical_ids_by_categories(categories) when is_list(categories) do
+    CanonicalIngredient
+    |> where([i], i.category in ^categories)
+    |> select([i], i.id)
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
+  @doc """
+  Returns a MapSet of canonical ingredient IDs for ingredients in the given allergen groups.
+  """
+  def list_canonical_ids_by_allergen_groups(allergen_groups) when is_list(allergen_groups) do
+    CanonicalIngredient
+    |> where([i], fragment("? && ?", i.allergen_groups, ^allergen_groups))
+    |> select([i], i.id)
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
+  @doc """
+  Returns a MapSet of canonical ingredient IDs for ingredients of the given animal types.
+  """
+  def list_canonical_ids_by_animal_types(animal_types) when is_list(animal_types) do
+    CanonicalIngredient
+    |> where([i], i.animal_type in ^animal_types)
+    |> select([i], i.id)
+    |> Repo.all()
+    |> MapSet.new()
   end
 
   @doc """

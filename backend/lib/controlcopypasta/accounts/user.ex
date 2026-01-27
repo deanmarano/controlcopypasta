@@ -7,6 +7,7 @@ defmodule Controlcopypasta.Accounts.User do
 
   schema "users" do
     field :email, :string
+    field :hide_avoided_ingredients, :boolean, default: false
 
     has_many :recipes, Controlcopypasta.Recipes.Recipe
     has_many :avoided_ingredients, Controlcopypasta.Accounts.AvoidedIngredient
@@ -30,5 +31,13 @@ defmodule Controlcopypasta.Accounts.User do
       nil -> changeset
       email -> put_change(changeset, :email, String.downcase(email))
     end
+  end
+
+  @doc """
+  Creates a changeset for updating user preferences.
+  """
+  def preferences_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:hide_avoided_ingredients])
   end
 end

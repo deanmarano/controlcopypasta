@@ -7,6 +7,17 @@ if config_env() in [:dev, :test] do
   Enum.each(env, fn {key, value} ->
     System.put_env(key, value)
   end)
+
+  # Oban config for dev - scraping disabled by default
+  # Set ENABLE_SCRAPING=true in .env to enable
+  scraping_enabled = System.get_env("ENABLE_SCRAPING") == "true"
+
+  config :controlcopypasta, Oban,
+    repo: Controlcopypasta.Repo,
+    queues: if(scraping_enabled, do: [scraper: 1, scheduled: 1, fatsecret: 1, density: 1], else: [scheduled: 1]),
+    plugins: [
+      {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)}
+    ]
 end
 
 # config/runtime.exs is executed for all environments, including
@@ -123,20 +134,37 @@ if config_env() == :prod do
     config :controlcopypasta, Controlcopypasta.Mailer, smtp_config
   end
 
-  # Oban configuration - all queues including scraper, fatsecret, density
+  # Oban configuration - scraper enabled by default in prod, set ENABLE_SCRAPING=false to disable
+  scraping_enabled = System.get_env("ENABLE_SCRAPING", "true") == "true"
   scraper_concurrency = String.to_integer(System.get_env("OBAN_SCRAPER_CONCURRENCY") || "1")
+
+  scraper_queues =
+    if scraping_enabled do
+      [scraper: scraper_concurrency, scheduled: 1, fatsecret: 1, density: 1]
+    else
+      [scheduled: 1, fatsecret: 1, density: 1]
+    end
+
+  scraper_cron =
+    if scraping_enabled do
+      [
+        {"*/5 * * * *", Controlcopypasta.Workers.ScraperUnpauser},
+        {"0 2 * * *", Controlcopypasta.Workers.ImageSeeder},
+        {"0 3 * * 0", Controlcopypasta.Workers.UsageCountUpdater}
+      ]
+    else
+      [
+        {"0 2 * * *", Controlcopypasta.Workers.ImageSeeder},
+        {"0 3 * * 0", Controlcopypasta.Workers.UsageCountUpdater}
+      ]
+    end
 
   config :controlcopypasta, Oban,
     repo: Controlcopypasta.Repo,
-    queues: [scraper: scraper_concurrency, scheduled: 1, fatsecret: 1, density: 1],
+    queues: scraper_queues,
     plugins: [
       {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)},
-      {Oban.Plugins.Cron,
-       crontab: [
-         {"*/5 * * * *", Controlcopypasta.Workers.ScraperUnpauser},
-         {"0 2 * * *", Controlcopypasta.Workers.ImageSeeder},
-         {"0 3 * * 0", Controlcopypasta.Workers.UsageCountUpdater}
-       ]}
+      {Oban.Plugins.Cron, crontab: scraper_cron}
     ]
 
   # ## SSL Support

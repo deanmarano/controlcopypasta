@@ -77,11 +77,5 @@ config :controlcopypasta, Controlcopypasta.Mailer,
   relay: System.get_env("SMTP_HOST") || "localhost",
   port: String.to_integer(System.get_env("SMTP_PORT") || "1025")
 
-# Disable Oban cron jobs in development (keep queues for manual job testing)
-config :controlcopypasta, Oban,
-  repo: Controlcopypasta.Repo,
-  queues: [scraper: 1, scheduled: 1],
-  plugins: [
-    {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)}
-    # Cron plugin disabled in dev - enabled in prod via config.exs
-  ]
+# Oban config for dev is set in runtime.exs after .env is loaded
+# This allows ENABLE_SCRAPING env var to work properly
