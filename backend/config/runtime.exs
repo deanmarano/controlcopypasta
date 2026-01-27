@@ -134,6 +134,10 @@ if config_env() == :prod do
     config :controlcopypasta, Controlcopypasta.Mailer, smtp_config
   end
 
+  # Browser pool size - should match scraper concurrency for optimal throughput
+  browser_pool_size = String.to_integer(System.get_env("BROWSER_POOL_SIZE") || "1")
+  config :controlcopypasta, :browser_pool_size, browser_pool_size
+
   # Oban configuration - scraper enabled by default in prod, set ENABLE_SCRAPING=false to disable
   scraping_enabled = System.get_env("ENABLE_SCRAPING", "true") == "true"
   scraper_concurrency = String.to_integer(System.get_env("OBAN_SCRAPER_CONCURRENCY") || "1")

@@ -944,11 +944,23 @@ export interface QueueStats {
   total: number;
 }
 
+export interface BrowserStats {
+  total_actions: number;
+  success_count: number;
+  error_count: number;
+  last_action: string | null;
+  last_url: string | null;
+  last_result: string | null;
+  last_action_at: string | null;
+  started_at: string | null;
+}
+
 export interface BrowserStatus {
   running: boolean;
   pool_size: number;
   healthy: boolean;
   error: string | null;
+  stats: BrowserStats | null;
 }
 
 export interface DomainRateLimit {

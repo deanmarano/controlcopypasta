@@ -10,6 +10,7 @@ defmodule Controlcopypasta.Browser.Pool do
 
   @default_pool_size 2
   @checkout_timeout 40_000
+  @stats_table :browser_pool_stats
 
   def child_spec(opts) do
     %{
@@ -20,6 +21,9 @@ defmodule Controlcopypasta.Browser.Pool do
   end
 
   def start_link(opts \\ []) do
+    # Initialize stats ETS table
+    init_stats_table()
+
     pool_size =
       opts[:pool_size] ||
         Application.get_env(:controlcopypasta, :browser_pool_size, @default_pool_size)
@@ -31,6 +35,61 @@ defmodule Controlcopypasta.Browser.Pool do
     )
   end
 
+  defp init_stats_table do
+    if :ets.whereis(@stats_table) == :undefined do
+      :ets.new(@stats_table, [:named_table, :public, :set])
+      :ets.insert(@stats_table, {:stats, %{
+        total_actions: 0,
+        success_count: 0,
+        error_count: 0,
+        last_action: nil,
+        last_url: nil,
+        last_result: nil,
+        last_action_at: nil,
+        started_at: DateTime.utc_now()
+      }})
+    end
+  end
+
+  defp record_action(action, url, result) do
+    try do
+      [{:stats, stats}] = :ets.lookup(@stats_table, :stats)
+
+      {success_inc, error_inc, result_str} =
+        case result do
+          {:ok, _} -> {1, 0, "success"}
+          :pong -> {1, 0, "success"}
+          {:error, reason} -> {0, 1, "error: #{inspect(reason)}"}
+          _ -> {0, 0, "unknown"}
+        end
+
+      updated = %{stats |
+        total_actions: stats.total_actions + 1,
+        success_count: stats.success_count + success_inc,
+        error_count: stats.error_count + error_inc,
+        last_action: action,
+        last_url: url,
+        last_result: result_str,
+        last_action_at: DateTime.utc_now()
+      }
+
+      :ets.insert(@stats_table, {:stats, updated})
+    rescue
+      _ -> :ok
+    end
+  end
+
+  defp get_stats do
+    try do
+      case :ets.lookup(@stats_table, :stats) do
+        [{:stats, stats}] -> stats
+        _ -> nil
+      end
+    rescue
+      _ -> nil
+    end
+  end
+
   @doc """
   Fetches HTML from the given URL using a pooled browser worker.
   Returns {:ok, html} or {:error, reason}.
@@ -38,7 +97,7 @@ defmodule Controlcopypasta.Browser.Pool do
   def fetch_html(url, opts \\ []) do
     timeout = opts[:timeout] || @checkout_timeout
 
-    NimblePool.checkout!(
+    result = NimblePool.checkout!(
       __MODULE__,
       :checkout,
       fn _from, worker ->
@@ -53,9 +112,13 @@ defmodule Controlcopypasta.Browser.Pool do
       end,
       timeout
     )
+    record_action(:fetch, url, result)
+    result
   catch
     :exit, {:timeout, _} ->
-      {:error, "Browser pool checkout timeout"}
+      error = {:error, "Browser pool checkout timeout"}
+      record_action(:fetch, url, error)
+      error
   end
 
   @doc """
@@ -65,7 +128,7 @@ defmodule Controlcopypasta.Browser.Pool do
   def screenshot(url, opts \\ []) do
     timeout = opts[:timeout] || @checkout_timeout
 
-    NimblePool.checkout!(
+    result = NimblePool.checkout!(
       __MODULE__,
       :checkout,
       fn _from, worker ->
@@ -78,9 +141,13 @@ defmodule Controlcopypasta.Browser.Pool do
       end,
       timeout
     )
+    record_action(:screenshot, url, result)
+    result
   catch
     :exit, {:timeout, _} ->
-      {:error, "Browser pool checkout timeout"}
+      error = {:error, "Browser pool checkout timeout"}
+      record_action(:screenshot, url, error)
+      error
   end
 
   @doc """
@@ -105,13 +172,16 @@ defmodule Controlcopypasta.Browser.Pool do
   Returns the current status of the browser pool.
   """
   def status do
+    stats = get_stats()
+
     case Process.whereis(__MODULE__) do
       nil ->
         %{
           running: false,
           pool_size: 0,
           healthy: false,
-          error: "Pool not started"
+          error: "Pool not started",
+          stats: nil
         }
 
       _pid ->
@@ -133,7 +203,8 @@ defmodule Controlcopypasta.Browser.Pool do
           running: true,
           pool_size: pool_size,
           healthy: health.healthy,
-          error: health.error
+          error: health.error,
+          stats: stats
         }
     end
   end

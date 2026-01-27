@@ -266,6 +266,48 @@
 						{/if}
 					</div>
 				</div>
+				{#if browserStatus.stats}
+					<div class="browser-stats">
+						<div class="browser-stats-counts">
+							<div class="browser-stat">
+								<span class="browser-stat-value">{formatNumber(browserStatus.stats.total_actions)}</span>
+								<span class="browser-stat-label">Total Actions</span>
+							</div>
+							<div class="browser-stat success">
+								<span class="browser-stat-value">{formatNumber(browserStatus.stats.success_count)}</span>
+								<span class="browser-stat-label">Success</span>
+							</div>
+							<div class="browser-stat error">
+								<span class="browser-stat-value">{formatNumber(browserStatus.stats.error_count)}</span>
+								<span class="browser-stat-label">Errors</span>
+							</div>
+						</div>
+						{#if browserStatus.stats.last_action}
+							<div class="browser-last-action">
+								<h3>Last Action</h3>
+								<div class="last-action-details">
+									<span class="last-action-type">{browserStatus.stats.last_action}</span>
+									<span class="last-action-result" class:result-success={browserStatus.stats.last_result === 'success'} class:result-error={browserStatus.stats.last_result?.startsWith('error')}>
+										{browserStatus.stats.last_result}
+									</span>
+									{#if browserStatus.stats.last_action_at}
+										<span class="last-action-time">{new Date(browserStatus.stats.last_action_at).toLocaleString()}</span>
+									{/if}
+								</div>
+								{#if browserStatus.stats.last_url}
+									<div class="last-action-url" title={browserStatus.stats.last_url}>
+										{browserStatus.stats.last_url}
+									</div>
+								{/if}
+							</div>
+						{/if}
+						{#if browserStatus.stats.started_at}
+							<div class="browser-uptime">
+								Started: {new Date(browserStatus.stats.started_at).toLocaleString()}
+							</div>
+						{/if}
+					</div>
+				{/if}
 			{:else}
 				<p class="empty">Browser status unavailable</p>
 			{/if}
@@ -579,6 +621,108 @@
 
 	.browser-error {
 		color: var(--color-marinara-600);
+	}
+
+	.browser-stats {
+		margin-top: var(--space-4);
+		padding-top: var(--space-4);
+		border-top: var(--border-width-thin) solid var(--border-light);
+	}
+
+	.browser-stats-counts {
+		display: flex;
+		gap: var(--space-4);
+		margin-bottom: var(--space-4);
+	}
+
+	.browser-stat {
+		background: var(--bg-surface);
+		padding: var(--space-3);
+		border-radius: var(--radius-md);
+		text-align: center;
+		min-width: 80px;
+	}
+
+	.browser-stat.success .browser-stat-value {
+		color: var(--color-basil-600);
+	}
+
+	.browser-stat.error .browser-stat-value {
+		color: var(--color-marinara-600);
+	}
+
+	.browser-stat-value {
+		display: block;
+		font-size: var(--text-xl);
+		font-weight: var(--font-bold);
+		color: var(--text-primary);
+	}
+
+	.browser-stat-label {
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+	}
+
+	.browser-last-action {
+		background: var(--bg-surface);
+		padding: var(--space-3);
+		border-radius: var(--radius-md);
+		margin-bottom: var(--space-3);
+	}
+
+	.browser-last-action h3 {
+		margin: 0 0 var(--space-2);
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+		font-weight: var(--font-medium);
+	}
+
+	.last-action-details {
+		display: flex;
+		gap: var(--space-3);
+		align-items: center;
+		margin-bottom: var(--space-2);
+	}
+
+	.last-action-type {
+		font-weight: var(--font-medium);
+		text-transform: capitalize;
+	}
+
+	.last-action-result {
+		font-size: var(--text-sm);
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		background: var(--color-gray-100);
+	}
+
+	.last-action-result.result-success {
+		background: var(--color-basil-100);
+		color: var(--color-basil-700);
+	}
+
+	.last-action-result.result-error {
+		background: rgba(220, 74, 61, 0.1);
+		color: var(--color-marinara-700);
+	}
+
+	.last-action-time {
+		font-size: var(--text-sm);
+		color: var(--text-muted);
+	}
+
+	.last-action-url {
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		max-width: 100%;
+	}
+
+	.browser-uptime {
+		font-size: var(--text-sm);
+		color: var(--text-muted);
 	}
 
 	/* Stats */
