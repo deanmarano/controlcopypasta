@@ -138,8 +138,7 @@
 					<h2>Nutrition Facts</h2>
 					{#if selectedNutrition}
 						<p class="serving-size">
-							Serving Size: {selectedNutrition.serving_size_value}{ingredient.nutrition
-								.serving_size_unit}
+							Serving Size: {selectedNutrition.serving_size_value}{selectedNutrition.serving_size_unit}
 							{#if selectedNutrition.serving_description}
 								({selectedNutrition.serving_description})
 							{/if}

@@ -101,6 +101,43 @@ defmodule Controlcopypasta.Browser.Pool do
     _ -> {:error, :health_check_failed}
   end
 
+  @doc """
+  Returns the current status of the browser pool.
+  """
+  def status do
+    case Process.whereis(__MODULE__) do
+      nil ->
+        %{
+          running: false,
+          pool_size: 0,
+          healthy: false,
+          error: "Pool not started"
+        }
+
+      _pid ->
+        pool_size = Application.get_env(:controlcopypasta, :browser_pool_size, @default_pool_size)
+
+        health =
+          try do
+            case health_check() do
+              :pong -> %{healthy: true, error: nil}
+              {:error, reason} -> %{healthy: false, error: inspect(reason)}
+            end
+          rescue
+            e -> %{healthy: false, error: Exception.message(e)}
+          catch
+            :exit, reason -> %{healthy: false, error: inspect(reason)}
+          end
+
+        %{
+          running: true,
+          pool_size: pool_size,
+          healthy: health.healthy,
+          error: health.error
+        }
+    end
+  end
+
   # NimblePool callbacks
 
   @impl NimblePool

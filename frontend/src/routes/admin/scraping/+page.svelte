@@ -7,13 +7,15 @@
 		type DomainStats,
 		type QueueStats,
 		type RateLimitStatus,
-		type FailedUrl
+		type FailedUrl,
+		type BrowserStatus
 	} from '$lib/api/client';
 
 	let domains = $state<DomainStats[]>([]);
 	let queueStats = $state<QueueStats | null>(null);
 	let rateLimits = $state<RateLimitStatus | null>(null);
 	let failedUrls = $state<FailedUrl[]>([]);
+	let browserStatus = $state<BrowserStatus | null>(null);
 	let loading = $state(true);
 	let error = $state('');
 	let message = $state('');
@@ -41,7 +43,7 @@
 	async function loadAll() {
 		loading = true;
 		error = '';
-		await Promise.all([loadDomains(), loadQueueStats(), loadRateLimits(), loadFailed()]);
+		await Promise.all([loadDomains(), loadQueueStats(), loadRateLimits(), loadFailed(), loadBrowserStatus()]);
 		loading = false;
 	}
 
@@ -89,6 +91,18 @@
 			failedUrls = result.data;
 		} catch {
 			// Handled by loadDomains error
+		}
+	}
+
+	async function loadBrowserStatus() {
+		const token = authStore.getToken();
+		if (!token) return;
+		try {
+			const result = await admin.scraper.browserStatus(token);
+			browserStatus = result.data;
+		} catch {
+			// Browser status not critical, just set to null
+			browserStatus = null;
 		}
 	}
 
@@ -197,6 +211,35 @@
 	{#if !accessDenied && loading}
 		<p class="loading">Loading...</p>
 	{:else if !accessDenied}
+		<!-- Browser Pool Status -->
+		<section class="browser-section">
+			<h2>Browser Pool</h2>
+			{#if browserStatus}
+				<div class="browser-status" class:healthy={browserStatus.running && browserStatus.healthy} class:unhealthy={!browserStatus.running || !browserStatus.healthy}>
+					<div class="status-indicator">
+						<span class="status-dot"></span>
+						<span class="status-text">
+							{#if !browserStatus.running}
+								Not Running
+							{:else if browserStatus.healthy}
+								Healthy
+							{:else}
+								Unhealthy
+							{/if}
+						</span>
+					</div>
+					<div class="browser-details">
+						<span>Pool Size: {browserStatus.pool_size}</span>
+						{#if browserStatus.error}
+							<span class="browser-error">Error: {browserStatus.error}</span>
+						{/if}
+					</div>
+				</div>
+			{:else}
+				<p class="empty">Browser status unavailable</p>
+			{/if}
+		</section>
+
 		<!-- Queue Stats -->
 		{#if queueStats}
 			<section class="stats-section">
@@ -444,6 +487,61 @@
 	.empty {
 		color: var(--text-muted);
 		font-style: italic;
+	}
+
+	/* Browser Status */
+	.browser-status {
+		display: flex;
+		align-items: center;
+		gap: var(--space-6);
+		padding: var(--space-3);
+		border-radius: var(--radius-md);
+		background: var(--bg-surface);
+	}
+
+	.browser-status.healthy {
+		border-left: 4px solid var(--color-basil-500);
+	}
+
+	.browser-status.unhealthy {
+		border-left: 4px solid var(--color-marinara-500);
+	}
+
+	.status-indicator {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+
+	.status-dot {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--color-gray-400);
+	}
+
+	.healthy .status-dot {
+		background: var(--color-basil-500);
+		box-shadow: 0 0 8px var(--color-basil-400);
+	}
+
+	.unhealthy .status-dot {
+		background: var(--color-marinara-500);
+	}
+
+	.status-text {
+		font-weight: var(--font-medium);
+	}
+
+	.browser-details {
+		display: flex;
+		gap: var(--space-4);
+		color: var(--text-secondary);
+		font-size: var(--text-sm);
+	}
+
+	.browser-error {
+		color: var(--color-marinara-600);
 	}
 
 	/* Stats */

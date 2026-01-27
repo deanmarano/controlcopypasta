@@ -943,6 +943,13 @@ export interface QueueStats {
   total: number;
 }
 
+export interface BrowserStatus {
+  running: boolean;
+  pool_size: number;
+  healthy: boolean;
+  error: string | null;
+}
+
 export interface DomainRateLimit {
   domain: string;
   hourly: { count: number; limit: number; remaining: number };
@@ -1021,7 +1028,10 @@ export const admin = {
       request<{ data: { domain: string; status: string } }>(`/admin/scraper/domains/${encodeURIComponent(domain)}/screenshot`, {
         method: 'POST',
         token
-      })
+      }),
+
+    browserStatus: (token: string) =>
+      request<{ data: BrowserStatus }>('/admin/scraper/browser-status', { token })
   },
 
   ingredients: {

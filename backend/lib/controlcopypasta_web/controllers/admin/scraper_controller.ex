@@ -104,6 +104,14 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
   end
 
   @doc """
+  Gets browser pool status.
+  """
+  def browser_status(conn, _params) do
+    status = BrowserPool.status()
+    json(conn, %{data: status})
+  end
+
+  @doc """
   Captures a screenshot of a domain's homepage.
   """
   def capture_screenshot(conn, %{"domain" => domain}) do
