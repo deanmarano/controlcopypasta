@@ -59,6 +59,31 @@ defmodule Controlcopypasta.Browser.Pool do
   end
 
   @doc """
+  Captures a screenshot from the given URL using a pooled browser worker.
+  Returns {:ok, base64_screenshot} or {:error, reason}.
+  """
+  def screenshot(url, opts \\ []) do
+    timeout = opts[:timeout] || @checkout_timeout
+
+    NimblePool.checkout!(
+      __MODULE__,
+      :checkout,
+      fn _from, worker ->
+        result = Worker.screenshot(worker, url, timeout - 5_000)
+        case result do
+          {:ok, _screenshot} -> {result, :ok}
+          {:error, :port_crashed} -> {result, {:error, :crashed}}
+          {:error, _} -> {result, :ok}
+        end
+      end,
+      timeout
+    )
+  catch
+    :exit, {:timeout, _} ->
+      {:error, "Browser pool checkout timeout"}
+  end
+
+  @doc """
   Checks pool health by pinging a worker.
   Returns :pong or {:error, reason}.
   """

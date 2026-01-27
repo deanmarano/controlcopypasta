@@ -2,11 +2,12 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { browse, type DomainInfo } from '$lib/api/client';
+	import { browse, getDomainScreenshotUrl, getDomainFaviconUrl, type DomainInfo } from '$lib/api/client';
 
 	let domains = $state<DomainInfo[]>([]);
 	let loading = $state(true);
 	let error = $state('');
+	let failedScreenshots = $state<Set<string>>(new Set());
 
 	$effect(() => {
 		if (!$isAuthenticated) {
@@ -38,6 +39,10 @@
 	function formatDomain(domain: string): string {
 		return domain.replace(/^www\./, '');
 	}
+
+	function handleScreenshotError(domain: string) {
+		failedScreenshots = new Set([...failedScreenshots, domain]);
+	}
 </script>
 
 <div class="browse-page">
@@ -58,8 +63,35 @@
 		<div class="domain-grid">
 			{#each domains as domain}
 				<a href="/browse/{encodeURIComponent(formatDomain(domain.domain))}" class="domain-card">
-					<h2>{formatDomain(domain.domain)}</h2>
-					<span class="count">{domain.count} recipes</span>
+					{#if domain.has_screenshot && !failedScreenshots.has(domain.domain)}
+						<div class="screenshot-container">
+							<img
+								src={getDomainScreenshotUrl(domain.domain)}
+								alt="{formatDomain(domain.domain)} screenshot"
+								class="screenshot"
+								onerror={() => handleScreenshotError(domain.domain)}
+							/>
+						</div>
+					{:else}
+						<div class="screenshot-placeholder">
+							<img
+								src={getDomainFaviconUrl(domain.domain)}
+								alt="{formatDomain(domain.domain)} favicon"
+								class="placeholder-favicon"
+							/>
+						</div>
+					{/if}
+					<div class="card-content">
+						<div class="domain-header">
+							<img
+								src={getDomainFaviconUrl(domain.domain)}
+								alt=""
+								class="favicon"
+							/>
+							<h2>{formatDomain(domain.domain)}</h2>
+						</div>
+						<span class="count">{domain.count} recipes</span>
+					</div>
 				</a>
 			{/each}
 		</div>
@@ -98,17 +130,19 @@
 
 	.domain-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 		gap: var(--space-6);
 	}
 
 	.domain-card {
 		background: var(--bg-card);
 		border-radius: var(--radius-lg);
-		padding: var(--space-6);
 		box-shadow: var(--shadow-md);
 		text-decoration: none;
 		transition: all var(--transition-normal);
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.domain-card:hover {
@@ -116,10 +150,59 @@
 		box-shadow: var(--shadow-lg);
 	}
 
+	.screenshot-container {
+		width: 100%;
+		height: 160px;
+		overflow: hidden;
+		background: var(--bg-secondary);
+	}
+
+	.screenshot {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: top center;
+	}
+
+	.screenshot-placeholder {
+		width: 100%;
+		height: 160px;
+		background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.placeholder-favicon {
+		width: 64px;
+		height: 64px;
+		opacity: 0.6;
+	}
+
+	.card-content {
+		padding: var(--space-4);
+	}
+
+	.domain-header {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		margin-bottom: var(--space-1);
+	}
+
+	.favicon {
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
+	}
+
 	.domain-card h2 {
-		margin: 0 0 var(--space-2);
+		margin: 0;
 		color: var(--color-marinara-800);
-		font-size: var(--text-xl);
+		font-size: var(--text-lg);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.domain-card .count {

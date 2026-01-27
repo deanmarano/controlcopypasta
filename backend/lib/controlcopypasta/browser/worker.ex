@@ -25,6 +25,14 @@ defmodule Controlcopypasta.Browser.Worker do
   end
 
   @doc """
+  Captures a screenshot of the given URL.
+  Returns {:ok, base64_screenshot} or {:error, reason}.
+  """
+  def screenshot(worker, url, timeout \\ @default_timeout) do
+    GenServer.call(worker, {:screenshot, url, timeout}, timeout)
+  end
+
+  @doc """
   Pings the worker to check if it's responsive.
   Returns :pong or {:error, reason}.
   """
@@ -64,6 +72,21 @@ defmodule Controlcopypasta.Browser.Worker do
     end
   end
 
+  def handle_call({:screenshot, url, timeout}, from, state) do
+    id = generate_id()
+    node_timeout = max(timeout - 5_000, 10_000)
+    command = %{type: "screenshot", id: id, url: url, timeout: node_timeout}
+
+    case send_command(state.port, command) do
+      :ok ->
+        pending = Map.put(state.pending, id, from)
+        {:noreply, %{state | pending: pending}}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
   def handle_call(:ping, from, state) do
     id = generate_id()
     command = %{type: "ping", id: id}
@@ -83,6 +106,9 @@ defmodule Controlcopypasta.Browser.Worker do
     case Jason.decode(data) do
       {:ok, %{"id" => id, "status" => "ok", "html" => html}} ->
         reply_and_remove(state, id, {:ok, html})
+
+      {:ok, %{"id" => id, "status" => "ok", "screenshot" => screenshot}} ->
+        reply_and_remove(state, id, {:ok, screenshot})
 
       {:ok, %{"id" => id, "status" => "error", "error" => error}} ->
         reply_and_remove(state, id, {:error, error})

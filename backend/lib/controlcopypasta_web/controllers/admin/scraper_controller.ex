@@ -2,6 +2,7 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
   use ControlcopypastaWeb, :controller
 
   alias Controlcopypasta.Scraper
+  alias Controlcopypasta.Browser.Pool, as: BrowserPool
 
   action_fallback ControlcopypastaWeb.FallbackController
 
@@ -100,5 +101,24 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
     opts = if params["domain"], do: [domain: params["domain"]], else: []
     {:ok, result} = Scraper.retry_failed(opts)
     json(conn, %{data: result})
+  end
+
+  @doc """
+  Captures a screenshot of a domain's homepage.
+  """
+  def capture_screenshot(conn, %{"domain" => domain}) do
+    url = "https://#{domain}"
+
+    case BrowserPool.screenshot(url, timeout: 60_000) do
+      {:ok, base64_screenshot} ->
+        screenshot = Base.decode64!(base64_screenshot)
+        {:ok, _domain} = Scraper.update_domain_screenshot(domain, screenshot)
+        json(conn, %{data: %{domain: domain, status: "captured"}})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: "Failed to capture screenshot: #{inspect(reason)}"})
+    end
   end
 end

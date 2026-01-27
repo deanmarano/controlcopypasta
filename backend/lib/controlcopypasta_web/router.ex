@@ -101,6 +101,7 @@ defmodule ControlcopypastaWeb.Router do
     # Browse recipes by domain
     get "/browse/domains", BrowseController, :domains
     get "/browse/domains/:domain", BrowseController, :recipes_by_domain
+    get "/browse/domains/:domain/screenshot", BrowseController, :domain_screenshot
     get "/browse/domains/:domain/recipes/:id", BrowseController, :show_recipe
     get "/browse/domains/:domain/recipes/:id/nutrition", BrowseController, :nutrition
 
@@ -139,6 +140,7 @@ defmodule ControlcopypastaWeb.Router do
     post "/admin/scraper/resume", Admin.ScraperController, :resume
     get "/admin/scraper/failed", Admin.ScraperController, :failed
     post "/admin/scraper/retry-failed", Admin.ScraperController, :retry_failed
+    post "/admin/scraper/domains/:domain/screenshot", Admin.ScraperController, :capture_screenshot
   end
 
   # Enable LiveDashboard in development

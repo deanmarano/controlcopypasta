@@ -577,6 +577,22 @@ export const settings = {
 export interface DomainInfo {
   domain: string;
   count: number;
+  has_screenshot: boolean;
+  favicon_url: string | null;
+}
+
+// Helper to get screenshot URL for a domain
+export function getDomainScreenshotUrl(domain: string): string {
+  const apiBase = import.meta.env.VITE_API_URL ||
+    (typeof window !== 'undefined'
+      ? `http://${window.location.hostname}:4000/api`
+      : 'http://localhost:4000/api');
+  return `${apiBase}/browse/domains/${encodeURIComponent(domain)}/screenshot`;
+}
+
+// Helper to get Google favicon URL for a domain
+export function getDomainFaviconUrl(domain: string): string {
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
 }
 
 export const browse = {
@@ -999,6 +1015,12 @@ export const admin = {
         method: 'POST',
         token,
         body: domain ? { domain } : {}
+      }),
+
+    captureScreenshot: (token: string, domain: string) =>
+      request<{ data: { domain: string; status: string } }>(`/admin/scraper/domains/${encodeURIComponent(domain)}/screenshot`, {
+        method: 'POST',
+        token
       })
   },
 

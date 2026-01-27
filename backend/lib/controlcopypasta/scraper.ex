@@ -8,7 +8,7 @@ defmodule Controlcopypasta.Scraper do
 
   import Ecto.Query, warn: false
   alias Controlcopypasta.Repo
-  alias Controlcopypasta.Scraper.{ScrapeUrl, ScrapeWorker}
+  alias Controlcopypasta.Scraper.{ScrapeUrl, ScrapeWorker, Domain}
 
   @doc """
   Enqueues a single URL for scraping.
@@ -394,6 +394,87 @@ defmodule Controlcopypasta.Scraper do
     case Application.get_env(:controlcopypasta, Oban)[:queues] do
       queues when is_list(queues) -> Keyword.get(queues, :scraper, 1)
       _ -> 1
+    end
+  end
+
+  # Domain metadata management
+
+  @doc """
+  Gets or creates a domain record.
+  """
+  def get_or_create_domain(domain_name) do
+    normalized = normalize_domain(domain_name)
+
+    case Repo.get_by(Domain, domain: normalized) do
+      nil ->
+        %Domain{}
+        |> Domain.changeset(%{domain: normalized})
+        |> Repo.insert()
+
+      domain ->
+        {:ok, domain}
+    end
+  end
+
+  @doc """
+  Gets a domain by name.
+  """
+  def get_domain(domain_name) do
+    normalized = normalize_domain(domain_name)
+    Repo.get_by(Domain, domain: normalized)
+  end
+
+  @doc """
+  Updates a domain's screenshot.
+  """
+  def update_domain_screenshot(domain_name, screenshot_binary) do
+    case get_or_create_domain(domain_name) do
+      {:ok, domain} ->
+        domain
+        |> Domain.changeset(%{
+          screenshot: screenshot_binary,
+          screenshot_captured_at: DateTime.utc_now()
+        })
+        |> Repo.update()
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
+  Gets all domains with their metadata.
+  """
+  def list_domains_with_metadata do
+    # Get domains from scrape_urls with counts
+    domain_stats = get_domain_stats()
+
+    # Get domain metadata
+    domains_map =
+      Domain
+      |> Repo.all()
+      |> Map.new(fn d -> {d.domain, d} end)
+
+    # Merge stats with metadata
+    Enum.map(domain_stats, fn stats ->
+      domain_meta = Map.get(domains_map, stats.domain)
+
+      %{
+        domain: stats.domain,
+        count: stats.completed,
+        has_screenshot: domain_meta != nil && domain_meta.screenshot != nil,
+        favicon_url: if(domain_meta, do: domain_meta.favicon_url, else: nil)
+      }
+    end)
+  end
+
+  @doc """
+  Gets a domain's screenshot binary.
+  """
+  def get_domain_screenshot(domain_name) do
+    case get_domain(domain_name) do
+      %Domain{screenshot: screenshot} when screenshot != nil -> {:ok, screenshot}
+      _ -> {:error, :not_found}
     end
   end
 end

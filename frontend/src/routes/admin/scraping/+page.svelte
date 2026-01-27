@@ -27,6 +27,9 @@
 	// Selected domain for filtering
 	let selectedDomain = $state('');
 
+	// Screenshot capture
+	let capturingScreenshot = $state<string | null>(null);
+
 	$effect(() => {
 		if (!$isAuthenticated) goto('/login');
 	});
@@ -154,6 +157,24 @@
 	function formatNumber(n: number): string {
 		return n.toLocaleString();
 	}
+
+	async function captureScreenshot(domain: string) {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		capturingScreenshot = domain;
+		error = '';
+		message = '';
+
+		try {
+			await admin.scraper.captureScreenshot(token, domain);
+			message = `Screenshot captured for ${domain}`;
+		} catch {
+			error = `Failed to capture screenshot for ${domain}`;
+		} finally {
+			capturingScreenshot = null;
+		}
+	}
 </script>
 
 <div class="admin-page">
@@ -263,6 +284,7 @@
 							<th class="num">Total</th>
 							<th class="num">Hourly</th>
 							<th class="num">Daily</th>
+							<th>Actions</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -292,6 +314,15 @@
 									{:else}
 										<span class="inactive">-</span>
 									{/if}
+								</td>
+								<td>
+									<button
+										class="btn-small"
+										onclick={() => captureScreenshot(domain.domain)}
+										disabled={capturingScreenshot !== null}
+									>
+										{capturingScreenshot === domain.domain ? 'Capturing...' : 'Screenshot'}
+									</button>
 								</td>
 							</tr>
 						{/each}
@@ -620,5 +651,25 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.btn-small {
+		background: var(--color-gray-500);
+		color: white;
+		border: none;
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		font-size: var(--text-xs);
+		white-space: nowrap;
+	}
+
+	.btn-small:hover:not(:disabled) {
+		background: var(--color-gray-600);
+	}
+
+	.btn-small:disabled {
+		background: var(--color-gray-400);
+		cursor: not-allowed;
 	}
 </style>

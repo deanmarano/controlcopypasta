@@ -3,13 +3,26 @@ defmodule ControlcopypastaWeb.BrowseController do
 
   alias Controlcopypasta.Recipes
   alias Controlcopypasta.Accounts
+  alias Controlcopypasta.Scraper
   alias Controlcopypasta.Nutrition.Calculator
 
   action_fallback ControlcopypastaWeb.FallbackController
 
   def domains(conn, _params) do
-    domains = Recipes.list_domains()
+    domains = Scraper.list_domains_with_metadata()
     render(conn, :domains, domains: domains)
+  end
+
+  def domain_screenshot(conn, %{"domain" => domain}) do
+    case Scraper.get_domain_screenshot(domain) do
+      {:ok, screenshot} ->
+        conn
+        |> put_resp_content_type("image/jpeg")
+        |> send_resp(200, screenshot)
+
+      {:error, :not_found} ->
+        send_resp(conn, 404, "")
+    end
   end
 
   def recipes_by_domain(conn, %{"domain" => domain} = params) do

@@ -36,6 +36,29 @@ async function fetchHtml(url, timeout = 30000) {
   }
 }
 
+async function captureScreenshot(url, timeout = 30000) {
+  const b = await initBrowser();
+  const context = await b.newContext({
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    viewport: { width: 1280, height: 720 }
+  });
+  const page = await context.newPage();
+
+  try {
+    await page.goto(url, {
+      waitUntil: 'domcontentloaded',
+      timeout
+    });
+    // Wait for page to render
+    await page.waitForTimeout(3000);
+    // Take screenshot as base64
+    const buffer = await page.screenshot({ type: 'jpeg', quality: 80 });
+    return buffer.toString('base64');
+  } finally {
+    await context.close();
+  }
+}
+
 async function handleCommand(command) {
   const { type, id, url, timeout } = command;
 
@@ -44,6 +67,14 @@ async function handleCommand(command) {
       try {
         const html = await fetchHtml(url, timeout || 30000);
         return { id, status: 'ok', html };
+      } catch (e) {
+        return { id, status: 'error', error: e.message };
+      }
+
+    case 'screenshot':
+      try {
+        const screenshot = await captureScreenshot(url, timeout || 30000);
+        return { id, status: 'ok', screenshot };
       } catch (e) {
         return { id, status: 'error', error: e.message };
       }
