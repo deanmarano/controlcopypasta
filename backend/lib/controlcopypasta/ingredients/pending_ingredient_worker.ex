@@ -12,7 +12,7 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
   """
 
   use Oban.Worker,
-    queue: :default,
+    queue: :scheduled,
     max_attempts: 3
 
   alias Controlcopypasta.Repo
