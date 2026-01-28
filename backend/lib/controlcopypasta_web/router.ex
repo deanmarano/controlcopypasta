@@ -152,6 +152,13 @@ defmodule ControlcopypastaWeb.Router do
     get "/admin/scraper/workers", Admin.ScraperController, :executing_workers
     post "/admin/scraper/parse-ingredients", Admin.ScraperController, :parse_ingredients
     post "/admin/scraper/reset-stale", Admin.ScraperController, :reset_stale
+
+    # Ingredient enrichment
+    get "/admin/scraper/ingredient-enrichment", Admin.ScraperController, :ingredient_enrichment_stats
+    post "/admin/scraper/enqueue-nutrition", Admin.ScraperController, :enqueue_nutrition_enrichment
+    post "/admin/scraper/enqueue-density", Admin.ScraperController, :enqueue_density_enrichment
+    post "/admin/scraper/resume-nutrition", Admin.ScraperController, :resume_nutrition_enrichment
+    post "/admin/scraper/resume-density", Admin.ScraperController, :resume_density_enrichment
   end
 
   # Enable LiveDashboard in development

@@ -996,6 +996,23 @@ export interface FailedUrl {
   updated_at: string;
 }
 
+export interface EnrichmentProgress {
+  total_ingredients: number;
+  with_fatsecret_data?: number;
+  with_density_data?: number;
+  without_density_data?: number;
+  pending_jobs: number;
+  completed_today: number;
+  completed_this_hour: number;
+  daily_limit: number;
+  hourly_limit: number;
+}
+
+export interface IngredientEnrichmentStats {
+  nutrition: EnrichmentProgress;
+  density: EnrichmentProgress;
+}
+
 // Admin API
 export const admin = {
   scraper: {
@@ -1067,6 +1084,33 @@ export const admin = {
         method: 'POST',
         token,
         body: domain ? { domain } : {}
+      }),
+
+    ingredientEnrichment: (token: string) =>
+      request<{ data: IngredientEnrichmentStats }>('/admin/scraper/ingredient-enrichment', { token }),
+
+    enqueueNutrition: (token: string) =>
+      request<{ data: { status: string; enqueued: number } }>('/admin/scraper/enqueue-nutrition', {
+        method: 'POST',
+        token
+      }),
+
+    enqueueDensity: (token: string) =>
+      request<{ data: { status: string; enqueued: number } }>('/admin/scraper/enqueue-density', {
+        method: 'POST',
+        token
+      }),
+
+    resumeNutrition: (token: string) =>
+      request<{ data: { status: string } }>('/admin/scraper/resume-nutrition', {
+        method: 'POST',
+        token
+      }),
+
+    resumeDensity: (token: string) =>
+      request<{ data: { status: string } }>('/admin/scraper/resume-density', {
+        method: 'POST',
+        token
       })
   },
 

@@ -621,7 +621,6 @@
 
 	.nutrition-content {
 		margin-top: var(--space-4);
-		max-width: 400px;
 	}
 
 	/* Print styles */

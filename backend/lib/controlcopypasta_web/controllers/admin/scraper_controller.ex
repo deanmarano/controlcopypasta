@@ -4,6 +4,8 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
   alias Controlcopypasta.Scraper
   alias Controlcopypasta.Browser.Pool, as: BrowserPool
   alias Controlcopypasta.Workers.IngredientParser
+  alias Controlcopypasta.Nutrition.FatSecretEnrichmentWorker
+  alias Controlcopypasta.Nutrition.DensityEnrichmentWorker
   alias Controlcopypasta.Repo
   import Ecto.Query
 
@@ -193,5 +195,66 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
         |> put_status(:unprocessable_entity)
         |> json(%{error: "Failed to start parsing: #{inspect(reason)}"})
     end
+  end
+
+  @doc """
+  Gets ingredient enrichment stats (nutrition and density progress).
+  """
+  def ingredient_enrichment_stats(conn, _params) do
+    nutrition_stats = FatSecretEnrichmentWorker.progress()
+    density_stats = DensityEnrichmentWorker.progress()
+
+    json(conn, %{
+      data: %{
+        nutrition: nutrition_stats,
+        density: density_stats
+      }
+    })
+  end
+
+  @doc """
+  Triggers nutrition enrichment for all ingredients without FatSecret data.
+  """
+  def enqueue_nutrition_enrichment(conn, _params) do
+    case FatSecretEnrichmentWorker.enqueue_all() do
+      {:ok, count} ->
+        json(conn, %{data: %{status: "started", enqueued: count}})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: "Failed to start nutrition enrichment: #{inspect(reason)}"})
+    end
+  end
+
+  @doc """
+  Triggers density enrichment for all ingredients without density data.
+  """
+  def enqueue_density_enrichment(conn, _params) do
+    case DensityEnrichmentWorker.enqueue_all() do
+      {:ok, count} ->
+        json(conn, %{data: %{status: "started", enqueued: count}})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: "Failed to start density enrichment: #{inspect(reason)}"})
+    end
+  end
+
+  @doc """
+  Resumes the FatSecret enrichment queue if paused.
+  """
+  def resume_nutrition_enrichment(conn, _params) do
+    FatSecretEnrichmentWorker.resume()
+    json(conn, %{data: %{status: "resumed"}})
+  end
+
+  @doc """
+  Resumes the density enrichment queue if paused.
+  """
+  def resume_density_enrichment(conn, _params) do
+    DensityEnrichmentWorker.resume()
+    json(conn, %{data: %{status: "resumed"}})
   end
 end

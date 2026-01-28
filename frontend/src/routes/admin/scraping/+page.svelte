@@ -9,7 +9,8 @@
 		type RateLimitStatus,
 		type FailedUrl,
 		type BrowserStatus,
-		type ExecutingWorker
+		type ExecutingWorker,
+		type IngredientEnrichmentStats
 	} from '$lib/api/client';
 
 	let domains = $state<DomainStats[]>([]);
@@ -18,6 +19,7 @@
 	let failedUrls = $state<FailedUrl[]>([]);
 	let browserStatus = $state<BrowserStatus | null>(null);
 	let executingWorkers = $state<ExecutingWorker[]>([]);
+	let enrichmentStats = $state<IngredientEnrichmentStats | null>(null);
 	let loading = $state(true);
 	let error = $state('');
 	let message = $state('');
@@ -45,7 +47,7 @@
 	async function loadAll() {
 		loading = true;
 		error = '';
-		await Promise.all([loadDomains(), loadQueueStats(), loadRateLimits(), loadFailed(), loadBrowserStatus(), loadWorkers()]);
+		await Promise.all([loadDomains(), loadQueueStats(), loadRateLimits(), loadFailed(), loadBrowserStatus(), loadWorkers(), loadEnrichmentStats()]);
 		loading = false;
 	}
 
@@ -116,6 +118,17 @@
 			executingWorkers = result.data;
 		} catch {
 			executingWorkers = [];
+		}
+	}
+
+	async function loadEnrichmentStats() {
+		const token = authStore.getToken();
+		if (!token) return;
+		try {
+			const result = await admin.scraper.ingredientEnrichment(token);
+			enrichmentStats = result.data;
+		} catch {
+			enrichmentStats = null;
 		}
 	}
 
@@ -231,6 +244,70 @@
 			message = 'Started parsing ingredients for all unparsed recipes';
 		} catch {
 			error = 'Failed to start ingredient parsing';
+		}
+	}
+
+	async function enqueueNutrition() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		error = '';
+		message = '';
+
+		try {
+			const result = await admin.scraper.enqueueNutrition(token);
+			message = `Enqueued ${result.data.enqueued} ingredients for nutrition enrichment`;
+			await loadEnrichmentStats();
+		} catch {
+			error = 'Failed to enqueue nutrition enrichment';
+		}
+	}
+
+	async function enqueueDensity() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		error = '';
+		message = '';
+
+		try {
+			const result = await admin.scraper.enqueueDensity(token);
+			message = `Enqueued ${result.data.enqueued} ingredients for density enrichment`;
+			await loadEnrichmentStats();
+		} catch {
+			error = 'Failed to enqueue density enrichment';
+		}
+	}
+
+	async function resumeNutrition() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		error = '';
+		message = '';
+
+		try {
+			await admin.scraper.resumeNutrition(token);
+			message = 'Resumed nutrition enrichment queue';
+			await loadEnrichmentStats();
+		} catch {
+			error = 'Failed to resume nutrition enrichment';
+		}
+	}
+
+	async function resumeDensity() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		error = '';
+		message = '';
+
+		try {
+			await admin.scraper.resumeDensity(token);
+			message = 'Resumed density enrichment queue';
+			await loadEnrichmentStats();
+		} catch {
+			error = 'Failed to resume density enrichment';
 		}
 	}
 </script>
@@ -383,6 +460,80 @@
 						<p class="empty">No workers currently executing</p>
 					</div>
 				{/if}
+			</section>
+		{/if}
+
+		<!-- Ingredient Enrichment -->
+		{#if enrichmentStats}
+			<section class="enrichment-section">
+				<h2>Ingredient Enrichment</h2>
+				<div class="enrichment-grid">
+					<!-- Nutrition (FatSecret) -->
+					<div class="enrichment-card">
+						<h3>Nutrition Data (FatSecret)</h3>
+						<div class="enrichment-stats">
+							<div class="enrichment-stat">
+								<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.with_fatsecret_data || 0)}</span>
+								<span class="enrichment-stat-label">With Data</span>
+							</div>
+							<div class="enrichment-stat">
+								<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.total_ingredients - (enrichmentStats.nutrition.with_fatsecret_data || 0))}</span>
+								<span class="enrichment-stat-label">Without Data</span>
+							</div>
+							<div class="enrichment-stat">
+								<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.pending_jobs)}</span>
+								<span class="enrichment-stat-label">Pending</span>
+							</div>
+						</div>
+						<div class="enrichment-progress">
+							<div class="progress-bar">
+								<div class="progress-fill" style="width: {enrichmentStats.nutrition.total_ingredients > 0 ? Math.round(((enrichmentStats.nutrition.with_fatsecret_data || 0) / enrichmentStats.nutrition.total_ingredients) * 100) : 0}%"></div>
+							</div>
+							<span class="progress-text">{enrichmentStats.nutrition.total_ingredients > 0 ? Math.round(((enrichmentStats.nutrition.with_fatsecret_data || 0) / enrichmentStats.nutrition.total_ingredients) * 100) : 0}% complete</span>
+						</div>
+						<div class="enrichment-rate">
+							<span>Today: {enrichmentStats.nutrition.completed_today}/{enrichmentStats.nutrition.daily_limit}</span>
+							<span>This hour: {enrichmentStats.nutrition.completed_this_hour}/{enrichmentStats.nutrition.hourly_limit}</span>
+						</div>
+						<div class="enrichment-actions">
+							<button onclick={enqueueNutrition} class="btn-secondary">Enqueue All</button>
+							<button onclick={resumeNutrition} class="btn-success">Resume Queue</button>
+						</div>
+					</div>
+
+					<!-- Density -->
+					<div class="enrichment-card">
+						<h3>Density Data (FatSecret/USDA)</h3>
+						<div class="enrichment-stats">
+							<div class="enrichment-stat">
+								<span class="enrichment-stat-value">{formatNumber(enrichmentStats.density.with_density_data || 0)}</span>
+								<span class="enrichment-stat-label">With Data</span>
+							</div>
+							<div class="enrichment-stat">
+								<span class="enrichment-stat-value">{formatNumber(enrichmentStats.density.without_density_data || 0)}</span>
+								<span class="enrichment-stat-label">Without Data</span>
+							</div>
+							<div class="enrichment-stat">
+								<span class="enrichment-stat-value">{formatNumber(enrichmentStats.density.pending_jobs)}</span>
+								<span class="enrichment-stat-label">Pending</span>
+							</div>
+						</div>
+						<div class="enrichment-progress">
+							<div class="progress-bar">
+								<div class="progress-fill" style="width: {enrichmentStats.density.total_ingredients > 0 ? Math.round(((enrichmentStats.density.with_density_data || 0) / enrichmentStats.density.total_ingredients) * 100) : 0}%"></div>
+							</div>
+							<span class="progress-text">{enrichmentStats.density.total_ingredients > 0 ? Math.round(((enrichmentStats.density.with_density_data || 0) / enrichmentStats.density.total_ingredients) * 100) : 0}% complete</span>
+						</div>
+						<div class="enrichment-rate">
+							<span>Today: {enrichmentStats.density.completed_today}/{enrichmentStats.density.daily_limit}</span>
+							<span>This hour: {enrichmentStats.density.completed_this_hour}/{enrichmentStats.density.hourly_limit}</span>
+						</div>
+						<div class="enrichment-actions">
+							<button onclick={enqueueDensity} class="btn-secondary">Enqueue All</button>
+							<button onclick={resumeDensity} class="btn-success">Resume Queue</button>
+						</div>
+					</div>
+				</div>
 			</section>
 		{/if}
 
@@ -1045,5 +1196,97 @@
 	.btn-small:disabled {
 		background: var(--color-gray-400);
 		cursor: not-allowed;
+	}
+
+	/* Enrichment Section */
+	.enrichment-section {
+		margin-top: var(--space-5);
+	}
+
+	.enrichment-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		gap: var(--space-4);
+	}
+
+	.enrichment-card {
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+		padding: var(--space-4);
+	}
+
+	.enrichment-card h3 {
+		margin: 0 0 var(--space-3);
+		font-size: var(--text-base);
+		color: var(--text-primary);
+	}
+
+	.enrichment-stats {
+		display: flex;
+		gap: var(--space-3);
+		margin-bottom: var(--space-3);
+	}
+
+	.enrichment-stat {
+		flex: 1;
+		text-align: center;
+		padding: var(--space-2);
+		background: var(--bg-card);
+		border-radius: var(--radius-sm);
+	}
+
+	.enrichment-stat-value {
+		display: block;
+		font-size: var(--text-lg);
+		font-weight: var(--font-bold);
+		color: var(--color-marinara-600);
+	}
+
+	.enrichment-stat-label {
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+	}
+
+	.enrichment-progress {
+		margin-bottom: var(--space-3);
+	}
+
+	.progress-bar {
+		height: 8px;
+		background: var(--border-light);
+		border-radius: var(--radius-full);
+		overflow: hidden;
+		margin-bottom: var(--space-1);
+	}
+
+	.progress-fill {
+		height: 100%;
+		background: var(--color-basil-500);
+		border-radius: var(--radius-full);
+		transition: width var(--transition-normal);
+	}
+
+	.progress-text {
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+	}
+
+	.enrichment-rate {
+		display: flex;
+		justify-content: space-between;
+		font-size: var(--text-xs);
+		color: var(--text-muted);
+		margin-bottom: var(--space-3);
+	}
+
+	.enrichment-actions {
+		display: flex;
+		gap: var(--space-2);
+	}
+
+	.enrichment-actions button {
+		flex: 1;
+		padding: var(--space-2);
+		font-size: var(--text-sm);
 	}
 </style>
