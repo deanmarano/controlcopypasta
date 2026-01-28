@@ -25,6 +25,11 @@
 			<h2>Ingredients</h2>
 			<p>Set animal types, categories, and allergen groups for canonical ingredients.</p>
 		</a>
+
+		<a href="/admin/pending-ingredients" class="admin-card">
+			<h2>Pending Ingredients</h2>
+			<p>Review and approve new ingredients discovered from recipes.</p>
+		</a>
 	</div>
 </div>
 

@@ -1134,7 +1134,80 @@ export const admin = {
 
     options: (token: string) =>
       request<AdminIngredientOptions>('/admin/ingredients/options', { token })
+  },
+
+  pendingIngredients: {
+    list: (token: string, params?: { status?: string; limit?: number }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.status) searchParams.set('status', params.status);
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      const query = searchParams.toString();
+      return request<{ data: PendingIngredient[]; stats: PendingIngredientStats }>(`/admin/pending-ingredients${query ? `?${query}` : ''}`, { token });
+    },
+
+    get: (token: string, id: string) =>
+      request<{ data: PendingIngredient }>(`/admin/pending-ingredients/${id}`, { token }),
+
+    stats: (token: string) =>
+      request<{ data: PendingIngredientStats }>('/admin/pending-ingredients/stats', { token }),
+
+    update: (token: string, id: string, attrs: { suggested_display_name?: string; suggested_category?: string; suggested_aliases?: string[] }) =>
+      request<{ data: PendingIngredient }>(`/admin/pending-ingredients/${id}`, {
+        method: 'PUT',
+        token,
+        body: attrs
+      }),
+
+    approve: (token: string, id: string, attrs: { display_name?: string; category?: string; aliases?: string[] }) =>
+      request<{ message: string; data: { id: string; name: string; display_name: string } }>(`/admin/pending-ingredients/${id}/approve`, {
+        method: 'POST',
+        token,
+        body: attrs
+      }),
+
+    reject: (token: string, id: string) =>
+      request<{ message: string; data: PendingIngredient }>(`/admin/pending-ingredients/${id}/reject`, {
+        method: 'POST',
+        token
+      }),
+
+    merge: (token: string, id: string, canonicalId: string) =>
+      request<{ message: string; data: { id: string; name: string; aliases: string[] } }>(`/admin/pending-ingredients/${id}/merge`, {
+        method: 'POST',
+        token,
+        body: { canonical_id: canonicalId }
+      }),
+
+    scan: (token: string) =>
+      request<{ message: string; job_id: number }>('/admin/pending-ingredients/scan', {
+        method: 'POST',
+        token
+      })
   }
 };
+
+// Pending Ingredient types
+export interface PendingIngredient {
+  id: string;
+  name: string;
+  occurrence_count: number;
+  sample_texts: string[];
+  status: 'pending' | 'approved' | 'rejected' | 'merged';
+  fatsecret_id: string | null;
+  fatsecret_name: string | null;
+  suggested_display_name: string | null;
+  suggested_category: string | null;
+  suggested_aliases: string[];
+  reviewed_at: string | null;
+  inserted_at: string;
+}
+
+export interface PendingIngredientStats {
+  pending: number;
+  approved: number;
+  rejected: number;
+  merged: number;
+  total: number;
+}
 
 export { ApiError };
