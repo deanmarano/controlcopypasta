@@ -207,6 +207,8 @@ defmodule Controlcopypasta.Ingredients.Parser do
     cloves clove pieces piece chunks chunk slices slice
     halves half florets leaves leaf stalks stalk sprigs sprig
     rings ring wedges wedge strips strip cubes cube
+    tails tail filets fillet fillets breasts breast thighs thigh
+    legs leg wings wing
   )
 
   @preparation_words %{
@@ -1107,17 +1109,25 @@ defmodule Controlcopypasta.Ingredients.Parser do
   end
 
   defp find_partial_match(words, lookup, original_name) when length(words) > 1 do
-    # Try removing leading adjectives/descriptors
-    shorter = words |> tl() |> Enum.join(" ")
+    # Try removing leading word (adjectives/descriptors)
+    shorter_front = words |> tl() |> Enum.join(" ")
 
-    case Map.get(lookup, shorter) do
+    case Map.get(lookup, shorter_front) do
       {canonical_name, id} ->
-        # Found a match with fewer words
         {canonical_name, id, 0.9}
 
       nil ->
-        # Try even shorter
-        find_partial_match(tl(words), lookup, original_name)
+        # Try removing trailing word (e.g., "pasta dough" -> "pasta")
+        shorter_back = words |> Enum.take(length(words) - 1) |> Enum.join(" ")
+
+        case Map.get(lookup, shorter_back) do
+          {canonical_name, id} ->
+            {canonical_name, id, 0.9}
+
+          nil ->
+            # Try even shorter from front
+            find_partial_match(tl(words), lookup, original_name)
+        end
     end
   end
 
@@ -1137,19 +1147,62 @@ defmodule Controlcopypasta.Ingredients.Parser do
   end
 
   defp fuzzy_match(name, lookup) do
-    # Simple fuzzy matching - find keys that contain the name or vice versa
-    match =
+    # More conservative fuzzy matching:
+    # 1. Only match if name is a prefix of a canonical (e.g., "tomato" matches "tomato paste")
+    # 2. Or if the canonical is a prefix of name (e.g., "lobster" matches "lobster tail")
+    # 3. Don't match short words (< 5 chars) on substring alone to avoid "tail" -> "oxtail"
+
+    # First, try exact prefix match (name is start of canonical)
+    prefix_match =
       lookup
       |> Enum.find(fn {key, _value} ->
-        String.contains?(key, name) or String.contains?(name, key)
+        String.starts_with?(key, name <> " ") or key == name
       end)
 
-    case match do
+    case prefix_match do
       {_matched_key, {canonical_name, id}} ->
-        {canonical_name, id, 0.7}
+        {canonical_name, id, 0.8}
 
       nil ->
-        {nil, nil, 0.5}
+        # Try reverse prefix (canonical is start of name)
+        reverse_prefix_match =
+          lookup
+          |> Enum.find(fn {key, _value} ->
+            String.starts_with?(name, key <> " ") or name == key
+          end)
+
+        case reverse_prefix_match do
+          {_matched_key, {canonical_name, id}} ->
+            {canonical_name, id, 0.8}
+
+          nil ->
+            # Only do substring matching for longer names (6+ chars)
+            # This prevents "tail" matching "oxtail" or "dough" matching "sourdough"
+            if String.length(name) >= 6 do
+              substring_match =
+                lookup
+                |> Enum.find(fn {key, _value} ->
+                  # Require the match to be significant - at least 80% of the shorter string
+                  key_len = String.length(key)
+                  name_len = String.length(name)
+                  min_len = min(key_len, name_len)
+
+                  (String.contains?(key, name) and name_len >= min_len * 0.8) or
+                    (String.contains?(name, key) and key_len >= min_len * 0.8)
+                end)
+
+              case substring_match do
+                {_matched_key, {canonical_name, id}} ->
+                  {canonical_name, id, 0.7}
+
+                nil ->
+                  {nil, nil, 0.5}
+              end
+            else
+              # Short name with no prefix match - don't guess
+              {nil, nil, 0.5}
+            end
+        end
     end
   end
 end
