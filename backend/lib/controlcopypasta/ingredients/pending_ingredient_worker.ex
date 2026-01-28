@@ -188,6 +188,8 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
       Regex.match?(~r/^cups?\/\d+/, normalized) or
       # Starts with articles
       String.starts_with?(normalized, ["a ", "an ", "the "]) or
+      # Starts with a unit word (parsing artifact, e.g. "teaspoon salt")
+      starts_with_unit?(normalized) or
       # Equipment words
       String.contains?(normalized, ["springform", "thermometer", "skillet"]) or
       # Contains slash with numbers (metric conversions like "cup/240")
@@ -211,6 +213,24 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
       # Contains "-oz." or similar unit abbreviations with numbers
       Regex.match?(~r/\d+-?oz\./, normalized) or
       Regex.match?(~r/\d+-?lb\./, normalized)
+  end
+
+  @unit_words ~w(
+    tablespoon tablespoons tbsp tbs teaspoon teaspoons tsp
+    cup cups ounce ounces oz pound pounds lb lbs
+    pint pints quart quarts gallon gallons
+    liter liters litre litres milliliter milliliters ml
+    gram grams kilogram kilograms kg
+    pinch pinches dash dashes bunch bunches
+    sprig sprigs clove cloves slice slices piece pieces
+    head heads stalk stalks can cans jar jars
+    bottle bottles bag bags box boxes package packages
+  )
+
+  defp starts_with_unit?(name) do
+    Enum.any?(@unit_words, fn unit ->
+      String.starts_with?(name, unit <> " ")
+    end)
   end
 
   defp upsert_pending(candidates) do
