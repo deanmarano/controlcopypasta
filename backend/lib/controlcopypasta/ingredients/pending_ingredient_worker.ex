@@ -82,7 +82,7 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
     lookup = Ingredients.build_ingredient_lookup()
 
     # First pass: collect all unique ingredient texts with frequencies (fast)
-    text_freq = collect_text_frequencies(lookup)
+    text_freq = collect_text_frequencies()
 
     Logger.info("Found #{map_size(text_freq)} unique ingredient texts, parsing incrementally...")
 
@@ -92,9 +92,9 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
     chunks = Enum.chunk_every(texts, @parse_chunk_size)
     num_chunks = length(chunks)
 
-    {total_upserted, unmatched} = chunks
+    {total_upserted, _acc} = chunks
     |> Enum.with_index(1)
-    |> Enum.reduce({0, %{}}, fn {chunk, chunk_num}, {upserted_so_far, acc} ->
+    |> Enum.reduce({0, %{}}, fn {chunk, chunk_num}, {_prev_upserted, acc} ->
       Logger.info("Parsing chunk #{chunk_num}/#{num_chunks} (#{min(chunk_num * @parse_chunk_size, total_texts)}/#{total_texts} texts)...")
 
       # Parse this chunk and accumulate unmatched
@@ -133,7 +133,7 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
     {:ok, %{total_texts: total_texts, upserted: total_upserted}}
   end
 
-  defp collect_text_frequencies(lookup) do
+  defp collect_text_frequencies do
     total = Repo.one(
       from r in Recipe,
       where: fragment("jsonb_array_length(ingredients) > 0"),
