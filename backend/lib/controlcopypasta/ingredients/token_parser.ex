@@ -24,6 +24,13 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
 
   alias Controlcopypasta.Ingredients.Tokenizer
   alias Controlcopypasta.Ingredients
+  alias Controlcopypasta.Ingredients.SubParsers
+
+  @sub_parsers [
+    SubParsers.Garlic,
+    SubParsers.Citrus,
+    SubParsers.Egg
+  ]
 
   defmodule ParsedIngredient do
     @moduledoc "Structured result from parsing an ingredient string."
@@ -87,10 +94,28 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       }
   """
   def parse(text, opts \\ []) when is_binary(text) do
-    original = text
-
-    # Tokenize and analyze
     tokens = Tokenizer.tokenize(text)
+    lookup = Keyword.get_lazy(opts, :lookup, fn -> Ingredients.build_ingredient_lookup() end)
+
+    case try_sub_parsers(tokens, text, lookup) do
+      {:ok, parsed} -> parsed
+      :skip -> parse_standard(tokens, text, lookup)
+    end
+  end
+
+  defp try_sub_parsers(tokens, original, lookup) do
+    Enum.find_value(@sub_parsers, :skip, fn parser ->
+      if parser.match?(tokens) do
+        case parser.parse(tokens, original, lookup) do
+          {:ok, _} = result -> result
+          :skip -> nil
+        end
+      end
+    end)
+  end
+
+  @doc false
+  def parse_standard(tokens, original, lookup) do
     analysis = Tokenizer.analyze(tokens)
 
     # Parse quantity (handle ranges)
@@ -103,7 +128,6 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     container = extract_container(tokens)
 
     # Get ingredient names, applying juice/zest transformations
-    lookup = Keyword.get_lazy(opts, :lookup, fn -> Ingredients.build_ingredient_lookup() end)
     raw_ingredient_names = clean_ingredient_names(analysis.ingredients)
     ingredient_names = transform_juice_zest_patterns(raw_ingredient_names, analysis.preparations, tokens)
     matched_ingredients = Enum.map(ingredient_names, &match_ingredient(&1, lookup))
@@ -181,9 +205,9 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     end
   end
 
-  # Parse quantity strings into floats, handling ranges
-  defp parse_quantity([]), do: {nil, nil, nil}
-  defp parse_quantity([qty_str | _]) do
+  @doc false
+  def parse_quantity([]), do: {nil, nil, nil}
+  def parse_quantity([qty_str | _]) do
     cond do
       # Range: "1-2" or "1/2-3/4"
       String.contains?(qty_str, "-") and not String.starts_with?(qty_str, "-") ->
@@ -204,7 +228,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     end
   end
 
-  defp parse_single_quantity(str) do
+  @doc false
+  def parse_single_quantity(str) do
     str = String.trim(str)
     cond do
       # Fraction: "1/2"
@@ -230,7 +255,6 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     end
   end
 
-  # Normalize unit to canonical form
   @unit_mappings %{
     "tablespoons" => "tbsp", "tablespoon" => "tbsp", "tbsp" => "tbsp", "tbs" => "tbsp", "tb" => "tbsp",
     "teaspoons" => "tsp", "teaspoon" => "tsp", "tsp" => "tsp", "ts" => "tsp",
@@ -261,8 +285,9 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     "boxes" => "box", "box" => "box"
   }
 
-  defp normalize_unit(nil), do: nil
-  defp normalize_unit(unit) do
+  @doc false
+  def normalize_unit(nil), do: nil
+  def normalize_unit(unit) do
     Map.get(@unit_mappings, String.downcase(unit), String.downcase(unit))
   end
 
@@ -307,11 +332,21 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     end
   end
 
-  # Clean ingredient names (remove asterisks, extra whitespace, etc.)
+  @ingredient_stop_words ~w(
+    with into from above below use sub well off dry fire cool
+    about generous divided whole preferred natural if
+  )
+
+  # Clean ingredient names (remove asterisks, extra whitespace, stop words, etc.)
   defp clean_ingredient_names(names) do
     names
     |> Enum.map(&clean_name/1)
     |> Enum.reject(&(&1 == ""))
+    |> Enum.reject(&ingredient_stop_word?/1)
+  end
+
+  defp ingredient_stop_word?(name) do
+    String.downcase(name) in @ingredient_stop_words
   end
 
   defp clean_name(name) do
@@ -372,15 +407,13 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   end
 
   # Check if a name is just noise from "juice/zest of" patterns
-  # E.g., "juice", "zest", "the", "zest of", "juice and zest" should be filtered
+  # E.g., "juice", "zest", "juice from", "fresh juice from", "lemon zest from" should be filtered
   defp is_juice_zest_noise?(name) do
     normalized = String.downcase(name)
-    normalized in ["juice", "zest", "the", "zest of", "juice of",
-                   "juice and zest", "zest and juice", "juice + zest", "zest + juice"] or
-    String.starts_with?(normalized, "zest of") or
-    String.starts_with?(normalized, "juice of") or
-    String.starts_with?(normalized, "juice and") or
-    String.starts_with?(normalized, "zest and")
+    words = String.split(normalized)
+
+    "juice" in words or "zest" in words or
+      Enum.all?(words, &(&1 in ~w(the from of and about fresh freshly squeezed)))
   end
 
   # Detect "juice of", "zest of", "juice from", "zest from" patterns
@@ -407,8 +440,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     end
   end
 
-  # Match ingredient name to canonical ingredient
-  defp match_ingredient(name, lookup) do
+  @doc false
+  def match_ingredient(name, lookup) do
     normalized = String.downcase(name) |> String.trim()
 
     case find_canonical_match(normalized, lookup) do

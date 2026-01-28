@@ -66,6 +66,8 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     lengthwise crosswise diagonally horizontally vertically
     bruised separated
     juiced zested
+    warmed heated pressed bundled dissolved segmented destemmed
+    blanched marinated brined deboned shucked
   )
 
   # Modifiers (adjectives that describe ingredient state/size/type)
@@ -92,7 +94,12 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     "to taste", "as needed", "for serving", "for garnish", "for topping",
     "for sprinkling", "for dusting", "for dipping", "for drizzling", "for coating",
     "for brushing", "for frying", "for greasing", "for finishing",
-    "plus more", "or more", "or less", "or to taste", "if desired"
+    "plus more", "or more", "or less", "or to taste",
+    "at room temperature", "at room temp",
+    "reserved from above", "recipe above", "from above",
+    "recipe below", "recipe follows", "homemade recipe below",
+    "if lumpy", "if needed", "if necessary", "if desired", "if grilling",
+    "your choice", "any flavor", "any color", "any kind"
   ]
 
   # Parts of ingredients that are often removed (seeds, ribs, stems, etc.)

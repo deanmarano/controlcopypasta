@@ -336,6 +336,117 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
     end
   end
 
+  describe "juice/zest noise filtering" do
+    test "filters 'juice from' pattern as noise" do
+      result = TokenParser.parse("juice from 2 limes")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      # Raw name is "limes juice" (plural); singularization happens in canonical matching
+      assert Enum.any?(names, &String.ends_with?(&1, "juice"))
+      refute Enum.any?(names, &String.contains?(&1, "juice from"))
+    end
+
+    test "filters 'fresh juice from' pattern as noise" do
+      result = TokenParser.parse("fresh juice from 2 lemons")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert Enum.any?(names, &String.ends_with?(&1, "juice"))
+      refute Enum.any?(names, &String.contains?(&1, "fresh juice"))
+    end
+
+    test "filters 'freshly squeezed juice from' pattern as noise" do
+      result = TokenParser.parse("freshly squeezed juice from 2 limes")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert Enum.any?(names, &String.ends_with?(&1, "juice"))
+      refute Enum.any?(names, &String.contains?(&1, "freshly squeezed juice"))
+    end
+
+    test "filters 'lemon zest from' pattern as noise" do
+      result = TokenParser.parse("lemon zest from 1 lemon")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      # Should have lemon zest, not "lemon zest from zest"
+      refute Enum.any?(names, &String.contains?(&1, "zest from"))
+    end
+  end
+
+  describe "preparation word classification" do
+    test "classifies 'warmed' as preparation" do
+      result = TokenParser.parse("2 eggs, warmed")
+
+      assert "warmed" in result.preparations
+      names = Enum.map(result.ingredients, & &1.name)
+      refute "warmed" in names
+    end
+
+    test "classifies 'pressed' as preparation" do
+      result = TokenParser.parse("2 cloves garlic, pressed")
+
+      assert "pressed" in result.preparations
+      names = Enum.map(result.ingredients, & &1.name)
+      refute "pressed" in names
+    end
+
+    test "classifies 'blanched' as preparation" do
+      result = TokenParser.parse("1 lb green beans, blanched")
+
+      assert "blanched" in result.preparations
+    end
+
+    test "classifies 'marinated' as preparation" do
+      result = TokenParser.parse("1 lb chicken, marinated")
+
+      assert "marinated" in result.preparations
+    end
+
+    test "classifies 'dissolved' as preparation" do
+      result = TokenParser.parse("1 tsp yeast, dissolved")
+
+      assert "dissolved" in result.preparations
+    end
+  end
+
+  describe "ingredient stop words" do
+    test "rejects single-word prepositions as ingredient names" do
+      # These words should not appear as ingredient names
+      stop_words = ~w(with into above sub)
+
+      for word <- stop_words do
+        result = TokenParser.parse(word)
+        assert result.ingredients == [],
+               "'#{word}' should not be an ingredient name, got: #{inspect(result.ingredients)}"
+      end
+    end
+  end
+
+  describe "note phrase handling" do
+    test "handles 'at room temperature' as a note" do
+      result = TokenParser.parse("4 eggs, at room temperature")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert Enum.any?(names, &String.contains?(&1, "egg"))
+      refute Enum.any?(names, &String.contains?(&1, "room"))
+      refute Enum.any?(names, &String.contains?(&1, "temperature"))
+    end
+
+    test "handles 'if needed' as a note" do
+      result = TokenParser.parse("water, if needed")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert "water" in names
+      refute Enum.any?(names, &String.contains?(&1, "needed"))
+    end
+
+    test "handles 'your choice' as a note" do
+      result = TokenParser.parse("1 cup cheese, your choice")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert Enum.any?(names, &String.contains?(&1, "cheese"))
+      refute Enum.any?(names, &String.contains?(&1, "choice"))
+    end
+  end
+
   describe "to_jsonb_map/1" do
     test "converts parsed ingredient to JSONB-compatible map" do
       result = TokenParser.parse("2 cups diced tomatoes")

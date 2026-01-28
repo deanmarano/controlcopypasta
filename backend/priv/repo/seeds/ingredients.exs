@@ -335,7 +335,15 @@ canonical_ingredients = [
     category: "oil",
     tags: ["neutral"],
     dietary_flags: ["vegetarian", "vegan", "gluten_free"],
-    aliases: ["canola oil", "neutral oil"]
+    aliases: ["neutral oil", "oil"]
+  },
+  %{
+    name: "canola oil",
+    display_name: "Canola Oil",
+    category: "oil",
+    tags: ["neutral"],
+    dietary_flags: ["vegetarian", "vegan", "gluten_free"],
+    aliases: ["rapeseed oil", "grape seed oil", "grapeseed oil"]
   },
   %{
     name: "coconut oil",
@@ -1575,7 +1583,7 @@ canonical_ingredients = [
     category: "spice",
     tags: ["baking", "chocolate"],
     dietary_flags: ["vegetarian", "vegan", "gluten_free", "keto"],
-    aliases: ["unsweetened cocoa powder", "dutch process cocoa", "cacao powder"]
+    aliases: ["cocoa", "unsweetened cocoa", "unsweetened cocoa powder", "dutch process cocoa", "dutch process cocoa powder", "dutch-process cocoa", "dutch-process cocoa powder", "dutch process", "dutch-process", "cacao powder", "cacao"]
   },
   %{
     name: "cornstarch",
