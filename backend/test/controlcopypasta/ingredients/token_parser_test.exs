@@ -287,6 +287,55 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
     end
   end
 
+  describe "singularization matching" do
+    test "singularize/1 handles regular plurals" do
+      assert TokenParser.singularize("tomatoes") == "tomato"
+      assert TokenParser.singularize("peppers") == "pepper"
+      assert TokenParser.singularize("onions") == "onion"
+      assert TokenParser.singularize("carrots") == "carrot"
+    end
+
+    test "singularize/1 handles -ies plurals" do
+      assert TokenParser.singularize("berries") == "berry"
+      assert TokenParser.singularize("anchovies") == "anchovy"
+      assert TokenParser.singularize("cherries") == "cherry"
+    end
+
+    test "singularize/1 handles -es plurals" do
+      assert TokenParser.singularize("potatoes") == "potato"
+      assert TokenParser.singularize("radishes") == "radish"
+      assert TokenParser.singularize("peaches") == "peach"
+    end
+
+    test "singularize/1 preserves words that naturally end in s" do
+      assert TokenParser.singularize("hummus") == "hummus"
+      assert TokenParser.singularize("couscous") == "couscous"
+      assert TokenParser.singularize("asparagus") == "asparagus"
+      assert TokenParser.singularize("molasses") == "molasses"
+    end
+
+    test "singularize/1 handles -ves plurals" do
+      assert TokenParser.singularize("leaves") == "leaf"
+      assert TokenParser.singularize("halves") == "half"
+      assert TokenParser.singularize("loaves") == "loaf"
+    end
+
+    test "plural ingredient names match canonical via singularization" do
+      # "red peppers" should match via singularization to "red pepper" -> "red bell pepper"
+      lookup = %{
+        "red pepper" => {"red bell pepper", "test-id-red-pepper"}
+      }
+
+      result = TokenParser.parse("roasted red peppers", lookup: lookup)
+
+      # Should find a match (the singular form matches)
+      primary = hd(result.ingredients)
+      assert primary.canonical_name == "red bell pepper",
+             "Expected 'roasted red peppers' to match 'red bell pepper', got: #{inspect(primary)}"
+      assert primary.confidence >= 0.9
+    end
+  end
+
   describe "to_jsonb_map/1" do
     test "converts parsed ingredient to JSONB-compatible map" do
       result = TokenParser.parse("2 cups diced tomatoes")

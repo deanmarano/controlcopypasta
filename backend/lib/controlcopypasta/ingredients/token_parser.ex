@@ -435,7 +435,13 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     # Strategy 1: Exact match
     case Map.get(lookup, name) do
       {canonical_name, id} -> {canonical_name, id, 1.0}
-      nil -> try_partial_match(name, lookup)
+      nil ->
+        # Strategy 1b: Try singularized form
+        singular = singularize_phrase(name)
+        case if(singular != name, do: Map.get(lookup, singular)) do
+          {canonical_name, id} -> {canonical_name, id, 0.98}
+          _ -> try_partial_match(name, lookup)
+        end
     end
   end
 
@@ -447,7 +453,13 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     stripped = strip_leading_modifiers(words)
     case Map.get(lookup, stripped) do
       {canonical_name, id} -> {canonical_name, id, 0.95}
-      nil -> try_shorter_matches(words, lookup)
+      nil ->
+        # Strategy 2b: Try singularized stripped form
+        singular_stripped = singularize_phrase(stripped)
+        case if(singular_stripped != stripped, do: Map.get(lookup, singular_stripped)) do
+          {canonical_name, id} -> {canonical_name, id, 0.93}
+          _ -> try_shorter_matches(words, lookup)
+        end
     end
   end
 
@@ -485,6 +497,90 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   end
 
   defp try_shorter_matches([], _lookup), do: nil
+
+  # Singularize a multi-word phrase by singularizing the last word
+  # "red peppers" -> "red pepper", "cherry tomatoes" -> "cherry tomato"
+  defp singularize_phrase(phrase) do
+    words = String.split(phrase, " ")
+
+    case words do
+      [] -> phrase
+      [single] -> singularize(single)
+      multiple ->
+        last = List.last(multiple)
+        rest = Enum.take(multiple, length(multiple) - 1)
+        singular_last = singularize(last)
+        Enum.join(rest ++ [singular_last], " ")
+    end
+  end
+
+  # Words that naturally end in 's' and should not be singularized
+  @no_singularize ~w(
+    hummus couscous asparagus molasses cilantro
+    jus floss glass grass moss
+    Swiss swiss dress press
+  )
+
+  @doc """
+  Attempts to singularize an English word.
+
+  Uses conservative rules to avoid breaking words that naturally end in 's'.
+  Returns the word unchanged if it's in the exception list or doesn't match
+  any known plural pattern.
+  """
+  def singularize(word) do
+    downcased = String.downcase(word)
+
+    cond do
+      # Don't singularize short words or words in exception list
+      String.length(word) < 3 -> word
+      downcased in @no_singularize -> word
+
+      # -ves -> -f (leaves -> leaf, halves -> half, loaves -> loaf)
+      String.ends_with?(downcased, "ves") ->
+        String.slice(word, 0..-4//1) <> "f"
+
+      # -ies -> -y (berries -> berry, anchovies -> anchovy)
+      String.ends_with?(downcased, "ies") ->
+        String.slice(word, 0..-4//1) <> "y"
+
+      # -sses -> -ss (molasses stays, but grasses -> grass)
+      String.ends_with?(downcased, "sses") ->
+        word
+
+      # -shes -> -sh (radishes -> radish)
+      String.ends_with?(downcased, "shes") ->
+        String.slice(word, 0..-3//1)
+
+      # -ches -> -ch (peaches -> peach)
+      String.ends_with?(downcased, "ches") ->
+        String.slice(word, 0..-3//1)
+
+      # -xes -> -x (boxes -> box)
+      String.ends_with?(downcased, "xes") ->
+        String.slice(word, 0..-3//1)
+
+      # -zes -> -z (fizzes handled by -sses above)
+      String.ends_with?(downcased, "zes") ->
+        String.slice(word, 0..-3//1)
+
+      # -toes -> -to (tomatoes -> tomato, potatoes -> potato)
+      String.ends_with?(downcased, "toes") ->
+        String.slice(word, 0..-3//1)
+
+      # -oes -> -o (but keep heroes -> hero pattern)
+      String.ends_with?(downcased, "oes") ->
+        String.slice(word, 0..-3//1)
+
+      # -s (general plural, but not -ss, -us)
+      String.ends_with?(downcased, "s") and
+        not String.ends_with?(downcased, "ss") and
+        not String.ends_with?(downcased, "us") ->
+        String.slice(word, 0..-2//1)
+
+      true -> word
+    end
+  end
 
   # Conservative fuzzy matching
   defp try_fuzzy_match(name, lookup) do
