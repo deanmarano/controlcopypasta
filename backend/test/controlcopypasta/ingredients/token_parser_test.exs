@@ -2,7 +2,6 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
   use Controlcopypasta.DataCase, async: true
 
   alias Controlcopypasta.Ingredients.TokenParser
-  alias Controlcopypasta.Ingredients.TokenParser.ParsedIngredient
 
   describe "parse/1" do
     test "parses simple ingredient with quantity and unit" do
@@ -135,6 +134,156 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
       assert length(result.ingredients) == 1
       assert hd(result.ingredients).name == "jalapeño pepper"
       assert "removed" in result.preparations
+    end
+  end
+
+  describe "metric weight patterns in parentheses" do
+    # These tests cover the pattern where metric weights like (113g) or (30ml)
+    # appear in parentheses after a measurement. These should NOT be extracted
+    # as ingredient names.
+    #
+    # Examples from production data:
+    # - "1 cup (113g) confectioners' sugar" -> should extract "confectioners' sugar", not "113g"
+    # - "8 tablespoons (113g) unsalted butter" -> should extract "unsalted butter", not "113g"
+    # - "1 cup (240ml) milk" -> should extract "milk", not "240ml"
+
+    test "ignores parenthetical gram weights - confectioners' sugar" do
+      result = TokenParser.parse("1 cup (113g) confectioners' sugar")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      refute "113g" in names
+      assert Enum.any?(names, &String.contains?(&1, "sugar"))
+    end
+
+    test "ignores parenthetical gram weights - butter" do
+      result = TokenParser.parse("8 tablespoons (113g) unsalted butter")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      refute "113g" in names
+      assert Enum.any?(names, &String.contains?(&1, "butter"))
+    end
+
+    test "ignores parenthetical gram weights - onion with ounces" do
+      result = TokenParser.parse("1 medium yellow onion (8 ounces; 227g), thinly sliced")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      refute "227g" in names
+      assert Enum.any?(names, &String.contains?(&1, "onion"))
+    end
+
+    test "ignores parenthetical ml weights - milk" do
+      result = TokenParser.parse("1 cup (240ml) milk")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      refute "240ml" in names
+      assert "milk" in names
+    end
+
+    test "ignores parenthetical gram weights - multiple formats" do
+      cases = [
+        {"1/2 cup (57g) pecans, chopped", "57g", "pecans"},
+        {"2 tablespoons (28g) butter, cold", "28g", "butter"},
+        {"2 cups (454g) ricotta cheese", "454g", "ricotta cheese"},
+        {"1 cup (227g) water", "227g", "water"}
+      ]
+
+      for {input, metric, expected_ingredient} <- cases do
+        result = TokenParser.parse(input)
+        names = Enum.map(result.ingredients, & &1.name)
+
+        refute metric in names,
+               "#{metric} should not be an ingredient in: #{input}"
+
+        assert Enum.any?(names, &String.contains?(&1, expected_ingredient)),
+               "#{expected_ingredient} should be found in: #{input}, got: #{inspect(names)}"
+      end
+    end
+
+    test "ignores metric weights without space after number" do
+      # Patterns like "113g" (no space) vs "113 g" (with space)
+      cases = ["57g", "113g", "227g", "454g", "30ml", "60ml", "240ml"]
+
+      for metric <- cases do
+        result = TokenParser.parse("1 cup (#{metric}) flour")
+        names = Enum.map(result.ingredients, & &1.name)
+        refute metric in names, "#{metric} should not be an ingredient"
+      end
+    end
+  end
+
+  describe "juice/zest extraction patterns" do
+    # These tests cover patterns where "juiced", "zested", or "juice/zest of"
+    # should result in the derived ingredient (e.g., "lime juice" not just "lime")
+
+    test "transforms 'X, juiced' to 'X juice'" do
+      result = TokenParser.parse("1 lime, juiced")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert "lime juice" in names
+      refute "lime" in names or "juiced" in names
+    end
+
+    test "transforms 'X, zested' to 'X zest'" do
+      result = TokenParser.parse("1 lemon, zested")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert "lemon zest" in names
+      refute "lemon" in names or "zested" in names
+    end
+
+    test "transforms 'juice of X' to 'X juice'" do
+      result = TokenParser.parse("juice of 1 lime")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert "lime juice" in names
+      refute "juice" in names
+    end
+
+    test "transforms 'zest of X' to 'X zest'" do
+      result = TokenParser.parse("zest of 1 lemon")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert "lemon zest" in names
+      refute "zest" in names
+    end
+
+    test "transforms 'juice and zest of X' to both 'X juice' and 'X zest'" do
+      result = TokenParser.parse("juice and zest of 1 lime")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert "lime juice" in names
+      assert "lime zest" in names
+      assert length(result.ingredients) == 2
+    end
+
+    test "transforms 'X (juiced)' to 'X juice'" do
+      result = TokenParser.parse("1 lime (juiced, plus extra for garnish)")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert "lime juice" in names
+    end
+
+    test "transforms 'X (zested + juiced)' to both" do
+      result = TokenParser.parse("1 lime (zested + juiced)")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert "lime juice" in names
+      assert "lime zest" in names
+    end
+
+    test "handles 'juice from X' pattern" do
+      result = TokenParser.parse("juice from 1 lemon")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert "lemon juice" in names
+    end
+
+    test "handles compound juice patterns" do
+      result = TokenParser.parse("the zest + juice from 1 lime")
+
+      names = Enum.map(result.ingredients, & &1.name)
+      assert "lime juice" in names
+      assert "lime zest" in names
     end
   end
 

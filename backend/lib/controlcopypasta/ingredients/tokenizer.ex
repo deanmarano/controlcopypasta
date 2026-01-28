@@ -65,6 +65,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     removed packed divided
     lengthwise crosswise diagonally horizontally vertically
     bruised separated
+    juiced zested
   )
 
   # Modifiers (adjectives that describe ingredient state/size/type)
@@ -482,6 +483,11 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
       # Removable parts (seeds, ribs, etc.) - usually part of prep instructions
       String.downcase(text) in @removable_parts -> :part
 
+      # Metric weights like "113g", "30ml" - these appear in parentheses as
+      # metric equivalents (e.g., "1 cup (113g) flour") and should not be
+      # extracted as ingredient names
+      is_metric_weight?(text) -> :metric_weight
+
       # Default - likely part of ingredient name
       true -> :word
     end
@@ -496,6 +502,13 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   # Size detection (container size like "14-oz" or "14-oz.")
   defp is_size?(text) do
     Regex.match?(~r/^\d+([.,]\d+)?-(oz|ounce|ounces|g|gram|grams|ml|l)\.?$/i, text)
+  end
+
+  # Metric weight detection (like "113g", "30ml", "1.5kg")
+  # These appear in parentheses as metric equivalents: "1 cup (113g) flour"
+  # Matches: 113g, 30ml, 1.5kg, 240ml, 454g, etc.
+  defp is_metric_weight?(text) do
+    Regex.match?(~r/^\d+([.,]\d+)?(g|kg|ml|l)$/i, text)
   end
 
   # Analysis helpers

@@ -102,9 +102,10 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     # Extract container info if present
     container = extract_container(tokens)
 
-    # Get ingredient names and match to canonical
+    # Get ingredient names, applying juice/zest transformations
     lookup = Keyword.get_lazy(opts, :lookup, fn -> Ingredients.build_ingredient_lookup() end)
-    ingredient_names = clean_ingredient_names(analysis.ingredients)
+    raw_ingredient_names = clean_ingredient_names(analysis.ingredients)
+    ingredient_names = transform_juice_zest_patterns(raw_ingredient_names, analysis.preparations, tokens)
     matched_ingredients = Enum.map(ingredient_names, &match_ingredient(&1, lookup))
 
     # Get primary ingredient (first one)
@@ -319,6 +320,91 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     |> String.replace(~r/^\*+/, "")  # Remove leading asterisks
     |> String.replace(~r/\s+/, " ")  # Normalize whitespace
     |> String.trim()
+  end
+
+  # Transform juice/zest patterns to extract derived ingredients
+  # E.g., "1 lime, juiced" → "lime juice"
+  #       "juice and zest of 1 lime" → ["lime juice", "lime zest"]
+  defp transform_juice_zest_patterns(ingredient_names, preparations, tokens) do
+    has_juiced = "juiced" in preparations
+    has_zested = "zested" in preparations
+
+    # Check for "juice of/from" or "zest of/from" patterns in tokens
+    juice_zest_pattern = detect_juice_zest_of_pattern(tokens)
+
+    cond do
+      # Pattern: "juice and zest of X" or "zest + juice from X"
+      juice_zest_pattern == :both ->
+        # The ingredient name is the fruit/citrus - transform to both juice and zest
+        # Filter out words that are part of the "juice/zest of" pattern, not the actual ingredient
+        ingredient_names
+        |> Enum.reject(&is_juice_zest_noise?/1)
+        |> Enum.flat_map(fn name -> ["#{name} juice", "#{name} zest"] end)
+
+      # Pattern: "juice of X" or "juice from X"
+      juice_zest_pattern == :juice ->
+        ingredient_names
+        |> Enum.reject(&is_juice_zest_noise?/1)
+        |> Enum.map(fn name -> "#{name} juice" end)
+
+      # Pattern: "zest of X" or "zest from X"
+      juice_zest_pattern == :zest ->
+        ingredient_names
+        |> Enum.reject(&is_juice_zest_noise?/1)
+        |> Enum.map(fn name -> "#{name} zest" end)
+
+      # Pattern: "X, juiced" or "X (juiced)" - with both juiced and zested
+      has_juiced and has_zested ->
+        Enum.flat_map(ingredient_names, &["#{&1} juice", "#{&1} zest"])
+
+      # Pattern: "X, juiced" or "X (juiced)"
+      has_juiced ->
+        Enum.map(ingredient_names, &"#{&1} juice")
+
+      # Pattern: "X, zested" or "X (zested)"
+      has_zested ->
+        Enum.map(ingredient_names, &"#{&1} zest")
+
+      # No transformation needed
+      true ->
+        ingredient_names
+    end
+  end
+
+  # Check if a name is just noise from "juice/zest of" patterns
+  # E.g., "juice", "zest", "the", "zest of", "juice and zest" should be filtered
+  defp is_juice_zest_noise?(name) do
+    normalized = String.downcase(name)
+    normalized in ["juice", "zest", "the", "zest of", "juice of",
+                   "juice and zest", "zest and juice", "juice + zest", "zest + juice"] or
+    String.starts_with?(normalized, "zest of") or
+    String.starts_with?(normalized, "juice of") or
+    String.starts_with?(normalized, "juice and") or
+    String.starts_with?(normalized, "zest and")
+  end
+
+  # Detect "juice of", "zest of", "juice from", "zest from" patterns
+  # Returns :juice, :zest, :both, or nil
+  defp detect_juice_zest_of_pattern(tokens) do
+    token_texts = Enum.map(tokens, & &1.text)
+    text = Enum.join(token_texts, " ")
+
+    has_juice_of = String.contains?(text, "juice of") or String.contains?(text, "juice from")
+    has_zest_of = String.contains?(text, "zest of") or String.contains?(text, "zest from")
+
+    # Also check for "juice and zest" or "zest + juice" patterns
+    has_juice_and_zest = String.contains?(text, "juice and zest") or
+                         String.contains?(text, "zest and juice") or
+                         String.contains?(text, "juice + zest") or
+                         String.contains?(text, "zest + juice")
+
+    cond do
+      has_juice_and_zest -> :both
+      has_juice_of and has_zest_of -> :both
+      has_juice_of -> :juice
+      has_zest_of -> :zest
+      true -> nil
+    end
   end
 
   # Match ingredient name to canonical ingredient

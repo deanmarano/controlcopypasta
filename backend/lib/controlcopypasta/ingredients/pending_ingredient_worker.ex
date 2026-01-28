@@ -49,7 +49,8 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
   @blacklist_phrases [
     "at room temperature", "room temperature", "to taste", "as needed",
     "as desired", "cut into", "patted dry", "see tip", "see tips",
-    "see note", "see notes", "juice of", "zest of",
+    "see note", "see notes", "juice of", "zest of", "juice from",
+    "zest from", "juice and zest",
     "for the pan", "the pan", "if needed", "if desired",
     "from about", "or more", "or less", "plus more",
     "for serving", "for garnish", "for topping",
@@ -169,6 +170,10 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
       String.length(normalized) < 3 or
       # Contains only numbers
       Regex.match?(~r/^\d+$/, normalized) or
+      # Metric weights like "113g", "30ml", "1.5kg" (parenthetical equivalents)
+      Regex.match?(~r/^\d+([.,]\d+)?(g|kg|ml|l)$/i, normalized) or
+      # Metric weight ranges like "28g to 43g"
+      Regex.match?(~r/^\d+g\s+to\s+\d+g$/i, normalized) or
       # Looks like a measurement or metric conversion
       Regex.match?(~r/^\d+["'-]/, normalized) or
       Regex.match?(~r/^cups?\/\d+/, normalized) or
