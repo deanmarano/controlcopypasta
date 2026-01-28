@@ -52,7 +52,7 @@
 						<a href="/tags">Tags</a>
 						<a href="/settings">Settings</a>
 						{#if $isAdmin}
-							<a href="/admin/scraping" class="admin-link">Admin</a>
+							<a href="/admin" class="admin-link">Admin</a>
 						{/if}
 					</div>
 					<div class="user-menu desktop-only">
@@ -91,7 +91,7 @@
 					<a href="/tags" onclick={closeMobileMenu}>Tags</a>
 					<a href="/settings" onclick={closeMobileMenu}>Settings</a>
 					{#if $isAdmin}
-						<a href="/admin/scraping" onclick={closeMobileMenu} class="admin-link">Admin</a>
+						<a href="/admin" onclick={closeMobileMenu} class="admin-link">Admin</a>
 					{/if}
 				</nav>
 				<button class="mobile-logout" onclick={handleLogout}>Logout</button>
