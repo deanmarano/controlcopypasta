@@ -1137,12 +1137,13 @@ export const admin = {
   },
 
   pendingIngredients: {
-    list: (token: string, params?: { status?: string; limit?: number }) => {
+    list: (token: string, params?: { status?: string; limit?: number; offset?: number }) => {
       const searchParams = new URLSearchParams();
       if (params?.status) searchParams.set('status', params.status);
       if (params?.limit) searchParams.set('limit', params.limit.toString());
+      if (params?.offset) searchParams.set('offset', params.offset.toString());
       const query = searchParams.toString();
-      return request<{ data: PendingIngredient[]; stats: PendingIngredientStats }>(`/admin/pending-ingredients${query ? `?${query}` : ''}`, { token });
+      return request<{ data: PendingIngredient[]; stats: PendingIngredientStats; pagination?: { offset: number; limit: number; total: number } }>(`/admin/pending-ingredients${query ? `?${query}` : ''}`, { token });
     },
 
     get: (token: string, id: string) =>
@@ -1179,7 +1180,7 @@ export const admin = {
       }),
 
     scan: (token: string) =>
-      request<{ message: string; job_id: number }>('/admin/pending-ingredients/scan', {
+      request<{ message: string; job_id: number; cleared_count?: number }>('/admin/pending-ingredients/scan', {
         method: 'POST',
         token
       })

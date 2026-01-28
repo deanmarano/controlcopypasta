@@ -1380,17 +1380,27 @@ defmodule Controlcopypasta.Ingredients do
   def list_pending_ingredients(opts \\ []) do
     status = Keyword.get(opts, :status, "pending")
     limit = Keyword.get(opts, :limit)
+    offset = Keyword.get(opts, :offset, 0)
     min_occurrences = Keyword.get(opts, :min_occurrences, 0)
 
     query = from(p in PendingIngredient,
       where: p.status == ^status,
       where: p.occurrence_count >= ^min_occurrences,
-      order_by: [desc: p.occurrence_count]
+      order_by: [desc: p.occurrence_count],
+      offset: ^offset
     )
 
     query = if limit, do: limit(query, ^limit), else: query
 
     Repo.all(query)
+  end
+
+  @doc """
+  Clears all pending ingredients (used before re-scanning).
+  """
+  def clear_pending_ingredients do
+    {count, _} = Repo.delete_all(from(p in PendingIngredient, where: p.status == "pending"))
+    {:ok, count}
   end
 
   @doc """

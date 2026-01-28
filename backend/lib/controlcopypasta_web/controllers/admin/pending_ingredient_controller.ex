@@ -12,13 +12,19 @@ defmodule ControlcopypastaWeb.Admin.PendingIngredientController do
   def index(conn, params) do
     status = Map.get(params, "status", "pending")
     limit = Map.get(params, "limit", "50") |> String.to_integer()
+    offset = Map.get(params, "offset", "0") |> String.to_integer()
 
-    pending = Ingredients.list_pending_ingredients(status: status, limit: limit)
+    pending = Ingredients.list_pending_ingredients(status: status, limit: limit, offset: offset)
     stats = Ingredients.pending_ingredient_stats()
 
     json(conn, %{
       data: Enum.map(pending, &serialize/1),
-      stats: stats
+      stats: stats,
+      pagination: %{
+        offset: offset,
+        limit: limit,
+        total: stats[String.to_atom(status)] || 0
+      }
     })
   end
 
@@ -128,13 +134,18 @@ defmodule ControlcopypastaWeb.Admin.PendingIngredientController do
 
   @doc """
   Triggers a scan for new pending ingredients.
+  Clears existing pending ingredients before re-scanning.
   """
   def scan(conn, _params) do
+    # Clear existing pending ingredients before re-scanning
+    {:ok, cleared_count} = Ingredients.clear_pending_ingredients()
+
     case PendingIngredientWorker.enqueue() do
       {:ok, job} ->
         json(conn, %{
-          message: "Scan job enqueued",
-          job_id: job.id
+          message: "Cleared #{cleared_count} pending ingredients, scan job enqueued",
+          job_id: job.id,
+          cleared_count: cleared_count
         })
 
       {:error, reason} ->

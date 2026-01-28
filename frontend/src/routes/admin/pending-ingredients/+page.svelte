@@ -15,6 +15,11 @@
 	let statusFilter = $state('pending');
 	let searchQuery = $state('');
 
+	// Pagination
+	let offset = $state(0);
+	let limit = $state(50);
+	let total = $state(0);
+
 	// Actions
 	let processing = $state<string | null>(null);
 	let scanning = $state(false);
@@ -35,12 +40,16 @@
 		await loadPending();
 	});
 
-	async function loadPending() {
+	async function loadPending(resetOffset = false) {
 		const token = authStore.getToken();
 		if (!token) {
 			error = 'Not authenticated';
 			loading = false;
 			return;
+		}
+
+		if (resetOffset) {
+			offset = 0;
 		}
 
 		loading = true;
@@ -49,10 +58,12 @@
 		try {
 			const result = await admin.pendingIngredients.list(token, {
 				status: statusFilter,
-				limit: 100
+				limit,
+				offset
 			});
 			pending = result.data;
 			stats = result.stats;
+			total = result.pagination?.total ?? stats[statusFilter as keyof PendingIngredientStats] ?? 0;
 		} catch (e) {
 			console.error('Failed to load pending ingredients:', e);
 			if (e instanceof Error && 'status' in e) {
@@ -71,6 +82,23 @@
 			loading = false;
 		}
 	}
+
+	function nextPage() {
+		if (offset + limit < total) {
+			offset += limit;
+			loadPending();
+		}
+	}
+
+	function prevPage() {
+		if (offset > 0) {
+			offset = Math.max(0, offset - limit);
+			loadPending();
+		}
+	}
+
+	const currentPage = $derived(Math.floor(offset / limit) + 1);
+	const totalPages = $derived(Math.ceil(total / limit));
 
 	async function handleApprove(item: PendingIngredient) {
 		const token = authStore.getToken();
@@ -164,9 +192,11 @@
 		success = '';
 		try {
 			const result = await admin.pendingIngredients.scan(token);
-			success = `Scan job started (Job #${result.job_id}). This runs in the background and may take a few minutes.`;
-			// Reload stats after a short delay
-			setTimeout(() => loadPending(), 2000);
+			const clearedMsg = result.cleared_count ? `Cleared ${result.cleared_count} old entries. ` : '';
+			success = `${clearedMsg}Scan job started (Job #${result.job_id}). This runs in the background and may take a few minutes.`;
+			// Reset pagination and reload after a short delay
+			offset = 0;
+			setTimeout(() => loadPending(true), 2000);
 		} catch (e) {
 			console.error('Failed to start scan:', e);
 			error = 'Failed to start scan';
@@ -214,25 +244,25 @@
 	{:else}
 		<div class="stats-bar">
 				<div class="stat" class:active={statusFilter === 'pending'}>
-					<button onclick={() => { statusFilter = 'pending'; loadPending(); }}>
+					<button onclick={() => { statusFilter = 'pending'; loadPending(true); }}>
 						<span class="stat-value">{stats.pending}</span>
 						<span class="stat-label">Pending</span>
 					</button>
 				</div>
 				<div class="stat" class:active={statusFilter === 'approved'}>
-					<button onclick={() => { statusFilter = 'approved'; loadPending(); }}>
+					<button onclick={() => { statusFilter = 'approved'; loadPending(true); }}>
 						<span class="stat-value">{stats.approved}</span>
 						<span class="stat-label">Approved</span>
 					</button>
 				</div>
 				<div class="stat" class:active={statusFilter === 'rejected'}>
-					<button onclick={() => { statusFilter = 'rejected'; loadPending(); }}>
+					<button onclick={() => { statusFilter = 'rejected'; loadPending(true); }}>
 						<span class="stat-value">{stats.rejected}</span>
 						<span class="stat-label">Rejected</span>
 					</button>
 				</div>
 				<div class="stat" class:active={statusFilter === 'merged'}>
-					<button onclick={() => { statusFilter = 'merged'; loadPending(); }}>
+					<button onclick={() => { statusFilter = 'merged'; loadPending(true); }}>
 						<span class="stat-value">{stats.merged}</span>
 						<span class="stat-label">Merged</span>
 					</button>
@@ -261,7 +291,20 @@
 		{:else if filteredPending.length === 0}
 			<p class="empty">No pending ingredients found.</p>
 		{:else}
-			<p class="count">Showing {filteredPending.length} of {pending.length} ingredients</p>
+			<div class="list-header">
+				<p class="count">Showing {offset + 1}-{Math.min(offset + pending.length, total)} of {total}</p>
+				{#if totalPages > 1}
+					<div class="pagination">
+						<button onclick={prevPage} disabled={offset === 0} class="page-btn">
+							Previous
+						</button>
+						<span class="page-info">Page {currentPage} of {totalPages}</span>
+						<button onclick={nextPage} disabled={offset + limit >= total} class="page-btn">
+							Next
+						</button>
+					</div>
+				{/if}
+			</div>
 			<div class="pending-list">
 				{#each filteredPending as item}
 					<div class="pending-item" class:processing={processing === item.id}>
@@ -326,6 +369,17 @@
 					</div>
 				{/each}
 			</div>
+			{#if totalPages > 1}
+				<div class="pagination pagination-bottom">
+					<button onclick={prevPage} disabled={offset === 0} class="page-btn">
+						Previous
+					</button>
+					<span class="page-info">Page {currentPage} of {totalPages}</span>
+					<button onclick={nextPage} disabled={offset + limit >= total} class="page-btn">
+						Next
+					</button>
+				</div>
+			{/if}
 		{/if}
 	{/if}
 </div>
@@ -497,10 +551,53 @@
 		padding: var(--space-8);
 	}
 
+	.list-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: var(--space-3);
+		flex-wrap: wrap;
+		gap: var(--space-2);
+	}
+
 	.count {
 		color: var(--text-secondary);
 		font-size: var(--text-sm);
-		margin-bottom: var(--space-3);
+		margin: 0;
+	}
+
+	.pagination {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+
+	.pagination-bottom {
+		justify-content: center;
+		margin-top: var(--space-4);
+	}
+
+	.page-btn {
+		padding: var(--space-2) var(--space-3);
+		background: var(--color-gray-100);
+		border: var(--border-width-default) solid var(--border-default);
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+		cursor: pointer;
+	}
+
+	.page-btn:hover:not(:disabled) {
+		background: var(--color-gray-200);
+	}
+
+	.page-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.page-info {
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
 	}
 
 	.pending-list {
