@@ -87,7 +87,12 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
 
   # Notes/instructions that aren't part of the ingredient
   @notes ~w(optional divided)
-  @note_phrases ["to taste", "as needed", "for serving", "for garnish", "plus more", "or more", "or less"]
+  @note_phrases [
+    "to taste", "as needed", "for serving", "for garnish", "for topping",
+    "for sprinkling", "for dusting", "for dipping", "for drizzling", "for coating",
+    "for brushing", "for frying", "for greasing", "for finishing",
+    "plus more", "or more", "or less", "or to taste", "if desired"
+  ]
 
   # Parts of ingredients that are often removed (seeds, ribs, stems, etc.)
   # When these appear after a comma, they're usually prep instructions
