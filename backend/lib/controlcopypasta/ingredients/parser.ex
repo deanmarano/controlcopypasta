@@ -898,6 +898,8 @@ defmodule Controlcopypasta.Ingredients.Parser do
     |> String.replace(~r/[,;]?\s*plus more.*$/i, "")
     # Remove "for serving" etc.
     |> String.replace(~r/[,;]?\s*for\s+(serving|garnish|drizzling|brushing|dusting|surface|frying).*$/i, "")
+    # Remove "in X sauce/liquid" patterns (e.g., "in adobo sauce", "in brine", "in oil")
+    |> String.replace(~r/\s+in\s+\w+\s+(sauce|liquid|brine|oil|water|syrup|juice).*$/i, "")
     # Remove trailing asterisks (recipe notes markers)
     |> String.replace(~r/\*+$/, "")
     # Remove leading asterisks
@@ -918,6 +920,10 @@ defmodule Controlcopypasta.Ingredients.Parser do
 
   # Form descriptors that can be alternatives (fresh or dried, etc.)
   @form_descriptor_words ~w(fresh dried frozen canned)
+
+  # Color/type adjectives that commonly precede ingredients (e.g., "white or yellow corn")
+  @color_type_adjectives ~w(white yellow red green black brown blue purple orange pink
+                            sweet sour hot mild spicy light dark golden raw cooked)
 
   # Extracts alternatives from "X or Y" patterns
   # Returns {primary, [alternatives]}
@@ -967,6 +973,18 @@ defmodule Controlcopypasta.Ingredients.Parser do
                 ingredient = Enum.join(ingredient_words, " ")
                 primary = "#{left} #{ingredient}"
                 alt = "#{right_form} #{ingredient}"
+                {primary, [alt]}
+
+              # Pattern: "ADJ or ADJ NOUN(S)" - color/type adjectives with shared noun
+              # e.g., "white or yellow corn tortillas" -> {"white corn tortillas", ["yellow corn tortillas"]}
+              # e.g., "red or green bell pepper" -> {"red bell pepper", ["green bell pepper"]}
+              length(left_words) == 1 and length(right_words) >= 2 and
+                  String.downcase(hd(left_words)) in @color_type_adjectives and
+                  String.downcase(hd(right_words)) in @color_type_adjectives ->
+                [right_adj | ingredient_words] = right_words
+                ingredient = Enum.join(ingredient_words, " ")
+                primary = "#{left} #{ingredient}"
+                alt = "#{right_adj} #{ingredient}"
                 {primary, [alt]}
 
               # Pattern: "X or Y Z" - shared suffix (e.g., "chicken or vegetable broth")
