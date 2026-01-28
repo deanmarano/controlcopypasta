@@ -1291,7 +1291,7 @@ defmodule Controlcopypasta.Ingredients do
       on_conflict: {:replace, [:grams_per_unit, :source, :notes, :source_id, :source_url,
                                :confidence, :data_points, :retrieved_at, :last_checked_at,
                                :updated_at]},
-      conflict_target: {:constraint, :ingredient_densities_unique_idx}
+      conflict_target: {:unsafe_fragment, ~s|canonical_ingredient_id, volume_unit, COALESCE(preparation, '')|, []}
     )
   end
 
@@ -1314,7 +1314,7 @@ defmodule Controlcopypasta.Ingredients do
 
     Repo.insert_all(IngredientDensity, entries,
       on_conflict: :nothing,
-      conflict_target: {:constraint, :ingredient_densities_unique_idx}
+      conflict_target: {:unsafe_fragment, ~s|canonical_ingredient_id, volume_unit, COALESCE(preparation, '')|, []}
     )
   end
 
