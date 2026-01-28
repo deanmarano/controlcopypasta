@@ -17,7 +17,8 @@ defmodule Controlcopypasta.Ingredients do
     Preparation,
     IngredientForm,
     BrandPackageSize,
-    IngredientDensity
+    IngredientDensity,
+    PendingIngredient
   }
 
   # =============================================================================
@@ -1359,5 +1360,160 @@ defmodule Controlcopypasta.Ingredients do
       without_density: total - with_density,
       coverage_percent: if(total > 0, do: Float.round(with_density / total * 100, 1), else: 0)
     }
+  end
+
+  # =============================================================================
+  # Pending Ingredients
+  # =============================================================================
+
+  alias Controlcopypasta.Ingredients.PendingIngredient
+
+  @doc """
+  Lists pending ingredients with optional filtering.
+
+  ## Options
+
+  - `:status` - Filter by status (default: "pending")
+  - `:limit` - Limit results
+  - `:min_occurrences` - Minimum occurrence count
+  """
+  def list_pending_ingredients(opts \\ []) do
+    status = Keyword.get(opts, :status, "pending")
+    limit = Keyword.get(opts, :limit)
+    min_occurrences = Keyword.get(opts, :min_occurrences, 0)
+
+    query = from(p in PendingIngredient,
+      where: p.status == ^status,
+      where: p.occurrence_count >= ^min_occurrences,
+      order_by: [desc: p.occurrence_count]
+    )
+
+    query = if limit, do: limit(query, ^limit), else: query
+
+    Repo.all(query)
+  end
+
+  @doc """
+  Gets a pending ingredient by ID.
+  """
+  def get_pending_ingredient(id) do
+    Repo.get(PendingIngredient, id)
+  end
+
+  @doc """
+  Gets pending ingredient stats.
+  """
+  def pending_ingredient_stats do
+    pending = Repo.aggregate(from(p in PendingIngredient, where: p.status == "pending"), :count, :id)
+    approved = Repo.aggregate(from(p in PendingIngredient, where: p.status == "approved"), :count, :id)
+    rejected = Repo.aggregate(from(p in PendingIngredient, where: p.status == "rejected"), :count, :id)
+    merged = Repo.aggregate(from(p in PendingIngredient, where: p.status == "merged"), :count, :id)
+
+    %{
+      pending: pending,
+      approved: approved,
+      rejected: rejected,
+      merged: merged,
+      total: pending + approved + rejected + merged
+    }
+  end
+
+  @doc """
+  Approves a pending ingredient, creating a new canonical ingredient.
+  """
+  def approve_pending_ingredient(pending_id, attrs \\ %{}, user_id \\ nil) do
+    pending = Repo.get!(PendingIngredient, pending_id)
+
+    # Build canonical ingredient attrs
+    canonical_attrs = %{
+      name: pending.name,
+      display_name: attrs[:display_name] || pending.suggested_display_name || titlecase(pending.name),
+      category: attrs[:category] || pending.suggested_category,
+      aliases: attrs[:aliases] || pending.suggested_aliases || []
+    }
+
+    Repo.transaction(fn ->
+      # Create canonical ingredient
+      {:ok, canonical} =
+        %CanonicalIngredient{}
+        |> CanonicalIngredient.changeset(canonical_attrs)
+        |> Repo.insert()
+
+      # Update pending status
+      {:ok, _} =
+        pending
+        |> PendingIngredient.changeset(%{
+          status: "approved",
+          reviewed_at: DateTime.utc_now(),
+          reviewed_by_id: user_id
+        })
+        |> Repo.update()
+
+      canonical
+    end)
+  end
+
+  @doc """
+  Rejects a pending ingredient (marks as not a real ingredient).
+  """
+  def reject_pending_ingredient(pending_id, user_id \\ nil) do
+    pending = Repo.get!(PendingIngredient, pending_id)
+
+    pending
+    |> PendingIngredient.changeset(%{
+      status: "rejected",
+      reviewed_at: DateTime.utc_now(),
+      reviewed_by_id: user_id
+    })
+    |> Repo.update()
+  end
+
+  @doc """
+  Merges a pending ingredient into an existing canonical as an alias.
+  """
+  def merge_pending_ingredient(pending_id, canonical_id, user_id \\ nil) do
+    pending = Repo.get!(PendingIngredient, pending_id)
+    canonical = Repo.get!(CanonicalIngredient, canonical_id)
+
+    Repo.transaction(fn ->
+      # Add as alias to canonical
+      new_aliases = Enum.uniq([pending.name | canonical.aliases || []])
+
+      {:ok, _} =
+        canonical
+        |> CanonicalIngredient.changeset(%{aliases: new_aliases})
+        |> Repo.update()
+
+      # Update pending status
+      {:ok, _} =
+        pending
+        |> PendingIngredient.changeset(%{
+          status: "merged",
+          merged_into_id: canonical_id,
+          reviewed_at: DateTime.utc_now(),
+          reviewed_by_id: user_id
+        })
+        |> Repo.update()
+
+      canonical
+    end)
+  end
+
+  @doc """
+  Updates a pending ingredient's suggested values.
+  """
+  def update_pending_ingredient(pending_id, attrs) do
+    pending = Repo.get!(PendingIngredient, pending_id)
+
+    pending
+    |> PendingIngredient.changeset(attrs)
+    |> Repo.update()
+  end
+
+  defp titlecase(name) do
+    name
+    |> String.split(" ")
+    |> Enum.map(&String.capitalize/1)
+    |> Enum.join(" ")
   end
 end

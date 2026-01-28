@@ -159,6 +159,16 @@ defmodule ControlcopypastaWeb.Router do
     post "/admin/scraper/enqueue-density", Admin.ScraperController, :enqueue_density_enrichment
     post "/admin/scraper/resume-nutrition", Admin.ScraperController, :resume_nutrition_enrichment
     post "/admin/scraper/resume-density", Admin.ScraperController, :resume_density_enrichment
+
+    # Pending ingredients review
+    get "/admin/pending-ingredients", Admin.PendingIngredientController, :index
+    get "/admin/pending-ingredients/stats", Admin.PendingIngredientController, :stats
+    post "/admin/pending-ingredients/scan", Admin.PendingIngredientController, :scan
+    get "/admin/pending-ingredients/:id", Admin.PendingIngredientController, :show
+    put "/admin/pending-ingredients/:id", Admin.PendingIngredientController, :update
+    post "/admin/pending-ingredients/:id/approve", Admin.PendingIngredientController, :approve
+    post "/admin/pending-ingredients/:id/reject", Admin.PendingIngredientController, :reject
+    post "/admin/pending-ingredients/:id/merge", Admin.PendingIngredientController, :merge
   end
 
   # Enable LiveDashboard in development
