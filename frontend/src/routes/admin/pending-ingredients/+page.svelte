@@ -5,9 +5,10 @@
 	import { admin, ingredients, type PendingIngredient, type PendingIngredientStats, type CanonicalIngredient } from '$lib/api/client';
 
 	let pending = $state<PendingIngredient[]>([]);
-	let stats = $state<PendingIngredientStats | null>(null);
+	let stats = $state<PendingIngredientStats>({ pending: 0, approved: 0, rejected: 0, merged: 0, total: 0 });
 	let loading = $state(true);
 	let error = $state('');
+	let success = $state('');
 	let accessDenied = $state(false);
 
 	// Filters
@@ -36,10 +37,15 @@
 
 	async function loadPending() {
 		const token = authStore.getToken();
-		if (!token) return;
+		if (!token) {
+			error = 'Not authenticated';
+			loading = false;
+			return;
+		}
 
 		loading = true;
 		error = '';
+		success = '';
 		try {
 			const result = await admin.pendingIngredients.list(token, {
 				status: statusFilter,
@@ -48,8 +54,16 @@
 			pending = result.data;
 			stats = result.stats;
 		} catch (e) {
-			if (e instanceof Error && 'status' in e && (e as { status: number }).status === 403) {
-				accessDenied = true;
+			console.error('Failed to load pending ingredients:', e);
+			if (e instanceof Error && 'status' in e) {
+				const status = (e as { status: number }).status;
+				if (status === 403) {
+					accessDenied = true;
+				} else if (status === 401) {
+					error = 'Not authorized - please log in again';
+				} else {
+					error = `Failed to load: ${status}`;
+				}
 			} else {
 				error = 'Failed to load pending ingredients';
 			}
@@ -140,14 +154,21 @@
 
 	async function handleScan() {
 		const token = authStore.getToken();
-		if (!token) return;
+		if (!token) {
+			error = 'Not authenticated';
+			return;
+		}
 
 		scanning = true;
+		error = '';
+		success = '';
 		try {
-			await admin.pendingIngredients.scan(token);
-			// Show success message briefly
-			error = '';
-		} catch {
+			const result = await admin.pendingIngredients.scan(token);
+			success = `Scan job started (Job #${result.job_id}). This runs in the background and may take a few minutes.`;
+			// Reload stats after a short delay
+			setTimeout(() => loadPending(), 2000);
+		} catch (e) {
+			console.error('Failed to start scan:', e);
 			error = 'Failed to start scan';
 		} finally {
 			scanning = false;
@@ -191,8 +212,7 @@
 			<a href="/admin">Back to Admin</a>
 		</div>
 	{:else}
-		{#if stats}
-			<div class="stats-bar">
+		<div class="stats-bar">
 				<div class="stat" class:active={statusFilter === 'pending'}>
 					<button onclick={() => { statusFilter = 'pending'; loadPending(); }}>
 						<span class="stat-value">{stats.pending}</span>
@@ -217,8 +237,7 @@
 						<span class="stat-label">Merged</span>
 					</button>
 				</div>
-			</div>
-		{/if}
+		</div>
 
 		<div class="filters">
 			<input
@@ -231,6 +250,10 @@
 
 		{#if error}
 			<p class="error">{error}</p>
+		{/if}
+
+		{#if success}
+			<p class="success">{success}</p>
 		{/if}
 
 		{#if loading}
@@ -453,6 +476,14 @@
 	.error {
 		color: var(--color-error);
 		background: rgba(220, 74, 61, 0.1);
+		padding: var(--space-3);
+		border-radius: var(--radius-md);
+		margin-bottom: var(--space-4);
+	}
+
+	.success {
+		color: var(--color-basil-700);
+		background: rgba(76, 140, 74, 0.1);
 		padding: var(--space-3);
 		border-radius: var(--radius-md);
 		margin-bottom: var(--space-4);
