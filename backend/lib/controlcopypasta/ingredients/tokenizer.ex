@@ -138,14 +138,16 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   identifies alternatives (or patterns), etc.
   """
   def analyze(tokens) when is_list(tokens) do
-    # First, identify and expand "or" patterns
-    expanded_tokens = expand_or_patterns(tokens)
-
-    # Get tokens before "in" for ingredient extraction
-    main_tokens = case Enum.find_index(tokens, &(&1.label == :prep_in)) do
+    # Get tokens before "in" or "such as" for ingredient extraction
+    # These introduce storage medium or examples, not ingredient names
+    stop_labels = [:prep_in, :example_intro]
+    main_tokens = case Enum.find_index(tokens, &(&1.label in stop_labels)) do
       nil -> tokens
       idx -> Enum.take(tokens, idx)
     end
+
+    # Identify and expand "or" patterns only in main tokens (not in examples/storage)
+    expanded_tokens = expand_or_patterns(main_tokens)
 
     %{
       tokens: tokens,
@@ -157,7 +159,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
       word_groups: extract_word_groups(main_tokens),
       ingredients: extract_ingredients(expanded_tokens, main_tokens),
       storage_medium: extract_storage_medium(tokens),
-      has_alternatives: has_alternatives?(tokens)
+      has_alternatives: has_alternatives?(main_tokens)
     }
   end
 
@@ -199,6 +201,11 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     words_after = get_leading_words(after_or)
 
     cond do
+      # If no ingredient words on either side of "or", it's not an ingredient alternative
+      # e.g., "bottles or cans Mexican beer" - the "or" is between containers
+      length(words_before) == 0 or length(words_after) == 0 ->
+        nil
+
       # Pattern: "X or Y Z" where Z is shared (e.g., "avocado oil or coconut oil")
       # Both sides end with the same word(s)
       length(words_before) >= 2 and length(words_after) >= 2 and
@@ -283,7 +290,8 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     |> String.trim()
     |> String.downcase()
     |> normalize_unicode_fractions()
-    |> String.replace(~r/[–—]/, "-")  # Normalize dashes
+    |> String.replace("–", "-")  # Normalize en-dash
+    |> String.replace("—", "-")  # Normalize em-dash
     |> mark_note_phrases()
     |> String.replace(~r/\s+/, " ")
   end
@@ -308,7 +316,10 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
 
   defp normalize_unicode_fractions(text) do
     Enum.reduce(@unicode_fractions, text, fn {char, replacement}, acc ->
-      String.replace(acc, char, replacement)
+      # Add space before fraction if preceded by a digit (e.g., "1½" -> "1 1/2")
+      acc
+      |> String.replace(~r/(\d)#{Regex.escape(char)}/, "\\1 #{replacement}")
+      |> String.replace(char, replacement)
     end)
   end
 
@@ -376,6 +387,9 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
       # "in" is a preposition that often starts a storage/packing phrase
       String.downcase(text) == "in" -> :prep_in
 
+      # "such" and "preferably" start example phrases - these aren't ingredient names
+      String.downcase(text) in ["such", "preferably"] -> :example_intro
+
       # Removable parts (seeds, ribs, etc.) - usually part of prep instructions
       String.downcase(text) in @removable_parts -> :part
 
@@ -390,9 +404,9 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     Regex.match?(~r/^\d+([.,]\d+)?(\/\d+)?(-\d+([.,]\d+)?(\/\d+)?)?$/, text)
   end
 
-  # Size detection (container size like "14-oz")
+  # Size detection (container size like "14-oz" or "14-oz.")
   defp is_size?(text) do
-    Regex.match?(~r/^\d+([.,]\d+)?-(oz|ounce|ounces|g|gram|grams|ml|l)$/i, text)
+    Regex.match?(~r/^\d+([.,]\d+)?-(oz|ounce|ounces|g|gram|grams|ml|l)\.?$/i, text)
   end
 
   # Analysis helpers
