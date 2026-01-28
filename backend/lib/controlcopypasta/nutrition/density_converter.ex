@@ -404,8 +404,11 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
 
   def volume_unit?(_), do: false
 
-  # Count units for countable items (eggs, lemons, etc.)
-  @count_units ~w(each whole piece pieces item items unit units count)
+  # Count units for countable items (eggs, lemons, garlic cloves, tofu blocks, etc.)
+  @count_units ~w(each whole piece pieces item items unit units count
+                  clove cloves head heads block blocks
+                  stalk stalks sprig sprigs bunch bunches
+                  slice slices can cans)
 
   @doc """
   Checks if a unit is a count unit (for countable items like eggs).

@@ -1465,6 +1465,22 @@ canonical_ingredients = [
     aliases: ["sriracha", "tabasco", "frank's red hot", "louisiana hot sauce"]
   },
   %{
+    name: "chili crisp",
+    display_name: "Chili Crisp",
+    category: "condiment",
+    tags: ["spicy", "asian", "chinese"],
+    dietary_flags: ["vegetarian", "vegan", "gluten_free"],
+    aliases: ["chili crunch", "crunchy chili oil", "lao gan ma", "chili crisp oil", "chile crisp"]
+  },
+  %{
+    name: "bouillon paste",
+    display_name: "Bouillon Paste",
+    category: "condiment",
+    tags: ["umami", "broth"],
+    dietary_flags: ["gluten_free"],
+    aliases: ["bouillon", "better than bouillon", "stock concentrate", "stock paste", "bouillon concentrate", "soup base"]
+  },
+  %{
     name: "mustard",
     display_name: "Mustard",
     category: "condiment",

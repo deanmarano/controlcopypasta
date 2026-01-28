@@ -119,8 +119,14 @@ defmodule Controlcopypasta.Nutrition.DensityRanges do
     "sausage" => %{min: 50, best: 68, max: 90},
     "hot dog" => %{min: 35, best: 45, max: 60},
 
+    # Plant proteins (per block/package)
+    "tofu" => %{min: 340, best: 396, max: 450},
+    "tempeh" => %{min: 200, best: 227, max: 260},
+
     # Canned goods (per standard can)
     "canned tomatoes" => %{min: 400, best: 794, max: 800},
+    "coconut milk" => %{min: 354, best: 400, max: 425},
+    "coconut cream" => %{min: 354, best: 400, max: 425},
 
     # Dried peppers
     "red pepper flakes" => %{min: 0.3, best: 0.5, max: 1.0}

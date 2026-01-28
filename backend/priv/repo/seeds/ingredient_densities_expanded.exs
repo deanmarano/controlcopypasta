@@ -124,7 +124,9 @@ densities = [
 
   # Tofu & Plant proteins
   {"tofu", "cup", 252, "cubed", "usda"},
+  {"tofu", "each", 396, nil, "standard estimate"},
   {"tempeh", "cup", 166, "cubed", "usda"},
+  {"tempeh", "each", 227, nil, "standard estimate"},
   {"seitan", "cup", 180, "cubed", "usda"},
 
   # ============ GRAINS & PASTA ============
@@ -204,6 +206,7 @@ densities = [
   {"green curry paste", "tbsp", 16, nil, "usda"},
   {"red curry paste", "tbsp", 16, nil, "usda"},
   {"coconut milk", "cup", 240, nil, "usda"},
+  {"coconut milk", "each", 400, nil, "standard estimate"},
   {"coconut cream", "cup", 240, nil, "usda"},
   {"cream of coconut", "cup", 280, nil, "usda"},
   {"pickle relish", "tbsp", 15, nil, "usda"},

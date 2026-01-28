@@ -130,6 +130,7 @@ densities = [
   # Produce (common conversions)
   {"onion", "cup", 160, "chopped", "usda"},
   {"garlic", "tsp", 3, "minced", "usda"},
+  {"garlic", "each", 4, nil, "usda"},
   {"celery", "cup", 101, "chopped", "usda"},
   {"carrot", "cup", 128, "chopped", "usda"},
   {"bell pepper", "cup", 149, "chopped", "usda"},
