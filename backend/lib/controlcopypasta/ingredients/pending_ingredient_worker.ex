@@ -73,6 +73,7 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
   ]
 
   @batch_size 5000
+  @parse_chunk_size 5000
 
   @impl Oban.Worker
   def perform(%Oban.Job{}) do
@@ -80,42 +81,71 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
 
     lookup = Ingredients.build_ingredient_lookup()
 
-    # Count total recipes
+    # First pass: collect all unique ingredient texts with frequencies (fast)
+    text_freq = collect_text_frequencies(lookup)
+
+    Logger.info("Found #{map_size(text_freq)} unique ingredient texts, parsing incrementally...")
+
+    # Second pass: parse in chunks and upsert incrementally
+    texts = Enum.to_list(text_freq)
+    total_texts = length(texts)
+    chunks = Enum.chunk_every(texts, @parse_chunk_size)
+    num_chunks = length(chunks)
+
+    {total_upserted, unmatched} = chunks
+    |> Enum.with_index(1)
+    |> Enum.reduce({0, %{}}, fn {chunk, chunk_num}, {upserted_so_far, acc} ->
+      Logger.info("Parsing chunk #{chunk_num}/#{num_chunks} (#{min(chunk_num * @parse_chunk_size, total_texts)}/#{total_texts} texts)...")
+
+      # Parse this chunk and accumulate unmatched
+      acc = Enum.reduce(chunk, acc, fn {text, freq}, inner_acc ->
+        parsed = TokenParser.parse(text, lookup: lookup)
+
+        parsed.ingredients
+        |> Enum.reject(& &1.canonical_name)
+        |> Enum.reduce(inner_acc, fn ingredient, name_acc ->
+          name = String.downcase(String.trim(ingredient.name))
+
+          Map.update(name_acc, name, %{count: freq, samples: [text]}, fn existing ->
+            %{
+              count: existing.count + freq,
+              samples: Enum.take(Enum.uniq([text | existing.samples]), @max_sample_texts)
+            }
+          end)
+        end)
+      end)
+
+      # Upsert candidates that meet threshold so far
+      candidates = acc
+      |> Enum.filter(fn {name, %{count: count}} ->
+        count >= @min_occurrences and not blacklisted?(name)
+      end)
+      |> Enum.sort_by(fn {_, %{count: count}} -> -count end)
+
+      inserted = upsert_pending(candidates)
+      Logger.info("Chunk #{chunk_num}: #{inserted} candidates upserted so far")
+
+      {inserted, acc}
+    end)
+
+    Logger.info("Scan complete: #{total_upserted} pending ingredients upserted")
+
+    {:ok, %{total_texts: total_texts, upserted: total_upserted}}
+  end
+
+  defp collect_text_frequencies(lookup) do
     total = Repo.one(
       from r in Recipe,
       where: fragment("jsonb_array_length(ingredients) > 0"),
       select: count(r.id)
     )
 
-    Logger.info("Scanning #{total} recipes in batches of #{@batch_size}...")
-
-    # Process in batches, collecting unique texts first then parsing
-    unmatched = collect_unmatched_batched(total, lookup)
-
-    # Filter to those meeting threshold and not blacklisted
-    candidates = unmatched
-    |> Enum.filter(fn {name, %{count: count}} ->
-      count >= @min_occurrences and not blacklisted?(name)
-    end)
-    |> Enum.sort_by(fn {_, %{count: count}} -> -count end)
-
-    Logger.info("Found #{length(candidates)} candidates meeting threshold")
-
-    # Upsert into pending_ingredients
-    inserted = upsert_pending(candidates)
-
-    Logger.info("Upserted #{inserted} pending ingredients")
-
-    {:ok, %{scanned: total, candidates: length(candidates), upserted: inserted}}
-  end
-
-  defp collect_unmatched_batched(total, lookup) do
-    # First pass: collect all unique ingredient texts with their frequencies
     num_batches = div(total + @batch_size - 1, @batch_size)
+    Logger.info("Scanning #{total} recipes in #{num_batches} batches...")
 
-    text_freq = Enum.reduce(0..(num_batches - 1), %{}, fn batch_num, acc ->
+    Enum.reduce(0..(num_batches - 1), %{}, fn batch_num, acc ->
       offset = batch_num * @batch_size
-      Logger.info("Processing batch #{batch_num + 1}/#{num_batches} (offset #{offset})...")
+      Logger.info("Collecting texts batch #{batch_num + 1}/#{num_batches}...")
 
       recipes = Repo.all(
         from r in Recipe,
@@ -134,27 +164,6 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
         else
           inner_acc
         end
-      end)
-    end)
-
-    Logger.info("Found #{map_size(text_freq)} unique ingredient texts, parsing...")
-
-    # Second pass: parse each unique text once and aggregate unmatched names
-    text_freq
-    |> Enum.reduce(%{}, fn {text, freq}, acc ->
-      parsed = TokenParser.parse(text, lookup: lookup)
-
-      parsed.ingredients
-      |> Enum.reject(& &1.canonical_name)
-      |> Enum.reduce(acc, fn ingredient, inner_acc ->
-        name = String.downcase(String.trim(ingredient.name))
-
-        Map.update(inner_acc, name, %{count: freq, samples: [text]}, fn existing ->
-          %{
-            count: existing.count + freq,
-            samples: Enum.take(Enum.uniq([text | existing.samples]), @max_sample_texts)
-          }
-        end)
       end)
     end)
   end
