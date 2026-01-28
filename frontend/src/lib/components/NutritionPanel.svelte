@@ -12,8 +12,6 @@
 
 	let { nutrition, loading = false, error = '', showRangeBars = true }: Props = $props();
 
-	let showIngredientDetails = $state(false);
-
 	// Extract "best" value from a NutrientRange or scalar
 	function getValue(value: NutrientRange | number | null): number | null {
 		return getNutrientValue(value);
@@ -147,18 +145,6 @@
 	<div class="nutrition-error">{error}</div>
 {:else if nutrition}
 	<div class="nutrition-panel">
-		<div class="nutrition-header">
-			<h3>Nutrition Facts</h3>
-			<div class="serving-info">
-				<span class="servings">{nutrition.servings} serving{nutrition.servings !== 1 ? 's' : ''}</span>
-				{#if nutrition.completeness < 1}
-					<span class="completeness" title="Percentage of ingredients with nutrition data">
-						{Math.round(nutrition.completeness * 100)}% calculated
-					</span>
-				{/if}
-			</div>
-		</div>
-
 		{#if nutrition.warnings.length > 0}
 			<div class="warnings">
 				{#each nutrition.warnings as warning}
@@ -167,7 +153,21 @@
 			</div>
 		{/if}
 
-		<div class="nutrition-facts">
+		<div class="nutrition-layout">
+			<div class="facts-column">
+				<div class="nutrition-header">
+					<h3>Nutrition Facts</h3>
+					<div class="serving-info">
+						<span class="servings">{nutrition.servings} serving{nutrition.servings !== 1 ? 's' : ''}</span>
+						{#if nutrition.completeness < 1}
+							<span class="completeness" title="Percentage of ingredients with nutrition data">
+								{Math.round(nutrition.completeness * 100)}% calculated
+							</span>
+						{/if}
+					</div>
+				</div>
+
+				<div class="nutrition-facts">
 			<div class="calories-row">
 				<span class="label">Calories</span>
 				<span class="value">{formatNumber(nutrition.per_serving.calories)}</span>
@@ -269,24 +269,21 @@
 			{/if}
 
 			<div class="footnote">
-				*The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.
+					*The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.
+				</div>
 			</div>
 		</div>
 
-		<button
-			class="details-toggle"
-			onclick={() => (showIngredientDetails = !showIngredientDetails)}
-		>
-			{showIngredientDetails ? 'Hide' : 'Show'} ingredient breakdown
-			<span class="arrow">{showIngredientDetails ? '▲' : '▼'}</span>
-		</button>
-
-		{#if showIngredientDetails}
+		<div class="breakdown-column">
+			<div class="breakdown-header">
+				<h3>Ingredient Breakdown</h3>
+			</div>
 			<div class="ingredient-breakdown">
 				<table>
 					<thead>
 						<tr>
-							<th>Ingredient</th>
+							<th>Original</th>
+							<th>Matched</th>
 							<th class="num">Qty</th>
 							<th class="num">Grams</th>
 							<th class="num">Cal</th>
@@ -296,8 +293,17 @@
 					<tbody>
 						{#each nutrition.ingredients as ing}
 							<tr class="status-{ing.status}">
-								<td class="ingredient-name" title={ing.original}>
-									{ing.canonical_name || ing.original}
+								<td class="original-text" title={ing.original}>
+									{ing.original}
+								</td>
+								<td class="ingredient-name">
+									{#if ing.canonical_id}
+										<a href="/ingredients/{ing.canonical_id}">{ing.canonical_name}</a>
+									{:else if ing.canonical_name}
+										{ing.canonical_name}
+									{:else}
+										<span class="no-match">-</span>
+									{/if}
 								</td>
 								<td class="num qty-cell">
 									{#if ing.quantity}
@@ -322,7 +328,7 @@
 					</tbody>
 					<tfoot>
 						<tr class="total-row">
-							<td><strong>Total</strong></td>
+							<td colspan="2"><strong>Total</strong></td>
 							<td class="num"></td>
 							<td class="num">
 								<strong>
@@ -340,8 +346,9 @@
 					</tfoot>
 				</table>
 			</div>
-		{/if}
+		</div>
 	</div>
+</div>
 {/if}
 
 <style>
@@ -383,16 +390,40 @@
 		font-size: var(--text-sm);
 	}
 
-	.nutrition-header {
+	.nutrition-layout {
+		display: grid;
+		grid-template-columns: minmax(280px, 320px) 1fr;
+		gap: var(--space-6);
+		align-items: start;
+	}
+
+	@media (max-width: 900px) {
+		.nutrition-layout {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	.facts-column {
+		min-width: 0;
+	}
+
+	.breakdown-column {
+		min-width: 0;
+		overflow-x: auto;
+	}
+
+	.nutrition-header,
+	.breakdown-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
 		margin-bottom: var(--space-3);
 	}
 
-	.nutrition-header h3 {
+	.nutrition-header h3,
+	.breakdown-header h3 {
 		margin: 0;
-		font-size: var(--text-xl);
+		font-size: var(--text-lg);
 		font-weight: var(--font-bold);
 	}
 
@@ -519,32 +550,7 @@
 		line-height: var(--leading-snug);
 	}
 
-	.details-toggle {
-		width: 100%;
-		margin-top: var(--space-3);
-		padding: var(--space-2);
-		background: var(--bg-surface);
-		border: var(--border-width-thin) solid var(--border-light);
-		border-radius: var(--radius-md);
-		cursor: pointer;
-		font-size: var(--text-sm);
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		gap: var(--space-2);
-		transition: all var(--transition-fast);
-	}
-
-	.details-toggle:hover {
-		background: var(--color-pasta-100);
-	}
-
-	.arrow {
-		font-size: var(--text-xs);
-	}
-
 	.ingredient-breakdown {
-		margin-top: var(--space-3);
 		overflow-x: auto;
 	}
 
@@ -570,11 +576,33 @@
 		text-align: right;
 	}
 
-	.ingredient-name {
-		max-width: 150px;
+	.original-text {
+		max-width: 200px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		color: var(--text-secondary);
+		font-size: var(--text-xs);
+	}
+
+	.ingredient-name {
+		max-width: 120px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.ingredient-name a {
+		color: var(--color-marinara-600);
+		text-decoration: none;
+	}
+
+	.ingredient-name a:hover {
+		text-decoration: underline;
+	}
+
+	.no-match {
+		color: var(--text-muted);
 	}
 
 	.status-badge {
@@ -620,13 +648,13 @@
 
 	/* Print styles */
 	@media print {
-		.details-toggle {
-			display: none;
-		}
-
 		.nutrition-panel {
 			border: 1px solid #000;
 			page-break-inside: avoid;
+		}
+
+		.nutrition-layout {
+			grid-template-columns: 1fr;
 		}
 	}
 </style>
