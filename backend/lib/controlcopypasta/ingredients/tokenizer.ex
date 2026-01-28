@@ -63,6 +63,8 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     mashed pureed beaten whisked sifted
     toasted roasted
     removed packed divided
+    lengthwise crosswise diagonally horizontally vertically
+    bruised separated
   )
 
   # Modifiers (adjectives that describe ingredient state/size/type)
@@ -115,7 +117,85 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     |> split_tokens()
     |> Enum.with_index()
     |> Enum.map(fn {text, idx} -> label_token(text, idx) end)
+    |> fix_ambiguous_labels()
   end
+
+  # Fix tokens that are context-dependent:
+  # - "cloves" can be unit ("2 cloves garlic") or ingredient ("whole cloves")
+  # - "seeds" can be part ("seeds removed") or ingredient ("sesame seeds")
+  # - "of" after a unit should be skipped ("dashes of bitters")
+  defp fix_ambiguous_labels(tokens) do
+    tokens
+    |> Enum.with_index()
+    |> Enum.map(fn {token, idx} ->
+      cond do
+        should_relabel_unit_as_word?(token, tokens, idx) ->
+          %{token | label: :word}
+
+        should_relabel_part_as_word?(token, tokens, idx) ->
+          %{token | label: :word}
+
+        should_label_as_unit_connector?(token, tokens, idx) ->
+          %{token | label: :unit_connector}
+
+        true ->
+          token
+      end
+    end)
+  end
+
+  # "cloves" etc. at end without word after, preceded by modifier or another unit
+  defp should_relabel_unit_as_word?(%Token{label: :unit}, tokens, idx) do
+    tokens_after = Enum.drop(tokens, idx + 1)
+    has_word_after = Enum.any?(tokens_after, &(&1.label == :word))
+
+    if has_word_after do
+      false
+    else
+      tokens_before = Enum.take(tokens, idx)
+
+      has_modifier_before = tokens_before
+        |> Enum.reverse()
+        |> Enum.take_while(&(&1.label in [:mod, :qty]))
+        |> Enum.any?(&(&1.label == :mod))
+
+      has_unit_before = Enum.any?(tokens_before, &(&1.label == :unit))
+
+      has_modifier_before or has_unit_before
+    end
+  end
+
+  defp should_relabel_unit_as_word?(_token, _tokens, _idx), do: false
+
+  # "seeds" after an ingredient word should be part of the name ("poppy seeds", "sesame seeds")
+  # But "seeds removed" or "seeds, ribs removed" should keep seeds as :part
+  defp should_relabel_part_as_word?(%Token{label: :part, text: text}, tokens, idx) when text in ["seeds", "peel"] do
+    # Check what comes before
+    tokens_before = Enum.take(tokens, idx)
+    prev_token = List.last(tokens_before)
+
+    # Check what comes after
+    tokens_after = Enum.drop(tokens, idx + 1)
+    next_token = List.first(tokens_after)
+
+    # If preceded by a word (like "poppy", "sesame"), it's part of ingredient name
+    # Unless followed by prep/conj/removed (like "seeds removed", "seeds and ribs")
+    preceded_by_word = prev_token != nil and prev_token.label == :word
+    followed_by_prep_or_removal = next_token != nil and next_token.label in [:prep, :conj]
+
+    preceded_by_word and not followed_by_prep_or_removal
+  end
+
+  defp should_relabel_part_as_word?(_token, _tokens, _idx), do: false
+
+  # "of" immediately after a unit ("dashes of", "cups of")
+  defp should_label_as_unit_connector?(%Token{label: :word, text: "of"}, tokens, idx) do
+    tokens_before = Enum.take(tokens, idx)
+    prev_token = List.last(tokens_before)
+    prev_token && prev_token.label == :unit
+  end
+
+  defp should_label_as_unit_connector?(_token, _tokens, _idx), do: false
 
   @doc """
   Returns a compact string representation of labeled tokens.
@@ -347,6 +427,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   end
 
   @punctuation [",", ";", "(", ")", "+"]
+  @qty_connectors ["plus"]  # Words that connect quantities (like "+")
 
   defp classify_token(text) do
     # Strip trailing period for unit matching
@@ -355,6 +436,9 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     cond do
       # Punctuation (including + for compound quantities)
       text in @punctuation -> :punct
+
+      # Quantity connectors (words that act like + between quantities)
+      String.downcase(text) in @qty_connectors -> :punct
 
       # Note phrase markers (shouldn't reach here normally, but just in case)
       String.starts_with?(text, "__NOTE_") -> :note
