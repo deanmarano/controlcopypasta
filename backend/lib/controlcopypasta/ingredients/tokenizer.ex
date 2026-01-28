@@ -62,6 +62,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     drained rinsed strained peeled seeded cored pitted trimmed deveined
     mashed pureed beaten whisked sifted
     toasted roasted
+    removed packed divided
   )
 
   # Modifiers (adjectives that describe ingredient state/size/type)
@@ -85,6 +86,10 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   # Notes/instructions that aren't part of the ingredient
   @notes ~w(optional divided)
   @note_phrases ["to taste", "as needed", "for serving", "for garnish", "plus more", "or more", "or less"]
+
+  # Parts of ingredients that are often removed (seeds, ribs, stems, etc.)
+  # When these appear after a comma, they're usually prep instructions
+  @removable_parts ~w(seeds ribs stems skin skins peel core pit pits veins membranes)
 
   # Conjunctions
   @conjunctions ~w(or and)
@@ -279,7 +284,18 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     |> String.downcase()
     |> normalize_unicode_fractions()
     |> String.replace(~r/[–—]/, "-")  # Normalize dashes
+    |> mark_note_phrases()
     |> String.replace(~r/\s+/, " ")
+  end
+
+  # Replace multi-word note phrases with a single marker token
+  # The marker format is __NOTE_n__ where n is the phrase index
+  defp mark_note_phrases(text) do
+    @note_phrases
+    |> Enum.with_index()
+    |> Enum.reduce(text, fn {phrase, idx}, acc ->
+      String.replace(acc, phrase, "__NOTE_#{idx}__")
+    end)
   end
 
   @unicode_fractions %{
@@ -306,16 +322,31 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
 
   # Token labeling
   defp label_token(text, position) do
-    label = classify_token(text)
-    %Token{text: text, label: label, position: position}
+    # Check for note phrase markers and restore original text
+    case Regex.run(~r/^__NOTE_(\d+)__$/, text) do
+      [_, idx_str] ->
+        idx = String.to_integer(idx_str)
+        original_phrase = Enum.at(@note_phrases, idx)
+        %Token{text: original_phrase, label: :note, position: position}
+
+      nil ->
+        label = classify_token(text)
+        %Token{text: text, label: label, position: position}
+    end
   end
 
-  @punctuation [",", ";", "(", ")"]
+  @punctuation [",", ";", "(", ")", "+"]
 
   defp classify_token(text) do
+    # Strip trailing period for unit matching
+    text_clean = String.replace(text, ~r/\.+$/, "")
+
     cond do
-      # Punctuation
+      # Punctuation (including + for compound quantities)
       text in @punctuation -> :punct
+
+      # Note phrase markers (shouldn't reach here normally, but just in case)
+      String.starts_with?(text, "__NOTE_") -> :note
 
       # Quantity patterns
       is_quantity?(text) -> :qty
@@ -323,8 +354,9 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
       # Size pattern (e.g., "14-oz", "15-ounce")
       is_size?(text) -> :size
 
-      # Units
+      # Units (check both with and without trailing period)
       String.downcase(text) in @units -> :unit
+      String.downcase(text_clean) in @units -> :unit
 
       # Containers
       String.downcase(text) in @containers -> :container
@@ -338,11 +370,14 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
       # Conjunctions
       String.downcase(text) in @conjunctions -> :conj
 
-      # Notes
+      # Notes (single-word notes)
       String.downcase(text) in @notes -> :note
 
       # "in" is a preposition that often starts a storage/packing phrase
       String.downcase(text) == "in" -> :prep_in
+
+      # Removable parts (seeds, ribs, etc.) - usually part of prep instructions
+      String.downcase(text) in @removable_parts -> :part
 
       # Default - likely part of ingredient name
       true -> :word
@@ -389,19 +424,19 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   end
 
   # Extract groups of consecutive :word tokens
-  # Splits on conjunctions, punctuation, and "in" preposition
+  # Splits on conjunctions, punctuation, "in" preposition, and part labels
+  # Groups must contain at least one :word token (not just modifiers)
   defp extract_word_groups(tokens) do
     tokens
     |> Enum.chunk_by(fn t -> t.label in [:word, :mod] end)
     |> Enum.filter(fn chunk ->
-      case chunk do
-        [%Token{label: l} | _] when l in [:word, :mod] -> true
-        _ -> false
-      end
+      # Must have at least one :word token (not just modifiers)
+      Enum.any?(chunk, &(&1.label == :word))
     end)
     |> Enum.map(fn chunk ->
       Enum.map(chunk, & &1.text) |> Enum.join(" ")
     end)
+    |> Enum.reject(&(&1 == ""))
   end
 
   @doc """

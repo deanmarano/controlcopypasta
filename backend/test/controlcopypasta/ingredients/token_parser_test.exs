@@ -112,6 +112,30 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
       assert "chopped" in result.preparations
       assert length(result.ingredients) == 1
     end
+
+    test "handles note phrases like 'to taste'" do
+      result = TokenParser.parse("salt and pepper to taste")
+
+      assert length(result.ingredients) == 2
+      names = Enum.map(result.ingredients, & &1.name)
+      assert "salt" in names
+      assert "pepper" in names
+    end
+
+    test "handles 'for garnish' note phrase" do
+      result = TokenParser.parse("fresh parsley, for garnish")
+
+      assert length(result.ingredients) == 1
+      assert hd(result.ingredients).name == "fresh parsley"
+    end
+
+    test "handles 'seeds and ribs removed' as prep" do
+      result = TokenParser.parse("1/2 jalapeño pepper, seeds and ribs removed")
+
+      assert length(result.ingredients) == 1
+      assert hd(result.ingredients).name == "jalapeño pepper"
+      assert "removed" in result.preparations
+    end
   end
 
   describe "to_jsonb_map/1" do
