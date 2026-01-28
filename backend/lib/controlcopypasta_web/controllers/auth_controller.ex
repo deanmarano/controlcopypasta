@@ -45,12 +45,14 @@ defmodule ControlcopypastaWeb.AuthController do
   Body: {"token": "..."}
   """
   def verify_magic_link(conn, %{"token" => token}) when is_binary(token) do
+    alias ControlcopypastaWeb.Plugs.AdminAuth
+
     with {:ok, email} <- MagicLink.verify_token(token),
          {:ok, user} <- Accounts.get_or_create_user(email),
          {:ok, jwt, _claims} <- Guardian.encode_and_sign(user) do
       json(conn, %{
         token: jwt,
-        user: %{id: user.id, email: user.email}
+        user: %{id: user.id, email: user.email, is_admin: AdminAuth.admin?(user.email)}
       })
     else
       {:error, :expired} ->
@@ -114,11 +116,13 @@ defmodule ControlcopypastaWeb.AuthController do
         |> json(%{error: "Not authenticated"})
 
       user ->
+        alias ControlcopypastaWeb.Plugs.AdminAuth
         json(conn, %{
           user: %{
             id: user.id,
             email: user.email,
-            inserted_at: user.inserted_at
+            inserted_at: user.inserted_at,
+            is_admin: AdminAuth.admin?(user.email)
           }
         })
     end

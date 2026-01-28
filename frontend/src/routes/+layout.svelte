@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { authStore, isAuthenticated, currentUser, isLoading } from '$lib/stores/auth';
+	import { authStore, isAuthenticated, currentUser, isLoading, isAdmin } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 
@@ -51,6 +51,9 @@
 						<a href="/ingredients">Ingredients</a>
 						<a href="/tags">Tags</a>
 						<a href="/settings">Settings</a>
+						{#if $isAdmin}
+							<a href="/admin/scraping" class="admin-link">Admin</a>
+						{/if}
 					</div>
 					<div class="user-menu desktop-only">
 						<span>{$currentUser?.email}</span>
@@ -87,6 +90,9 @@
 					<a href="/ingredients" onclick={closeMobileMenu}>Ingredients</a>
 					<a href="/tags" onclick={closeMobileMenu}>Tags</a>
 					<a href="/settings" onclick={closeMobileMenu}>Settings</a>
+					{#if $isAdmin}
+						<a href="/admin/scraping" onclick={closeMobileMenu} class="admin-link">Admin</a>
+					{/if}
 				</nav>
 				<button class="mobile-logout" onclick={handleLogout}>Logout</button>
 			</div>
@@ -170,6 +176,22 @@
 	.nav-links a:hover {
 		color: var(--color-white);
 		background-color: rgba(255, 255, 255, 0.1);
+	}
+
+	.nav-links .admin-link {
+		color: var(--color-pasta-300);
+	}
+
+	.nav-links .admin-link:hover {
+		color: var(--color-pasta-200);
+	}
+
+	.mobile-nav .admin-link {
+		color: var(--color-pasta-300);
+	}
+
+	.mobile-nav .admin-link:hover {
+		color: var(--color-pasta-200);
 	}
 
 	.user-menu {

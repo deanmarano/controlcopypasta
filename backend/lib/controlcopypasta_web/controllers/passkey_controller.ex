@@ -255,11 +255,14 @@ defmodule ControlcopypastaWeb.PasskeyController do
          {:ok, _} <- Accounts.update_passkey_sign_count(passkey, auth_data.sign_count),
          {:ok, jwt, _claims} <- Guardian.encode_and_sign(passkey.user) do
 
+      alias ControlcopypastaWeb.Plugs.AdminAuth
+
       json(conn, %{
         token: jwt,
         user: %{
           id: passkey.user.id,
-          email: passkey.user.email
+          email: passkey.user.email,
+          is_admin: AdminAuth.admin?(passkey.user.email)
         }
       })
     else
