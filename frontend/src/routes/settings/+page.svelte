@@ -41,9 +41,6 @@
 	// Preference toggle
 	let savingPreferences = $state(false);
 
-	// Admin status
-	let isAdmin = $state(false);
-
 	// Expanded category/allergen view
 	let expandedAvoidanceId = $state<string | null>(null);
 	let expandedIngredients = $state<AvoidanceIngredientsResponse | null>(null);
@@ -88,7 +85,6 @@
 		try {
 			const result = await settings.getPreferences(token);
 			preferences = result.data;
-			isAdmin = result.data.is_admin ?? false;
 		} catch {
 			// Preferences are optional, fail silently
 		}
@@ -354,20 +350,6 @@
 			<span class="link-description">Manage passkeys for quick, secure sign-in</span>
 		</a>
 	</section>
-
-	{#if isAdmin}
-	<section class="settings-section">
-		<h2>Admin</h2>
-		<a href="/admin/ingredients" class="settings-link">
-			<span class="link-title">Manage Ingredients</span>
-			<span class="link-description">Set animal types and categories for ingredients</span>
-		</a>
-		<a href="/admin/scraping" class="settings-link">
-			<span class="link-title">Manage Scraping</span>
-			<span class="link-description">View domains, queue status, and rate limits</span>
-		</a>
-	</section>
-	{/if}
 
 	<section class="avoided-section">
 		<h2>Avoided Ingredients</h2>
