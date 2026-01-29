@@ -385,8 +385,17 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     |> normalize_unicode_fractions()
     |> String.replace("–", "-")  # Normalize en-dash
     |> String.replace("—", "-")  # Normalize em-dash
+    |> normalize_range_patterns()  # "1 -2" or "1 - 2" -> "1-2"
     |> mark_note_phrases()
     |> String.replace(~r/\s+/, " ")
+  end
+
+  # Normalize range patterns where there's whitespace around the dash
+  # "1 -2" -> "1-2", "1 - 2" -> "1-2", "1- 2" -> "1-2"
+  # This handles cases like "1 -1 1/2 cup" meaning "1 to 1½ cups"
+  defp normalize_range_patterns(text) do
+    text
+    |> String.replace(~r/(\d)\s*-\s*(\d)/, "\\1-\\2")
   end
 
   # Replace multi-word note phrases with a single marker token

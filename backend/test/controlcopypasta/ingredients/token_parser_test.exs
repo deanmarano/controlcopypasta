@@ -29,6 +29,34 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
       assert result.unit == "cup"
     end
 
+    test "parses compound quantities like 1 1/2" do
+      result = TokenParser.parse("1 1/2 cups flour")
+
+      assert result.quantity == 1.5
+      assert result.quantity_min == 1.5
+      assert result.quantity_max == 1.5
+      assert result.unit == "cup"
+    end
+
+    test "parses range with space before dash like 1 -1 1/2" do
+      # "1 -1 1/2 cup" means "1 to 1½ cups"
+      result = TokenParser.parse("1 -1 1/2 cup semi-sweet chocolate chips")
+
+      assert result.quantity == 1.25  # average of 1 and 1.5
+      assert result.quantity_min == 1.0
+      assert result.quantity_max == 1.5
+      assert result.unit == "cup"
+    end
+
+    test "parses range with spaces around dash like 1 - 2" do
+      result = TokenParser.parse("1 - 2 cups milk")
+
+      assert result.quantity == 1.5
+      assert result.quantity_min == 1.0
+      assert result.quantity_max == 2.0
+      assert result.unit == "cup"
+    end
+
     test "extracts preparations" do
       result = TokenParser.parse("2 cups diced tomatoes, drained")
 

@@ -207,24 +207,46 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
 
   @doc false
   def parse_quantity([]), do: {nil, nil, nil}
-  def parse_quantity([qty_str | _]) do
-    cond do
-      # Range: "1-2" or "1/2-3/4"
-      String.contains?(qty_str, "-") and not String.starts_with?(qty_str, "-") ->
-        case String.split(qty_str, "-", parts: 2) do
+  def parse_quantity(qty_list) do
+    # Find if any quantity token contains a range (e.g., "1-2")
+    range_token = Enum.find(qty_list, fn qty_str ->
+      String.contains?(qty_str, "-") and not String.starts_with?(qty_str, "-")
+    end)
+
+    case range_token do
+      nil ->
+        # No range - sum all quantities (handles compound like "1 1/2" = 1.5)
+        total = qty_list
+          |> Enum.map(&parse_single_quantity/1)
+          |> Enum.reject(&is_nil/1)
+          |> Enum.sum()
+        total = if total == 0, do: nil, else: total
+        {total, total, total}
+
+      range_str ->
+        # Has range - parse the range, then add any additional fractions to upper bound
+        # This handles "1-1 1/2" = range from 1 to 1.5
+        case String.split(range_str, "-", parts: 2) do
           [low, high] ->
             low_val = parse_single_quantity(low)
             high_val = parse_single_quantity(high)
+
+            # Get any additional quantities (fractions) after the range token
+            # For "1-1 1/2", qty_list is ["1-1", "1/2"], so we add "1/2" to the upper bound
+            idx = Enum.find_index(qty_list, &(&1 == range_str))
+            additional = qty_list
+              |> Enum.drop(idx + 1)
+              |> Enum.map(&parse_single_quantity/1)
+              |> Enum.reject(&is_nil/1)
+
+            high_val = if additional != [], do: high_val + Enum.sum(additional), else: high_val
             avg = if low_val && high_val, do: (low_val + high_val) / 2, else: low_val || high_val
             {avg, low_val, high_val}
+
           _ ->
-            val = parse_single_quantity(qty_str)
+            val = parse_single_quantity(range_str)
             {val, val, val}
         end
-
-      true ->
-        val = parse_single_quantity(qty_str)
-        {val, val, val}
     end
   end
 
