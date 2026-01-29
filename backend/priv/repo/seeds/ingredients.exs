@@ -2677,6 +2677,22 @@ canonical_ingredients = [
     aliases: []
   },
   %{
+    name: "pomegranate",
+    display_name: "Pomegranate",
+    category: "produce",
+    tags: ["fruit"],
+    dietary_flags: ["vegetarian", "vegan", "gluten_free", "paleo"],
+    aliases: ["arils", "pomegranate arils", "pomegranate seeds"]
+  },
+  %{
+    name: "pomegranate juice",
+    display_name: "Pomegranate Juice",
+    category: "produce",
+    tags: ["fruit", "juice"],
+    dietary_flags: ["vegetarian", "vegan", "gluten_free"],
+    aliases: []
+  },
+  %{
     name: "mirin",
     display_name: "Mirin",
     category: "condiment",
