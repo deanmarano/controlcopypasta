@@ -42,7 +42,7 @@ defmodule Controlcopypasta.Ingredients.IngredientDensity do
   # Volume units plus "each"/"whole" for countable items (eggs, lemons, etc.)
   # Note: "oz" is included because recipes often use it for fluid ounces
   @valid_volume_units ["cup", "tbsp", "tsp", "fl oz", "oz", "pint", "quart", "gallon", "ml", "liter", "each", "whole"]
-  @valid_sources ~w(usda fatsecret manual calculated standard\ estimate)
+  @valid_sources ~w(usda fatsecret openfoodfacts manual calculated standard\ estimate)
   @valid_preparations ~w(packed sifted chopped diced minced sliced grated shredded whole
                          cubed chunks sections flaked canned cooked drained crumbled
                          crushed kernels ground chips fresh\ minced beaten)

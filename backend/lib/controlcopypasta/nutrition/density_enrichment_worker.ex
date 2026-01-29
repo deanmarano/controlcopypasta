@@ -1,8 +1,9 @@
 defmodule Controlcopypasta.Nutrition.DensityEnrichmentWorker do
   @moduledoc """
-  Oban worker to fetch density data for canonical ingredients from FatSecret and USDA APIs.
+  Oban worker to fetch density data for canonical ingredients from multiple APIs.
 
-  Tries FatSecret first (more serving options), then USDA as fallback.
+  Tries sources in order: FatSecret (best serving data), USDA (authoritative),
+  then Open Food Facts (good for branded/international products).
   Deduplicates results by (volume_unit, preparation), keeping highest confidence.
 
   ## Usage
@@ -15,6 +16,11 @@ defmodule Controlcopypasta.Nutrition.DensityEnrichmentWorker do
 
       # Check progress
       DensityEnrichmentWorker.progress()
+
+  ## Rate Limits
+
+  Open Food Facts has the most restrictive rate limit (10 searches/min),
+  so we space requests 6+ seconds apart to stay well under all limits.
   """
 
   use Oban.Worker,
@@ -26,14 +32,15 @@ defmodule Controlcopypasta.Nutrition.DensityEnrichmentWorker do
 
   alias Controlcopypasta.{Repo, Ingredients}
   alias Controlcopypasta.Ingredients.{CanonicalIngredient, IngredientDensity}
-  alias Controlcopypasta.Nutrition.{FatSecretClient, USDAClient}
+  alias Controlcopypasta.Nutrition.{FatSecretClient, USDAClient, OpenFoodFactsClient}
 
   import Ecto.Query
 
-  # Default rate limits (conservative, matching FatSecret limits)
+  # Default rate limits (conservative, respecting Open Food Facts 10/min limit)
   @default_max_per_hour 150
   @default_max_per_day 4000
-  @default_delay_ms 3000
+  # 6 seconds between requests to stay under Open Food Facts 10/min limit
+  @default_delay_ms 6000
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"canonical_ingredient_id" => ingredient_id}}) do
@@ -137,8 +144,13 @@ defmodule Controlcopypasta.Nutrition.DensityEnrichmentWorker do
       # Then try USDA for additional/fallback data
       usda_densities = try_usda(ingredient)
 
+      # Finally try Open Food Facts (good for branded/international products)
+      off_densities = try_open_food_facts(ingredient)
+
       # Combine and deduplicate by (unit, preparation), keeping highest confidence
-      all_densities = (fatsecret_densities ++ usda_densities) |> deduplicate_by_unit()
+      all_densities =
+        (fatsecret_densities ++ usda_densities ++ off_densities)
+        |> deduplicate_by_unit()
 
       if Enum.empty?(all_densities) do
         Logger.info("No density data found for: #{ingredient.name}")
@@ -252,6 +264,40 @@ defmodule Controlcopypasta.Nutrition.DensityEnrichmentWorker do
             USDAClient.extract_densities_from_raw(raw_food, ingredient_id)
           _ -> []
         end
+      _ -> []
+    end
+  end
+
+  defp try_open_food_facts(ingredient) do
+    # Open Food Facts doesn't require credentials
+    case OpenFoodFactsClient.search_and_get_first(ingredient.name) do
+      {:ok, %{raw: raw_product}} ->
+        densities = OpenFoodFactsClient.extract_densities_from_raw(raw_product, ingredient.id)
+        Logger.debug("Open Food Facts returned #{length(densities)} densities for #{ingredient.name}")
+        densities
+
+      {:error, :not_found} ->
+        # Try with display_name if different
+        if ingredient.display_name && ingredient.display_name != ingredient.name do
+          search_and_get_off(ingredient.display_name, ingredient.id)
+        else
+          []
+        end
+
+      {:error, :rate_limited} ->
+        Logger.warning("Open Food Facts rate limited for #{ingredient.name}")
+        []
+
+      {:error, reason} ->
+        Logger.warning("Open Food Facts fetch failed for #{ingredient.name}: #{inspect(reason)}")
+        []
+    end
+  end
+
+  defp search_and_get_off(name, ingredient_id) do
+    case OpenFoodFactsClient.search_and_get_first(name) do
+      {:ok, %{raw: raw_product}} ->
+        OpenFoodFactsClient.extract_densities_from_raw(raw_product, ingredient_id)
       _ -> []
     end
   end
