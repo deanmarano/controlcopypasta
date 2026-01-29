@@ -2,12 +2,21 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { admin, type AdminIngredient, type AdminIngredientOptions } from '$lib/api/client';
+	import {
+		admin,
+		type AdminIngredient,
+		type AdminIngredientOptions,
+		type IngredientEnrichmentStats,
+		type ParsingStats
+	} from '$lib/api/client';
 
 	let ingredients = $state<AdminIngredient[]>([]);
 	let options = $state<AdminIngredientOptions | null>(null);
+	let enrichmentStats = $state<IngredientEnrichmentStats | null>(null);
+	let parsingStats = $state<ParsingStats | null>(null);
 	let loading = $state(true);
 	let error = $state('');
+	let message = $state('');
 	let accessDenied = $state(false);
 
 	// Filters
@@ -26,8 +35,7 @@
 	});
 
 	onMount(async () => {
-		await loadOptions();
-		await loadIngredients();
+		await Promise.all([loadOptions(), loadIngredients(), loadEnrichmentStats(), loadParsingStats()]);
 	});
 
 	async function loadOptions() {
@@ -123,6 +131,130 @@
 			.join(' ');
 	}
 
+	function formatNumber(n: number): string {
+		return n.toLocaleString();
+	}
+
+	async function loadEnrichmentStats() {
+		const token = authStore.getToken();
+		if (!token) return;
+		try {
+			const result = await admin.scraper.ingredientEnrichment(token);
+			enrichmentStats = result.data;
+		} catch {
+			enrichmentStats = null;
+		}
+	}
+
+	async function loadParsingStats() {
+		const token = authStore.getToken();
+		if (!token) return;
+		try {
+			const result = await admin.scraper.parsingStats(token);
+			parsingStats = result.data;
+		} catch {
+			parsingStats = null;
+		}
+	}
+
+	async function parseAllIngredients() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		error = '';
+		message = '';
+
+		try {
+			await admin.scraper.parseIngredients(token);
+			message = 'Started parsing ingredients for all unparsed recipes';
+		} catch {
+			error = 'Failed to start ingredient parsing';
+		}
+	}
+
+	async function reparseAllIngredients() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		if (!confirm('This will reprocess ALL recipes to regenerate pre_steps, alternatives, and recipe references. Continue?')) {
+			return;
+		}
+
+		error = '';
+		message = '';
+
+		try {
+			await admin.scraper.parseIngredients(token, { force: true });
+			message = 'Started reparsing ALL recipes (this may take a while)';
+		} catch {
+			error = 'Failed to start ingredient reparsing';
+		}
+	}
+
+	async function enqueueNutrition() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		error = '';
+		message = '';
+
+		try {
+			const result = await admin.scraper.enqueueNutrition(token);
+			message = `Enqueued ${result.data.enqueued} ingredients for nutrition enrichment`;
+			await loadEnrichmentStats();
+		} catch {
+			error = 'Failed to enqueue nutrition enrichment';
+		}
+	}
+
+	async function enqueueDensity() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		error = '';
+		message = '';
+
+		try {
+			const result = await admin.scraper.enqueueDensity(token);
+			message = `Enqueued ${result.data.enqueued} ingredients for density enrichment`;
+			await loadEnrichmentStats();
+		} catch {
+			error = 'Failed to enqueue density enrichment';
+		}
+	}
+
+	async function resumeNutrition() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		error = '';
+		message = '';
+
+		try {
+			await admin.scraper.resumeNutrition(token);
+			message = 'Resumed nutrition enrichment queue';
+			await loadEnrichmentStats();
+		} catch {
+			error = 'Failed to resume nutrition enrichment';
+		}
+	}
+
+	async function resumeDensity() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		error = '';
+		message = '';
+
+		try {
+			await admin.scraper.resumeDensity(token);
+			message = 'Resumed density enrichment queue';
+			await loadEnrichmentStats();
+		} catch {
+			error = 'Failed to resume density enrichment';
+		}
+	}
+
 	// Debounced search
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	function handleSearchInput() {
@@ -143,6 +275,144 @@
 			<a href="/settings">Back to Settings</a>
 		</div>
 	{:else}
+
+	{#if message}
+		<p class="message">{message}</p>
+	{/if}
+
+	<!-- Ingredient Parsing Status -->
+	{#if parsingStats}
+		<section class="parsing-section">
+			<h2>Ingredient Parsing</h2>
+			<div class="parsing-overview">
+				<div class="parsing-progress">
+					<div class="progress-bar">
+						<div class="progress-fill" style="width: {parsingStats.percent_complete}%"></div>
+					</div>
+					<span class="progress-text">{parsingStats.percent_complete}% complete</span>
+				</div>
+				<div class="parsing-counts">
+					<div class="parsing-stat">
+						<span class="parsing-stat-value">{formatNumber(parsingStats.parsed_recipes)}</span>
+						<span class="parsing-stat-label">Parsed</span>
+					</div>
+					<div class="parsing-stat">
+						<span class="parsing-stat-value">{formatNumber(parsingStats.unparsed_recipes)}</span>
+						<span class="parsing-stat-label">Unparsed</span>
+					</div>
+					<div class="parsing-stat">
+						<span class="parsing-stat-value">{formatNumber(parsingStats.total_recipes)}</span>
+						<span class="parsing-stat-label">Total</span>
+					</div>
+				</div>
+				<div class="parsing-actions">
+					<button onclick={parseAllIngredients} class="btn-secondary">Parse Unparsed</button>
+					<button onclick={reparseAllIngredients} class="btn-primary">Reparse All Recipes</button>
+				</div>
+			</div>
+
+			{#if parsingStats.active_jobs.length > 0}
+				<div class="parsing-jobs">
+					<h3>Active Parsing Jobs ({parsingStats.active_jobs.length})</h3>
+					<div class="jobs-list">
+						{#each parsingStats.active_jobs as job}
+							<div class="job-item">
+								<span class="job-id">#{job.id}</span>
+								<span class="job-state" class:executing={job.state === 'executing'} class:available={job.state === 'available'} class:scheduled={job.state === 'scheduled'}>{job.state}</span>
+								<span class="job-offset">Offset: {job.offset}</span>
+								{#if job.force}
+									<span class="job-force">Force</span>
+								{/if}
+								<span class="job-time">{new Date(job.inserted_at).toLocaleTimeString()}</span>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			{#if parsingStats.last_completed}
+				<div class="parsing-last">
+					<span>Last completed batch: offset {parsingStats.last_completed.offset} at {new Date(parsingStats.last_completed.completed_at).toLocaleString()}</span>
+				</div>
+			{/if}
+		</section>
+	{/if}
+
+	<!-- Ingredient Enrichment -->
+	{#if enrichmentStats}
+		<section class="enrichment-section">
+			<h2>Ingredient Enrichment</h2>
+			<div class="enrichment-grid">
+				<!-- Nutrition (FatSecret) -->
+				<div class="enrichment-card">
+					<h3>Nutrition Data</h3>
+					<p class="enrichment-sources">Source: FatSecret</p>
+					<div class="enrichment-stats">
+						<div class="enrichment-stat">
+							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.with_fatsecret_data || 0)}</span>
+							<span class="enrichment-stat-label">With Data</span>
+						</div>
+						<div class="enrichment-stat">
+							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.total_ingredients - (enrichmentStats.nutrition.with_fatsecret_data || 0))}</span>
+							<span class="enrichment-stat-label">Without Data</span>
+						</div>
+						<div class="enrichment-stat">
+							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.pending_jobs)}</span>
+							<span class="enrichment-stat-label">Pending</span>
+						</div>
+					</div>
+					<div class="enrichment-progress">
+						<div class="progress-bar">
+							<div class="progress-fill" style="width: {enrichmentStats.nutrition.total_ingredients > 0 ? Math.round(((enrichmentStats.nutrition.with_fatsecret_data || 0) / enrichmentStats.nutrition.total_ingredients) * 100) : 0}%"></div>
+						</div>
+						<span class="progress-text">{enrichmentStats.nutrition.total_ingredients > 0 ? Math.round(((enrichmentStats.nutrition.with_fatsecret_data || 0) / enrichmentStats.nutrition.total_ingredients) * 100) : 0}% complete</span>
+					</div>
+					<div class="enrichment-rate">
+						<span>Today: {enrichmentStats.nutrition.completed_today}/{enrichmentStats.nutrition.daily_limit}</span>
+						<span>This hour: {enrichmentStats.nutrition.completed_this_hour}/{enrichmentStats.nutrition.hourly_limit}</span>
+					</div>
+					<div class="enrichment-actions">
+						<button onclick={enqueueNutrition} class="btn-secondary">Enqueue All</button>
+						<button onclick={resumeNutrition} class="btn-success">Resume Queue</button>
+					</div>
+				</div>
+
+				<!-- Density -->
+				<div class="enrichment-card">
+					<h3>Density Data</h3>
+					<p class="enrichment-sources">Sources: FatSecret, USDA, Open Food Facts</p>
+					<div class="enrichment-stats">
+						<div class="enrichment-stat">
+							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.density.with_density_data || 0)}</span>
+							<span class="enrichment-stat-label">With Data</span>
+						</div>
+						<div class="enrichment-stat">
+							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.density.without_density_data || 0)}</span>
+							<span class="enrichment-stat-label">Without Data</span>
+						</div>
+						<div class="enrichment-stat">
+							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.density.pending_jobs)}</span>
+							<span class="enrichment-stat-label">Pending</span>
+						</div>
+					</div>
+					<div class="enrichment-progress">
+						<div class="progress-bar">
+							<div class="progress-fill" style="width: {enrichmentStats.density.total_ingredients > 0 ? Math.round(((enrichmentStats.density.with_density_data || 0) / enrichmentStats.density.total_ingredients) * 100) : 0}%"></div>
+						</div>
+						<span class="progress-text">{enrichmentStats.density.total_ingredients > 0 ? Math.round(((enrichmentStats.density.with_density_data || 0) / enrichmentStats.density.total_ingredients) * 100) : 0}% complete</span>
+					</div>
+					<div class="enrichment-rate">
+						<span>Today: {enrichmentStats.density.completed_today}/{enrichmentStats.density.daily_limit}</span>
+						<span>This hour: {enrichmentStats.density.completed_this_hour}/{enrichmentStats.density.hourly_limit}</span>
+					</div>
+					<div class="enrichment-actions">
+						<button onclick={enqueueDensity} class="btn-secondary">Enqueue All</button>
+						<button onclick={resumeDensity} class="btn-success">Resume Queue</button>
+					</div>
+				</div>
+			</div>
+		</section>
+	{/if}
 
 	<section class="filters">
 		<div class="filter-row">
@@ -503,5 +773,303 @@
 	.quick-btn:hover {
 		background: var(--color-pasta-100);
 		border-color: var(--color-pasta-300);
+	}
+
+	/* Message */
+	.message {
+		color: var(--color-basil-700);
+		background: var(--color-basil-100);
+		padding: var(--space-3);
+		border-radius: var(--radius-md);
+		margin-bottom: var(--space-4);
+	}
+
+	/* Section styling */
+	h2 {
+		margin: 0 0 var(--space-4);
+		font-size: var(--text-lg);
+		color: var(--color-marinara-700);
+	}
+
+	h3 {
+		margin: 0 0 var(--space-2);
+		font-size: var(--text-base);
+		color: var(--text-secondary);
+	}
+
+	/* Parsing Section */
+	.parsing-section {
+		background: var(--bg-card);
+		border-radius: var(--radius-lg);
+		padding: var(--space-5);
+		margin-bottom: var(--space-5);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.parsing-overview {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.parsing-progress {
+		margin-bottom: var(--space-2);
+	}
+
+	.parsing-counts {
+		display: flex;
+		gap: var(--space-3);
+	}
+
+	.parsing-stat {
+		flex: 1;
+		text-align: center;
+		padding: var(--space-3);
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+	}
+
+	.parsing-stat-value {
+		display: block;
+		font-size: var(--text-xl);
+		font-weight: var(--font-bold);
+		color: var(--color-marinara-600);
+	}
+
+	.parsing-stat-label {
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+	}
+
+	.parsing-actions {
+		display: flex;
+		gap: var(--space-3);
+	}
+
+	.parsing-jobs {
+		margin-top: var(--space-4);
+		padding-top: var(--space-4);
+		border-top: var(--border-width-thin) solid var(--border-light);
+	}
+
+	.parsing-jobs h3 {
+		margin: 0 0 var(--space-3);
+	}
+
+	.jobs-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.job-item {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+	}
+
+	.job-id {
+		font-weight: var(--font-medium);
+		color: var(--text-muted);
+		min-width: 60px;
+	}
+
+	.job-state {
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+		font-weight: var(--font-medium);
+		background: var(--color-gray-200);
+		color: var(--text-secondary);
+	}
+
+	.job-state.executing {
+		background: var(--color-basil-100);
+		color: var(--color-basil-700);
+	}
+
+	.job-state.available {
+		background: var(--color-pasta-100);
+		color: var(--color-pasta-700);
+	}
+
+	.job-state.scheduled {
+		background: var(--color-gray-200);
+		color: var(--text-secondary);
+	}
+
+	.job-offset {
+		color: var(--text-secondary);
+	}
+
+	.job-force {
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+		font-weight: var(--font-medium);
+		background: var(--color-marinara-100);
+		color: var(--color-marinara-700);
+	}
+
+	.job-time {
+		margin-left: auto;
+		color: var(--text-muted);
+		font-size: var(--text-xs);
+	}
+
+	.parsing-last {
+		margin-top: var(--space-3);
+		font-size: var(--text-sm);
+		color: var(--text-muted);
+	}
+
+	/* Progress bar */
+	.progress-bar {
+		height: 8px;
+		background: var(--border-light);
+		border-radius: var(--radius-full);
+		overflow: hidden;
+		margin-bottom: var(--space-1);
+	}
+
+	.progress-fill {
+		height: 100%;
+		background: var(--color-basil-500);
+		border-radius: var(--radius-full);
+		transition: width var(--transition-normal);
+	}
+
+	.progress-text {
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+	}
+
+	/* Enrichment Section */
+	.enrichment-section {
+		background: var(--bg-card);
+		border-radius: var(--radius-lg);
+		padding: var(--space-5);
+		margin-bottom: var(--space-5);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.enrichment-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		gap: var(--space-4);
+	}
+
+	.enrichment-card {
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+		padding: var(--space-4);
+	}
+
+	.enrichment-card h3 {
+		margin: 0 0 var(--space-1);
+		font-size: var(--text-base);
+		color: var(--text-primary);
+	}
+
+	.enrichment-sources {
+		margin: 0 0 var(--space-3);
+		font-size: var(--text-xs);
+		color: var(--text-muted);
+	}
+
+	.enrichment-stats {
+		display: flex;
+		gap: var(--space-3);
+		margin-bottom: var(--space-3);
+	}
+
+	.enrichment-stat {
+		flex: 1;
+		text-align: center;
+		padding: var(--space-2);
+		background: var(--bg-card);
+		border-radius: var(--radius-sm);
+	}
+
+	.enrichment-stat-value {
+		display: block;
+		font-size: var(--text-lg);
+		font-weight: var(--font-bold);
+		color: var(--color-marinara-600);
+	}
+
+	.enrichment-stat-label {
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+	}
+
+	.enrichment-progress {
+		margin-bottom: var(--space-3);
+	}
+
+	.enrichment-rate {
+		display: flex;
+		justify-content: space-between;
+		font-size: var(--text-xs);
+		color: var(--text-muted);
+		margin-bottom: var(--space-3);
+	}
+
+	.enrichment-actions {
+		display: flex;
+		gap: var(--space-2);
+	}
+
+	.enrichment-actions button {
+		flex: 1;
+		padding: var(--space-2);
+		font-size: var(--text-sm);
+	}
+
+	/* Button styles */
+	.btn-primary {
+		background: var(--color-basil-500);
+		color: white;
+		border: none;
+		padding: var(--space-2) var(--space-4);
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		font-weight: var(--font-medium);
+	}
+
+	.btn-primary:hover {
+		background: var(--color-basil-600);
+	}
+
+	.btn-secondary {
+		background: var(--color-gray-500);
+		color: white;
+		border: none;
+		padding: var(--space-2) var(--space-4);
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		font-weight: var(--font-medium);
+	}
+
+	.btn-secondary:hover {
+		background: var(--color-gray-600);
+	}
+
+	.btn-success {
+		background: var(--color-basil-500);
+		color: white;
+		border: none;
+		padding: var(--space-2) var(--space-4);
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		font-weight: var(--font-medium);
+	}
+
+	.btn-success:hover {
+		background: var(--color-basil-600);
 	}
 </style>
