@@ -49,6 +49,8 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     pieces piece
     heads head
     stalks stalk
+    sheets sheet
+    leaves leaf
   )
 
   # Container types
@@ -544,8 +546,11 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   end
 
   # Analysis helpers
+  # Extract quantities, but stop at first parenthesis to ignore metric equivalents
+  # e.g., "2 pounds (907 g)" should return ["2"], not ["2", "907"]
   defp extract_quantity(tokens) do
     tokens
+    |> Enum.take_while(&(&1.text != "("))
     |> Enum.filter(&(&1.label == :qty))
     |> Enum.map(& &1.text)
   end

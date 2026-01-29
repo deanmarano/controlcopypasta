@@ -594,6 +594,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     "sprigs" => "sprig", "sprig" => "sprig",
     "heads" => "head", "head" => "head",
     "stalks" => "stalk", "stalk" => "stalk",
+    "sheets" => "sheet", "sheet" => "sheet",
+    "leaves" => "leaf", "leaf" => "leaf",
     "pinches" => "pinch", "pinch" => "pinch",
     "dashes" => "dash", "dash" => "dash",
     "cans" => "can", "can" => "can",
