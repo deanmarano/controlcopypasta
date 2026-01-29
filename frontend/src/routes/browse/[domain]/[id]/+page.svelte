@@ -6,6 +6,7 @@
 	import { browse, recipes, type Recipe, type RecipeNutrition } from '$lib/api/client';
 	import NutritionPanel from '$lib/components/NutritionPanel.svelte';
 	import IngredientDiagnostics from '$lib/components/IngredientDiagnostics.svelte';
+	import PrepList from '$lib/components/PrepList.svelte';
 
 	let recipe = $state<Recipe | null>(null);
 	let loading = $state(true);
@@ -302,6 +303,8 @@
 						<li>{scaleIngredient(ingredient.text)}</li>
 					{/each}
 				</ul>
+
+				<PrepList ingredients={recipe.ingredients} />
 			</section>
 
 			<section class="instructions">

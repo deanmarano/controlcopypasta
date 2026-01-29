@@ -26,6 +26,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   alias Controlcopypasta.Ingredients
   alias Controlcopypasta.Ingredients.SubParsers
   alias Controlcopypasta.Ingredients.ParseDiagnostics
+  alias Controlcopypasta.Ingredients.PreStepGenerator
 
   @sub_parsers [
     SubParsers.Garlic,
@@ -287,6 +288,14 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
           }
         end)
       Map.put(base, "alternatives", alternatives)
+    else
+      base
+    end
+
+    # Add pre_steps generated from preparations
+    pre_steps = PreStepGenerator.generate_pre_steps(parsed)
+    base = if pre_steps != [] do
+      Map.put(base, "pre_steps", Enum.map(pre_steps, &PreStepGenerator.to_map/1))
     else
       base
     end

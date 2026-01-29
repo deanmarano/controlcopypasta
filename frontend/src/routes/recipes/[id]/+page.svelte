@@ -6,6 +6,7 @@
 	import NutritionPanel from '$lib/components/NutritionPanel.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import IngredientDiagnostics from '$lib/components/IngredientDiagnostics.svelte';
+	import PrepList from '$lib/components/PrepList.svelte';
 
 	let recipe = $state<Recipe | null>(null);
 	let loading = $state(true);
@@ -580,6 +581,8 @@
 						{/if}
 					</div>
 				{/if}
+
+				<PrepList ingredients={recipe.ingredients} />
 			</section>
 
 			<section class="instructions">

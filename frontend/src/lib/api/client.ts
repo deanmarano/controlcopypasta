@@ -164,12 +164,24 @@ export interface IngredientDiagnostics {
   parse_time_us: number;
 }
 
+export interface PreStep {
+  action: string;
+  target: string | null;
+  quantity: number | null;
+  unit: string | null;
+  category: 'temperature' | 'cook' | 'process' | 'cut' | 'other';
+  estimated_time_min: number | null;
+  tool: string | null;
+  order_hint: number;
+}
+
 export interface Ingredient {
   text: string;
   group: string | null;
   canonical_name?: string | null;
   canonical_id?: string | null;
   confidence?: number;
+  pre_steps?: PreStep[];
   _diagnostics?: IngredientDiagnostics;
 }
 
