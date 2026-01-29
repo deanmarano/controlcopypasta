@@ -1591,7 +1591,65 @@ canonical_ingredients = [
     is_allergen: true,
     allergen_groups: ["dairy"],
     dietary_flags: ["vegetarian", "gluten_free"],
-    aliases: ["semi-sweet chocolate chips", "dark chocolate chips", "milk chocolate chips"]
+    aliases: ["chocolate chip", "mini chocolate chips", "chocolate morsels"]
+  },
+  %{
+    name: "semisweet chocolate",
+    display_name: "Semisweet Chocolate",
+    category: "sweetener",
+    tags: ["baking", "chocolate"],
+    is_allergen: true,
+    allergen_groups: ["dairy"],
+    dietary_flags: ["vegetarian", "gluten_free"],
+    aliases: ["semi-sweet chocolate", "semisweet chocolate chips", "semi-sweet chocolate chips",
+              "semisweet chocolate chunks", "semi-sweet chocolate chunks",
+              "semisweet chocolate wafers", "semisweet chocolate disks",
+              "semisweet chocolate pistoles", "semisweet chocolate fèves"]
+  },
+  %{
+    name: "bittersweet chocolate",
+    display_name: "Bittersweet Chocolate",
+    category: "sweetener",
+    tags: ["baking", "chocolate"],
+    is_allergen: true,
+    allergen_groups: ["dairy"],
+    dietary_flags: ["vegetarian", "gluten_free"],
+    aliases: ["bitter-sweet chocolate", "bittersweet chocolate chips", "bittersweet chocolate chunks",
+              "bittersweet chocolate wafers", "bittersweet chocolate disks",
+              "bittersweet chocolate pistoles", "bittersweet chocolate fèves"]
+  },
+  %{
+    name: "dark chocolate",
+    display_name: "Dark Chocolate",
+    category: "sweetener",
+    tags: ["baking", "chocolate"],
+    is_allergen: true,
+    allergen_groups: ["dairy"],
+    dietary_flags: ["vegetarian", "gluten_free"],
+    aliases: ["dark chocolate chips", "dark chocolate chunks", "dark chocolate wafers",
+              "dark chocolate disks", "dark chocolate pistoles", "dark chocolate fèves"]
+  },
+  %{
+    name: "milk chocolate",
+    display_name: "Milk Chocolate",
+    category: "sweetener",
+    tags: ["baking", "chocolate"],
+    is_allergen: true,
+    allergen_groups: ["dairy"],
+    dietary_flags: ["vegetarian", "gluten_free"],
+    aliases: ["milk chocolate chips", "milk chocolate chunks", "milk chocolate wafers",
+              "milk chocolate disks", "milk chocolate pistoles", "milk chocolate fèves"]
+  },
+  %{
+    name: "white chocolate",
+    display_name: "White Chocolate",
+    category: "sweetener",
+    tags: ["baking", "chocolate"],
+    is_allergen: true,
+    allergen_groups: ["dairy"],
+    dietary_flags: ["vegetarian", "gluten_free"],
+    aliases: ["white chocolate chips", "white chocolate chunks", "white chocolate wafers",
+              "white chocolate disks", "white chocolate pistoles", "white chocolate fèves"]
   },
   %{
     name: "cocoa powder",
