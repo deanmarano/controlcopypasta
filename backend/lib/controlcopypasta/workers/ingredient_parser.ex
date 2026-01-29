@@ -39,6 +39,7 @@ defmodule Controlcopypasta.Workers.IngredientParser do
   alias Controlcopypasta.Repo
   alias Controlcopypasta.Recipes.Recipe
   alias Controlcopypasta.Ingredients.TokenParser
+  alias Controlcopypasta.Ingredients
 
   @batch_size 50
 
@@ -52,7 +53,8 @@ defmodule Controlcopypasta.Workers.IngredientParser do
         :ok
 
       recipe ->
-        parse_recipe_ingredients(recipe, force)
+        lookup = Ingredients.build_ingredient_lookup()
+        parse_recipe_ingredients(recipe, force, lookup)
     end
   end
 
@@ -68,11 +70,11 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     parse_all_batch(offset, force)
   end
 
-  defp parse_recipe_ingredients(recipe, force) do
+  defp parse_recipe_ingredients(recipe, force, lookup) do
     ingredients = recipe.ingredients || []
 
     if force or needs_parsing?(ingredients) do
-      parsed_ingredients = Enum.map(ingredients, &parse_ingredient/1)
+      parsed_ingredients = Enum.map(ingredients, &parse_ingredient(&1, lookup))
       update_recipe_ingredients(recipe, parsed_ingredients)
     else
       Logger.debug("Recipe #{recipe.id} already has parsed ingredients")
@@ -91,13 +93,13 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     end)
   end
 
-  defp parse_ingredient(ingredient) when is_map(ingredient) do
+  defp parse_ingredient(ingredient, lookup) when is_map(ingredient) do
     # Get the original text - could be in "text", "original", or just be the raw string
     text = ingredient["text"] || ingredient["original"] || ingredient["raw_name"]
 
     if is_binary(text) and text != "" do
       try do
-        parsed = TokenParser.parse(text)
+        parsed = TokenParser.parse(text, lookup: lookup)
 
         # Use to_jsonb_map to get all fields including pre_steps, alternatives, recipe_reference
         TokenParser.to_jsonb_map(parsed)
@@ -112,10 +114,10 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     end
   end
 
-  defp parse_ingredient(ingredient) when is_binary(ingredient) do
+  defp parse_ingredient(ingredient, lookup) when is_binary(ingredient) do
     # Plain string ingredient
     try do
-      parsed = TokenParser.parse(ingredient)
+      parsed = TokenParser.parse(ingredient, lookup: lookup)
       TokenParser.to_jsonb_map(parsed)
     rescue
       e ->
@@ -124,7 +126,7 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     end
   end
 
-  defp parse_ingredient(ingredient), do: ingredient
+  defp parse_ingredient(ingredient, _lookup), do: ingredient
 
   defp update_recipe_ingredients(recipe, ingredients) do
     recipe
@@ -152,7 +154,11 @@ defmodule Controlcopypasta.Workers.IngredientParser do
 
     Logger.info("Parsing batch of #{count} recipes for #{domain} (offset: #{offset}, force: #{force})")
 
-    Enum.each(recipes, &parse_recipe_ingredients(&1, force))
+    # Build lookup once for the entire batch to avoid repeated DB queries
+    lookup = Ingredients.build_ingredient_lookup()
+    Logger.info("Built ingredient lookup with #{map_size(lookup)} entries")
+
+    Enum.each(recipes, &parse_recipe_ingredients(&1, force, lookup))
 
     Logger.info("Batch complete for #{domain} (offset: #{offset}, processed: #{count})")
 
@@ -180,7 +186,11 @@ defmodule Controlcopypasta.Workers.IngredientParser do
 
     Logger.info("Parsing batch of #{count} recipes (offset: #{offset}, force: #{force})")
 
-    Enum.each(recipes, &parse_recipe_ingredients(&1, force))
+    # Build lookup once for the entire batch to avoid repeated DB queries
+    lookup = Ingredients.build_ingredient_lookup()
+    Logger.info("Built ingredient lookup with #{map_size(lookup)} entries")
+
+    Enum.each(recipes, &parse_recipe_ingredients(&1, force, lookup))
 
     Logger.info("Batch complete (offset: #{offset}, processed: #{count})")
 
