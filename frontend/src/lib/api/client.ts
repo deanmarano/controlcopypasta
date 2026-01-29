@@ -175,14 +175,39 @@ export interface PreStep {
   order_hint: number;
 }
 
+export interface IngredientAlternative {
+  name: string;
+  canonical_name: string | null;
+  canonical_id: string | null;
+  nutrition_diff?: {
+    calories?: number;
+    fat_total_g?: number;
+    fat_saturated_g?: number;
+    carbohydrates_g?: number;
+    protein_g?: number;
+  };
+}
+
 export interface Ingredient {
   text: string;
   group: string | null;
   canonical_name?: string | null;
   canonical_id?: string | null;
   confidence?: number;
+  is_alternative?: boolean;
+  alternatives?: IngredientAlternative[];
   pre_steps?: PreStep[];
   _diagnostics?: IngredientDiagnostics;
+}
+
+export interface IngredientDecision {
+  id: string;
+  recipe_id: string;
+  ingredient_index: number;
+  selected_canonical_id: string;
+  selected_name: string | null;
+  inserted_at: string;
+  updated_at: string;
 }
 
 export interface Instruction {
@@ -423,12 +448,44 @@ export const recipes = {
   compare: (token: string, id: string, compareId: string) =>
     request<{ data: RecipeComparison }>(`/recipes/${id}/compare/${compareId}`, { token }),
 
-  nutrition: (token: string, id: string, servings?: number) => {
-    const params = new URLSearchParams();
-    if (servings) params.set('servings', servings.toString());
-    const query = params.toString();
+  nutrition: (token: string, id: string, params?: { servings?: number; decisions?: Record<number, string> }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.servings) searchParams.set('servings', params.servings.toString());
+    if (params?.decisions) {
+      for (const [idx, canonicalId] of Object.entries(params.decisions)) {
+        searchParams.set(`decisions[${idx}]`, canonicalId);
+      }
+    }
+    const query = searchParams.toString();
     return request<{ data: RecipeNutrition }>(`/recipes/${id}/nutrition${query ? `?${query}` : ''}`, { token });
-  }
+  },
+
+  // Ingredient decisions
+  listDecisions: (token: string, id: string) =>
+    request<{ data: IngredientDecision[] }>(`/recipes/${id}/decisions`, { token }),
+
+  saveDecision: (token: string, id: string, ingredientIndex: number, selectedCanonicalId: string, selectedName?: string) =>
+    request<{ data: IngredientDecision }>(`/recipes/${id}/decisions`, {
+      method: 'POST',
+      token,
+      body: {
+        ingredient_index: ingredientIndex,
+        selected_canonical_id: selectedCanonicalId,
+        selected_name: selectedName
+      }
+    }),
+
+  deleteDecision: (token: string, id: string, ingredientIndex: number) =>
+    request<{ deleted: boolean }>(`/recipes/${id}/decisions/${ingredientIndex}`, {
+      method: 'DELETE',
+      token
+    }),
+
+  clearDecisions: (token: string, id: string) =>
+    request<{ deleted: number }>(`/recipes/${id}/decisions`, {
+      method: 'DELETE',
+      token
+    })
 };
 
 // Avoided Ingredients API

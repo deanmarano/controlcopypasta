@@ -66,6 +66,26 @@ defmodule ControlcopypastaWeb.RecipeJSON do
     }
   end
 
+  def decisions(%{decisions: decisions}) do
+    %{data: Enum.map(decisions, &decision_data/1)}
+  end
+
+  def decision(%{decision: decision}) do
+    %{data: decision_data(decision)}
+  end
+
+  defp decision_data(decision) do
+    %{
+      id: decision.id,
+      recipe_id: decision.recipe_id,
+      ingredient_index: decision.ingredient_index,
+      selected_canonical_id: decision.selected_canonical_id,
+      selected_name: decision.selected_name,
+      inserted_at: decision.inserted_at,
+      updated_at: decision.updated_at
+    }
+  end
+
   def nutrition(%{nutrition: nutrition, recipe: recipe}) do
     %{
       data: %{

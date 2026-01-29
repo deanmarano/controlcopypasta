@@ -5,7 +5,7 @@ defmodule Controlcopypasta.Recipes do
 
   import Ecto.Query, warn: false
   alias Controlcopypasta.Repo
-  alias Controlcopypasta.Recipes.{Recipe, Tag}
+  alias Controlcopypasta.Recipes.{Recipe, Tag, IngredientDecision}
   alias Controlcopypasta.Similarity.{IngredientParser, IngredientNormalizer}
 
   # Recipes
@@ -292,5 +292,56 @@ defmodule Controlcopypasta.Recipes do
 
   def delete_tag(%Tag{} = tag) do
     Repo.delete(tag)
+  end
+
+  # Ingredient Decisions
+
+  @doc """
+  Lists all ingredient decisions for a recipe by a specific user.
+  """
+  def list_decisions(recipe_id, user_id) do
+    IngredientDecision
+    |> where([d], d.recipe_id == ^recipe_id and d.user_id == ^user_id)
+    |> order_by([d], d.ingredient_index)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets ingredient decisions as a map keyed by ingredient index.
+  """
+  def get_decisions_map(recipe_id, user_id) do
+    list_decisions(recipe_id, user_id)
+    |> Map.new(fn d -> {d.ingredient_index, d} end)
+  end
+
+  @doc """
+  Creates or updates a decision for an ingredient.
+  Uses upsert to handle unique constraint.
+  """
+  def save_decision(attrs) do
+    %IngredientDecision{}
+    |> IngredientDecision.changeset(attrs)
+    |> Repo.insert(
+      on_conflict: {:replace, [:selected_canonical_id, :selected_name, :updated_at]},
+      conflict_target: [:recipe_id, :user_id, :ingredient_index]
+    )
+  end
+
+  @doc """
+  Deletes a specific ingredient decision.
+  """
+  def delete_decision(recipe_id, user_id, ingredient_index) do
+    IngredientDecision
+    |> where([d], d.recipe_id == ^recipe_id and d.user_id == ^user_id and d.ingredient_index == ^ingredient_index)
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Deletes all ingredient decisions for a recipe by a user.
+  """
+  def clear_decisions(recipe_id, user_id) do
+    IngredientDecision
+    |> where([d], d.recipe_id == ^recipe_id and d.user_id == ^user_id)
+    |> Repo.delete_all()
   end
 end

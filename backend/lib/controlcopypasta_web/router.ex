@@ -84,6 +84,10 @@ defmodule ControlcopypastaWeb.Router do
     get "/recipes/:id/similar", RecipeController, :similar
     get "/recipes/:id/compare/:compare_id", RecipeController, :compare
     get "/recipes/:id/nutrition", RecipeController, :nutrition
+    get "/recipes/:id/decisions", RecipeController, :list_decisions
+    post "/recipes/:id/decisions", RecipeController, :save_decision
+    delete "/recipes/:id/decisions", RecipeController, :clear_decisions
+    delete "/recipes/:id/decisions/:ingredient_index", RecipeController, :delete_decision
 
     resources "/tags", TagController, only: [:index, :create, :delete]
 

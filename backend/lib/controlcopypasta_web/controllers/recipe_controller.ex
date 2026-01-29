@@ -138,16 +138,101 @@ defmodule ControlcopypastaWeb.RecipeController do
     end
   end
 
+  # Ingredient Decisions
+
+  def list_decisions(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+
+    case Recipes.get_recipe_for_user(user.id, id) do
+      nil ->
+        {:error, :not_found}
+
+      _recipe ->
+        decisions = Recipes.list_decisions(id, user.id)
+        render(conn, :decisions, decisions: decisions)
+    end
+  end
+
+  def save_decision(conn, %{"id" => id} = params) do
+    user = conn.assigns.current_user
+
+    case Recipes.get_recipe_for_user(user.id, id) do
+      nil ->
+        {:error, :not_found}
+
+      _recipe ->
+        attrs = %{
+          recipe_id: id,
+          user_id: user.id,
+          ingredient_index: params["ingredient_index"],
+          selected_canonical_id: params["selected_canonical_id"],
+          selected_name: params["selected_name"]
+        }
+
+        case Recipes.save_decision(attrs) do
+          {:ok, decision} ->
+            conn
+            |> put_status(:created)
+            |> render(:decision, decision: decision)
+
+          {:error, changeset} ->
+            {:error, changeset}
+        end
+    end
+  end
+
+  def delete_decision(conn, %{"id" => id, "ingredient_index" => index}) do
+    user = conn.assigns.current_user
+
+    case Recipes.get_recipe_for_user(user.id, id) do
+      nil ->
+        {:error, :not_found}
+
+      _recipe ->
+        {count, _} = Recipes.delete_decision(id, user.id, parse_int(index, 0))
+        json(conn, %{deleted: count > 0})
+    end
+  end
+
+  def clear_decisions(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+
+    case Recipes.get_recipe_for_user(user.id, id) do
+      nil ->
+        {:error, :not_found}
+
+      _recipe ->
+        {count, _} = Recipes.clear_decisions(id, user.id)
+        json(conn, %{deleted: count})
+    end
+  end
+
   def nutrition(conn, %{"id" => id} = params) do
     user = conn.assigns.current_user
     servings_override = Map.get(params, "servings")
+    decisions_params = Map.get(params, "decisions", %{})
 
     case Recipes.get_recipe_for_user(user.id, id) do
       nil ->
         {:error, :not_found}
 
       recipe ->
-        opts = if servings_override, do: [servings_override: parse_int(servings_override, nil)], else: []
+        # Build decisions map from params or user's saved decisions
+        decisions = if map_size(decisions_params) > 0 do
+          decisions_params
+          |> Enum.map(fn {idx, canonical_id} ->
+            {parse_int(idx, 0), %{selected_canonical_id: canonical_id}}
+          end)
+          |> Map.new()
+        else
+          Recipes.get_decisions_map(id, user.id)
+        end
+
+        opts = [
+          servings_override: if(servings_override, do: parse_int(servings_override, nil)),
+          decisions: decisions
+        ] |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+
         nutrition = Calculator.calculate_recipe_nutrition(recipe, opts)
         render(conn, :nutrition, nutrition: nutrition, recipe: recipe)
     end

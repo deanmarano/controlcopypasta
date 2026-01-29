@@ -2,11 +2,12 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { recipes, ingredients as ingredientsApi, shoppingLists, type Recipe, type Ingredient, type SimilarRecipe, type ScaledIngredient, type ShoppingList, type RecipeNutrition } from '$lib/api/client';
+	import { recipes, ingredients as ingredientsApi, shoppingLists, type Recipe, type Ingredient, type SimilarRecipe, type ScaledIngredient, type ShoppingList, type RecipeNutrition, type IngredientDecision } from '$lib/api/client';
 	import NutritionPanel from '$lib/components/NutritionPanel.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import IngredientDiagnostics from '$lib/components/IngredientDiagnostics.svelte';
 	import PrepList from '$lib/components/PrepList.svelte';
+	import IngredientDecisionComponent from '$lib/components/IngredientDecision.svelte';
 
 	let recipe = $state<Recipe | null>(null);
 	let loading = $state(true);
@@ -30,6 +31,14 @@
 	let loadingLists = $state(false);
 	let newListName = $state('');
 	let addingToList = $state(false);
+
+	// Ingredient decisions state
+	let decisions = $state<Map<number, IngredientDecision>>(new Map());
+
+	// Check if recipe has any ingredients with alternatives
+	const hasAlternatives = $derived(
+		recipe?.ingredients.some((i) => i.is_alternative && i.alternatives && i.alternatives.length > 0) ?? false
+	);
 
 	$effect(() => {
 		if (!$isAuthenticated) {
@@ -60,16 +69,71 @@
 		nutrition = null;
 		nutritionError = '';
 		showNutrition = false;
+		decisions = new Map();
 
 		try {
 			const result = await recipes.get(token, recipeId);
 			recipe = result.data;
-			// Load similar recipes in the background
+			// Load similar recipes and decisions in the background
 			loadSimilarRecipes();
+			loadDecisions(recipeId);
 		} catch {
 			error = 'Recipe not found';
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function loadDecisions(recipeId: string) {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		try {
+			const result = await recipes.listDecisions(token, recipeId);
+			const newDecisions = new Map<number, IngredientDecision>();
+			for (const d of result.data) {
+				newDecisions.set(d.ingredient_index, d);
+			}
+			decisions = newDecisions;
+		} catch {
+			// Silently fail - decisions are optional
+		}
+	}
+
+	async function handleDecision(detail: { ingredientIndex: number; selectedId: string; selectedName: string }) {
+		if (!recipe) return;
+		const token = authStore.getToken();
+		if (!token) return;
+
+		const { ingredientIndex, selectedId, selectedName } = detail;
+
+		// Optimistic update
+		const newDecisions = new Map(decisions);
+		newDecisions.set(ingredientIndex, {
+			id: '',
+			recipe_id: recipe.id,
+			ingredient_index: ingredientIndex,
+			selected_canonical_id: selectedId,
+			selected_name: selectedName,
+			inserted_at: new Date().toISOString(),
+			updated_at: new Date().toISOString()
+		});
+		decisions = newDecisions;
+
+		// Persist to backend
+		try {
+			const result = await recipes.saveDecision(token, recipe.id, ingredientIndex, selectedId, selectedName);
+			// Update with real data from server
+			newDecisions.set(ingredientIndex, result.data);
+			decisions = newDecisions;
+
+			// Refresh nutrition if it's being shown
+			if (showNutrition && nutrition) {
+				loadNutrition();
+			}
+		} catch {
+			// Revert on error
+			loadDecisions(recipe.id);
 		}
 	}
 
@@ -548,7 +612,7 @@
 					</div>
 				</div>
 				<ul>
-					{#each recipe.ingredients as ingredient}
+					{#each recipe.ingredients as ingredient, i}
 						<li>
 							<span class="ingredient-text">{scaleIngredient(ingredient.text)}</span>
 							{#if scale !== 1 && getPackageSuggestion(ingredient.text)}
@@ -556,6 +620,12 @@
 									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
 								</span>
 							{/if}
+							<IngredientDecisionComponent
+								{ingredient}
+								index={i}
+								currentDecision={decisions.get(i)}
+								ondecide={handleDecision}
+							/>
 						</li>
 					{/each}
 				</ul>
