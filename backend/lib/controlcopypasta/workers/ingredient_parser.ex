@@ -21,6 +21,11 @@ defmodule Controlcopypasta.Workers.IngredientParser do
       %{}
       |> Controlcopypasta.Workers.IngredientParser.new()
       |> Oban.insert()
+
+      # Force reparse ALL recipes (regenerate pre_steps, alternatives, etc.)
+      %{"force" => true}
+      |> Controlcopypasta.Workers.IngredientParser.new()
+      |> Oban.insert()
   """
 
   use Oban.Worker,
@@ -38,31 +43,35 @@ defmodule Controlcopypasta.Workers.IngredientParser do
   @batch_size 50
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"recipe_id" => recipe_id}}) do
+  def perform(%Oban.Job{args: %{"recipe_id" => recipe_id} = args}) do
+    force = Map.get(args, "force", false)
+
     case Repo.get(Recipe, recipe_id) do
       nil ->
         Logger.warning("Recipe not found: #{recipe_id}")
         :ok
 
       recipe ->
-        parse_recipe_ingredients(recipe)
+        parse_recipe_ingredients(recipe, force)
     end
   end
 
   def perform(%Oban.Job{args: %{"domain" => domain} = args}) do
     offset = Map.get(args, "offset", 0)
-    parse_domain_batch(domain, offset)
+    force = Map.get(args, "force", false)
+    parse_domain_batch(domain, offset, force)
   end
 
   def perform(%Oban.Job{args: args}) do
     offset = Map.get(args, "offset", 0)
-    parse_all_batch(offset)
+    force = Map.get(args, "force", false)
+    parse_all_batch(offset, force)
   end
 
-  defp parse_recipe_ingredients(recipe) do
+  defp parse_recipe_ingredients(recipe, force \\ false) do
     ingredients = recipe.ingredients || []
 
-    if needs_parsing?(ingredients) do
+    if force or needs_parsing?(ingredients) do
       parsed_ingredients = Enum.map(ingredients, &parse_ingredient/1)
       update_recipe_ingredients(recipe, parsed_ingredients)
     else
@@ -89,20 +98,9 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     if is_binary(text) and text != "" do
       parsed = Parser.parse(text)
 
-      # Merge parsed data with original, preserving any existing fields
-      ingredient
-      |> Map.put("canonical_name", parsed.canonical_name)
-      |> Map.put("canonical_id", parsed.canonical_id)
-      |> Map.put("confidence", parsed.confidence)
-      |> Map.put("quantity", %{
-        "value" => parsed.quantity,
-        "min" => parsed.quantity_min,
-        "max" => parsed.quantity_max,
-        "unit" => parsed.unit
-      })
-      |> Map.put("preparations", parsed.preparations)
-      |> Map.put("form", parsed.form)
-      |> maybe_put("original", text)
+      # Use to_jsonb_map to get all fields including pre_steps, alternatives, recipe_reference
+      Parser.to_jsonb_map(parsed)
+      |> Map.put("group", ingredient["group"])  # Preserve group if it exists
     else
       ingredient
     end
@@ -112,18 +110,13 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     # Plain string ingredient
     parsed = Parser.parse(ingredient)
     Parser.to_jsonb_map(parsed)
-    |> Map.put("original", ingredient)
   end
 
   defp parse_ingredient(ingredient), do: ingredient
 
-  defp maybe_put(map, key, value) do
-    if Map.has_key?(map, key), do: map, else: Map.put(map, key, value)
-  end
-
   defp update_recipe_ingredients(recipe, ingredients) do
     recipe
-    |> Ecto.Changeset.change(ingredients: ingredients)
+    |> Ecto.Changeset.change(ingredients: ingredients, ingredients_parsed_at: DateTime.utc_now())
     |> Repo.update()
     |> case do
       {:ok, _} ->
@@ -136,17 +129,22 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     end
   end
 
-  defp parse_domain_batch(domain, offset) do
-    recipes = get_unparsed_recipes_for_domain(domain, offset)
+  defp parse_domain_batch(domain, offset, force) do
+    recipes = if force do
+      get_all_recipes_for_domain(domain, offset)
+    else
+      get_unparsed_recipes_for_domain(domain, offset)
+    end
+
     count = length(recipes)
 
-    Logger.info("Parsing batch of #{count} recipes for #{domain} (offset: #{offset})")
+    Logger.info("Parsing batch of #{count} recipes for #{domain} (offset: #{offset}, force: #{force})")
 
-    Enum.each(recipes, &parse_recipe_ingredients/1)
+    Enum.each(recipes, &parse_recipe_ingredients(&1, force))
 
     # Schedule next batch if there are more
     if count == @batch_size do
-      %{"domain" => domain, "offset" => offset + @batch_size}
+      %{"domain" => domain, "offset" => offset + @batch_size, "force" => force}
       |> __MODULE__.new(schedule_in: 5)
       |> Oban.insert()
     end
@@ -154,22 +152,36 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     :ok
   end
 
-  defp parse_all_batch(offset) do
-    recipes = get_all_unparsed_recipes(offset)
+  defp parse_all_batch(offset, force) do
+    recipes = if force do
+      get_all_recipes(offset)
+    else
+      get_all_unparsed_recipes(offset)
+    end
+
     count = length(recipes)
 
-    Logger.info("Parsing batch of #{count} recipes (offset: #{offset})")
+    Logger.info("Parsing batch of #{count} recipes (offset: #{offset}, force: #{force})")
 
-    Enum.each(recipes, &parse_recipe_ingredients/1)
+    Enum.each(recipes, &parse_recipe_ingredients(&1, force))
 
     # Schedule next batch if there are more
     if count == @batch_size do
-      %{"offset" => offset + @batch_size}
+      %{"offset" => offset + @batch_size, "force" => force}
       |> __MODULE__.new(schedule_in: 5)
       |> Oban.insert()
     end
 
     :ok
+  end
+
+  defp get_all_recipes_for_domain(domain, offset) do
+    Recipe
+    |> where([r], r.source_domain == ^domain or r.source_domain == ^"www.#{domain}")
+    |> order_by([r], r.inserted_at)
+    |> offset(^offset)
+    |> limit(@batch_size)
+    |> Repo.all()
   end
 
   defp get_unparsed_recipes_for_domain(domain, offset) do
@@ -179,6 +191,14 @@ defmodule Controlcopypasta.Workers.IngredientParser do
         SELECT 1 FROM jsonb_array_elements(?) AS elem
         WHERE elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = ''
       )", r.ingredients))
+    |> order_by([r], r.inserted_at)
+    |> offset(^offset)
+    |> limit(@batch_size)
+    |> Repo.all()
+  end
+
+  defp get_all_recipes(offset) do
+    Recipe
     |> order_by([r], r.inserted_at)
     |> offset(^offset)
     |> limit(@batch_size)

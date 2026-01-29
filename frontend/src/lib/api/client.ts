@@ -1169,11 +1169,11 @@ export const admin = {
         body: thresholdMinutes ? { threshold_minutes: thresholdMinutes } : {}
       }),
 
-    parseIngredients: (token: string, domain?: string) =>
-      request<{ data: { status: string; params: Record<string, string> } }>('/admin/scraper/parse-ingredients', {
+    parseIngredients: (token: string, params?: { domain?: string; force?: boolean }) =>
+      request<{ data: { status: string; params: Record<string, unknown> } }>('/admin/scraper/parse-ingredients', {
         method: 'POST',
         token,
-        body: domain ? { domain } : {}
+        body: params ?? {}
       }),
 
     ingredientEnrichment: (token: string) =>

@@ -247,6 +247,25 @@
 		}
 	}
 
+	async function reparseAllIngredients() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		if (!confirm('This will reprocess ALL recipes to regenerate pre_steps, alternatives, and recipe references. Continue?')) {
+			return;
+		}
+
+		error = '';
+		message = '';
+
+		try {
+			await admin.scraper.parseIngredients(token, { force: true });
+			message = 'Started reparsing ALL recipes (this may take a while)';
+		} catch {
+			error = 'Failed to start ingredient reparsing';
+		}
+	}
+
 	async function enqueueNutrition() {
 		const token = authStore.getToken();
 		if (!token) return;
@@ -437,7 +456,8 @@
 					<button onclick={pauseScraping} class="btn-warning">Pause Scraping</button>
 					<button onclick={resumeScraping} class="btn-success">Resume Scraping</button>
 					<button onclick={resetStale} class="btn-secondary">Reset Stale Processing</button>
-					<button onclick={parseAllIngredients} class="btn-secondary">Parse All Ingredients</button>
+					<button onclick={parseAllIngredients} class="btn-secondary">Parse Unparsed</button>
+					<button onclick={reparseAllIngredients} class="btn-primary">Reparse All Recipes</button>
 				</div>
 
 				<!-- Executing Workers -->

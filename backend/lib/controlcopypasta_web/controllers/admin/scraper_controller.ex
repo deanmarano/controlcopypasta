@@ -177,13 +177,17 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
 
   Body:
   - `{"domain": "cooking.nytimes.com"}` - Parse all recipes for a domain
+  - `{"force": true}` - Force reparse ALL recipes (regenerate pre_steps, alternatives, etc.)
+  - `{"domain": "...", "force": true}` - Force reparse all recipes for a domain
   - `{}` - Parse all unparsed recipes
   """
   def parse_ingredients(conn, params) do
+    force = Map.get(params, "force", false)
+
     job_args =
       case params do
-        %{"domain" => domain} -> %{"domain" => domain}
-        _ -> %{}
+        %{"domain" => domain} -> %{"domain" => domain, "force" => force}
+        _ -> %{"force" => force}
       end
 
     case Oban.insert(IngredientParser.new(job_args)) do
