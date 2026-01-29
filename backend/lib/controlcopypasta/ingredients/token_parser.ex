@@ -120,13 +120,40 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     start_time = System.monotonic_time(:microsecond)
     include_diagnostics = Keyword.get(opts, :diagnostics, false)
 
-    tokens = Tokenizer.tokenize(text)
+    # Preprocess text to normalize problematic patterns
+    case preprocess_text(text) do
+      :skip ->
+        # Non-ingredient (equipment) - return empty result
+        %ParsedIngredient{
+          original: text,
+          quantity: nil,
+          quantity_min: nil,
+          quantity_max: nil,
+          unit: nil,
+          container: nil,
+          ingredients: [],
+          primary_ingredient: nil,
+          preparations: [],
+          modifiers: [],
+          storage_medium: nil,
+          notes: [],
+          is_alternative: false,
+          choices: nil
+        }
+
+      preprocessed_text ->
+        parse_preprocessed(preprocessed_text, text, opts, start_time, include_diagnostics)
+    end
+  end
+
+  defp parse_preprocessed(preprocessed_text, original_text, opts, start_time, include_diagnostics) do
+    tokens = Tokenizer.tokenize(preprocessed_text)
     lookup = Keyword.get_lazy(opts, :lookup, fn -> Ingredients.build_ingredient_lookup() end)
 
-    {result, parser_used} = case try_sub_parsers(tokens, text, lookup) do
+    {result, parser_used} = case try_sub_parsers(tokens, original_text, lookup) do
       {:ok, parsed, parser_name} -> {parsed, parser_name}
       {:ok, parsed} -> {parsed, :sub_parser}
-      :skip -> {parse_standard(tokens, text, lookup), :standard}
+      :skip -> {parse_standard(tokens, original_text, lookup), :standard}
     end
 
     if include_diagnostics do
@@ -134,6 +161,116 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       %{result | diagnostics: diagnostics}
     else
       result
+    end
+  end
+
+  # Equipment words that indicate non-ingredient items
+  @equipment_words ~w(
+    thermometer thermometers mill mills pan pans cutter cutters skewer skewers
+    cheesecloth mortar pestle grater graters peeler peelers strainer strainers
+    colander colanders sieve sieves whisk whisks spatula spatulas ladle ladles
+    tongs mandoline mandolines zester zesters reamer reamers juicer juicers
+    blender blenders processor processors mixer mixers fryer fryers
+    torch torches brush brushes rack racks sheet sheets baking\ sheet
+    parchment springform bundt muffin\ tin loaf\ pan pie\ dish casserole
+    dutch\ oven roasting\ pan sheet\ pan air\ fryer instant\ pot
+  )
+
+  # Preprocess ingredient text to normalize problematic patterns
+  # Returns :skip for non-ingredients, or the preprocessed text
+  defp preprocess_text(text) do
+    cond do
+      # Filter out kitchen equipment
+      is_equipment?(text) -> :skip
+
+      true ->
+        text
+        |> normalize_slash_measurements()
+        |> normalize_gram_measurements()
+        |> normalize_stick_butter()
+        |> normalize_ginger_size()
+    end
+  end
+
+  # Detect kitchen equipment (starts with "A " or "An " followed by equipment)
+  defp is_equipment?(text) do
+    normalized = String.downcase(text)
+
+    # Pattern 1: Starts with "a" or "an" followed by equipment
+    starts_with_article = Regex.match?(~r/^an?\s+/i, text)
+
+    if starts_with_article do
+      # Check if any equipment word is in the text
+      Enum.any?(@equipment_words, fn word ->
+        String.contains?(normalized, word)
+      end)
+    else
+      false
+    end
+  end
+
+  # Normalize slash measurements: "1/2 cup/100 grams sugar" -> "1/2 cup sugar"
+  # Pattern: X unit/Y grams -> X unit
+  defp normalize_slash_measurements(text) do
+    # Match: unit/number followed by grams/g
+    # E.g., "cup/100 grams", "cups/256 grams", "cup/100g"
+    text
+    |> String.replace(~r/(\b(?:cups?|tablespoons?|tbsp?|teaspoons?|tsp)\s*)\/\s*\d+\s*(?:grams?|g)\b/i, "\\1")
+  end
+
+  # Normalize gram measurements in parentheses: "1 cup (200g) flour" -> "1 cup flour"
+  # Also handles: "(200g)", "(200 g)", "(200 grams)"
+  defp normalize_gram_measurements(text) do
+    text
+    |> String.replace(~r/\(\s*\d+(?:\.\d+)?\s*(?:g|grams?)\s*\)/i, "")
+    |> String.replace(~r/\s+/, " ")
+    |> String.trim()
+  end
+
+  # Normalize stick butter notation
+  # "2 sticks (1 cup) salted butter" -> "1 cup salted butter"
+  # "1/2 cup (1 stick) unsalted butter" -> "1/2 cup unsalted butter"
+  # "1 stick (8 tablespoons) salted butter" -> "8 tablespoons salted butter"
+  defp normalize_stick_butter(text) do
+    if String.contains?(String.downcase(text), "butter") and
+       String.contains?(String.downcase(text), "stick") do
+
+      text
+      # Pattern: "X sticks (Y unit)" -> "Y unit"
+      |> String.replace(~r/\d+\s*(?:1\/2\s+)?sticks?\s*\(([^)]+)\)/i, "\\1")
+      # Pattern: "(X stick)" or "(X sticks)" -> remove
+      |> String.replace(~r/\(\s*\d*\s*(?:1\/2\s+)?sticks?\s*\)/i, "")
+      # Pattern: "X stick" at start without parenthetical -> "X stick" (keep as unit)
+      |> String.replace(~r/\s+/, " ")
+      |> String.trim()
+    else
+      text
+    end
+  end
+
+  # Normalize ginger size notation
+  # "1 1" piece ginger" -> "1 piece ginger" (preserve quantity, normalize unit)
+  # "1 2-inch piece ginger" -> "1 piece ginger"
+  # "1 inch piece fresh ginger" -> "1 piece fresh ginger"
+  defp normalize_ginger_size(text) do
+    if String.contains?(String.downcase(text), "ginger") and
+       (String.contains?(String.downcase(text), "inch") or
+        String.contains?(text, "\"") or
+        String.contains?(String.downcase(text), "piece")) do
+
+      text
+      # Pattern: X (size)" piece -> X piece (remove the size quote notation)
+      |> String.replace(~r/(\d+)\s+\d+(?:\/\d+)?["″]\s*piece/i, "\\1 piece")
+      # Pattern: X Y-inch piece -> X piece
+      |> String.replace(~r/(\d+)\s+\d+(?:\/\d+)?(?:-|\s)?inch(?:es)?\s*piece/i, "\\1 piece")
+      # Pattern: X inch piece -> X piece
+      |> String.replace(~r/(\d+)\s*(?:-|\s)?inch(?:es)?\s*piece/i, "\\1 piece")
+      # Pattern: X-inch piece without leading qty -> 1 piece
+      |> String.replace(~r/^\s*\d+(?:\/\d+)?(?:-|\s)?inch(?:es)?\s*piece/i, "1 piece")
+      |> String.replace(~r/\s+/, " ")
+      |> String.trim()
+    else
+      text
     end
   end
 

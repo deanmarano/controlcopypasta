@@ -237,6 +237,24 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
         refute metric in names, "#{metric} should not be an ingredient"
       end
     end
+
+    test "does not sum metric conversion quantities into primary quantity" do
+      # Serious Eats pattern: "2 pounds (907 g)" should be 2, not 909
+      cases = [
+        {"2 pounds (907 g) beef chuck roast", 2.0},
+        {"8 cups cold water (1890 ml), divided", 8.0},
+        {"1 large onion (about 2 cups; 300 grams)", 1.0},
+        {"3 cups homemade chicken stock (700 millilitres)", 3.0},
+        {"1/2 medium fennel bulb (about 1 cup; 200 grams)", 0.5}
+      ]
+
+      for {input, expected_qty} <- cases do
+        result = TokenParser.parse(input)
+
+        assert result.quantity == expected_qty,
+               "Expected quantity #{expected_qty} for '#{input}', got #{result.quantity}"
+      end
+    end
   end
 
   describe "juice/zest extraction patterns" do
@@ -630,6 +648,162 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
       json = TokenParser.to_jsonb_map(result)
 
       assert json["storage_medium"] == "in adobo sauce"
+    end
+  end
+
+  describe "preprocessing - equipment filtering" do
+    test "filters 'A deep-fry thermometer' as equipment" do
+      result = TokenParser.parse("A deep-fry thermometer")
+
+      assert result.primary_ingredient == nil
+      assert result.ingredients == []
+    end
+
+    test "filters 'A spice mill or mortar and pestle' as equipment" do
+      result = TokenParser.parse("A spice mill or mortar and pestle")
+
+      assert result.primary_ingredient == nil
+      assert result.ingredients == []
+    end
+
+    test "filters 'A 9\"-diameter springform pan' as equipment" do
+      result = TokenParser.parse("A 9\"-diameter springform pan")
+
+      assert result.primary_ingredient == nil
+    end
+
+    test "filters 'An air fryer' as equipment" do
+      result = TokenParser.parse("An air fryer")
+
+      assert result.primary_ingredient == nil
+    end
+
+    test "does not filter regular ingredients starting with 'a'" do
+      result = TokenParser.parse("a large onion")
+
+      assert result.primary_ingredient != nil
+      assert String.contains?(result.primary_ingredient.name, "onion")
+    end
+  end
+
+  describe "preprocessing - butter stick notation" do
+    test "normalizes '2 sticks (1 cup) salted butter' to use cup unit" do
+      result = TokenParser.parse("2 sticks (1 cup) salted butter, at room temperature")
+
+      assert result.quantity == 1.0
+      assert result.unit == "cup"
+      assert result.primary_ingredient != nil
+      assert String.contains?(result.primary_ingredient.name, "butter")
+    end
+
+    test "normalizes '1/2 cup (1 stick) unsalted butter'" do
+      result = TokenParser.parse("1/2 cup (1 stick) unsalted butter")
+
+      assert result.quantity == 0.5
+      assert result.unit == "cup"
+      assert result.primary_ingredient != nil
+      assert String.contains?(result.primary_ingredient.name, "butter")
+    end
+
+    test "normalizes '1 stick (8 tablespoons) salted butter'" do
+      result = TokenParser.parse("1 stick (8 tablespoons) salted butter")
+
+      assert result.quantity == 8.0
+      assert result.unit == "tbsp"
+      assert result.primary_ingredient != nil
+      assert String.contains?(result.primary_ingredient.name, "butter")
+    end
+
+    test "does not affect non-butter ingredients with 'stick'" do
+      result = TokenParser.parse("1 stick cinnamon")
+
+      # Should not transform since it's not butter
+      assert result.primary_ingredient != nil
+      assert String.contains?(result.primary_ingredient.name, "cinnamon")
+    end
+  end
+
+  describe "preprocessing - ginger size notation" do
+    test "normalizes '1 1\" piece ginger' to '1 piece ginger'" do
+      result = TokenParser.parse("1 1\" piece ginger, peeled, finely grated")
+
+      assert result.quantity == 1.0
+      assert result.unit == "piece"
+      assert result.primary_ingredient != nil
+      assert String.contains?(result.primary_ingredient.name, "ginger")
+    end
+
+    test "normalizes '1 2-inch piece ginger'" do
+      result = TokenParser.parse("1 2-inch piece ginger, peeled")
+
+      assert result.quantity == 1.0
+      assert result.unit == "piece"
+      assert result.primary_ingredient != nil
+      assert String.contains?(result.primary_ingredient.name, "ginger")
+    end
+
+    test "normalizes '1 inch piece fresh ginger'" do
+      result = TokenParser.parse("1 inch piece fresh ginger, grated")
+
+      assert result.quantity == 1.0
+      assert result.unit == "piece"
+      assert result.primary_ingredient != nil
+      assert String.contains?(result.primary_ingredient.name, "ginger")
+    end
+  end
+
+  describe "preprocessing - slash notation" do
+    test "normalizes '1/2 cup/100 grams' to '1/2 cup'" do
+      result = TokenParser.parse("1/2 cup/100 grams granulated sugar")
+
+      assert result.quantity == 0.5
+      assert result.unit == "cup"
+      assert result.primary_ingredient != nil
+      assert String.contains?(result.primary_ingredient.name, "sugar")
+    end
+
+    test "normalizes '2 cups/256 grams' to '2 cups'" do
+      result = TokenParser.parse("2 cups/256 grams all-purpose flour")
+
+      assert result.quantity == 2.0
+      assert result.unit == "cup"
+      assert result.primary_ingredient != nil
+      assert String.contains?(result.primary_ingredient.name, "flour")
+    end
+
+    test "normalizes tablespoon/gram notation" do
+      result = TokenParser.parse("3 tablespoons/45g honey")
+
+      assert result.quantity == 3.0
+      assert result.unit == "tbsp"
+    end
+  end
+
+  describe "preprocessing - gram measurements in parentheses" do
+    test "strips '(45g)' from ingredient text" do
+      result = TokenParser.parse("1/2 cup (45g) rolled oats, old-fashioned")
+
+      assert result.quantity == 0.5
+      assert result.unit == "cup"
+      assert result.primary_ingredient != nil
+      assert String.contains?(result.primary_ingredient.name, "oats")
+    end
+
+    test "strips '(200 grams)' from ingredient text" do
+      result = TokenParser.parse("1 cup (200 grams) sugar")
+
+      assert result.quantity == 1.0
+      assert result.unit == "cup"
+      assert result.primary_ingredient != nil
+      assert String.contains?(result.primary_ingredient.name, "sugar")
+    end
+
+    test "handles multiple gram measurements" do
+      result = TokenParser.parse("2 cups (240g) flour plus 1/4 cup (30g) for dusting")
+
+      # Quantities are summed when "plus" is used (2 + 1/4 = 2.25)
+      assert result.quantity == 2.25
+      assert result.unit == "cup"
     end
   end
 end
