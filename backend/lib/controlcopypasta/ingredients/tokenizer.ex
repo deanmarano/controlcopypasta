@@ -509,10 +509,26 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     end
   end
 
+  # Written numbers map
+  @written_numbers %{
+    "one" => 1, "two" => 2, "three" => 3, "four" => 4, "five" => 5,
+    "six" => 6, "seven" => 7, "eight" => 8, "nine" => 9, "ten" => 10,
+    "eleven" => 11, "twelve" => 12, "a" => 1, "an" => 1
+  }
+
   # Quantity detection
   defp is_quantity?(text) do
-    # Matches: 1, 2.5, 1/2, 1-2, 2-3
-    Regex.match?(~r/^\d+([.,]\d+)?(\/\d+)?(-\d+([.,]\d+)?(\/\d+)?)?$/, text)
+    # Matches: 1, 2.5, 1/2, 1-2, 2-3 OR written numbers (one, two, etc.)
+    downcased = String.downcase(text)
+    Regex.match?(~r/^\d+([.,]\d+)?(\/\d+)?(-\d+([.,]\d+)?(\/\d+)?)?$/, text) or
+      Map.has_key?(@written_numbers, downcased)
+  end
+
+  @doc """
+  Returns the numeric value of a written number, or nil if not a written number.
+  """
+  def written_number_value(text) do
+    Map.get(@written_numbers, String.downcase(text))
   end
 
   # Size detection (container size like "14-oz" or "14-oz.")

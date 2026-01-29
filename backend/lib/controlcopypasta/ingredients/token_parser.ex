@@ -283,7 +283,12 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
 
     # Add container if present
     base = if parsed.container do
-      Map.put(base, "container", parsed.container)
+      container = %{
+        "size_value" => parsed.container.size_value,
+        "size_unit" => parsed.container.size_unit,
+        "container_type" => parsed.container.container_type
+      }
+      Map.put(base, "container", container)
     else
       base
     end
@@ -405,6 +410,10 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   def parse_single_quantity(str) do
     str = String.trim(str)
     cond do
+      # Written number: "one", "two", etc.
+      written_val = Tokenizer.written_number_value(str) ->
+        written_val * 1.0
+
       # Fraction: "1/2"
       String.contains?(str, "/") ->
         case String.split(str, "/") do
@@ -473,20 +482,14 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   end
 
   defp find_container_pattern(tokens) do
-    # Simple implementation - look for (qty unit) container pattern
-    case find_paren_sequence(tokens) do
-      {size_value, size_unit, container_type} ->
-        %{
-          size_value: size_value,
-          size_unit: size_unit,
-          container_type: container_type
-        }
-      nil -> nil
-    end
+    # Try multiple patterns in order of specificity
+    find_paren_sequence(tokens) ||
+      find_size_container_pattern(tokens) ||
+      find_qty_container_pattern(tokens)
   end
 
+  # Pattern 1: (qty unit) container - e.g., "(14 oz) can"
   defp find_paren_sequence(tokens) do
-    # Find opening paren, then qty, unit, closing paren, container
     paren_start = Enum.find_index(tokens, &(&1.text == "("))
 
     if paren_start do
@@ -496,12 +499,64 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
            [%{label: :unit, text: unit_text} | rest] <- rest,
            [%{text: ")"} | rest] <- rest,
            [%{label: :container, text: container_text} | _] <- rest do
-        {parse_single_quantity(qty_text), normalize_unit(unit_text), container_text}
+        %{
+          size_value: parse_single_quantity(qty_text),
+          size_unit: normalize_unit(unit_text),
+          container_type: container_text
+        }
       else
         _ -> nil
       end
     else
       nil
+    end
+  end
+
+  # Pattern 2: size container - e.g., "15-ounce can", "14-oz jar"
+  defp find_size_container_pattern(tokens) do
+    # Find :size token followed by :container token
+    tokens
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.find_value(fn
+      [%{label: :size, text: size_text}, %{label: :container, text: container_text}] ->
+        case parse_size_string(size_text) do
+          {value, unit} ->
+            %{
+              size_value: value,
+              size_unit: unit,
+              container_type: container_text
+            }
+          nil -> nil
+        end
+      _ -> nil
+    end)
+  end
+
+  # Pattern 3: qty container - e.g., "2 cans", "1 jar" (no size specified)
+  defp find_qty_container_pattern(tokens) do
+    # Find :qty token followed by :container token
+    tokens
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.find_value(fn
+      [%{label: :qty, text: _qty_text}, %{label: :container, text: container_text}] ->
+        %{
+          size_value: nil,
+          size_unit: nil,
+          container_type: container_text
+        }
+      _ -> nil
+    end)
+  end
+
+  # Parse size strings like "15-ounce", "14-oz" into {value, unit}
+  defp parse_size_string(size_text) do
+    case Regex.run(~r/^(\d+(?:[.,]\d+)?)-?(oz|ounce|ounces|g|gram|grams|ml|l)\.?$/i, size_text) do
+      [_, value_str, unit] ->
+        case Float.parse(value_str) do
+          {value, _} -> {value, normalize_unit(unit)}
+          :error -> nil
+        end
+      _ -> nil
     end
   end
 

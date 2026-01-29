@@ -536,6 +536,76 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
     end
   end
 
+  describe "written numbers" do
+    test "parses 'one' as quantity 1" do
+      result = TokenParser.parse("One 15-ounce can chickpeas")
+
+      assert result.quantity == 1.0
+    end
+
+    test "parses 'two' as quantity 2" do
+      result = TokenParser.parse("Two cans tomatoes")
+
+      assert result.quantity == 2.0
+    end
+
+    test "parses 'a' as quantity 1" do
+      result = TokenParser.parse("a large onion")
+
+      assert result.quantity == 1.0
+    end
+
+    test "parses 'three' as quantity 3" do
+      result = TokenParser.parse("three cloves garlic")
+
+      assert result.quantity == 3.0
+    end
+  end
+
+  describe "container extraction" do
+    test "extracts container from 'size-unit container' pattern" do
+      result = TokenParser.parse("One 15-ounce can chickpeas")
+
+      assert result.container != nil
+      assert result.container.size_value == 15.0
+      assert result.container.size_unit == "oz"
+      assert result.container.container_type == "can"
+    end
+
+    test "extracts container from 'size-unit container' with oz abbreviation" do
+      result = TokenParser.parse("Two 14-oz cans tomatoes")
+
+      assert result.container != nil
+      assert result.container.size_value == 14.0
+      assert result.container.size_unit == "oz"
+      assert result.container.container_type == "cans"
+    end
+
+    test "extracts container without size" do
+      result = TokenParser.parse("1 jar marinara sauce")
+
+      assert result.container != nil
+      assert result.container.size_value == nil
+      assert result.container.container_type == "jar"
+    end
+
+    test "extracts correct primary ingredient with container" do
+      result = TokenParser.parse("One 15-ounce can chickpeas, rinsed")
+
+      assert result.primary_ingredient.name == "chickpeas"
+      assert "rinsed" in result.preparations
+    end
+
+    test "includes container in JSONB map with string keys" do
+      result = TokenParser.parse("One 15-ounce can chickpeas")
+      json = TokenParser.to_jsonb_map(result)
+
+      assert json["container"]["size_value"] == 15.0
+      assert json["container"]["size_unit"] == "oz"
+      assert json["container"]["container_type"] == "can"
+    end
+  end
+
   describe "to_jsonb_map/1" do
     test "converts parsed ingredient to JSONB-compatible map" do
       result = TokenParser.parse("2 cups diced tomatoes")
