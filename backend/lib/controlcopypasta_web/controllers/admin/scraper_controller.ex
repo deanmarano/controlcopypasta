@@ -261,4 +261,60 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
     DensityEnrichmentWorker.resume()
     json(conn, %{data: %{status: "resumed"}})
   end
+
+  @doc """
+  Gets ingredient parsing progress stats.
+  """
+  def parsing_stats(conn, _params) do
+    alias Controlcopypasta.Recipes.Recipe
+
+    # Get total and parsed recipe counts
+    total_recipes = Repo.aggregate(Recipe, :count)
+    parsed_recipes = from(r in Recipe, where: not is_nil(r.ingredients_parsed_at))
+                     |> Repo.aggregate(:count)
+
+    # Get active parsing jobs
+    active_jobs = from(j in "oban_jobs",
+      where: j.worker == "Controlcopypasta.Workers.IngredientParser" and j.state in ["executing", "available", "scheduled"],
+      select: %{
+        id: j.id,
+        state: j.state,
+        args: j.args,
+        inserted_at: j.inserted_at,
+        scheduled_at: j.scheduled_at
+      },
+      order_by: [desc: j.inserted_at],
+      limit: 5
+    ) |> Repo.all()
+
+    # Get last completed job
+    last_completed = from(j in "oban_jobs",
+      where: j.worker == "Controlcopypasta.Workers.IngredientParser" and j.state == "completed",
+      select: %{completed_at: j.completed_at, args: j.args},
+      order_by: [desc: j.completed_at],
+      limit: 1
+    ) |> Repo.one()
+
+    json(conn, %{
+      data: %{
+        total_recipes: total_recipes,
+        parsed_recipes: parsed_recipes,
+        unparsed_recipes: total_recipes - parsed_recipes,
+        percent_complete: if(total_recipes > 0, do: Float.round(parsed_recipes / total_recipes * 100, 1), else: 0),
+        active_jobs: Enum.map(active_jobs, fn job ->
+          %{
+            id: job.id,
+            state: job.state,
+            offset: get_in(job.args, ["offset"]) || 0,
+            force: get_in(job.args, ["force"]) || false,
+            inserted_at: job.inserted_at
+          }
+        end),
+        last_completed: if(last_completed, do: %{
+          completed_at: last_completed.completed_at,
+          offset: get_in(last_completed.args, ["offset"]) || 0
+        }, else: nil)
+      }
+    })
+  end
 end

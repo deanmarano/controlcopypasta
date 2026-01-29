@@ -155,6 +155,7 @@ defmodule ControlcopypastaWeb.Router do
     get "/admin/scraper/browser-status", Admin.ScraperController, :browser_status
     get "/admin/scraper/workers", Admin.ScraperController, :executing_workers
     post "/admin/scraper/parse-ingredients", Admin.ScraperController, :parse_ingredients
+    get "/admin/scraper/parsing-stats", Admin.ScraperController, :parsing_stats
     post "/admin/scraper/reset-stale", Admin.ScraperController, :reset_stale
 
     # Ingredient enrichment

@@ -1103,6 +1103,24 @@ export interface IngredientEnrichmentStats {
   density: EnrichmentProgress;
 }
 
+export interface ParsingStats {
+  total_recipes: number;
+  parsed_recipes: number;
+  unparsed_recipes: number;
+  percent_complete: number;
+  active_jobs: Array<{
+    id: number;
+    state: string;
+    offset: number;
+    force: boolean;
+    inserted_at: string;
+  }>;
+  last_completed: {
+    completed_at: string;
+    offset: number;
+  } | null;
+}
+
 // Admin API
 export const admin = {
   scraper: {
@@ -1175,6 +1193,9 @@ export const admin = {
         token,
         body: params ?? {}
       }),
+
+    parsingStats: (token: string) =>
+      request<{ data: ParsingStats }>('/admin/scraper/parsing-stats', { token }),
 
     ingredientEnrichment: (token: string) =>
       request<{ data: IngredientEnrichmentStats }>('/admin/scraper/ingredient-enrichment', { token }),

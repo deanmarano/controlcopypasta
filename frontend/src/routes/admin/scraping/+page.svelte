@@ -10,7 +10,8 @@
 		type FailedUrl,
 		type BrowserStatus,
 		type ExecutingWorker,
-		type IngredientEnrichmentStats
+		type IngredientEnrichmentStats,
+		type ParsingStats
 	} from '$lib/api/client';
 
 	let domains = $state<DomainStats[]>([]);
@@ -20,6 +21,7 @@
 	let browserStatus = $state<BrowserStatus | null>(null);
 	let executingWorkers = $state<ExecutingWorker[]>([]);
 	let enrichmentStats = $state<IngredientEnrichmentStats | null>(null);
+	let parsingStats = $state<ParsingStats | null>(null);
 	let loading = $state(true);
 	let error = $state('');
 	let message = $state('');
@@ -47,7 +49,7 @@
 	async function loadAll() {
 		loading = true;
 		error = '';
-		await Promise.all([loadDomains(), loadQueueStats(), loadRateLimits(), loadFailed(), loadBrowserStatus(), loadWorkers(), loadEnrichmentStats()]);
+		await Promise.all([loadDomains(), loadQueueStats(), loadRateLimits(), loadFailed(), loadBrowserStatus(), loadWorkers(), loadEnrichmentStats(), loadParsingStats()]);
 		loading = false;
 	}
 
@@ -129,6 +131,17 @@
 			enrichmentStats = result.data;
 		} catch {
 			enrichmentStats = null;
+		}
+	}
+
+	async function loadParsingStats() {
+		const token = authStore.getToken();
+		if (!token) return;
+		try {
+			const result = await admin.scraper.parsingStats(token);
+			parsingStats = result.data;
+		} catch {
+			parsingStats = null;
 		}
 	}
 
@@ -478,6 +491,60 @@
 					<div class="workers-section">
 						<h3>Active Workers</h3>
 						<p class="empty">No workers currently executing</p>
+					</div>
+				{/if}
+			</section>
+		{/if}
+
+		<!-- Ingredient Parsing Status -->
+		{#if parsingStats}
+			<section class="parsing-section">
+				<h2>Ingredient Parsing</h2>
+				<div class="parsing-overview">
+					<div class="parsing-progress">
+						<div class="progress-bar">
+							<div class="progress-fill" style="width: {parsingStats.percent_complete}%"></div>
+						</div>
+						<span class="progress-text">{parsingStats.percent_complete}% complete</span>
+					</div>
+					<div class="parsing-counts">
+						<div class="parsing-stat">
+							<span class="parsing-stat-value">{formatNumber(parsingStats.parsed_recipes)}</span>
+							<span class="parsing-stat-label">Parsed</span>
+						</div>
+						<div class="parsing-stat">
+							<span class="parsing-stat-value">{formatNumber(parsingStats.unparsed_recipes)}</span>
+							<span class="parsing-stat-label">Unparsed</span>
+						</div>
+						<div class="parsing-stat">
+							<span class="parsing-stat-value">{formatNumber(parsingStats.total_recipes)}</span>
+							<span class="parsing-stat-label">Total</span>
+						</div>
+					</div>
+				</div>
+
+				{#if parsingStats.active_jobs.length > 0}
+					<div class="parsing-jobs">
+						<h3>Active Parsing Jobs ({parsingStats.active_jobs.length})</h3>
+						<div class="jobs-list">
+							{#each parsingStats.active_jobs as job}
+								<div class="job-item">
+									<span class="job-id">#{job.id}</span>
+									<span class="job-state" class:executing={job.state === 'executing'} class:available={job.state === 'available'} class:scheduled={job.state === 'scheduled'}>{job.state}</span>
+									<span class="job-offset">Offset: {job.offset}</span>
+									{#if job.force}
+										<span class="job-force">Force</span>
+									{/if}
+									<span class="job-time">{new Date(job.inserted_at).toLocaleTimeString()}</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+
+				{#if parsingStats.last_completed}
+					<div class="parsing-last">
+						<span>Last completed batch: offset {parsingStats.last_completed.offset} at {new Date(parsingStats.last_completed.completed_at).toLocaleString()}</span>
 					</div>
 				{/if}
 			</section>
@@ -1316,5 +1383,126 @@
 		flex: 1;
 		padding: var(--space-2);
 		font-size: var(--text-sm);
+	}
+
+	/* Parsing Section */
+	.parsing-section {
+		margin-top: var(--space-5);
+	}
+
+	.parsing-overview {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.parsing-progress {
+		margin-bottom: var(--space-2);
+	}
+
+	.parsing-counts {
+		display: flex;
+		gap: var(--space-3);
+	}
+
+	.parsing-stat {
+		flex: 1;
+		text-align: center;
+		padding: var(--space-3);
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+	}
+
+	.parsing-stat-value {
+		display: block;
+		font-size: var(--text-xl);
+		font-weight: var(--font-bold);
+		color: var(--color-marinara-600);
+	}
+
+	.parsing-stat-label {
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+	}
+
+	.parsing-jobs {
+		margin-top: var(--space-4);
+		padding-top: var(--space-4);
+		border-top: var(--border-width-thin) solid var(--border-light);
+	}
+
+	.parsing-jobs h3 {
+		margin: 0 0 var(--space-3);
+	}
+
+	.jobs-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.job-item {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+	}
+
+	.job-id {
+		font-weight: var(--font-medium);
+		color: var(--text-muted);
+		min-width: 60px;
+	}
+
+	.job-state {
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+		font-weight: var(--font-medium);
+		background: var(--color-gray-200);
+		color: var(--text-secondary);
+	}
+
+	.job-state.executing {
+		background: var(--color-basil-100);
+		color: var(--color-basil-700);
+	}
+
+	.job-state.available {
+		background: var(--color-pasta-100);
+		color: var(--color-pasta-700);
+	}
+
+	.job-state.scheduled {
+		background: var(--color-gray-200);
+		color: var(--text-secondary);
+	}
+
+	.job-offset {
+		color: var(--text-secondary);
+	}
+
+	.job-force {
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+		font-weight: var(--font-medium);
+		background: var(--color-marinara-100);
+		color: var(--color-marinara-700);
+	}
+
+	.job-time {
+		margin-left: auto;
+		color: var(--text-muted);
+		font-size: var(--text-xs);
+	}
+
+	.parsing-last {
+		margin-top: var(--space-3);
+		font-size: var(--text-sm);
+		color: var(--text-muted);
 	}
 </style>

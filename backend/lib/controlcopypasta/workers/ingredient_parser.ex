@@ -134,7 +134,7 @@ defmodule Controlcopypasta.Workers.IngredientParser do
   defp update_recipe_ingredients(recipe, ingredients) do
     try do
       recipe
-      |> Ecto.Changeset.change(ingredients: ingredients, ingredients_parsed_at: DateTime.utc_now())
+      |> Ecto.Changeset.change(ingredients: ingredients, ingredients_parsed_at: DateTime.utc_now() |> DateTime.truncate(:second))
       |> Repo.update(timeout: 15_000)
       |> case do
         {:ok, _} ->
