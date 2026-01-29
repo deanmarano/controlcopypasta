@@ -448,6 +448,67 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
     end
   end
 
+  describe "choices extraction (such as X, Y, or Z)" do
+    test "extracts choices from 'such as' pattern" do
+      result = TokenParser.parse("2 whole fish, such as branzini, mackerel, or trout, scaled and gutted")
+
+      assert result.choices != nil
+      assert length(result.choices) == 3
+
+      choice_names = Enum.map(result.choices, & &1.name)
+      assert "branzini" in choice_names
+      assert "mackerel" in choice_names
+      assert "trout" in choice_names
+    end
+
+    test "extracts preparations after choices" do
+      result = TokenParser.parse("2 whole fish, such as branzini, mackerel, or trout, scaled and gutted")
+
+      assert "scaled" in result.preparations
+      assert "gutted" in result.preparations
+    end
+
+    test "matches choices to canonical ingredients when possible" do
+      result = TokenParser.parse("1 lb white fish, such as cod, halibut, or tilapia")
+
+      # Verify choices were extracted and we attempted to match them
+      assert result.choices != nil
+      assert length(result.choices) == 3
+
+      # Each choice should have a name at minimum
+      for choice <- result.choices do
+        assert choice.name != nil
+      end
+    end
+
+    test "handles 'preferably' as example intro" do
+      result = TokenParser.parse("1 cup oil, preferably olive oil")
+
+      assert result.choices != nil
+      choice_names = Enum.map(result.choices, & &1.name)
+      assert "olive oil" in choice_names
+    end
+
+    test "returns nil choices when no 'such as' pattern" do
+      result = TokenParser.parse("2 cups flour")
+
+      assert result.choices == nil
+    end
+
+    test "includes choices in JSONB map" do
+      result = TokenParser.parse("2 whole fish, such as branzini, mackerel, or trout")
+      json = TokenParser.to_jsonb_map(result)
+
+      assert is_list(json["choices"])
+      assert length(json["choices"]) == 3
+
+      choice_names = Enum.map(json["choices"], & &1["name"])
+      assert "branzini" in choice_names
+      assert "mackerel" in choice_names
+      assert "trout" in choice_names
+    end
+  end
+
   describe "note phrase handling" do
     test "handles 'at room temperature' as a note" do
       result = TokenParser.parse("4 eggs, at room temperature")

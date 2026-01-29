@@ -52,6 +52,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       :storage_medium,
       :notes,
       :is_alternative,    # true if "or" pattern detected
+      :choices,           # "such as X, Y, or Z" - specific options to choose from
       :recipe_reference,  # Reference to another recipe (sub-recipe)
       :diagnostics        # ParseDiagnostics struct when enabled
     ]
@@ -84,6 +85,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
             storage_medium: String.t() | nil,
             notes: [String.t()],
             is_alternative: boolean(),
+            choices: [ingredient_match()] | nil,
             recipe_reference: recipe_reference() | nil,
             diagnostics: ParseDiagnostics.t() | nil
           }
@@ -233,6 +235,12 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     # Get primary ingredient (first one)
     primary = List.first(matched_ingredients)
 
+    # Extract choices from "such as X, Y, or Z" patterns
+    {choices, extra_preparations} = extract_choices(tokens, lookup)
+
+    # Combine preparations from analysis with any found after choices
+    all_preparations = (analysis.preparations ++ extra_preparations) |> Enum.uniq()
+
     %ParsedIngredient{
       original: original,
       quantity: quantity,
@@ -242,11 +250,12 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       container: container,
       ingredients: matched_ingredients,
       primary_ingredient: primary,
-      preparations: analysis.preparations,
+      preparations: all_preparations,
       modifiers: analysis.modifiers,
       storage_medium: analysis.storage_medium,
       notes: [],
-      is_alternative: analysis.has_alternatives
+      is_alternative: analysis.has_alternatives,
+      choices: choices
     }
   end
 
@@ -313,6 +322,20 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
         "name" => ref.name,
         "is_optional" => ref.is_optional
       })
+    else
+      base
+    end
+
+    # Add choices if present (from "such as X, Y, or Z" patterns)
+    base = if parsed.choices && parsed.choices != [] do
+      choices = Enum.map(parsed.choices, fn choice ->
+        %{
+          "name" => choice.name,
+          "canonical_name" => choice.canonical_name,
+          "canonical_id" => choice.canonical_id
+        }
+      end)
+      Map.put(base, "choices", choices)
     else
       base
     end
@@ -480,6 +503,125 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     else
       nil
     end
+  end
+
+  # Common preparation words that signal end of choices
+  @prep_indicators ~w(
+    scaled gutted cleaned peeled minced diced chopped sliced julienned
+    grated shredded crushed mashed beaten whisked melted softened
+    toasted roasted grilled baked fried sauteed braised steamed
+    drained rinsed soaked marinated seasoned trimmed deboned
+    thawed frozen chilled warmed heated cooled halved quartered
+    cubed cut divided separated packed pressed sifted strained
+  )
+
+  # Extract choices from "such as X, Y, or Z" patterns
+  # Returns {choices, preparations_found_after_choices}
+  defp extract_choices(tokens, lookup) do
+    # Find the :example_intro token (e.g., "such", "preferably")
+    example_idx = Enum.find_index(tokens, &(&1.label == :example_intro))
+
+    if example_idx do
+      # Get tokens after the example_intro
+      after_intro = Enum.drop(tokens, example_idx + 1)
+
+      # Skip "as" if present (for "such as")
+      after_intro = case after_intro do
+        [%{text: "as"} | rest] -> rest
+        other -> other
+      end
+
+      # Extract choices and preparations
+      {choice_names, prep_names} = parse_choices_and_preps(after_intro)
+
+      # Match choices to canonical ingredients
+      matched_choices = choice_names
+        |> Enum.map(&match_ingredient(&1, lookup))
+        |> Enum.reject(&is_nil/1)
+
+      choices = if matched_choices == [], do: nil, else: matched_choices
+
+      {choices, prep_names}
+    else
+      {nil, []}
+    end
+  end
+
+  # Parse tokens into choice names and preparation names
+  # Choices are words separated by comma/or until we hit a prep indicator
+  defp parse_choices_and_preps(tokens) do
+    parse_choices_and_preps(tokens, [], [], false)
+  end
+
+  defp parse_choices_and_preps([], current_choice, choices, _in_preps) do
+    # End of tokens - finalize
+    choices = finalize_choice(current_choice, choices)
+    {Enum.reverse(choices), []}
+  end
+
+  defp parse_choices_and_preps([token | rest], current_choice, choices, in_preps) do
+    text = String.downcase(token.text)
+
+    cond do
+      # Already in prep section - collect preps
+      in_preps ->
+        case token.label do
+          :word ->
+            {Enum.reverse(choices), collect_preps([token | rest])}
+          :conj ->
+            # "and" in prep section continues preps
+            parse_choices_and_preps(rest, [], choices, true)
+          _ ->
+            parse_choices_and_preps(rest, [], choices, true)
+        end
+
+      # Comma followed by prep indicator - switch to prep mode
+      token.label == :punct and token.text == "," ->
+        # Check if next word is a prep indicator
+        next_word = Enum.find(rest, &(&1.label == :word))
+        if next_word && String.downcase(next_word.text) in @prep_indicators do
+          choices = finalize_choice(current_choice, choices)
+          {Enum.reverse(choices), collect_preps(rest)}
+        else
+          # Just a comma between choices
+          choices = finalize_choice(current_choice, choices)
+          parse_choices_and_preps(rest, [], choices, false)
+        end
+
+      # Conjunction (or, and) - finalize current choice
+      token.label == :conj ->
+        choices = finalize_choice(current_choice, choices)
+        parse_choices_and_preps(rest, [], choices, false)
+
+      # Word token - could be choice or prep
+      token.label == :word ->
+        if text in @prep_indicators do
+          # This is a prep - finalize choices and collect preps
+          choices = finalize_choice(current_choice, choices)
+          {Enum.reverse(choices), collect_preps([token | rest])}
+        else
+          # Add to current choice
+          parse_choices_and_preps(rest, [token.text | current_choice], choices, false)
+        end
+
+      # Other tokens - skip
+      true ->
+        parse_choices_and_preps(rest, current_choice, choices, false)
+    end
+  end
+
+  defp finalize_choice([], choices), do: choices
+  defp finalize_choice(words, choices) do
+    name = words |> Enum.reverse() |> Enum.join(" ") |> String.trim()
+    if name == "", do: choices, else: [name | choices]
+  end
+
+  # Collect prep words from remaining tokens
+  defp collect_preps(tokens) do
+    tokens
+    |> Enum.filter(&(&1.label == :word))
+    |> Enum.map(&String.downcase(&1.text))
+    |> Enum.filter(&(&1 in @prep_indicators))
   end
 
   @ingredient_stop_words ~w(
