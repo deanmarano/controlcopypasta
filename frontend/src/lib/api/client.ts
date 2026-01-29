@@ -188,6 +188,13 @@ export interface IngredientAlternative {
   };
 }
 
+export interface RecipeReference {
+  type: 'below' | 'above' | 'notes' | 'link' | 'inline';
+  text: string | null;
+  name: string | null;
+  is_optional: boolean;
+}
+
 export interface Ingredient {
   text: string;
   group: string | null;
@@ -196,6 +203,7 @@ export interface Ingredient {
   confidence?: number;
   is_alternative?: boolean;
   alternatives?: IngredientAlternative[];
+  recipe_reference?: RecipeReference;
   pre_steps?: PreStep[];
   _diagnostics?: IngredientDiagnostics;
 }

@@ -29,6 +29,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   alias Controlcopypasta.Ingredients.PreStepGenerator
 
   @sub_parsers [
+    SubParsers.RecipeReference,  # Check for recipe references first
     SubParsers.Garlic,
     SubParsers.Citrus,
     SubParsers.Egg
@@ -51,8 +52,16 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       :storage_medium,
       :notes,
       :is_alternative,    # true if "or" pattern detected
+      :recipe_reference,  # Reference to another recipe (sub-recipe)
       :diagnostics        # ParseDiagnostics struct when enabled
     ]
+
+    @type recipe_reference :: %{
+            type: :below | :above | :notes | :link | :inline,
+            text: String.t() | nil,
+            name: String.t() | nil,
+            is_optional: boolean()
+          }
 
     @type ingredient_match :: %{
             name: String.t(),
@@ -75,6 +84,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
             storage_medium: String.t() | nil,
             notes: [String.t()],
             is_alternative: boolean(),
+            recipe_reference: recipe_reference() | nil,
             diagnostics: ParseDiagnostics.t() | nil
           }
   end
@@ -287,7 +297,22 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
             "canonical_id" => ing.canonical_id
           }
         end)
-      Map.put(base, "alternatives", alternatives)
+      base
+      |> Map.put("alternatives", alternatives)
+      |> Map.put("is_alternative", true)
+    else
+      base
+    end
+
+    # Add recipe reference if present
+    base = if parsed.recipe_reference do
+      ref = parsed.recipe_reference
+      Map.put(base, "recipe_reference", %{
+        "type" => Atom.to_string(ref.type),
+        "text" => ref.text,
+        "name" => ref.name,
+        "is_optional" => ref.is_optional
+      })
     else
       base
     end
