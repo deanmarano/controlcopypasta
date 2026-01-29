@@ -155,9 +155,22 @@ export const passkeys = {
 };
 
 // Recipe types
+export interface IngredientDiagnostics {
+  tokens: string;
+  parser: string;
+  match_strategy: string | null;
+  alternatives: string[];
+  warnings: string[];
+  parse_time_us: number;
+}
+
 export interface Ingredient {
   text: string;
   group: string | null;
+  canonical_name?: string | null;
+  canonical_id?: string | null;
+  confidence?: number;
+  _diagnostics?: IngredientDiagnostics;
 }
 
 export interface Instruction {

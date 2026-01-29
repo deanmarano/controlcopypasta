@@ -25,6 +25,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   alias Controlcopypasta.Ingredients.Tokenizer
   alias Controlcopypasta.Ingredients
   alias Controlcopypasta.Ingredients.SubParsers
+  alias Controlcopypasta.Ingredients.ParseDiagnostics
 
   @sub_parsers [
     SubParsers.Garlic,
@@ -48,7 +49,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       :modifiers,
       :storage_medium,
       :notes,
-      :is_alternative     # true if "or" pattern detected
+      :is_alternative,    # true if "or" pattern detected
+      :diagnostics        # ParseDiagnostics struct when enabled
     ]
 
     @type ingredient_match :: %{
@@ -71,7 +73,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
             modifiers: [String.t()],
             storage_medium: String.t() | nil,
             notes: [String.t()],
-            is_alternative: boolean()
+            is_alternative: boolean(),
+            diagnostics: ParseDiagnostics.t() | nil
           }
   end
 
@@ -81,6 +84,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   ## Options
 
   - `:lookup` - Pre-built ingredient lookup map (optional, will build if not provided)
+  - `:diagnostics` - When true, captures detailed parsing diagnostics (default: false)
 
   ## Examples
 
@@ -92,22 +96,105 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
         ingredients: [%{name: "tomatoes", canonical_name: "tomato", ...}],
         preparations: ["diced", "drained"]
       }
+
+      iex> TokenParser.parse("1 cup flour", diagnostics: true)
+      %ParsedIngredient{
+        ...
+        diagnostics: %ParseDiagnostics{tokens: [...], parser_used: :standard, ...}
+      }
   """
   def parse(text, opts \\ []) when is_binary(text) do
+    start_time = System.monotonic_time(:microsecond)
+    include_diagnostics = Keyword.get(opts, :diagnostics, false)
+
     tokens = Tokenizer.tokenize(text)
     lookup = Keyword.get_lazy(opts, :lookup, fn -> Ingredients.build_ingredient_lookup() end)
 
-    case try_sub_parsers(tokens, text, lookup) do
-      {:ok, parsed} -> parsed
-      :skip -> parse_standard(tokens, text, lookup)
+    {result, parser_used} = case try_sub_parsers(tokens, text, lookup) do
+      {:ok, parsed, parser_name} -> {parsed, parser_name}
+      {:ok, parsed} -> {parsed, :sub_parser}
+      :skip -> {parse_standard(tokens, text, lookup), :standard}
     end
+
+    if include_diagnostics do
+      diagnostics = build_diagnostics(tokens, parser_used, result, start_time)
+      %{result | diagnostics: diagnostics}
+    else
+      result
+    end
+  end
+
+  defp build_diagnostics(tokens, parser_used, result, start_time) do
+    parse_time = System.monotonic_time(:microsecond) - start_time
+
+    # Determine match strategy from confidence
+    match_strategy = if result.primary_ingredient do
+      case result.primary_ingredient.confidence do
+        1.0 -> :exact
+        c when c >= 0.95 -> :partial
+        c when c >= 0.9 -> :stripped
+        c when c >= 0.8 -> :shortened
+        _ -> :fuzzy
+      end
+    end
+
+    %ParseDiagnostics{
+      tokens: tokens,
+      token_string: Tokenizer.format(tokens),
+      parser_used: parser_used,
+      match_candidates: build_match_candidates(result),
+      selected_match: summarize_selected_match(result.primary_ingredient),
+      match_strategy: match_strategy,
+      warnings: ParseDiagnostics.detect_warnings(tokens, result),
+      parse_time_us: parse_time
+    }
+  end
+
+  defp build_match_candidates(result) do
+    # For now, just return the matched ingredients as candidates
+    # A more sophisticated implementation could track all candidates tried
+    result.ingredients
+    |> Enum.map(fn ing ->
+      %{
+        name: ing.name,
+        canonical_name: ing.canonical_name,
+        confidence: ing.confidence,
+        strategy: confidence_to_strategy(ing.confidence)
+      }
+    end)
+  end
+
+  defp confidence_to_strategy(confidence) do
+    cond do
+      confidence >= 1.0 -> :exact
+      confidence >= 0.95 -> :partial
+      confidence >= 0.9 -> :stripped
+      confidence >= 0.8 -> :shortened
+      true -> :fuzzy
+    end
+  end
+
+  defp summarize_selected_match(nil), do: nil
+  defp summarize_selected_match(primary) do
+    %{
+      name: primary.name,
+      canonical_name: primary.canonical_name,
+      confidence: primary.confidence
+    }
   end
 
   defp try_sub_parsers(tokens, original, lookup) do
     Enum.find_value(@sub_parsers, :skip, fn parser ->
       if parser.match?(tokens) do
         case parser.parse(tokens, original, lookup) do
-          {:ok, _} = result -> result
+          {:ok, parsed} ->
+            # Extract parser name from module (e.g., SubParsers.Garlic -> :garlic)
+            parser_name = parser
+              |> Module.split()
+              |> List.last()
+              |> String.downcase()
+              |> String.to_atom()
+            {:ok, parsed, parser_name}
           :skip -> nil
         end
       end
@@ -189,7 +276,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     end
 
     # Add alternatives if present
-    if parsed.is_alternative and length(parsed.ingredients) > 1 do
+    base = if parsed.is_alternative and length(parsed.ingredients) > 1 do
       alternatives = parsed.ingredients
         |> Enum.drop(1)
         |> Enum.map(fn ing ->
@@ -200,6 +287,13 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
           }
         end)
       Map.put(base, "alternatives", alternatives)
+    else
+      base
+    end
+
+    # Add diagnostics if present (prefixed with _ to indicate internal/debug)
+    if parsed.diagnostics do
+      Map.put(base, "_diagnostics", ParseDiagnostics.to_map(parsed.diagnostics))
     else
       base
     end

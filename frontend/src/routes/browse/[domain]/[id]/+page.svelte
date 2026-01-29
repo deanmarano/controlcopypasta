@@ -5,6 +5,7 @@
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { browse, recipes, type Recipe, type RecipeNutrition } from '$lib/api/client';
 	import NutritionPanel from '$lib/components/NutritionPanel.svelte';
+	import IngredientDiagnostics from '$lib/components/IngredientDiagnostics.svelte';
 
 	let recipe = $state<Recipe | null>(null);
 	let loading = $state(true);
@@ -335,6 +336,12 @@
 				</div>
 			{/if}
 		</section>
+
+		{#if recipe.ingredients.some(i => i._diagnostics)}
+			<section class="diagnostics-section no-print">
+				<IngredientDiagnostics ingredients={recipe.ingredients} />
+			</section>
+		{/if}
 	</article>
 {/if}
 
