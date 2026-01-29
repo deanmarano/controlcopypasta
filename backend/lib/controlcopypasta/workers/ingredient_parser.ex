@@ -38,7 +38,7 @@ defmodule Controlcopypasta.Workers.IngredientParser do
 
   alias Controlcopypasta.Repo
   alias Controlcopypasta.Recipes.Recipe
-  alias Controlcopypasta.Ingredients.Parser
+  alias Controlcopypasta.Ingredients.TokenParser
 
   @batch_size 50
 
@@ -68,7 +68,7 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     parse_all_batch(offset, force)
   end
 
-  defp parse_recipe_ingredients(recipe, force \\ false) do
+  defp parse_recipe_ingredients(recipe, force) do
     ingredients = recipe.ingredients || []
 
     if force or needs_parsing?(ingredients) do
@@ -96,10 +96,10 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     text = ingredient["text"] || ingredient["original"] || ingredient["raw_name"]
 
     if is_binary(text) and text != "" do
-      parsed = Parser.parse(text)
+      parsed = TokenParser.parse(text)
 
       # Use to_jsonb_map to get all fields including pre_steps, alternatives, recipe_reference
-      Parser.to_jsonb_map(parsed)
+      TokenParser.to_jsonb_map(parsed)
       |> Map.put("group", ingredient["group"])  # Preserve group if it exists
     else
       ingredient
@@ -108,8 +108,8 @@ defmodule Controlcopypasta.Workers.IngredientParser do
 
   defp parse_ingredient(ingredient) when is_binary(ingredient) do
     # Plain string ingredient
-    parsed = Parser.parse(ingredient)
-    Parser.to_jsonb_map(parsed)
+    parsed = TokenParser.parse(ingredient)
+    TokenParser.to_jsonb_map(parsed)
   end
 
   defp parse_ingredient(ingredient), do: ingredient
