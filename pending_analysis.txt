@@ -1,0 +1,749 @@
+PENDING INGREDIENTS ANALYSIS
+=============================
+Total items analyzed: 622
+Date: 2026-01-28
+
+================================================================================
+1. REJECT - PARSING ARTIFACTS (181 items)
+================================================================================
+Things that are clearly not ingredients - prep instructions, measurements, notes,
+temperatures, recipe references, blog text, URLs, HTML entities, etc.
+
+  with (60) - prep conjunction ("beaten with 1 tablespoon milk")
+  into (50) - prep instruction ("sliced into 1/8 inch slices")
+  use half as much by volume (45) - salt conversion note (Diamond Crystal)
+  juice from juice (43) - parser artifact from "juice from 1 lemon"
+  warmed (41) - prep instruction ("tortillas, warmed")
+  whole preferred (35) - preference note ("milk, whole preferred")
+  inch (30) - measurement unit ("cut into 1 inch slices")
+  pieces (30) - prep instruction ("cut into 4 pieces")
+  soaked overnight (28) - prep instruction
+  chunks (26) - prep instruction ("cut into chunks")
+  dutch-process (25) - modifier artifact ("cocoa, Dutch-process or natural")
+  above (24) - recipe reference ("all of the preferment (above)")
+  ends (22) - prep instruction ("ends trimmed")
+  generous (20) - measurement modifier ("generous pinch")
+  sub (20) - substitution note ("or sub melted vegan butter")
+  if lumpy (19) - prep instruction ("sifted if lumpy")
+  inch slices (19) - measurement artifact
+  use (18) - substitution note
+  reserve some (11) - prep instruction ("reserve some for topping")
+  shaved with a vegetable peeler (12) - prep instruction
+  cool (12) - temperature note ("water, cool")
+  juice (12) - parser artifact from measurements
+  lemon zest from zest (11) - parser artifact
+  from the cob (11) - prep instruction ("kernels removed from the cob")
+  off (11) - prep instruction ("tails on or off")
+  pound (11) - measurement unit
+  with leaves (11) - prep instruction
+  medium scoops (11) - measurement artifact
+  peeling (11) - prep instruction ("peeling optional")
+  at least 65°f (15) - temperature note
+  at room temp (14) - temperature note
+  fresh juice from juice (14) - parser artifact
+  tomatoes with juice (14) - prep instruction ("diced tomatoes with juice")
+  crusts (14) - prep instruction ("crusts removed")
+  any color (14) - modifier note ("bell peppers, any color")
+  recipe above (14) - recipe reference
+  above (24) - recipe reference (duplicate of above entry, counted once)
+  divided (15) - prep instruction
+  teaspoon salt (15) - measurement artifact
+  well (15) - prep instruction ("thawed and well drained")
+  fat (15) - prep instruction ("fat trimmed")
+  fire (15) - modifier artifact ("fire roasted tomatoes")
+  pressed (15) - prep instruction ("tofu, pressed")
+  broken (13) - prep instruction ("broken in half")
+  reserved from above (13) - recipe reference
+  dry (13) - prep modifier ("dry roasted")
+  woody ends (13) - prep instruction ("woody ends removed")
+  cubed (13) - prep instruction
+  sprigs (12) - unit/prep artifact
+  natural (32) - modifier artifact ("cocoa, Dutch-process or natural")
+  spooned (10) - measurement method ("spooned and leveled")
+  yield ~2 tbsp (10) - yield note
+  gf for gluten-free eaters (10) - dietary note
+  small-medium (10) - size modifier
+  broken into (10) - prep instruction
+  cup water (10) - measurement artifact
+  optional (10) - instruction note
+  uncooked (9) - prep state
+  sheets (9) - unit artifact ("sheets frozen phyllo")
+  sweetened (9) - modifier artifact
+  glaze packet (9) - non-ingredient item
+  same weight (9) - salt conversion note
+  bundled (9) - prep instruction
+  14oz (9) - package size
+  squeezed dry (9) - prep instruction
+  if oil-free (9) - dietary note
+  enough to make a spreadable frosting (9) - instruction
+  old-fashioned (9) - modifier artifact
+  with juice (9) - prep instruction
+  garnish: (9) - section header
+  homemade recipe below (9) - recipe reference
+  yield ~1 tbsp (9) - yield note
+  substitute (9) - substitution note
+  omit f__note_16__ heat (9) - parsing error/instruction
+  your choice (9) - selection note
+  any flavor (9) - selection note
+  freshly squeezed juice from juice (9) - parser artifact
+  bottom (9) - prep instruction ("bottom 4 to 5 inches only")
+  if grilling (9) - conditional instruction
+  1/2-pound (8) - package weight artifact
+  use the same weight (8) - salt conversion note
+  cold from the refrigerator (8) - temperature note
+  fèves (8) - chocolate form modifier
+  black pepper __note_0__ (8) - parsing error
+  desired fixings (8) - serving suggestion
+  pounds (8) - measurement unit
+  leaves from (8) - prep instruction
+  room temperature for pan (8) - temperature note
+  recipe follows (8) - recipe reference
+  stem (8) - prep instruction ("stem removed")
+  disks (8) - chocolate form modifier
+  use more (8) - instruction note
+  65°f to 68°f (8) - temperature range
+  as original recipe is written (8) - recipe note
+  half raw (8) - prep instruction
+  picked through (8) - prep instruction
+  desired burger fixings (8) - serving suggestion
+  cut up (8) - prep instruction
+  inch pieces (8) - measurement artifact
+  cut on a slight diagonal (8) - prep instruction
+  &#8211 (8) - HTML entity (em-dash)
+  half for roasting (8) - prep instruction
+  soaked for (8) - prep instruction
+  percent (8) - measurement modifier
+  if necessary (8) - conditional instruction
+  of fat (8) - prep instruction ("trimmed of fat")
+  of more than 1/4-inch fat (6) - prep instruction
+  on microplane grater (6) - prep instruction
+  rounded (6) - measurement modifier
+  dark green parts thinly (6) - prep instruction
+  then measured (6) - measurement method
+  sub water if avoiding oil (6) - dietary substitution note
+  fit into the pot after you mix the base (6) - instruction
+  as called for by your cake mix (6) - instruction
+  it is available on the internet (6) - blog text
+  outer leaves discarded (6) - prep instruction
+  inch thick medallions (6) - measurement/prep
+  cooked al dente (6) - prep instruction
+  broken into small pieces (6) - prep instruction
+  wedges each (6) - prep instruction
+  be substituted (6) - substitution note
+  thanks suzy for the suggestion (6) - blog text/comment
+  they have to be ripe! (6) - instruction note
+  small & (6) - size modifier artifact
+  tied (6) - prep instruction
+  $0.04 (6) - cost note
+  use about half as much by volume (6) - salt conversion note
+  broken into chunks (6) - prep instruction
+  recipe fast (6) - recipe reference
+  pale-green (6) - color modifier
+  leveled (6) - measurement method
+  included (6) - note about kit contents
+  use to your taste (6) - instruction
+  1/4- (6) - measurement artifact
+  one 1-inch (6) - size description
+  bodies (6) - squid part description
+  rind (6) - prep instruction ("rind removed")
+  green parts (6) - ingredient part description
+  all (6) - quantity modifier
+  yields ~1 tbsp (6) - yield note
+  medium-sized (6) - size modifier
+  scooped out (6) - prep instruction
+  kernels from (6) - prep instruction
+  baked (6) - prep state
+  affiliate link (6) - blog text/markup
+  discard (6) - sourdough term/prep instruction
+  very coarsely (6) - prep instruction
+  small onion yields ~1 (6) - yield note
+  from a (6) - parser artifact
+  any percentage will do (6) - note about milk type
+  previously (6) - prep instruction ("previously frozen")
+  mixed with (6) - prep instruction
+  inches thick (6) - measurement
+  but adds great flavor (6) - blog text
+  cut back for a less sweet taste (6) - instruction
+  some of the seeds (6) - prep instruction
+  hours (6) - time note
+  heaped (6) - measurement modifier
+  large bunches (6) - measurement
+  segmented (6) - prep instruction
+  1 clove garlic (6) - already a canonical? measurement artifact
+  if u prefer (6) - instruction note
+  ears (6) - measurement unit
+  cubbed (5) - misspelling of "cubed" / prep instruction
+  leave jalapenos (5) - parser artifact
+  by hand (5) - prep instruction
+  more if needed (5) - instruction
+  at cool room temperature (5) - temperature note
+  up to (5) - measurement modifier
+  serving (5) - serving suggestion
+  hard-boiled (5) - prep instruction
+  juice juice (5) - parser artifact
+  fresh lemon juice from about juice (5) - parser artifact
+  if you'd like (5) - instruction note
+  leaves thinly (5) - prep instruction
+  only (5) - modifier
+  on a (5) - parser artifact ("grated on a box grater")
+  no need to thaw (5) - instruction
+  freshly juice (5) - parser artifact
+  heated (5) - prep instruction
+  powder (5) - modifier artifact
+  partially (5) - prep instruction
+  inch dice (5) - measurement
+  crunchy // (5) - parser artifact (Minimalist Baker formatting)
+  creamy // (5) - parser artifact (Minimalist Baker formatting)
+  ensure gluten-free friendly (5) - dietary note
+  loose-packed (5) - measurement method
+  below (5) - recipe reference
+  backbone (5) - prep instruction ("backbone removed")
+  recipe cajeta casera (5) - recipe reference
+  destemmed (5) - prep instruction
+  green shoots (5) - prep instruction ("green shoots removed")
+  from above (5) - recipe reference
+  regular (5) - modifier
+  with seeds (5) - prep instruction
+  seed scraped (5) - prep instruction
+  loaf (5) - measurement unit
+  excess fat (5) - prep instruction
+  reserve (5) - prep instruction
+  dissolved (5) - prep instruction
+  if you want (5) - instruction note
+  arils (5) - botanical term / prep artifact
+  heaping cup (5) - measurement
+  as recipe is written (5) - recipe note
+  as original recipe is written // (5) - recipe note
+  pestle (5) - equipment reference
+  from the yolks (5) - prep instruction
+  organic when possible // (5) - dietary note
+  reduce f__note_16__ heat (5) - parsing error/instruction
+  florets (5) - prep instruction
+  white parts (5) - ingredient part description
+  as original recipe is written juice (5) - parser artifact
+  freshly squeezed lemon juice from juice (5) - parser artifact
+  flesh (5) - prep instruction
+  shoulder (5) - meat cut modifier
+  8oz (5) - package size
+  freshly squeezed (6) - prep modifier
+  warmed through (5) - prep instruction
+  giblets discarded (5) - prep instruction
+  picked over (5) - prep instruction
+  any kind (5) - selection note
+  big (5) - size modifier
+  directions (5) - instruction reference ("according to package directions")
+  lime juice from juice (5) - parser artifact
+  stalks (5) - unit/part description
+  inches (5) - measurement unit
+  but tasty (5) - blog text
+
+================================================================================
+2. REJECT - BLACKLIST CANDIDATES (95 items)
+================================================================================
+Words/phrases that should be added to the parser blacklist to prevent
+them from appearing as pending ingredients in the future.
+
+  cloves (34) - garlic measurement term ("3 cloves garlic")
+  nuts (34) - generic term often used as garnish category
+  chips (27) - generic form modifier ("chocolate chips")
+  natural (32) - cocoa type modifier
+  dutch-process (25) - cocoa type modifier
+  above (24) - recipe reference word
+  use half as much by volume (45) - Diamond Crystal salt note pattern
+  whole preferred (35) - King Arthur recipe modifier
+  if lumpy (19) - sifting instruction pattern
+  at least 65°f (15) - butter temperature pattern
+  at room temp (14) - temperature pattern
+  recipe above (14) - recipe reference
+  reserved from above (13) - recipe reference
+  sub (20) - substitution pattern
+  generous (20) - measurement modifier
+  divided (15) - prep pattern
+  packet (11) - packaging term ("1 packet yeast")
+  fronds (11) - fennel part term
+  any color (14) - color modifier
+  65°f to 68°f (8) - temperature range
+  cold from the refrigerator (8) - temperature pattern
+  desired fixings (8) - serving pattern
+  desired burger fixings (8) - serving pattern
+  recipe follows (8) - recipe reference
+  room temperature for pan (8) - temperature/instruction
+  as original recipe is written (8) - recipe note pattern
+  picked through (8) - prep pattern
+  use the same weight (8) - salt conversion
+  same weight (9) - salt conversion
+  use half the amount by volume (7) - salt conversion
+  if using table salt use half as much by volume (7) - salt conversion
+  use about half as much by volume (6) - salt conversion
+  glaze packet (9) - non-ingredient
+  gf for gluten-free eaters (10) - dietary note pattern
+  gluten-free for gf eaters (9) - dietary note pattern
+  if oil-free (9) - dietary note pattern
+  enough to make a spreadable frosting (9) - instruction pattern
+  homemade recipe below (9) - recipe reference
+  yield ~1 tbsp (9) - yield note
+  yield ~2 tbsp (10) - yield note
+  yields ~1 tbsp (6) - yield note
+  your choice (9) - selection pattern
+  any flavor (9) - selection pattern
+  any percentage will do (6) - selection pattern
+  your favorite (6) - selection pattern
+  of your choice (5) - selection pattern
+  any kind (5) - selection pattern
+  if grilling (9) - conditional pattern
+  if necessary (8) - conditional pattern
+  if you'd like (5) - conditional pattern
+  if you want (5) - conditional pattern
+  thanks suzy for the suggestion (6) - blog text
+  it is available on the internet (6) - blog text
+  $0.04 (6) - cost annotation
+  affiliate link (6) - blog markup
+  but adds great flavor (6) - blog text
+  cut back for a less sweet taste (6) - instruction
+  fit into the pot after you mix the base (6) - instruction
+  as called for by your cake mix (6) - instruction
+  be substituted (6) - substitution note
+  they have to be ripe! (6) - instruction
+  click here for recipe (10) - blog link text
+  click for recipe (5) - blog link text
+  recipe below (7) - recipe reference
+  i used 2% (7) - personal note
+  find it (7) - blog text ("if you can find it")
+  pasture-raised when possible (7) - dietary sourcing note
+  // organic when possible (7) - dietary note (Minimalist Baker)
+  organic when possible (7) - dietary note
+  ensure organic for vegan-friendly (9) - dietary note (Minimalist Baker)
+  use gluten free if needed (11) - dietary note
+  ensure gluten-free friendly (5) - dietary note
+  we like wellbee's (8) - brand recommendation
+  i used bob's red mill (5) - brand recommendation
+  low-sodium preferred (6) - preference note
+  fresh preferred (7) - preference note
+  ears grilled (7) - prep instruction
+  not quick-cooking (7) - exclusion note
+  quick-cooking (7) - modifier
+  old-fashioned (9) - modifier
+  note (6) - parsing artifact
+  garnish (5) - serving instruction
+  taste (6) - instruction ("to taste")
+  i used (8) - personal note
+  i use (5) - personal note
+  start with (7) - instruction
+  adjust (5) - instruction
+  store bought (5) - sourcing note
+  diy (6) - sourcing note
+  homemade bought (8) - sourcing note ("homemade or store bought")
+  add (10) - instruction
+  small squash (6) - size note
+  medium onion yields ~1 (5) - yield note
+  small onion yields ~1 (6) - yield note
+  recommended (6) - recommendation note
+  we use open (6) - brand recommendation
+  your favorite syrup (6) - generic serving
+  approximate/approx (6) - measurement modifier
+  good (6) - subjective modifier ("good pinch")
+
+================================================================================
+3. APPROVE - REAL INGREDIENTS (163 items)
+================================================================================
+Actual food ingredients that should become canonical ingredients.
+
+  grapeseed oil (33)
+  meringue powder (25)
+  king arthur fiori di sicilia (23) - specialty flavoring extract
+  flax meal (18)
+  king arthur easy roll dough improver (18) - specialty baking product
+  cake enhancer (16) - King Arthur specialty product
+  chili sauce (16)
+  mild-flavored (16) - refers to "mild-flavored molasses" -> consider as "light molasses"
+  red chile powder (14)
+  brioche buns (14)
+  king arthur cinnamon sweet bits (13)
+  creole seasoning (13)
+  king arthur artisan bread topping (13)
+  king arthur harvest grains blend (13)
+  natural maple flavor (12) - specialty baking extract
+  tamari/soy sauce (12)
+  turbinado (11) - turbinado sugar
+  za'atar (11)
+  ancho chile powder (11)
+  king arthur pie filling enhancer (11)
+  barley malt syrup (11)
+  korean chile paste (11) - gochujang
+  croutons (10)
+  granola (19)
+  king arthur fruitcake fruit blend (10)
+  king arthur pizza seasoning (10)
+  king arthur gluten-free all-purpose biscuit & baking mix (10)
+  yellow cake mix (10)
+  hoagie rolls (10)
+  air popped popcorn (8) - could be "popcorn"
+  ground veal (8)
+  cooking oil (8)
+  peppadew peppers (8)
+  urad dal (8)
+  apple juice concentrate (8)
+  gumbo file (8) - also "file powder"
+  caraway seeds (8)
+  eggnog (8)
+  curry leaves (8)
+  oyster crackers (8)
+  pizza dough (8)
+  delicata squash (8)
+  green chartreuse (8) - spirit/liqueur
+  chinkiang (8) - Chinkiang vinegar
+  seasoning mix (8)
+  everything bagel topping (9)
+  king arthur baker's cinnamon filling mix (9)
+  zatarians gumbo base mix (9) - Zatarain's product
+  fernet branca (9)
+  vanilla protein powder (9)
+  wheat bran (9)
+  teriyaki sauce (8)
+  onion soup mix (6)
+  splenda granular (6)
+  sweet relish (6)
+  refrigerated crescent rolls (6)
+  tangerines (6)
+  masoor dal (6)
+  gingersnap cookies (6)
+  ground clove (6)
+  devil's food cake mix (7)
+  calabrian chile paste (7)
+  nigella seeds (7)
+  fettuccini (7)
+  mild chile flakes (7)
+  everything bagel spice (7)
+  cheese tortellini (7)
+  vegan tortellini (7)
+  cornbread (7)
+  chambord (7) - raspberry liqueur
+  soymilk (7)
+  romaine heart (7)
+  grape seed oil (7)
+  pink lady (7) - apple variety (Pink Lady apples)
+  absinthe (7)
+  vanilla-butternut flavor (7) - baking flavoring
+  whole white peppercorns (7)
+  king arthur pizza dough flavor (6)
+  king arthur jammy bits (6)
+  navy beans (6)
+  taco seasoning (6)
+  japanese eggplants (6)
+  jackfruit (6)
+  kabocha squash (6)
+  halloumi (6)
+  prosecco (6)
+  fenugreek seeds (6)
+  yellow chartreuse (6) - spirit/liqueur
+  mexican cheese blend (5)
+  italian cheese blend (5)
+  chicken seitan strips (6)
+  dark raisin (6)
+  saltine crackers (6)
+  magic green sauce (6) - recipe-specific product
+  poultry seasoning (6)
+  spicy vegetable juice (6)
+  salad oil (6)
+  dry lasagna noodles (7)
+  hard shell tacos (9)
+  candy eyes (6) - baking decoration
+  black licorice (6) - candy/decoration
+  fall m&m's (5) - candy/decoration
+  king arthur triple cocoa blend (5)
+  safflower oil (5)
+  oven ready lasagna noodles (5)
+  pomona's universal pectin (5)
+  mini sweet peppers (5)
+  cornichons (5)
+  haricots verts (5)
+  pea shoots (5)
+  maca powder (7)
+  flaxmeal (6) - variant of flax meal
+  spring greens (7)
+  better than bouillon (7)
+  kahlua (7)
+  schmaltz (5)
+  cool whip (5)
+  chocolate sandwich cookies (5)
+  fleur de sel (5)
+  ground fenugreek (5)
+  italian rolls (5)
+  jerk marinade (5)
+  wasabi powder (5)
+  pizza bianca (5)
+  romaine hearts (5)
+  globe eggplants (5)
+  uncooked lasagna noodles (5)
+  bamboo shoots (5)
+  liquid red food color (5)
+  mixed vegetables (5)
+  salsa de arbol (5)
+  grilled cheese sandwiches (6) - recipe/serving, but could be intentional
+  doenjang (5)
+  goose fat (5)
+  file powder (5)
+  pine nut (5) - likely "pine nuts" but singular
+  vegan pesto (5)
+  roti (8)
+  chard (5)
+  green food coloring (7)
+  shortening (7)
+  green chilies (5)
+  cornflakes (5)
+  pesto (5)
+  mixed nuts (5)
+  coleslaw (5)
+  buttered toast (5) - serving item
+  raw macadamia nuts (8)
+  raw nuts (8)
+  whole grain (6) - modifier but could refer to "whole grain bread"
+  baby salad greens (6)
+  oat bran (6)
+  guacamole (7)
+  ramps (5)
+  chile oil (6)
+  white bean dip (5)
+  santiago (6) - likely not an ingredient (parsing error)
+  sweetener of choice (9) - generic category
+  sweetener (8) - generic category
+
+================================================================================
+4. MERGE - EXISTING CANONICAL VARIANTS (79 items)
+================================================================================
+Names that are variants of likely existing canonical ingredients.
+Format: pending name -> likely canonical name
+
+  oil (94) -> REJECT (too generic, parsing artifact from "coconut oil", "avocado oil", etc.)
+  clove (12) -> cloves (the spice, separate from garlic cloves)
+  whole clove (10) -> cloves
+  ground clove (6) -> ground cloves
+  broth (16) -> chicken broth / vegetable broth (too generic alone)
+  greens (16) -> mixed greens (too generic alone)
+  sprouts (22) -> alfalfa sprouts / mixed sprouts (generic)
+  nectarines (13) -> nectarine
+  meal (14) -> almond flour (parsing artifact from "almond flour or meal")
+  beans (11) -> REJECT (too generic)
+  veggies (10) -> REJECT (too generic)
+  spice (10) -> REJECT (too generic, refers to "Chinese 5 spice", etc.)
+  crackers (10) -> REJECT (too generic)
+  chips (27) -> REJECT (too generic)
+  nuts (34) -> REJECT (too generic)
+  fire-roasted (6) -> fire roasted tomatoes (modifier)
+  macadamia nuts (6) -> macadamia nut
+  flaxmeal (6) -> flax meal
+  grape seed oil (7) -> grapeseed oil
+  avocado seed oil (7) -> avocado oil / grapeseed oil (parser artifact from "avocado or grape seed oil")
+  olive seed oil (5) -> olive oil / grapeseed oil (parser artifact)
+  ground mace (6) -> mace
+  mace (5) -> mace (already listed under APPROVE or existing canonical)
+  turbinado (11) -> turbinado sugar
+  dark raisin (6) -> raisins
+  fettuccini (7) -> fettuccine
+  soymilk (7) -> soy milk
+  ground veal (8) -> veal (ground)
+  brioche buns (14) -> brioche bun
+  hoagie rolls (10) -> hoagie roll
+  romaine heart (7) -> romaine lettuce
+  romaine hearts (5) -> romaine lettuce
+  croutons (10) -> crouton
+  hard shell tacos (9) -> taco shells
+  tangerines (6) -> tangerine
+  oyster crackers (8) -> oyster cracker
+  gingersnap cookies (6) -> gingersnap cookie
+  saltine crackers (6) -> saltine cracker
+  cornichons (5) -> cornichon
+  haricots verts (5) -> haricots verts / green beans
+  caraway seeds (8) -> caraway seed
+  nigella seeds (7) -> nigella seed
+  fenugreek seeds (6) -> fenugreek seed
+  pea shoots (5) -> pea shoot
+  spring greens (7) -> spring mix / mixed greens
+  italian rolls (5) -> italian roll
+  mini sweet peppers (5) -> sweet pepper
+  globe eggplants (5) -> eggplant
+  japanese eggplants (6) -> japanese eggplant
+  delicata squash (8) -> delicata squash (may already exist)
+  kabocha squash (6) -> kabocha squash (may already exist)
+  navy beans (6) -> navy bean
+  mixed nuts (5) -> mixed nut
+  raw nuts (8) -> nuts (raw)
+  raw macadamia nuts (8) -> macadamia nut
+  green chilies (5) -> green chile
+  bamboo shoots (5) -> bamboo shoot
+  peppadew peppers (8) -> peppadew pepper
+  curry leaves (8) -> curry leaf
+  whole white peppercorns (7) -> white peppercorn
+  pink lady (7) -> pink lady apple
+  cornflakes (5) -> cornflake
+  mixed vegetables (5) -> mixed vegetable
+  baby salad greens (6) -> mixed greens
+  chard (5) -> swiss chard
+  ramps (5) -> ramp
+  gouda (5) -> gouda cheese
+  nectarines (13) -> nectarine
+  dry lasagna noodles (7) -> lasagna noodle
+  uncooked lasagna noodles (5) -> lasagna noodle
+  oven ready lasagna noodles (5) -> no-boil lasagna noodle
+  lasagna noodles (5) -> lasagna noodle
+  chocolate sandwich cookies (5) -> oreo cookie
+  oat bran (6) -> oat bran (may already exist)
+  wheat bran (9) -> wheat bran (may already exist)
+  cool whip (5) -> whipped topping
+  cornbread (7) -> cornbread (may already exist)
+  coleslaw (5) -> coleslaw mix
+  chile oil (6) -> chili oil
+  pine nut (5) -> pine nuts
+
+================================================================================
+5. NEEDS REVIEW (104 items)
+================================================================================
+Ambiguous cases that could go either way.
+
+--- Likely real ingredients but need verification against existing canonicals ---
+
+  roti (8) - flatbread; could be a real ingredient or a serving suggestion
+  guacamole (7) - condiment; sometimes a recipe, sometimes store-bought
+  pesto (5) - condiment; sometimes a recipe, sometimes store-bought
+  vegan pesto (5) - condiment variant
+  magic green sauce (6) - blog-specific recipe reference or product?
+  chimichurri (6) - condiment/sauce
+  sweetener of choice (9) - too generic? or useful category
+  sweetener (8) - too generic? or useful category
+  white bean dip (5) - recipe or ingredient?
+  frangipane (6) - recipe component, not an ingredient per se
+  eggnog (8) - seasonal beverage/ingredient
+  prosecco (6) - wine/spirit
+  chambord (7) - liqueur
+  kahlua (7) - liqueur
+  absinthe (7) - spirit
+  green chartreuse (8) - liqueur
+  yellow chartreuse (6) - liqueur
+  fernet branca (9) - amaro/spirit
+  curacao (5) - liqueur
+  rye (7) - could mean rye whiskey or rye flour
+  pizza dough (8) - recipe component
+  pizza bianca (5) - bread product
+  buttered toast (5) - serving item, not ingredient
+  grilled cheese sandwiches (6) - recipe, not ingredient
+  salsa de arbol (5) - sauce/condiment
+  doenjang (5) - Korean fermented soybean paste; real ingredient
+
+--- Blog-specific / branded items that may or may not be worth tracking ---
+
+  king arthur fiori di sicilia (23) - brand-specific flavoring
+  king arthur easy roll dough improver (18) - brand-specific product
+  cake enhancer (16) - brand-specific (King Arthur)
+  king arthur cinnamon sweet bits (13) - brand-specific product
+  king arthur artisan bread topping (13) - brand-specific product
+  king arthur harvest grains blend (13) - brand-specific product
+  king arthur pie filling enhancer (11) - brand-specific product
+  king arthur fruitcake fruit blend (10) - brand-specific product
+  king arthur pizza seasoning (10) - brand-specific product
+  king arthur gluten-free all-purpose biscuit & baking mix (10) - brand-specific
+  king arthur baker's cinnamon filling mix (9) - brand-specific product
+  king arthur pizza dough flavor (6) - brand-specific product
+  king arthur jammy bits (6) - brand-specific product
+  king arthur triple cocoa blend (5) - brand-specific product
+  zatarians gumbo base mix (9) - brand-specific (Zatarain's)
+  better than bouillon (7) - brand-specific product
+  old el paso (8) - brand name, not ingredient
+  pomona's universal pectin (5) - brand-specific product
+  splenda granular (6) - brand-specific sweetener
+  splenda (5) - brand-specific sweetener
+  cool whip (5) - brand-specific product
+
+--- Ambiguous parsing results that could be ingredients or artifacts ---
+
+  chinkiang (8) - refers to Chinkiang vinegar; should it be "black vinegar"?
+  korean chile paste (11) - refers to gochujang; duplicate?
+  tamari/soy sauce (12) - is this one ingredient or two?
+  red chile powder (14) - vs "chile powder" vs "chili powder"
+  ancho chile powder (11) - specific chile variety
+  chile powder (5) - generic
+  calabrian chile paste (7) - specific regional product
+  mild chile flakes (7) - specific type
+  everything bagel spice (7) - same as everything bagel topping/seasoning?
+  everything bagel topping (9) - same as above?
+  seasoning mix (8) - too generic
+  onion soup mix (6) - dry soup mix product
+  dry onion soup mix (5) - same as above
+  yellow cake mix (10) - baking mix
+  devil's food cake mix (7) - baking mix
+  taco seasoning (6) - spice blend
+  southwestern seasoning (5) - spice blend
+  poultry seasoning (6) - spice blend
+  bell's seasoning (6) - brand-specific (Bell's)
+  creole seasoning (13) - spice blend
+  mexican cheese blend (5) - generic blend
+  italian cheese blend (5) - generic blend
+  unfed/discard (8) - sourdough term, not ingredient
+  fed (7) - sourdough term, not ingredient
+  all of the preferment (8) - baking term/reference
+  warm thick pita with pockets (7) - serving/bread type
+  store-bought pizza dough (7) - sourcing modifier
+  cheese tortellini (7) - pasta product
+  vegan tortellini (7) - pasta product
+  cracker crumb (7) - derived ingredient
+  vanilla protein powder (9) - supplement product
+
+--- Items with unclear parsing ---
+
+  [product-link]cinnamon[/product-link] (7) - HTML/markup artifact
+  ears [grilled corn | https://...] (9) - URL/markup artifact
+  [coconut whipped cream | https://...] (6) - URL/markup artifact
+  vegetarian chicken broth if you (6) - parser artifact
+  i used kielbassa but any well smoked sauge is good (6) - blog text
+  cheap roast kind (6) - description, not ingredient
+  leave jalapenos (5) - parser error
+  no-boil ready lasagna noodles (5) - product vs modifier
+  michiu (5) - Taiwanese rice wine variant name
+  rancho gordo desi chana (5) - brand + product name
+  chicken seitan strips (6) - specific product
+  liquid red food color (5) - baking ingredient
+  green food coloring (7) - baking ingredient
+  candy eyes (6) - baking decoration
+  black licorice (6) - candy
+  fall m&m's (5) - seasonal candy
+  culantro (7) - herb (distinct from cilantro), real ingredient
+  schmaltz (5) - rendered chicken fat, real ingredient
+  goose fat (5) - cooking fat, real ingredient
+  file powder (5) - Cajun spice, real ingredient (same as gumbo file?)
+  ground fenugreek (5) - spice, likely merge with fenugreek
+  maca powder (7) - supplement/superfood ingredient
+  wasabi powder (5) - condiment/spice
+  air popped popcorn (8) - form of popcorn
+  cinnamon pie spice (5) - parser artifact? ("cinnamon or apple pie spice")
+
+================================================================================
+SUMMARY
+================================================================================
+
+  REJECT - Parsing Artifacts:       181 items
+  REJECT - Blacklist Candidates:     95 items
+  APPROVE - Real Ingredients:       163 items
+  MERGE - Existing Canonical:        79 items
+  NEEDS REVIEW:                     104 items
+  -----------------------------------------------
+  TOTAL:                            622 items
+
+NOTE: Some items appear in multiple categories where they could reasonably
+belong in more than one. The primary categorization was chosen based on
+the most common usage pattern observed in the samples.
+
+KEY RECOMMENDATIONS:
+1. The parser should be updated to strip Diamond Crystal salt conversion notes
+   ("use half as much by volume", "same weight", etc.) - these account for
+   ~45+ entries.
+2. King Arthur branded products appear frequently (~13 distinct products).
+   Consider whether to track these as canonical ingredients or treat them
+   as brand-specific variants.
+3. Minimalist Baker formatting artifacts (double parentheses with "//" separators,
+   "organic when possible", "GF for gluten-free eaters") are a significant
+   source of noise - ~30+ entries.
+4. Half Baked Harvest URL-embedded ingredients (e.g., "[grilled corn | https://...]")
+   should be handled by the parser.
+5. Generic category words (nuts, chips, beans, greens, veggies) should be
+   blacklisted as they are almost never standalone ingredients.
+6. Temperature/prep state words (warmed, pressed, cubed, etc.) are very common
+   parsing artifacts and should be stripped during ingredient extraction.

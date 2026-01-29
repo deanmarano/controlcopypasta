@@ -72,9 +72,12 @@ defmodule Controlcopypasta.Workers.IngredientParser do
 
   defp parse_recipe_ingredients(recipe, force, lookup) do
     ingredients = recipe.ingredients || []
+    Logger.info("  Recipe has #{length(ingredients)} ingredients")
 
     if force or needs_parsing?(ingredients) do
+      Logger.info("  Parsing ingredients...")
       parsed_ingredients = Enum.map(ingredients, &parse_ingredient(&1, lookup))
+      Logger.info("  Parsed #{length(parsed_ingredients)} ingredients, updating DB...")
       update_recipe_ingredients(recipe, parsed_ingredients)
     else
       Logger.debug("Recipe #{recipe.id} already has parsed ingredients")
