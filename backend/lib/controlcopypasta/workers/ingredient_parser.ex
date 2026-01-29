@@ -132,17 +132,27 @@ defmodule Controlcopypasta.Workers.IngredientParser do
   defp parse_ingredient(ingredient, _lookup), do: ingredient
 
   defp update_recipe_ingredients(recipe, ingredients) do
-    recipe
-    |> Ecto.Changeset.change(ingredients: ingredients, ingredients_parsed_at: DateTime.utc_now())
-    |> Repo.update()
-    |> case do
-      {:ok, _} ->
-        Logger.info("Parsed ingredients for recipe: #{recipe.id}")
-        :ok
+    try do
+      recipe
+      |> Ecto.Changeset.change(ingredients: ingredients, ingredients_parsed_at: DateTime.utc_now())
+      |> Repo.update(timeout: 15_000)
+      |> case do
+        {:ok, _} ->
+          Logger.info("  DB update successful for recipe: #{recipe.id}")
+          :ok
 
-      {:error, changeset} ->
-        Logger.error("Failed to update recipe #{recipe.id}: #{inspect(changeset.errors)}")
-        {:error, "Failed to update recipe"}
+        {:error, changeset} ->
+          Logger.error("  DB update failed for recipe #{recipe.id}: #{inspect(changeset.errors)}")
+          {:error, "Failed to update recipe"}
+      end
+    rescue
+      e ->
+        Logger.error("  Exception during DB update for recipe #{recipe.id}: #{inspect(e)}")
+        {:error, "Exception during update"}
+    catch
+      kind, reason ->
+        Logger.error("  Caught #{kind} during DB update for recipe #{recipe.id}: #{inspect(reason)}")
+        {:error, "Caught error during update"}
     end
   end
 
