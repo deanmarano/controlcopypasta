@@ -470,7 +470,8 @@
 				<div class="enrichment-grid">
 					<!-- Nutrition (FatSecret) -->
 					<div class="enrichment-card">
-						<h3>Nutrition Data (FatSecret)</h3>
+						<h3>Nutrition Data</h3>
+						<p class="enrichment-sources">Source: FatSecret</p>
 						<div class="enrichment-stats">
 							<div class="enrichment-stat">
 								<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.with_fatsecret_data || 0)}</span>
@@ -503,7 +504,8 @@
 
 					<!-- Density -->
 					<div class="enrichment-card">
-						<h3>Density Data (FatSecret/USDA)</h3>
+						<h3>Density Data</h3>
+						<p class="enrichment-sources">Sources: FatSecret, USDA, Open Food Facts</p>
 						<div class="enrichment-stats">
 							<div class="enrichment-stat">
 								<span class="enrichment-stat-value">{formatNumber(enrichmentStats.density.with_density_data || 0)}</span>
@@ -1216,9 +1218,15 @@
 	}
 
 	.enrichment-card h3 {
-		margin: 0 0 var(--space-3);
+		margin: 0 0 var(--space-1);
 		font-size: var(--text-base);
 		color: var(--text-primary);
+	}
+
+	.enrichment-sources {
+		margin: 0 0 var(--space-3);
+		font-size: var(--text-xs);
+		color: var(--text-muted);
 	}
 
 	.enrichment-stats {
