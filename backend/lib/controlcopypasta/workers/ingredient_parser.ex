@@ -41,7 +41,7 @@ defmodule Controlcopypasta.Workers.IngredientParser do
   alias Controlcopypasta.Ingredients.TokenParser
   alias Controlcopypasta.Ingredients
 
-  @batch_size 50
+  @batch_size 10
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"recipe_id" => recipe_id} = args}) do
@@ -190,7 +190,12 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     lookup = Ingredients.build_ingredient_lookup()
     Logger.info("Built ingredient lookup with #{map_size(lookup)} entries")
 
-    Enum.each(recipes, &parse_recipe_ingredients(&1, force, lookup))
+    recipes
+    |> Enum.with_index(1)
+    |> Enum.each(fn {recipe, idx} ->
+      Logger.info("Processing recipe #{idx}/#{count}: #{recipe.id}")
+      parse_recipe_ingredients(recipe, force, lookup)
+    end)
 
     Logger.info("Batch complete (offset: #{offset}, processed: #{count})")
 
