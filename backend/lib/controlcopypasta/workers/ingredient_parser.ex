@@ -96,11 +96,17 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     text = ingredient["text"] || ingredient["original"] || ingredient["raw_name"]
 
     if is_binary(text) and text != "" do
-      parsed = TokenParser.parse(text)
+      try do
+        parsed = TokenParser.parse(text)
 
-      # Use to_jsonb_map to get all fields including pre_steps, alternatives, recipe_reference
-      TokenParser.to_jsonb_map(parsed)
-      |> Map.put("group", ingredient["group"])  # Preserve group if it exists
+        # Use to_jsonb_map to get all fields including pre_steps, alternatives, recipe_reference
+        TokenParser.to_jsonb_map(parsed)
+        |> Map.put("group", ingredient["group"])  # Preserve group if it exists
+      rescue
+        e ->
+          Logger.error("Failed to parse ingredient: #{inspect(text)}, error: #{inspect(e)}")
+          ingredient
+      end
     else
       ingredient
     end
@@ -108,8 +114,14 @@ defmodule Controlcopypasta.Workers.IngredientParser do
 
   defp parse_ingredient(ingredient) when is_binary(ingredient) do
     # Plain string ingredient
-    parsed = TokenParser.parse(ingredient)
-    TokenParser.to_jsonb_map(parsed)
+    try do
+      parsed = TokenParser.parse(ingredient)
+      TokenParser.to_jsonb_map(parsed)
+    rescue
+      e ->
+        Logger.error("Failed to parse ingredient string: #{inspect(ingredient)}, error: #{inspect(e)}")
+        %{"text" => ingredient}
+    end
   end
 
   defp parse_ingredient(ingredient), do: ingredient
@@ -142,11 +154,16 @@ defmodule Controlcopypasta.Workers.IngredientParser do
 
     Enum.each(recipes, &parse_recipe_ingredients(&1, force))
 
+    Logger.info("Batch complete for #{domain} (offset: #{offset}, processed: #{count})")
+
     # Schedule next batch if there are more
     if count == @batch_size do
+      Logger.info("Scheduling next batch for #{domain} at offset #{offset + @batch_size}")
       %{"domain" => domain, "offset" => offset + @batch_size, "force" => force}
       |> __MODULE__.new(schedule_in: 5)
       |> Oban.insert()
+    else
+      Logger.info("No more batches to schedule for #{domain} (count #{count} < batch_size #{@batch_size})")
     end
 
     :ok
@@ -165,11 +182,16 @@ defmodule Controlcopypasta.Workers.IngredientParser do
 
     Enum.each(recipes, &parse_recipe_ingredients(&1, force))
 
+    Logger.info("Batch complete (offset: #{offset}, processed: #{count})")
+
     # Schedule next batch if there are more
     if count == @batch_size do
+      Logger.info("Scheduling next batch at offset #{offset + @batch_size}")
       %{"offset" => offset + @batch_size, "force" => force}
       |> __MODULE__.new(schedule_in: 5)
       |> Oban.insert()
+    else
+      Logger.info("No more batches to schedule (count #{count} < batch_size #{@batch_size})")
     end
 
     :ok
