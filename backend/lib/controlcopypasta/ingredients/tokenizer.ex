@@ -70,6 +70,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     juiced zested
     warmed heated pressed bundled dissolved segmented destemmed
     blanched marinated brined deboned shucked
+    washed stemmed cleaned scrubbed patted scored
   )
 
   # Modifiers (adjectives that describe ingredient state/size/type)
