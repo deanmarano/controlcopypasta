@@ -119,7 +119,7 @@ defmodule Controlcopypasta.RecipesTest do
       })
 
       assert {:ok, %Recipe{} = recipe} = Recipes.create_recipe(attrs)
-      assert recipe.source_domain == "www.example.com"
+      assert recipe.source_domain == "example.com"
     end
 
     test "create_recipe/1 with invalid data returns error changeset" do

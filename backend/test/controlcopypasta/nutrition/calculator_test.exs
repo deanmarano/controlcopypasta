@@ -327,7 +327,7 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
     end
 
     test "returns error status for unmatched ingredient" do
-      result = Calculator.calculate_ingredient_nutrition("1 cup mysterious powder")
+      result = Calculator.calculate_ingredient_nutrition("1 cup xyzzyplugh")
 
       assert result.status == :no_match
       assert result.error != nil

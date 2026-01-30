@@ -10,11 +10,15 @@ if config_env() in [:dev, :test] do
 
   # Oban config for dev - scraping disabled by default
   # Set ENABLE_SCRAPING=true in .env to enable
+  # Note: fatsecret and density queues are always enabled for ingredient enrichment
   scraping_enabled = System.get_env("ENABLE_SCRAPING") == "true"
+
+  dev_queues = [scheduled: 1, fatsecret: 1, density: 1]
+  dev_queues = if scraping_enabled, do: [{:scraper, 1} | dev_queues], else: dev_queues
 
   config :controlcopypasta, Oban,
     repo: Controlcopypasta.Repo,
-    queues: if(scraping_enabled, do: [scraper: 1, scheduled: 1, fatsecret: 1, density: 1], else: [scheduled: 1]),
+    queues: dev_queues,
     plugins: [
       {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)}
     ]
@@ -41,11 +45,14 @@ if System.get_env("PHX_SERVER") do
 end
 
 # WebAuthn/Passkey configuration - runtime so env vars are read at startup
-if webauthn_origin = System.get_env("WEBAUTHN_ORIGIN") do
-  config :controlcopypasta, :webauthn,
-    origin: webauthn_origin,
-    rp_id: System.get_env("WEBAUTHN_RP_ID") || "localhost",
-    rp_name: "ControlCopyPasta"
+# Skip in test mode to use test.exs config
+if config_env() != :test do
+  if webauthn_origin = System.get_env("WEBAUTHN_ORIGIN") do
+    config :controlcopypasta, :webauthn,
+      origin: webauthn_origin,
+      rp_id: System.get_env("WEBAUTHN_RP_ID") || "localhost",
+      rp_name: "ControlCopyPasta"
+  end
 end
 
 if config_env() == :prod do

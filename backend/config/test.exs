@@ -40,3 +40,9 @@ config :controlcopypasta, Controlcopypasta.Mailer,
 
 # Oban testing mode - jobs are not processed automatically
 config :controlcopypasta, Oban, testing: :inline
+
+# WebAuthn/Passkey configuration for tests - override any .env values
+config :controlcopypasta, :webauthn,
+  origin: "http://localhost:4002",
+  rp_id: "localhost",
+  rp_name: "ControlCopyPasta"
