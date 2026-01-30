@@ -30,7 +30,7 @@ defmodule Controlcopypasta.Nutrition.Calculator do
   """
 
   alias Controlcopypasta.Ingredients
-  alias Controlcopypasta.Ingredients.{Parser, IngredientNutrition}
+  alias Controlcopypasta.Ingredients.{TokenParser, IngredientNutrition}
   alias Controlcopypasta.Nutrition.{DensityConverter, Range}
   alias Controlcopypasta.Recipes.Recipe
 
@@ -127,12 +127,19 @@ defmodule Controlcopypasta.Nutrition.Calculator do
 
   # Process a single ingredient map
   defp process_ingredient(%{"text" => text}, lookup) do
-    # Parse the ingredient
-    parsed = Parser.parse(text, lookup: lookup)
+    # Parse the ingredient using TokenParser
+    parsed = TokenParser.parse(text, lookup: lookup)
+
+    # Extract canonical info from primary_ingredient
+    primary = parsed.primary_ingredient
+    canonical_id = if primary, do: primary.canonical_id, else: nil
+    canonical_name = if primary, do: primary.canonical_name, else: nil
 
     result = %{
       original: text,
       parsed: parsed,
+      canonical_id: canonical_id,
+      canonical_name: canonical_name,
       status: nil,
       grams: nil,
       nutrients: empty_nutrients(),
@@ -141,14 +148,14 @@ defmodule Controlcopypasta.Nutrition.Calculator do
 
     # Check if we have a canonical match
     cond do
-      is_nil(parsed.canonical_id) ->
+      is_nil(canonical_id) ->
         %{result | status: :no_match, error: "Could not match to canonical ingredient"}
 
       is_nil(parsed.quantity) ->
         %{result | status: :no_quantity, error: "No quantity found"}
 
       true ->
-        calculate_ingredient_nutrients(result, parsed)
+        calculate_ingredient_nutrients(result, parsed, canonical_id, canonical_name)
     end
   end
 
@@ -156,6 +163,8 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     %{
       original: "",
       parsed: nil,
+      canonical_id: nil,
+      canonical_name: nil,
       status: :invalid,
       grams: nil,
       nutrients: empty_nutrients(),
@@ -163,27 +172,27 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     }
   end
 
-  defp calculate_ingredient_nutrients(result, parsed) do
+  defp calculate_ingredient_nutrients(result, parsed, canonical_id, canonical_name) do
     # Get the canonical ingredient for category info
-    canonical = Ingredients.get_canonical_ingredient(parsed.canonical_id)
+    canonical = Ingredients.get_canonical_ingredient(canonical_id)
     category = if canonical, do: canonical.category, else: nil
 
     # Convert to grams range (accounts for quantity ranges and density variation)
-    preparation = List.first(parsed.preparations)
+    preparation = List.first(parsed.preparations || [])
 
     case DensityConverter.to_grams_range(
-           parsed.canonical_id,
+           canonical_id,
            parsed.quantity,
            parsed.quantity_min,
            parsed.quantity_max,
            parsed.unit,
            preparation: preparation,
            category: category,
-           canonical_name: parsed.canonical_name
+           canonical_name: canonical_name
          ) do
       {:ok, grams_range} ->
         # Look up nutrition data
-        case Ingredients.get_nutrition(parsed.canonical_id) do
+        case Ingredients.get_nutrition(canonical_id) do
           {:ok, nutrition} ->
             # Scale nutrients with range propagation
             nutrients = scale_nutrients_with_range(nutrition, grams_range)
@@ -203,7 +212,7 @@ defmodule Controlcopypasta.Nutrition.Calculator do
 
       {:error, :no_density} ->
         # We might have nutrition but no density - try alternate method
-        case try_nutrition_with_weight_unit_range(result, parsed) do
+        case try_nutrition_with_weight_unit_range(result, parsed, canonical_id) do
           {:ok, updated_result} -> updated_result
           :error ->
             %{result | status: :no_density, error: "No density data to convert volume to grams"}
@@ -211,7 +220,7 @@ defmodule Controlcopypasta.Nutrition.Calculator do
 
       {:error, :no_count_density} ->
         # Same fallback for count items
-        case try_nutrition_with_weight_unit_range(result, parsed) do
+        case try_nutrition_with_weight_unit_range(result, parsed, canonical_id) do
           {:ok, updated_result} -> updated_result
           :error ->
             %{result | status: :no_density, error: "No density data for count item"}
@@ -223,17 +232,17 @@ defmodule Controlcopypasta.Nutrition.Calculator do
   end
 
   # If the unit is already a weight unit, we don't need density
-  defp try_nutrition_with_weight_unit_range(result, parsed) do
+  defp try_nutrition_with_weight_unit_range(result, parsed, canonical_id) do
     if DensityConverter.weight_unit?(parsed.unit) do
       case DensityConverter.to_grams_range(
-             parsed.canonical_id,
+             canonical_id,
              parsed.quantity,
              parsed.quantity_min,
              parsed.quantity_max,
              parsed.unit
            ) do
         {:ok, grams_range} ->
-          case Ingredients.get_nutrition(parsed.canonical_id) do
+          case Ingredients.get_nutrition(canonical_id) do
             {:ok, nutrition} ->
               nutrients = scale_nutrients_with_range(nutrition, grams_range)
               {:ok, %{result |
@@ -419,16 +428,17 @@ defmodule Controlcopypasta.Nutrition.Calculator do
 
   defp format_ingredient_result(result) do
     grams = format_range_or_value(result.grams)
+    parsed = result.parsed
 
     %{
       original: result.original,
       status: result.status,
-      canonical_name: get_in(result, [:parsed, Access.key(:canonical_name)]),
-      canonical_id: get_in(result, [:parsed, Access.key(:canonical_id)]),
-      quantity: get_in(result, [:parsed, Access.key(:quantity)]),
-      quantity_min: get_in(result, [:parsed, Access.key(:quantity_min)]),
-      quantity_max: get_in(result, [:parsed, Access.key(:quantity_max)]),
-      unit: get_in(result, [:parsed, Access.key(:unit)]),
+      canonical_name: result.canonical_name,
+      canonical_id: result.canonical_id,
+      quantity: if(parsed, do: parsed.quantity, else: nil),
+      quantity_min: if(parsed, do: parsed.quantity_min, else: nil),
+      quantity_max: if(parsed, do: parsed.quantity_max, else: nil),
+      unit: if(parsed, do: parsed.unit, else: nil),
       grams: grams,
       calories: format_nutrient_range(get_in(result, [:nutrients, :calories])),
       protein_g: format_nutrient_range(get_in(result, [:nutrients, :protein_g])),

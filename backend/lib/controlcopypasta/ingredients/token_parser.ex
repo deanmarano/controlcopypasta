@@ -27,6 +27,10 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   alias Controlcopypasta.Ingredients.SubParsers
   alias Controlcopypasta.Ingredients.ParseDiagnostics
   alias Controlcopypasta.Ingredients.PreStepGenerator
+  alias Controlcopypasta.Ingredients.ReferenceData.Units
+  alias Controlcopypasta.Ingredients.Detection.EquipmentDetector
+  alias Controlcopypasta.Ingredients.Parsing.{Singularizer, QuantityParser}
+  alias Controlcopypasta.Ingredients.Matching.Matcher
 
   @sub_parsers [
     SubParsers.RecipeReference,  # Check for recipe references first
@@ -164,24 +168,12 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     end
   end
 
-  # Equipment words that indicate non-ingredient items
-  @equipment_words ~w(
-    thermometer thermometers mill mills pan pans cutter cutters skewer skewers
-    cheesecloth mortar pestle grater graters peeler peelers strainer strainers
-    colander colanders sieve sieves whisk whisks spatula spatulas ladle ladles
-    tongs mandoline mandolines zester zesters reamer reamers juicer juicers
-    blender blenders processor processors mixer mixers fryer fryers
-    torch torches brush brushes rack racks sheet sheets baking\ sheet
-    parchment springform bundt muffin\ tin loaf\ pan pie\ dish casserole
-    dutch\ oven roasting\ pan sheet\ pan air\ fryer instant\ pot
-  )
-
   # Preprocess ingredient text to normalize problematic patterns
   # Returns :skip for non-ingredients, or the preprocessed text
   defp preprocess_text(text) do
     cond do
-      # Filter out kitchen equipment
-      is_equipment?(text) -> :skip
+      # Filter out kitchen equipment (using centralized detector)
+      EquipmentDetector.is_equipment?(text) -> :skip
 
       true ->
         text
@@ -189,23 +181,6 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
         |> normalize_gram_measurements()
         |> normalize_stick_butter()
         |> normalize_ginger_size()
-    end
-  end
-
-  # Detect kitchen equipment (starts with "A " or "An " followed by equipment)
-  defp is_equipment?(text) do
-    normalized = String.downcase(text)
-
-    # Pattern 1: Starts with "a" or "an" followed by equipment
-    starts_with_article = Regex.match?(~r/^an?\s+/i, text)
-
-    if starts_with_article do
-      # Check if any equipment word is in the text
-      Enum.any?(@equipment_words, fn word ->
-        String.contains?(normalized, word)
-      end)
-    else
-      false
     end
   end
 
@@ -499,118 +474,15 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   end
 
   @doc false
-  def parse_quantity([]), do: {nil, nil, nil}
-  def parse_quantity(qty_list) do
-    # Find if any quantity token contains a range (e.g., "1-2")
-    range_token = Enum.find(qty_list, fn qty_str ->
-      String.contains?(qty_str, "-") and not String.starts_with?(qty_str, "-")
-    end)
-
-    case range_token do
-      nil ->
-        # No range - sum all quantities (handles compound like "1 1/2" = 1.5)
-        total = qty_list
-          |> Enum.map(&parse_single_quantity/1)
-          |> Enum.reject(&is_nil/1)
-          |> Enum.sum()
-        total = if total == 0, do: nil, else: total
-        {total, total, total}
-
-      range_str ->
-        # Has range - parse the range, then add any additional fractions to upper bound
-        # This handles "1-1 1/2" = range from 1 to 1.5
-        case String.split(range_str, "-", parts: 2) do
-          [low, high] ->
-            low_val = parse_single_quantity(low)
-            high_val = parse_single_quantity(high)
-
-            # Get any additional quantities (fractions) after the range token
-            # For "1-1 1/2", qty_list is ["1-1", "1/2"], so we add "1/2" to the upper bound
-            idx = Enum.find_index(qty_list, &(&1 == range_str))
-            additional = qty_list
-              |> Enum.drop(idx + 1)
-              |> Enum.map(&parse_single_quantity/1)
-              |> Enum.reject(&is_nil/1)
-
-            high_val = if additional != [], do: high_val + Enum.sum(additional), else: high_val
-            avg = if low_val && high_val, do: (low_val + high_val) / 2, else: low_val || high_val
-            {avg, low_val, high_val}
-
-          _ ->
-            val = parse_single_quantity(range_str)
-            {val, val, val}
-        end
-    end
-  end
+  # Delegate to centralized QuantityParser module
+  def parse_quantity(qty_list), do: QuantityParser.parse(qty_list)
 
   @doc false
-  def parse_single_quantity(str) do
-    str = String.trim(str)
-    cond do
-      # Written number: "one", "two", etc.
-      written_val = Tokenizer.written_number_value(str) ->
-        written_val * 1.0
-
-      # Fraction: "1/2"
-      String.contains?(str, "/") ->
-        case String.split(str, "/") do
-          [num, den] ->
-            with {n, _} <- Float.parse(num),
-                 {d, _} <- Float.parse(den),
-                 true <- d != 0 do
-              n / d
-            else
-              _ -> nil
-            end
-          _ -> nil
-        end
-
-      # Decimal or integer
-      true ->
-        case Float.parse(str) do
-          {val, _} -> val
-          :error -> nil
-        end
-    end
-  end
-
-  @unit_mappings %{
-    "tablespoons" => "tbsp", "tablespoon" => "tbsp", "tbsp" => "tbsp", "tbs" => "tbsp", "tb" => "tbsp",
-    "teaspoons" => "tsp", "teaspoon" => "tsp", "tsp" => "tsp", "ts" => "tsp",
-    "cups" => "cup", "cup" => "cup", "c" => "cup",
-    "ounces" => "oz", "ounce" => "oz", "oz" => "oz",
-    "pounds" => "lb", "pound" => "lb", "lbs" => "lb", "lb" => "lb",
-    "grams" => "g", "gram" => "g", "g" => "g",
-    "kilograms" => "kg", "kilogram" => "kg", "kg" => "kg",
-    "milliliters" => "ml", "milliliter" => "ml", "ml" => "ml",
-    "liters" => "l", "liter" => "l", "litres" => "l", "litre" => "l", "l" => "l",
-    "pints" => "pint", "pint" => "pint", "pt" => "pint",
-    "quarts" => "quart", "quart" => "quart", "qt" => "quart",
-    "gallons" => "gallon", "gallon" => "gallon", "gal" => "gallon",
-    "cloves" => "clove", "clove" => "clove",
-    "slices" => "slice", "slice" => "slice",
-    "pieces" => "piece", "piece" => "piece",
-    "bunches" => "bunch", "bunch" => "bunch",
-    "sprigs" => "sprig", "sprig" => "sprig",
-    "heads" => "head", "head" => "head",
-    "stalks" => "stalk", "stalk" => "stalk",
-    "sheets" => "sheet", "sheet" => "sheet",
-    "leaves" => "leaf", "leaf" => "leaf",
-    "pinches" => "pinch", "pinch" => "pinch",
-    "dashes" => "dash", "dash" => "dash",
-    "cans" => "can", "can" => "can",
-    "jars" => "jar", "jar" => "jar",
-    "bottles" => "bottle", "bottle" => "bottle",
-    "packages" => "package", "package" => "package", "pkg" => "package",
-    "bags" => "bag", "bag" => "bag",
-    "boxes" => "box", "box" => "box"
-  }
+  def parse_single_quantity(str), do: QuantityParser.parse_single(str)
 
   @doc false
-  def normalize_unit(nil), do: nil
-  def normalize_unit(unit) do
-    Map.get(@unit_mappings, String.downcase(unit), String.downcase(unit))
-  end
+  # Delegate to centralized Units module
+  def normalize_unit(unit), do: Units.normalize(unit)
 
   # Extract container info from tokens (e.g., "2 (14.5 oz) cans")
   defp extract_container(tokens) do
@@ -934,118 +806,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   end
 
   @doc false
-  def match_ingredient(name, lookup) do
-    normalized = String.downcase(name) |> String.trim()
-
-    case find_canonical_match(normalized, lookup) do
-      {canonical_name, canonical_id, confidence} ->
-        %{
-          name: name,
-          canonical_name: canonical_name,
-          canonical_id: canonical_id,
-          confidence: confidence
-        }
-
-      nil ->
-        %{
-          name: name,
-          canonical_name: nil,
-          canonical_id: nil,
-          confidence: 0.5
-        }
-    end
-  end
-
-  # Find canonical match using various strategies
-  defp find_canonical_match(name, lookup) do
-    # Strategy 1: Exact match
-    case Map.get(lookup, name) do
-      {canonical_name, id} -> {canonical_name, id, 1.0}
-      nil ->
-        # Strategy 1b: Try singularized form
-        singular = singularize_phrase(name)
-        case if(singular != name, do: Map.get(lookup, singular)) do
-          {canonical_name, id} -> {canonical_name, id, 0.98}
-          _ -> try_partial_match(name, lookup)
-        end
-    end
-  end
-
-  # Try partial matching strategies
-  defp try_partial_match(name, lookup) do
-    words = String.split(name, " ")
-
-    # Strategy 2: Remove leading adjectives (fresh, large, etc.)
-    stripped = strip_leading_modifiers(words)
-    case Map.get(lookup, stripped) do
-      {canonical_name, id} -> {canonical_name, id, 0.95}
-      nil ->
-        # Strategy 2b: Try singularized stripped form
-        singular_stripped = singularize_phrase(stripped)
-        case if(singular_stripped != stripped, do: Map.get(lookup, singular_stripped)) do
-          {canonical_name, id} -> {canonical_name, id, 0.93}
-          _ -> try_shorter_matches(words, lookup)
-        end
-    end
-  end
-
-  @leading_modifiers ~w(fresh dried frozen canned raw cooked large small medium
-                        extra-large whole ground light dark unsalted salted organic
-                        ripe unripe hot cold warm thin thick fine coarse)
-
-  defp strip_leading_modifiers(words) do
-    words
-    |> Enum.drop_while(&(String.downcase(&1) in @leading_modifiers))
-    |> Enum.join(" ")
-  end
-
-  # Try progressively shorter versions
-  defp try_shorter_matches(words, lookup) when length(words) > 1 do
-    # Try removing first word
-    shorter_front = words |> tl() |> Enum.join(" ")
-    case Map.get(lookup, shorter_front) do
-      {canonical_name, id} -> {canonical_name, id, 0.9}
-      nil ->
-        # Try removing last word
-        shorter_back = words |> Enum.take(length(words) - 1) |> Enum.join(" ")
-        case Map.get(lookup, shorter_back) do
-          {canonical_name, id} -> {canonical_name, id, 0.9}
-          nil -> try_shorter_matches(tl(words), lookup)
-        end
-    end
-  end
-
-  defp try_shorter_matches([single_word], lookup) do
-    case Map.get(lookup, single_word) do
-      {canonical_name, id} -> {canonical_name, id, 0.8}
-      nil -> try_fuzzy_match(single_word, lookup)
-    end
-  end
-
-  defp try_shorter_matches([], _lookup), do: nil
-
-  # Singularize a multi-word phrase by singularizing the last word
-  # "red peppers" -> "red pepper", "cherry tomatoes" -> "cherry tomato"
-  defp singularize_phrase(phrase) do
-    words = String.split(phrase, " ")
-
-    case words do
-      [] -> phrase
-      [single] -> singularize(single)
-      multiple ->
-        last = List.last(multiple)
-        rest = Enum.take(multiple, length(multiple) - 1)
-        singular_last = singularize(last)
-        Enum.join(rest ++ [singular_last], " ")
-    end
-  end
-
-  # Words that naturally end in 's' and should not be singularized
-  @no_singularize ~w(
-    hummus couscous asparagus molasses cilantro
-    jus floss glass grass moss
-    Swiss swiss dress press
-  )
+  # Delegate to centralized Matcher module
+  def match_ingredient(name, lookup), do: Matcher.match(name, lookup)
 
   @doc """
   Attempts to singularize an English word.
@@ -1054,76 +816,6 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   Returns the word unchanged if it's in the exception list or doesn't match
   any known plural pattern.
   """
-  def singularize(word) do
-    downcased = String.downcase(word)
-
-    cond do
-      # Don't singularize short words or words in exception list
-      String.length(word) < 3 -> word
-      downcased in @no_singularize -> word
-
-      # -ves -> -f (leaves -> leaf, halves -> half, loaves -> loaf)
-      String.ends_with?(downcased, "ves") ->
-        String.slice(word, 0..-4//1) <> "f"
-
-      # -ies -> -y (berries -> berry, anchovies -> anchovy)
-      String.ends_with?(downcased, "ies") ->
-        String.slice(word, 0..-4//1) <> "y"
-
-      # -sses -> -ss (molasses stays, but grasses -> grass)
-      String.ends_with?(downcased, "sses") ->
-        word
-
-      # -shes -> -sh (radishes -> radish)
-      String.ends_with?(downcased, "shes") ->
-        String.slice(word, 0..-3//1)
-
-      # -ches -> -ch (peaches -> peach)
-      String.ends_with?(downcased, "ches") ->
-        String.slice(word, 0..-3//1)
-
-      # -xes -> -x (boxes -> box)
-      String.ends_with?(downcased, "xes") ->
-        String.slice(word, 0..-3//1)
-
-      # -zes -> -z (fizzes handled by -sses above)
-      String.ends_with?(downcased, "zes") ->
-        String.slice(word, 0..-3//1)
-
-      # -toes -> -to (tomatoes -> tomato, potatoes -> potato)
-      String.ends_with?(downcased, "toes") ->
-        String.slice(word, 0..-3//1)
-
-      # -oes -> -o (but keep heroes -> hero pattern)
-      String.ends_with?(downcased, "oes") ->
-        String.slice(word, 0..-3//1)
-
-      # -s (general plural, but not -ss, -us)
-      String.ends_with?(downcased, "s") and
-        not String.ends_with?(downcased, "ss") and
-        not String.ends_with?(downcased, "us") ->
-        String.slice(word, 0..-2//1)
-
-      true -> word
-    end
-  end
-
-  # Conservative fuzzy matching
-  defp try_fuzzy_match(name, lookup) do
-    # Only try prefix matching for longer names
-    if String.length(name) >= 4 do
-      # Find canonical that starts with this name
-      match = Enum.find(lookup, fn {key, _} ->
-        String.starts_with?(key, name <> " ") or
-        String.starts_with?(name, key <> " ")
-      end)
-
-      case match do
-        {_key, {canonical_name, id}} -> {canonical_name, id, 0.7}
-        nil -> nil
-      end
-    else
-      nil
-    end
-  end
+  # Delegate to centralized Singularizer module
+  def singularize(word), do: Singularizer.singularize(word)
 end
