@@ -3,10 +3,11 @@
 
 	interface Props {
 		ingredients: Ingredient[];
+		expanded?: boolean;
 	}
 
-	let { ingredients }: Props = $props();
-	let showPrepList = $state(false);
+	let { ingredients, expanded = false }: Props = $props();
+	let showPrepList = $state(expanded);
 	let checkedSteps = $state<Set<string>>(new Set());
 
 	const categoryLabels: Record<string, string> = {
@@ -111,19 +112,28 @@
 </script>
 
 {#if allSteps.length > 0}
-	<div class="prep-list-container">
-		<button class="prep-list-toggle" onclick={() => (showPrepList = !showPrepList)}>
-			<span class="toggle-icon">{showPrepList ? '−' : '+'}</span>
-			<span class="toggle-text">{showPrepList ? 'Hide' : 'Show'} Prep List</span>
-			{#if totalTime > 0}
-				<span class="prep-time">
-					~{formatTime(parallelTime)}
-					{#if parallelTime !== totalTime}
-						<span class="time-note">(sequential: {formatTime(totalTime)})</span>
-					{/if}
-				</span>
-			{/if}
-		</button>
+	<div class="prep-list-container" class:expanded>
+		{#if !expanded}
+			<button class="prep-list-toggle" onclick={() => (showPrepList = !showPrepList)}>
+				<span class="toggle-icon">{showPrepList ? '−' : '+'}</span>
+				<span class="toggle-text">{showPrepList ? 'Hide' : 'Show'} Prep List</span>
+				{#if totalTime > 0}
+					<span class="prep-time">
+						~{formatTime(parallelTime)}
+						{#if parallelTime !== totalTime}
+							<span class="time-note">(sequential: {formatTime(totalTime)})</span>
+						{/if}
+					</span>
+				{/if}
+			</button>
+		{:else if totalTime > 0}
+			<div class="prep-time-summary">
+				Estimated time: ~{formatTime(parallelTime)}
+				{#if parallelTime !== totalTime}
+					<span class="time-note">(sequential: {formatTime(totalTime)})</span>
+				{/if}
+			</div>
+		{/if}
 
 		{#if showPrepList}
 			<div class="prep-list">
@@ -299,6 +309,31 @@
 		color: var(--text-muted);
 		font-size: var(--text-xs);
 		margin-left: var(--space-2);
+	}
+
+	/* Expanded state (used in split view) */
+	.prep-list-container.expanded {
+		margin: 0;
+	}
+
+	.prep-list-container.expanded .prep-list {
+		border: none;
+		border-radius: 0;
+		padding: 0;
+		background: transparent;
+	}
+
+	.prep-time-summary {
+		font-size: var(--text-sm);
+		color: var(--color-basil-600);
+		font-weight: var(--font-medium);
+		margin-bottom: var(--space-3);
+	}
+
+	.prep-time-summary .time-note {
+		color: var(--text-muted);
+		font-size: var(--text-xs);
+		font-weight: var(--font-normal);
 	}
 
 	/* Print styles - show prep list when printing */

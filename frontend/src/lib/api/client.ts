@@ -195,12 +195,27 @@ export interface RecipeReference {
   is_optional: boolean;
 }
 
+// Quantity can be stored as a nested object (parsed) or flat number (legacy/unprocessed)
+export interface IngredientQuantity {
+  value: number | null;
+  min: number | null;
+  max: number | null;
+  unit: string | null;
+}
+
 export interface Ingredient {
   text: string;
   group: string | null;
   canonical_name?: string | null;
   canonical_id?: string | null;
   confidence?: number;
+  // Quantity is nested object from TokenParser.to_jsonb_map, or flat number for legacy data
+  quantity?: IngredientQuantity | number | null;
+  // Legacy flat fields (for backward compatibility)
+  quantity_min?: number | null;
+  quantity_max?: number | null;
+  unit?: string | null;
+  preparations?: string[];
   is_alternative?: boolean;
   alternatives?: IngredientAlternative[];
   recipe_reference?: RecipeReference;

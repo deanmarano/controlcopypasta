@@ -18,6 +18,7 @@
 	let scalingResults = $state<Map<string, ScaledIngredient>>(new Map());
 	let loadingScaling = $state(false);
 	let showShoppingTips = $state(false);
+	let ingredientView = $state<'unified' | 'split'>('unified');
 
 	// Nutrition state
 	let nutrition = $state<RecipeNutrition | null>(null);
@@ -604,55 +605,130 @@
 		<div class="recipe-sections">
 			<section class="ingredients">
 				<div class="section-header">
-					<h2>Ingredients</h2>
-					<div class="scale-controls no-print">
-						<button onclick={() => setScale(scale - 0.25)} class="scale-btn" disabled={scale <= 0.25}>-</button>
-						<span class="scale-value">{scale}x</span>
-						<button onclick={() => setScale(scale + 0.25)} class="scale-btn" disabled={scale >= 4}>+</button>
+					<h2>Ingredients & Prep</h2>
+					<div class="view-controls no-print">
+						<div class="view-toggle">
+							<button
+								class="view-btn"
+								class:active={ingredientView === 'unified'}
+								onclick={() => ingredientView = 'unified'}
+							>
+								Unified
+							</button>
+							<button
+								class="view-btn"
+								class:active={ingredientView === 'split'}
+								onclick={() => ingredientView = 'split'}
+							>
+								Split
+							</button>
+						</div>
+						<div class="scale-controls">
+							<button onclick={() => setScale(scale - 0.25)} class="scale-btn" disabled={scale <= 0.25}>-</button>
+							<span class="scale-value">{scale}x</span>
+							<button onclick={() => setScale(scale + 0.25)} class="scale-btn" disabled={scale >= 4}>+</button>
+						</div>
 					</div>
 				</div>
-				<ul>
-					{#each recipe.ingredients as ingredient, i}
-						<li>
-							<span class="ingredient-text">{scaleIngredient(ingredient.text)}</span>
-							{#if scale !== 1 && getPackageSuggestion(ingredient.text)}
-								<span class="package-hint" title={getPackageSuggestion(ingredient.text)}>
-									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-								</span>
-							{/if}
-							<IngredientDecisionComponent
-								{ingredient}
-								index={i}
-								currentDecision={decisions.get(i)}
-								ondecide={handleDecision}
-							/>
-						</li>
-					{/each}
-				</ul>
 
-				{#if scale !== 1 && getShoppingTips().length > 0}
-					<div class="shopping-tips no-print">
-						<button class="tips-toggle" onclick={() => showShoppingTips = !showShoppingTips}>
-							<span class="tips-icon">🛒</span>
-							<span>Shopping Tips ({getShoppingTips().length})</span>
-							<span class="toggle-arrow">{showShoppingTips ? '▲' : '▼'}</span>
-						</button>
-						{#if showShoppingTips}
-							<ul class="tips-list">
-								{#each getShoppingTips() as tip}
-									<li>
-										<strong>{tip.ingredient}</strong>: {tip.suggestion}
-										{#if tip.brand}
-											<span class="brand-info">({tip.brand})</span>
-										{/if}
-									</li>
-								{/each}
-							</ul>
-						{/if}
+				{#if ingredientView === 'unified'}
+					<!-- Unified view: Original ingredient text with scaling -->
+					<ul>
+						{#each recipe.ingredients as ingredient, i}
+							<li>
+								<span class="ingredient-text">{scaleIngredient(ingredient.text)}</span>
+								{#if scale !== 1 && getPackageSuggestion(ingredient.text)}
+									<span class="package-hint" title={getPackageSuggestion(ingredient.text)}>
+										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+									</span>
+								{/if}
+								<IngredientDecisionComponent
+									{ingredient}
+									index={i}
+									currentDecision={decisions.get(i)}
+									ondecide={handleDecision}
+								/>
+							</li>
+						{/each}
+					</ul>
+
+					{#if scale !== 1 && getShoppingTips().length > 0}
+						<div class="shopping-tips no-print">
+							<button class="tips-toggle" onclick={() => showShoppingTips = !showShoppingTips}>
+								<span class="tips-icon">🛒</span>
+								<span>Shopping Tips ({getShoppingTips().length})</span>
+								<span class="toggle-arrow">{showShoppingTips ? '▲' : '▼'}</span>
+							</button>
+							{#if showShoppingTips}
+								<ul class="tips-list">
+									{#each getShoppingTips() as tip}
+										<li>
+											<strong>{tip.ingredient}</strong>: {tip.suggestion}
+											{#if tip.brand}
+												<span class="brand-info">({tip.brand})</span>
+											{/if}
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					{/if}
+
+					<PrepList ingredients={recipe.ingredients} />
+				{:else}
+					<!-- Split view: Parsed ingredients and prep steps shown separately -->
+					<div class="split-view">
+						<div class="parsed-ingredients">
+							<h3>Shopping List</h3>
+							<table class="ingredient-table">
+								<thead>
+									<tr>
+										<th>Amount</th>
+										<th>Ingredient</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each recipe.ingredients as ingredient, i}
+										{@const qtyObj = ingredient.quantity}
+										{@const rawQty = typeof qtyObj === 'object' && qtyObj !== null ? qtyObj.value : qtyObj}
+										{@const qty = rawQty ? (rawQty * scale) : null}
+										{@const unit = typeof qtyObj === 'object' && qtyObj !== null ? qtyObj.unit : ingredient.unit}
+										{@const displayName = ingredient.canonical_name || ingredient.text.replace(/^[\d\s\/\.\-½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]+\s*(cup|cups|tbsp|tsp|tablespoon|tablespoons|teaspoon|teaspoons|oz|ounce|ounces|lb|lbs|pound|pounds|g|gram|grams|kg|ml|l|liter|liters|clove|cloves|head|heads|bunch|bunches|sprig|sprigs|can|cans|package|packages|stick|sticks|slice|slices|piece|pieces)s?\s*/i, '').trim()}
+										<tr>
+											<td class="amount-cell">
+												{#if qty}
+													<span class="quantity">{formatQuantity(qty)}</span>
+													{#if unit}
+														<span class="unit">{unit}</span>
+													{/if}
+												{:else}
+													<span class="quantity-na">—</span>
+												{/if}
+											</td>
+											<td class="ingredient-cell">
+												<span class="ingredient-name">{displayName}</span>
+												{#if ingredient.canonical_name && ingredient.canonical_name !== displayName}
+													<span class="canonical-hint">({ingredient.canonical_name})</span>
+												{/if}
+												<IngredientDecisionComponent
+													{ingredient}
+													index={i}
+													currentDecision={decisions.get(i)}
+													ondecide={handleDecision}
+												/>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+
+						<div class="prep-section">
+							<h3>Prep Steps</h3>
+							<PrepList ingredients={recipe.ingredients} expanded={true} />
+						</div>
 					</div>
 				{/if}
-
-				<PrepList ingredients={recipe.ingredients} />
 			</section>
 
 			<section class="instructions">
@@ -982,6 +1058,22 @@
 			gap: var(--space-3);
 		}
 
+		.view-controls {
+			width: 100%;
+			flex-direction: column;
+			gap: var(--space-2);
+		}
+
+		.view-toggle {
+			width: 100%;
+			justify-content: center;
+		}
+
+		.view-btn {
+			flex: 1;
+			text-align: center;
+		}
+
 		.scale-controls {
 			width: 100%;
 			justify-content: center;
@@ -994,6 +1086,12 @@
 			width: 44px;
 			height: 44px;
 			font-size: var(--text-lg);
+		}
+
+		/* Split view mobile adjustments */
+		.ingredient-table th:first-child,
+		.ingredient-table td:first-child {
+			width: 80px;
 		}
 
 		.similar-grid {
@@ -1054,6 +1152,119 @@
 		min-width: 40px;
 		text-align: center;
 		font-weight: var(--font-medium);
+	}
+
+	.view-controls {
+		display: flex;
+		align-items: center;
+		gap: var(--space-4);
+	}
+
+	.view-toggle {
+		display: flex;
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+		padding: 2px;
+		border: var(--border-width-thin) solid var(--border-default);
+	}
+
+	.view-btn {
+		padding: var(--space-1) var(--space-3);
+		border: none;
+		background: transparent;
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+		transition: all var(--transition-fast);
+	}
+
+	.view-btn:hover {
+		color: var(--text-primary);
+	}
+
+	.view-btn.active {
+		background: var(--bg-card);
+		color: var(--text-primary);
+		font-weight: var(--font-medium);
+		box-shadow: var(--shadow-sm);
+	}
+
+	/* Split view styles */
+	.split-view {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-6);
+	}
+
+	.split-view h3 {
+		font-size: var(--text-lg);
+		margin: 0 0 var(--space-3);
+		color: var(--text-primary);
+	}
+
+	.ingredient-table {
+		width: 100%;
+		border-collapse: collapse;
+	}
+
+	.ingredient-table th {
+		text-align: left;
+		padding: var(--space-2) var(--space-3);
+		border-bottom: var(--border-width-default) solid var(--border-default);
+		font-weight: var(--font-medium);
+		color: var(--text-secondary);
+		font-size: var(--text-sm);
+	}
+
+	.ingredient-table td {
+		padding: var(--space-2) var(--space-3);
+		border-bottom: var(--border-width-thin) solid var(--border-subtle);
+		vertical-align: top;
+	}
+
+	.ingredient-table tr:last-child td {
+		border-bottom: none;
+	}
+
+	.amount-cell {
+		white-space: nowrap;
+		width: 100px;
+	}
+
+	.quantity {
+		font-weight: var(--font-medium);
+	}
+
+	.unit {
+		color: var(--text-secondary);
+		margin-left: var(--space-1);
+	}
+
+	.quantity-na {
+		color: var(--text-tertiary);
+	}
+
+	.ingredient-cell {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+	}
+
+	.ingredient-name {
+		font-weight: var(--font-medium);
+	}
+
+	.canonical-hint {
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+	}
+
+	.prep-section {
+		background: var(--bg-surface);
+		padding: var(--space-4);
+		border-radius: var(--radius-md);
 	}
 
 	.ingredients ul {
