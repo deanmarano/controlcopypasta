@@ -42,7 +42,15 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
     strips kernels grater breasts minutes wedges
     thighs wings drumsticks legs drumstick thigh
     browned red pink white green yellow
-    brine
+    brine with into warmed natural generous sub
+    well off dry fire cool above below divided
+    whole preferred inch inches pieces ends chunks
+    dutch-process heated cooled reserved broken
+    crusts cubed shaved pressed medium lumpy
+    overnight mild-flavored you fat woody fronds
+    deboned butterflied spatchcocked peeling packet
+    sprigs raw add veggies crackers beans meal
+    clove pound use broth divided fire turbinado
   )
 
   # Multi-word phrases that should never be queued
@@ -50,7 +58,7 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
     "at room temperature", "room temperature", "to taste", "as needed",
     "as desired", "cut into", "patted dry", "see tip", "see tips",
     "see note", "see notes", "juice of", "zest of", "juice from",
-    "zest from", "juice and zest",
+    "zest from", "juice and zest", "fresh juice from juice",
     "for the pan", "the pan", "if needed", "if desired",
     "from about", "or more", "or less", "plus more",
     "for serving", "for garnish", "for topping",
@@ -61,7 +69,28 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
     "inch thick", "tough outer layers", "leaves picked",
     "star tip", "snail shells", "against the grain",
     "dark green parts", "large ears", "half of a",
-    "pink liquid", "red liquid"
+    "pink liquid", "red liquid",
+    # Salt measurement notes
+    "use half as much by volume", "half as much by volume",
+    # Temperature notes
+    "at least 65°f", "at room temp", "at least 65",
+    # Dietary notes
+    "use gluten free if needed", "gluten free if needed",
+    # Recipe reference patterns
+    "recipe above", "reserved from above", "from above",
+    # Preparation patterns
+    "soaked overnight", "if lumpy", "sifted if lumpy",
+    "whole preferred", "dutch-process or natural",
+    # Citrus artifact patterns
+    "juice from juice", "zest from zest", "lemon zest from zest",
+    # King Arthur branded products (should be handled separately)
+    "king arthur fiori di sicilia", "king arthur easy roll dough improver",
+    "king arthur cinnamon sweet bits", "king arthur artisan bread topping",
+    "king arthur harvest grains blend", "king arthur pie filling enhancer",
+    "king arthur fruitcake fruit blend", "king arthur bread and cake enhancer",
+    # Misc noise
+    "any color", "medium scoops", "shaved with a vegetable peeler",
+    "woody ends", "from the cob"
   ]
 
   # Prefixes - if name starts with any of these, skip it

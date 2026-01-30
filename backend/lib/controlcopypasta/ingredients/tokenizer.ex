@@ -151,6 +151,9 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
         should_relabel_part_as_word?(token, tokens, idx) ->
           %{token | label: :word}
 
+        should_relabel_qty_as_word?(token, tokens, idx) ->
+          %{token | label: :word}
+
         should_label_as_unit_connector?(token, tokens, idx) ->
           %{token | label: :unit_connector}
 
@@ -203,6 +206,31 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   end
 
   defp should_relabel_part_as_word?(_token, _tokens, _idx), do: false
+
+  # Written numbers in compound ingredient names like "five spice", "seven spice"
+  # These should be part of the ingredient name, not treated as quantities
+  @compound_qty_followers ~w(spice pepper bean layer grain)
+  @written_number_words ~w(one two three four five six seven eight nine ten eleven twelve a an)
+  defp should_relabel_qty_as_word?(%Token{label: :qty, text: text}, tokens, idx) do
+    # Only apply to written numbers, not numeric quantities
+    downcased = String.downcase(text)
+    is_written_number = downcased in @written_number_words
+
+    if is_written_number do
+      # Check what comes after
+      tokens_after = Enum.drop(tokens, idx + 1)
+      next_token = List.first(tokens_after)
+
+      # If followed by a word that's part of a compound ingredient name
+      next_token != nil and
+        next_token.label == :word and
+        String.downcase(next_token.text) in @compound_qty_followers
+    else
+      false
+    end
+  end
+
+  defp should_relabel_qty_as_word?(_token, _tokens, _idx), do: false
 
   # "of" immediately after a unit ("dashes of", "cups of")
   defp should_label_as_unit_connector?(%Token{label: :word, text: "of"}, tokens, idx) do
