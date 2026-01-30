@@ -824,7 +824,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     inch inches slices pieces sprigs ends chunks chips
     dutch-process warmed heated cooled reserved broken
     crusts cubed shaved pressed packed medium scoops
-    lumpy soaked overnight
+    lumpy soaked overnight mild-flavored cut you
+    inch\ slices cut\ into butt fat woody
   )
 
   # Clean ingredient names (remove asterisks, extra whitespace, stop words, etc.)
