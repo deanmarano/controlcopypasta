@@ -71,7 +71,7 @@ Common seasoning blends are missing.
   - Added: creole seasoning, cajun seasoning (alias), poultry seasoning, italian seasoning, taco seasoning, five-spice powder
   - **Implemented**: Migration adds canonical ingredients with aliases
 
-### 8. Add Generic Ingredients (~400+) - Partially Done
+### 8. Add Generic Ingredients (~400+) ✅ DONE
 
 Generic terms without specific variety aren't matching.
 
@@ -79,8 +79,10 @@ Generic terms without specific variety aren't matching.
   - **Implemented**: Added "broth" canonical with "stock" alias
 - [x] **Generic nuts** (~285): "1 cup chopped nuts" (not specific type)
   - **Implemented**: Added "nuts" canonical with "mixed nuts", "chopped nuts", "assorted nuts" aliases
-- [ ] **Generic oats** (~73): "rolled oats, old-fashioned"
-- [ ] **Generic cheese blends** (~67): "Mexican cheese blend", "shredded cheese"
+- [x] **Generic oats** (~73): "rolled oats, old-fashioned"
+  - **Implemented**: Added "oats" canonical with "rolled oats", "old-fashioned oats", "quick oats", "instant oats", "oatmeal" aliases
+- [x] **Generic cheese blends** (~67): "Mexican cheese blend", "shredded cheese"
+  - **Implemented**: Added "mexican cheese blend" and "shredded cheese" canonicals
 
 ### 9. Add Cloves (Spice) (~140) ✅ DONE
 
@@ -90,12 +92,13 @@ The spice "cloves" is being confused with garlic cloves.
   - **Implemented**: Added "cloves" canonical with "ground cloves", "whole cloves", "clove" aliases
   - Note: "4 cloves" alone remains ambiguous (could be garlic). Context like "1/4 tsp cloves" now matches correctly.
 
-### 10. Add Chipotle in Adobo (~87)
+### 10. Add Chipotle in Adobo (~87) ✅ DONE
 
 A common ingredient with complex phrasing.
 
-- [ ] **As a user, I want "chipotle in adobo" variations to match**.
+- [x] **As a user, I want "chipotle in adobo" variations to match**.
   - Examples: "2 chipotle peppers from a can of chipotles in adobo", "chipotle in adobo sauce"
+  - **Implemented**: Added "chipotle in adobo" canonical with aliases for common variations
 
 ---
 
@@ -162,18 +165,18 @@ Canned goods with size in parentheses.
 | Medium | Alcoholic beverages | 1,364 | Pending |
 | Medium | Vague/optional items | 1,202 | Pending |
 | Medium | For serving items | 443 | Pending |
-| Medium | Generic ingredients | ~400 | Partial (broth, nuts done) |
+| Medium | Generic ingredients | ~400 | ✅ Done |
 | Medium | Recipe references | 321 | Pending |
 | Lower | Packaged/brand products | 876 | Pending |
 | Lower | Prepared doughs | 316 | ✅ Done |
 | Lower | Cloves (spice) | 140 | ✅ Done |
 | Lower | Canned goods | 113 | Pending |
 | Lower | Seasoning blends | 103 | ✅ Done |
-| Lower | Chipotle in adobo | 87 | Pending |
+| Lower | Chipotle in adobo | 87 | ✅ Done |
 
 **Parser fixes (High priority): ~4,097 occurrences (22% of unmatched) — ✅ COMPLETE**
-**Missing canonicals (Medium): ~3,730 occurrences (20% of unmatched) — Partial progress**
-**Edge cases (Lower): ~1,635 occurrences (9% of unmatched) — ~560 addressed**
+**Missing canonicals (Medium): ~3,730 occurrences (20% of unmatched) — Significant progress (seasonings, generics, chile powders done)**
+**Edge cases (Lower): ~1,635 occurrences (9% of unmatched) — ~950 addressed (doughs, cloves, chipotle, plus new oils/baking ingredients)**
 
 **Total addressable: ~9,462 occurrences (50% of unmatched)**
 

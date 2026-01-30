@@ -329,8 +329,9 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
           shared: noun
         }
 
-      # Simple alternatives: "X or Y"
-      true ->
+      # Simple alternatives: "X or Y" - only when at least one side has multiple words
+      # to distinguish real ingredients from modifier choices like "Dutch-process or natural"
+      length(words_before) >= 2 or length(words_after) >= 2 ->
         %{
           type: :simple,
           alternatives: [
@@ -338,6 +339,10 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
             Enum.join(words_after, " ")
           ]
         }
+
+      # Single-word "or" patterns are likely modifiers, not ingredients
+      true ->
+        nil
     end
   end
 

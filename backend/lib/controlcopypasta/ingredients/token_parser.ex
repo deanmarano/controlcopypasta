@@ -821,6 +821,10 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   @ingredient_stop_words ~w(
     with into from above below use sub well off dry fire cool
     about generous divided whole preferred natural if
+    inch inches slices pieces sprigs ends chunks chips
+    dutch-process warmed heated cooled reserved broken
+    crusts cubed shaved pressed packed medium scoops
+    lumpy soaked overnight
   )
 
   # Clean ingredient names (remove asterisks, extra whitespace, stop words, etc.)
