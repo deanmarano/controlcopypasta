@@ -28,6 +28,7 @@ defmodule Controlcopypasta.Nutrition.Seeder do
   alias Controlcopypasta.Nutrition.OpenFoodFactsClient
   alias Controlcopypasta.Nutrition.FatSecretClient
   alias Controlcopypasta.Nutrition.SpoonacularClient
+  alias Controlcopypasta.Nutrition.StringSimilarity
 
   @doc """
   Seeds nutrition data for all ingredients that don't have it yet.
@@ -792,53 +793,91 @@ defmodule Controlcopypasta.Nutrition.Seeder do
         score = calculate_match_score(result, ingredient)
         {result, score}
       end)
-      |> Enum.filter(fn {_, score} -> score > 0.3 end)  # Minimum threshold
+      |> Enum.filter(fn {_, score} -> score >= 0.5 end)  # Raised threshold from 0.3
       |> Enum.sort_by(fn {_, score} -> -score end)
 
     case scored do
-      [{result, _score} | _] -> result
-      [] -> nil
+      [{result, score} | _] ->
+        Logger.debug("Best match for '#{ingredient.name}': #{result.description} (score: #{Float.round(score, 2)})")
+        result
+      [] ->
+        Logger.debug("No good match for '#{ingredient.name}' (all scores below 0.5)")
+        nil
     end
   end
 
   # Calculate how well a USDA result matches our ingredient
+  # Uses StringSimilarity for more accurate matching
   defp calculate_match_score(result, ingredient) do
     description = String.downcase(result.description)
     name = String.downcase(ingredient.name)
-    name_words = String.split(name)
 
-    # Base score: how many words from our name appear in the description
-    word_matches = Enum.count(name_words, &String.contains?(description, &1))
-    word_score = word_matches / max(length(name_words), 1)
+    # Use comprehensive string similarity score
+    similarity_score = StringSimilarity.match_score(name, description)
 
-    # Bonus for exact substring match
-    exact_bonus = if String.contains?(description, name), do: 0.3, else: 0
+    # Require either:
+    # 1. Query is a substring of description, OR
+    # 2. High Jaro-Winkler similarity (> 0.85), OR
+    # 3. All query words are in description
+    {_matched_words, total_words, word_coverage} = StringSimilarity.word_overlap(name, description)
+    jw_score = StringSimilarity.jaro_winkler(name, description)
+    is_substring = StringSimilarity.meaningful_substring?(name, description)
+
+    base_requirement_met =
+      is_substring or
+      jw_score >= 0.85 or
+      word_coverage >= 0.9
+
+    # If base requirement not met, heavily penalize
+    base_penalty = if base_requirement_met, do: 0.0, else: 0.4
 
     # Bonus for Foundation/SR Legacy data types (more reliable)
     type_bonus =
       case result.data_type do
-        "Foundation" -> 0.2
-        "SR Legacy" -> 0.15
+        "Foundation" -> 0.15
+        "SR Legacy" -> 0.10
         _ -> 0
       end
 
     # Penalty for branded items when we have non-branded ingredient
     brand_penalty =
       if result.data_type == "Branded" and not ingredient.is_branded do
-        -0.2
+        0.15
       else
         0
       end
 
     # Penalty for very long descriptions (usually too specific)
     length_penalty =
-      if String.length(description) > 80 do
-        -0.1
+      if String.length(description) > 100 do
+        0.1
       else
         0
       end
 
-    word_score + exact_bonus + type_bonus + brand_penalty + length_penalty
+    # Penalty if description has many unrelated words
+    unrelated_penalty =
+      if StringSimilarity.has_unrelated_words?(name, description) do
+        0.2
+      else
+        0
+      end
+
+    # Extra penalty if query words are a small fraction of description
+    # e.g., "apple" matching "Apple, raw, with skin, USDA commodity" should be penalized
+    desc_words = description |> String.split(~r/[\s,]+/) |> length()
+    disproportion_penalty =
+      if total_words <= 2 and desc_words > 6 and not is_substring do
+        0.15
+      else
+        0
+      end
+
+    final_score = similarity_score + type_bonus - brand_penalty - length_penalty -
+                  unrelated_penalty - base_penalty - disproportion_penalty
+
+    # Clamp to 0.0-1.0
+    max(0.0, min(1.0, final_score))
   end
 
   # Fetch full nutrition data and save to database

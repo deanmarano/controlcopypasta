@@ -777,20 +777,50 @@ defmodule Controlcopypasta.Ingredients do
 
   @doc """
   Creates nutrition data for an ingredient.
+
+  Automatically calculates confidence score if not provided.
   """
   def create_nutrition(attrs) do
     %IngredientNutrition{}
     |> IngredientNutrition.changeset(attrs)
+    |> maybe_calculate_confidence()
     |> Repo.insert()
+  end
+
+  # Calculate confidence if not already set
+  defp maybe_calculate_confidence(changeset) do
+    if Ecto.Changeset.get_field(changeset, :confidence) do
+      changeset
+    else
+      IngredientNutrition.with_calculated_confidence(changeset)
+    end
   end
 
   @doc """
   Updates nutrition data.
+
+  Recalculates confidence score if nutrient fields change.
   """
   def update_nutrition(%IngredientNutrition{} = nutrition, attrs) do
     nutrition
     |> IngredientNutrition.changeset(attrs)
+    |> maybe_recalculate_confidence()
     |> Repo.update()
+  end
+
+  # Recalculate confidence if nutrient or source fields changed
+  defp maybe_recalculate_confidence(changeset) do
+    nutrient_fields = IngredientNutrition.macro_fields() ++ [:source, :verified_at, :last_checked_at]
+
+    has_nutrient_changes = Enum.any?(nutrient_fields, fn field ->
+      Ecto.Changeset.get_change(changeset, field) != nil
+    end)
+
+    if has_nutrient_changes do
+      IngredientNutrition.with_calculated_confidence(changeset)
+    else
+      changeset
+    end
   end
 
   @doc """

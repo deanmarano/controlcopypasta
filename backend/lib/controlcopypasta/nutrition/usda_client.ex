@@ -178,15 +178,37 @@ defmodule Controlcopypasta.Nutrition.USDAClient do
   @doc """
   Search and get the best matching food's nutrition data.
 
-  Convenience function that searches and returns the top Foundation/SR Legacy match.
+  Uses string similarity scoring to find the best match, not just the first result.
+  Returns {:error, :not_found} if no good match is found (score < 0.5).
   """
   def search_and_get_nutrition(query, opts \\ []) do
+    alias Controlcopypasta.Nutrition.StringSimilarity
+
     case search(query, opts) do
       {:ok, []} ->
         {:error, :not_found}
 
-      {:ok, [best | _]} ->
-        get_food(best.fdc_id, opts)
+      {:ok, results} ->
+        # Score each result and find the best match
+        scored =
+          results
+          |> Enum.map(fn result ->
+            score = StringSimilarity.match_score(query, result.description)
+            # Bonus for Foundation/SR Legacy
+            type_bonus = case result.data_type do
+              "Foundation" -> 0.1
+              "SR Legacy" -> 0.05
+              _ -> 0
+            end
+            {result, score + type_bonus}
+          end)
+          |> Enum.filter(fn {_, score} -> score >= 0.5 end)
+          |> Enum.sort_by(fn {_, score} -> -score end)
+
+        case scored do
+          [{best, _score} | _] -> get_food(best.fdc_id, opts)
+          [] -> {:error, :not_found}
+        end
 
       {:error, reason} ->
         {:error, reason}
