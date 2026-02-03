@@ -64,6 +64,28 @@ defmodule Controlcopypasta.Nutrition.DensityEnrichmentWorker do
 
     Logger.info("Enqueueing #{length(ingredients)} ingredients for density enrichment (ordered by usage)")
 
+    enqueue_list(ingredients)
+  end
+
+  @doc """
+  Re-enqueue ALL canonical ingredients to fetch density data from all sources.
+  Use this after enabling multi-source storage to backfill data.
+  Prioritizes ingredients by usage_count (most used first).
+  """
+  def enqueue_all_sources do
+    ingredients =
+      from(ci in CanonicalIngredient,
+        order_by: [desc: coalesce(ci.usage_count, 0)],
+        select: ci
+      )
+      |> Repo.all()
+
+    Logger.info("Enqueueing #{length(ingredients)} ingredients for multi-source density enrichment")
+
+    enqueue_list(ingredients)
+  end
+
+  defp enqueue_list(ingredients) do
     # Enqueue each with a small scheduled delay to spread out initial burst
     ingredients
     |> Enum.with_index()
