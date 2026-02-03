@@ -78,6 +78,13 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
     # Usage statistics (cached, updated periodically)
     field :usage_count, :integer, default: 0
 
+    # Measurement type for nutrition lookup strategy
+    # - "standard": Default, needs density lookup for volume-to-weight conversion
+    # - "liquid": Water-based liquids, assume ~1g/ml if no specific density
+    # - "weight_primary": Typically measured by weight (meats), skip density for weight units
+    # - "count_primary": Per-piece items (hot dogs, rolls), look up per-unit nutrition
+    field :measurement_type, :string, default: "standard"
+
     has_many :forms, Controlcopypasta.Ingredients.IngredientForm
     has_many :package_sizes, Controlcopypasta.Ingredients.BrandPackageSize
 
@@ -97,13 +104,15 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
     :brand,
     :parent_company,
     :is_branded,
-    :image_url
+    :image_url,
+    :measurement_type
   ]
 
   @valid_categories ~w(protein dairy produce grain spice herb condiment oil sweetener leavening nut legume beverage other)
   @valid_allergen_groups ~w(dairy eggs peanuts tree_nuts wheat gluten soy fish shellfish sesame)
   @valid_dietary_flags ~w(vegetarian vegan gluten_free dairy_free keto paleo)
   @valid_animal_types ~w(chicken turkey duck beef pork lamb goat venison bison rabbit egg salmon tuna cod sole shrimp crab lobster scallop clam mussel oyster octopus squid anchovy sardine mackerel trout tilapia halibut bass)
+  @valid_measurement_types ~w(standard liquid weight_primary count_primary)
 
   @doc """
   Creates a changeset for a canonical ingredient.
@@ -116,6 +125,7 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
     |> validate_length(:display_name, min: 1, max: 255)
     |> validate_inclusion(:category, @valid_categories ++ [nil])
     |> validate_inclusion(:animal_type, @valid_animal_types ++ [nil])
+    |> validate_inclusion(:measurement_type, @valid_measurement_types ++ [nil])
     |> validate_array_subset(:allergen_groups, @valid_allergen_groups)
     |> validate_array_subset(:dietary_flags, @valid_dietary_flags)
     |> normalize_name()
@@ -160,4 +170,9 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
   Returns valid animal type values.
   """
   def valid_animal_types, do: @valid_animal_types
+
+  @doc """
+  Returns valid measurement type values.
+  """
+  def valid_measurement_types, do: @valid_measurement_types
 end

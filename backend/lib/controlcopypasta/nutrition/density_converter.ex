@@ -106,6 +106,21 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
     "other" => 150.0       # generic fallback
   }
 
+  # Water-based liquid densities (grams per unit)
+  # Used as fallback for measurement_type: "liquid" when no specific density is available
+  # Based on water density of ~1g/ml
+  @liquid_densities %{
+    "cup" => 236.588,
+    "tbsp" => 14.787,
+    "tsp" => 4.929,
+    "fl oz" => 29.574,
+    "ml" => 1.0,
+    "liter" => 1000.0,
+    "quart" => 946.353,
+    "pint" => 473.176,
+    "gallon" => 3785.41
+  }
+
   @doc """
   Converts a quantity to grams using ingredient-specific density.
 
@@ -249,6 +264,7 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
   defp convert_volume_to_grams_range(canonical_id, qty, qty_min, qty_max, unit, opts) do
     preparation = Keyword.get(opts, :preparation)
     category = Keyword.get(opts, :category)
+    measurement_type = Keyword.get(opts, :measurement_type, "standard")
 
     canonical_volume_unit = Map.get(@volume_unit_canonical, unit)
 
@@ -272,8 +288,54 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
         {:ok, grams_range}
 
       {:error, :not_found} ->
-        # Try to derive from cup density
-        derive_from_cup_density_range(canonical_id, qty, qty_min, qty_max, unit, canonical_volume_unit, category)
+        # No specific density data - check measurement_type for fallback strategy
+        case measurement_type do
+          "liquid" ->
+            # Use water-based density fallback for liquids
+            use_liquid_density_fallback(qty, qty_min, qty_max, canonical_volume_unit)
+
+          "weight_primary" ->
+            # Volume measurements are not recommended for weight-primary ingredients
+            {:error, :volume_not_recommended}
+
+          _ ->
+            # Standard behavior: try to derive from cup density or category average
+            derive_from_cup_density_range(canonical_id, qty, qty_min, qty_max, unit, canonical_volume_unit, category)
+        end
+    end
+  end
+
+  # Use water-based density for liquid ingredients when no specific density is available
+  defp use_liquid_density_fallback(qty, qty_min, qty_max, canonical_volume_unit) do
+    case Map.get(@liquid_densities, canonical_volume_unit) do
+      nil ->
+        # Unknown volume unit - try converting through cups
+        cups_ratio = Map.get(@volume_to_cups, canonical_volume_unit, nil)
+
+        if cups_ratio do
+          grams_per_cup = @liquid_densities["cup"]
+
+          qty_range = Range.from_range(
+            to_float(qty_min) * cups_ratio * grams_per_cup,
+            to_float(qty) * cups_ratio * grams_per_cup,
+            to_float(qty_max) * cups_ratio * grams_per_cup,
+            0.85  # Lower confidence since we're using water density as approximation
+          )
+
+          {:ok, qty_range}
+        else
+          {:error, :invalid_unit}
+        end
+
+      grams_per_unit ->
+        qty_range = Range.from_range(
+          to_float(qty_min) * grams_per_unit,
+          to_float(qty) * grams_per_unit,
+          to_float(qty_max) * grams_per_unit,
+          0.85  # Lower confidence since we're using water density as approximation
+        )
+
+        {:ok, qty_range}
     end
   end
 
@@ -443,6 +505,7 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
   defp convert_volume_to_grams(canonical_id, quantity, unit, opts) do
     preparation = Keyword.get(opts, :preparation)
     category = Keyword.get(opts, :category)
+    measurement_type = Keyword.get(opts, :measurement_type, "standard")
 
     canonical_volume_unit = Map.get(@volume_unit_canonical, unit)
 
@@ -454,8 +517,35 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
         {:ok, quantity_in_base * grams_per_unit}
 
       {:error, :not_found} ->
-        # Try to derive from cup density
-        derive_from_cup_density(canonical_id, quantity, unit, canonical_volume_unit, category)
+        # No specific density data - check measurement_type for fallback strategy
+        case measurement_type do
+          "liquid" ->
+            use_liquid_density_fallback_single(quantity, canonical_volume_unit)
+
+          "weight_primary" ->
+            {:error, :volume_not_recommended}
+
+          _ ->
+            derive_from_cup_density(canonical_id, quantity, unit, canonical_volume_unit, category)
+        end
+    end
+  end
+
+  # Single-value version of liquid density fallback
+  defp use_liquid_density_fallback_single(quantity, canonical_volume_unit) do
+    case Map.get(@liquid_densities, canonical_volume_unit) do
+      nil ->
+        cups_ratio = Map.get(@volume_to_cups, canonical_volume_unit, nil)
+
+        if cups_ratio do
+          grams_per_cup = @liquid_densities["cup"]
+          {:ok, to_float(quantity) * cups_ratio * grams_per_cup}
+        else
+          {:error, :invalid_unit}
+        end
+
+      grams_per_unit ->
+        {:ok, to_float(quantity) * grams_per_unit}
     end
   end
 

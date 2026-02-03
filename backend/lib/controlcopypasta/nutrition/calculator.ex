@@ -173,9 +173,10 @@ defmodule Controlcopypasta.Nutrition.Calculator do
   end
 
   defp calculate_ingredient_nutrients(result, parsed, canonical_id, canonical_name) do
-    # Get the canonical ingredient for category info
+    # Get the canonical ingredient for category and measurement_type info
     canonical = Ingredients.get_canonical_ingredient(canonical_id)
     category = if canonical, do: canonical.category, else: nil
+    measurement_type = if canonical, do: canonical.measurement_type, else: "standard"
 
     # Convert to grams range (accounts for quantity ranges and density variation)
     preparation = List.first(parsed.preparations || [])
@@ -188,7 +189,8 @@ defmodule Controlcopypasta.Nutrition.Calculator do
            parsed.unit,
            preparation: preparation,
            category: category,
-           canonical_name: canonical_name
+           canonical_name: canonical_name,
+           measurement_type: measurement_type
          ) do
       {:ok, grams_range} ->
         # Look up nutrition data
@@ -224,6 +226,14 @@ defmodule Controlcopypasta.Nutrition.Calculator do
           {:ok, updated_result} -> updated_result
           :error ->
             %{result | status: :no_density, error: "No density data for count item"}
+        end
+
+      {:error, :volume_not_recommended} ->
+        # Weight-primary ingredient used with volume unit - warn but try weight fallback
+        case try_nutrition_with_weight_unit_range(result, parsed, canonical_id) do
+          {:ok, updated_result} -> updated_result
+          :error ->
+            %{result | status: :no_density, error: "This ingredient is typically measured by weight, not volume"}
         end
 
       {:error, reason} ->
