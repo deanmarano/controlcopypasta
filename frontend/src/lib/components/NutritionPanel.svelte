@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { RecipeNutrition, NutrientData, NutrientRange } from '$lib/api/client';
+	import type { RecipeNutrition, NutrientData, NutrientRange, MeasurementType, ConversionMethod } from '$lib/api/client';
 	import { getNutrientValue, isNutrientRange } from '$lib/api/client';
 	import NutrientRangeBar from './NutrientRangeBar.svelte';
 
@@ -89,6 +89,52 @@
 				return 'Error';
 			default:
 				return status;
+		}
+	}
+
+	// Get icon for conversion method
+	function getConversionIcon(method: ConversionMethod): string {
+		switch (method) {
+			case 'weight':
+				return '⚖️';  // Scale for weight
+			case 'liquid_density':
+				return '💧';  // Water droplet for liquid
+			case 'volume_density':
+				return '📐';  // Measuring for volume density
+			case 'count':
+				return '#️⃣';  // Number for count
+			default:
+				return '';
+		}
+	}
+
+	// Get tooltip text for conversion method
+	function getConversionTooltip(method: ConversionMethod, measurementType: MeasurementType | null): string {
+		switch (method) {
+			case 'weight':
+				return 'Direct weight conversion';
+			case 'liquid_density':
+				return 'Estimated using water-based density (~1g/ml)';
+			case 'volume_density':
+				return 'Converted using ingredient-specific density data';
+			case 'count':
+				return 'Calculated per piece/unit';
+			default:
+				return '';
+		}
+	}
+
+	// Get measurement type badge
+	function getMeasurementTypeBadge(type: MeasurementType | null): { text: string; color: string } | null {
+		switch (type) {
+			case 'liquid':
+				return { text: 'Liquid', color: 'var(--color-ocean-500)' };
+			case 'weight_primary':
+				return { text: 'By weight', color: 'var(--color-basil-600)' };
+			case 'count_primary':
+				return { text: 'Per piece', color: 'var(--color-pasta-600)' };
+			default:
+				return null;
 		}
 	}
 
@@ -287,6 +333,7 @@
 							<th class="num">Qty</th>
 							<th class="num">Grams</th>
 							<th class="num">Cal</th>
+							<th>Method</th>
 							<th>Status</th>
 						</tr>
 					</thead>
@@ -299,6 +346,14 @@
 								<td class="ingredient-name">
 									{#if ing.canonical_id}
 										<a href="/ingredients/{ing.canonical_id}">{ing.canonical_name}</a>
+										{#if ing.measurement_type}
+											{@const badge = getMeasurementTypeBadge(ing.measurement_type)}
+											{#if badge}
+												<span class="measurement-badge" style="color: {badge.color}" title="{badge.text}">
+													{badge.text === 'Liquid' ? '💧' : badge.text === 'By weight' ? '⚖️' : '#️⃣'}
+												</span>
+											{/if}
+										{/if}
 									{:else if ing.canonical_name}
 										{ing.canonical_name}
 									{:else}
@@ -318,10 +373,25 @@
 								</td>
 								<td class="num">{ing.grams ? formatNumber(ing.grams, 0) : '-'}</td>
 								<td class="num">{ing.calories ? formatNumber(ing.calories, 0) : '-'}</td>
+								<td class="method-cell">
+									{#if ing.conversion_method && ing.status === 'calculated'}
+										<span
+											class="conversion-icon"
+											title={getConversionTooltip(ing.conversion_method, ing.measurement_type)}
+										>
+											{getConversionIcon(ing.conversion_method)}
+										</span>
+									{:else}
+										<span class="no-method">-</span>
+									{/if}
+								</td>
 								<td>
 									<span class="status-badge" style="color: {getStatusColor(ing.status)}">
 										{getStatusText(ing.status)}
 									</span>
+									{#if ing.error && ing.status !== 'calculated'}
+										<span class="error-tooltip" title={ing.error}>ⓘ</span>
+									{/if}
 								</td>
 							</tr>
 						{/each}
@@ -342,9 +412,16 @@
 								<strong>{formatNumber(nutrition.total.calories, 0)}</strong>
 							</td>
 							<td></td>
+							<td></td>
 						</tr>
 					</tfoot>
 				</table>
+			</div>
+			<div class="method-legend">
+				<span class="legend-item" title="Direct weight conversion">⚖️ Weight</span>
+				<span class="legend-item" title="Using ingredient-specific density">📐 Density</span>
+				<span class="legend-item" title="Estimated using water density (~1g/ml)">💧 Liquid</span>
+				<span class="legend-item" title="Per piece/unit">#️⃣ Count</span>
 			</div>
 		</div>
 	</div>
@@ -644,6 +721,50 @@
 		font-size: var(--text-xs);
 		color: var(--text-muted);
 		margin-left: 2px;
+	}
+
+	.method-cell {
+		text-align: center;
+	}
+
+	.conversion-icon {
+		font-size: var(--text-sm);
+		cursor: help;
+	}
+
+	.no-method {
+		color: var(--text-muted);
+	}
+
+	.measurement-badge {
+		font-size: var(--text-xs);
+		margin-left: var(--space-1);
+		cursor: help;
+	}
+
+	.error-tooltip {
+		font-size: var(--text-xs);
+		color: var(--color-pasta-600);
+		margin-left: var(--space-1);
+		cursor: help;
+	}
+
+	.method-legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-3);
+		margin-top: var(--space-3);
+		padding-top: var(--space-2);
+		border-top: 1px solid var(--border-light);
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+	}
+
+	.legend-item {
+		display: flex;
+		align-items: center;
+		gap: var(--space-1);
+		cursor: help;
 	}
 
 	/* Print styles */

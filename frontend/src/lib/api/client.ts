@@ -363,6 +363,9 @@ export interface NutrientDataWithRanges {
   vitamin_d_mcg: NutrientRange | null;
 }
 
+export type MeasurementType = 'standard' | 'liquid' | 'weight_primary' | 'count_primary';
+export type ConversionMethod = 'weight' | 'volume_density' | 'liquid_density' | 'count' | 'unknown' | null;
+
 export interface IngredientNutritionResult {
   original: string;
   status: 'calculated' | 'no_match' | 'no_quantity' | 'no_density' | 'no_nutrition' | 'error' | 'invalid';
@@ -378,6 +381,8 @@ export interface IngredientNutritionResult {
   carbohydrates_g: NutrientRange | number | null;
   fat_total_g: NutrientRange | number | null;
   error: string | null;
+  measurement_type: MeasurementType | null;
+  conversion_method: ConversionMethod;
 }
 
 export interface RecipeNutrition {

@@ -143,7 +143,9 @@ defmodule Controlcopypasta.Nutrition.Calculator do
       status: nil,
       grams: nil,
       nutrients: empty_nutrients(),
-      error: nil
+      error: nil,
+      measurement_type: nil,
+      conversion_method: nil
     }
 
     # Check if we have a canonical match
@@ -168,7 +170,9 @@ defmodule Controlcopypasta.Nutrition.Calculator do
       status: :invalid,
       grams: nil,
       nutrients: empty_nutrients(),
-      error: "Invalid ingredient format"
+      error: "Invalid ingredient format",
+      measurement_type: nil,
+      conversion_method: nil
     }
   end
 
@@ -177,6 +181,12 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     canonical = Ingredients.get_canonical_ingredient(canonical_id)
     category = if canonical, do: canonical.category, else: nil
     measurement_type = if canonical, do: canonical.measurement_type, else: "standard"
+
+    # Add measurement_type to result
+    result = %{result | measurement_type: measurement_type}
+
+    # Determine conversion method based on unit type
+    conversion_method = determine_conversion_method(parsed.unit, measurement_type)
 
     # Convert to grams range (accounts for quantity ranges and density variation)
     preparation = List.first(parsed.preparations || [])
@@ -201,14 +211,16 @@ defmodule Controlcopypasta.Nutrition.Calculator do
             %{result |
               status: :calculated,
               grams: Range.round_range(grams_range, 1),
-              nutrients: nutrients
+              nutrients: nutrients,
+              conversion_method: conversion_method
             }
 
           {:error, :not_found} ->
             %{result |
               status: :no_nutrition,
               grams: Range.round_range(grams_range, 1),
-              error: "No nutrition data available"
+              error: "No nutrition data available",
+              conversion_method: conversion_method
             }
         end
 
@@ -241,6 +253,21 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     end
   end
 
+  # Determine the conversion method based on unit type and measurement_type
+  defp determine_conversion_method(unit, measurement_type) do
+    cond do
+      is_nil(unit) -> "count"
+      DensityConverter.weight_unit?(unit) -> "weight"
+      DensityConverter.count_unit?(unit) -> "count"
+      DensityConverter.volume_unit?(unit) ->
+        case measurement_type do
+          "liquid" -> "liquid_density"
+          _ -> "volume_density"
+        end
+      true -> "unknown"
+    end
+  end
+
   # If the unit is already a weight unit, we don't need density
   defp try_nutrition_with_weight_unit_range(result, parsed, canonical_id) do
     if DensityConverter.weight_unit?(parsed.unit) do
@@ -258,7 +285,8 @@ defmodule Controlcopypasta.Nutrition.Calculator do
               {:ok, %{result |
                 status: :calculated,
                 grams: Range.round_range(grams_range, 1),
-                nutrients: nutrients
+                nutrients: nutrients,
+                conversion_method: "weight"
               }}
 
             {:error, _} ->
@@ -454,7 +482,9 @@ defmodule Controlcopypasta.Nutrition.Calculator do
       protein_g: format_nutrient_range(get_in(result, [:nutrients, :protein_g])),
       carbohydrates_g: format_nutrient_range(get_in(result, [:nutrients, :carbohydrates_g])),
       fat_total_g: format_nutrient_range(get_in(result, [:nutrients, :fat_total_g])),
-      error: result.error
+      error: result.error,
+      measurement_type: result.measurement_type,
+      conversion_method: result.conversion_method
     }
   end
 
