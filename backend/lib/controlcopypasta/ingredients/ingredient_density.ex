@@ -84,7 +84,7 @@ defmodule Controlcopypasta.Ingredients.IngredientDensity do
     |> validate_number(:grams_per_unit, greater_than: 0)
     |> validate_number(:confidence, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)
     |> validate_number(:data_points, greater_than_or_equal_to: 0)
-    |> unique_constraint([:canonical_ingredient_id, :volume_unit, :preparation],
+    |> unique_constraint([:canonical_ingredient_id, :volume_unit, :preparation, :source],
       name: :ingredient_densities_unique_idx
     )
   end

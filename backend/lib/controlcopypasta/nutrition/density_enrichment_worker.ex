@@ -316,12 +316,13 @@ defmodule Controlcopypasta.Nutrition.DensityEnrichmentWorker do
     end
   end
 
-  # Deduplicate densities by (unit, preparation), keeping highest confidence
+  # Deduplicate densities by (unit, preparation, source), keeping highest confidence within each source
+  # This allows storing data from multiple sources for the same unit/preparation
   defp deduplicate_by_unit(densities) do
     densities
-    |> Enum.group_by(fn d -> {d.volume_unit, d.preparation} end)
+    |> Enum.group_by(fn d -> {d.volume_unit, d.preparation, d.source} end)
     |> Enum.map(fn {_key, group} ->
-      # Keep the one with highest confidence
+      # Keep the one with highest confidence within same source
       Enum.max_by(group, fn d ->
         case d.confidence do
           %Decimal{} = dec -> Decimal.to_float(dec)
