@@ -176,6 +176,32 @@ defmodule Controlcopypasta.Nutrition.USDAClient do
   end
 
   @doc """
+  Search for foods with fallback to Branded data type.
+
+  First tries Foundation and SR Legacy (most authoritative), then falls back
+  to Branded foods if no results found.
+
+  ## Options
+  Same as search/2
+
+  ## Examples
+
+      iex> search_with_fallback("cheerios")
+      {:ok, [%{fdc_id: ..., description: "Cheerios", data_type: "Branded", ...}]}
+  """
+  def search_with_fallback(query, opts \\ []) do
+    # Try Foundation/SR Legacy first (most authoritative)
+    case search(query, Keyword.merge(opts, data_type: ["Foundation", "SR Legacy"])) do
+      {:ok, []} ->
+        # Fallback to Branded if no results
+        search(query, Keyword.merge(opts, data_type: ["Branded"]))
+
+      result ->
+        result
+    end
+  end
+
+  @doc """
   Search and get the best matching food's nutrition data.
 
   Uses string similarity scoring to find the best match, not just the first result.

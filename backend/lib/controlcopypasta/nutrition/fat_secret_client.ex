@@ -116,21 +116,43 @@ defmodule Controlcopypasta.Nutrition.FatSecretClient do
   @doc """
   Search and get the best matching food's nutrition data.
 
-  Prioritizes branded products when available.
+  Uses string similarity scoring to find the best match.
+  Prioritizes generic foods over branded when query appears generic.
   """
   def search_and_get_nutrition(query, opts \\ []) do
+    alias Controlcopypasta.Nutrition.StringSimilarity
+
     case search(query, opts) do
       {:ok, []} ->
         {:error, :not_found}
 
       {:ok, results} ->
-        # Prefer branded products, then by relevance
-        best =
+        # Score each result by similarity to query
+        scored =
           results
-          |> Enum.sort_by(fn r -> if r.brand_name, do: 0, else: 1 end)
-          |> List.first()
+          |> Enum.map(fn result ->
+            # Use food_name for matching (more reliable than brand + name)
+            food_name = result.food_name || ""
+            score = StringSimilarity.match_score(query, food_name)
 
-        get_food(best.food_id, opts)
+            # Bonus for generic foods (no brand) when query seems generic
+            # Penalty for branded foods when query doesn't mention brand
+            brand_adjustment =
+              cond do
+                is_nil(result.brand_name) -> 0.05  # Small bonus for generic
+                String.contains?(String.downcase(query), String.downcase(result.brand_name || "")) -> 0.1  # Query mentions brand
+                true -> -0.05  # Branded but query doesn't mention brand
+              end
+
+            {result, score + brand_adjustment}
+          end)
+          |> Enum.filter(fn {_, score} -> score >= 0.4 end)
+          |> Enum.sort_by(fn {_, score} -> -score end)
+
+        case scored do
+          [{best, _score} | _] -> get_food(best.food_id, opts)
+          [] -> {:error, :not_found}
+        end
 
       {:error, reason} ->
         {:error, reason}

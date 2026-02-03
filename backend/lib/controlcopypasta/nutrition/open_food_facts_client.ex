@@ -182,16 +182,33 @@ defmodule Controlcopypasta.Nutrition.OpenFoodFactsClient do
   end
 
   @doc """
-  Search and get the first matching product with raw data.
+  Search and get the best matching product with raw data.
+  Uses string similarity scoring to find the best match, not just the first result.
   Returns {:ok, %{parsed: ..., raw: ...}} or {:error, reason}
   """
   def search_and_get_first(query, opts \\ []) do
-    case search(query, Keyword.merge(opts, page_size: 5)) do
-      {:ok, [first | _]} ->
-        get_product_with_raw(first.code)
+    alias Controlcopypasta.Nutrition.StringSimilarity
 
+    case search(query, Keyword.merge(opts, page_size: 10)) do
       {:ok, []} ->
         {:error, :not_found}
+
+      {:ok, results} ->
+        # Score results by similarity to query
+        scored =
+          results
+          |> Enum.map(fn result ->
+            product_name = result.product_name || ""
+            score = StringSimilarity.match_score(query, product_name)
+            {result, score}
+          end)
+          |> Enum.filter(fn {_, score} -> score >= 0.4 end)
+          |> Enum.sort_by(fn {_, score} -> -score end)
+
+        case scored do
+          [{best, _score} | _] -> get_product_with_raw(best.code)
+          [] -> {:error, :not_found}
+        end
 
       {:error, reason} ->
         {:error, reason}

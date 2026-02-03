@@ -76,13 +76,17 @@ defmodule Controlcopypasta.Nutrition.StringSimilarity do
         finish = min(i + match_distance + 1, len2)
 
         {found, _j, s2m} =
-          Enum.reduce_while(start..(finish - 1), {false, -1, s2m}, fn j, {_, _, s2m_acc} ->
-            if Enum.at(s2m_acc, j) == false and Enum.at(s2_chars, j) == c1 do
-              {:halt, {true, j, List.replace_at(s2m_acc, j, true)}}
-            else
-              {:cont, {false, -1, s2m_acc}}
-            end
-          end)
+          if start < finish do
+            Enum.reduce_while(start..(finish - 1), {false, -1, s2m}, fn j, {_, _, s2m_acc} ->
+              if Enum.at(s2m_acc, j) == false and Enum.at(s2_chars, j) == c1 do
+                {:halt, {true, j, List.replace_at(s2m_acc, j, true)}}
+              else
+                {:cont, {false, -1, s2m_acc}}
+              end
+            end)
+          else
+            {false, -1, s2m}
+          end
 
         if found do
           {m + 1, List.replace_at(s1m, i, true), s2m}

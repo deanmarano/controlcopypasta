@@ -32,7 +32,7 @@ defmodule Controlcopypasta.Nutrition.DensityEnrichmentWorker do
 
   alias Controlcopypasta.{Repo, Ingredients}
   alias Controlcopypasta.Ingredients.{CanonicalIngredient, IngredientDensity}
-  alias Controlcopypasta.Nutrition.{FatSecretClient, USDAClient, OpenFoodFactsClient}
+  alias Controlcopypasta.Nutrition.{FatSecretClient, USDAClient, OpenFoodFactsClient, SearchQueryPreprocessor}
 
   import Ecto.Query
 
@@ -136,39 +136,43 @@ defmodule Controlcopypasta.Nutrition.DensityEnrichmentWorker do
     ingredient = Repo.get(CanonicalIngredient, ingredient_id)
 
     if ingredient do
-      Logger.info("Fetching density data for: #{ingredient.name}")
-
-      # Try FatSecret first (more serving options)
-      fatsecret_densities = try_fatsecret(ingredient)
-
-      # Then try USDA for additional/fallback data
-      usda_densities = try_usda(ingredient)
-
-      # Finally try Open Food Facts (good for branded/international products)
-      off_densities = try_open_food_facts(ingredient)
-
-      # Combine and deduplicate by (unit, preparation), keeping highest confidence
-      all_densities =
-        (fatsecret_densities ++ usda_densities ++ off_densities)
-        |> deduplicate_by_unit()
-
-      if Enum.empty?(all_densities) do
-        Logger.info("No density data found for: #{ingredient.name}")
-        {:ok, :no_data}
+      # Skip if ingredient appears to be equipment rather than food
+      if SearchQueryPreprocessor.equipment?(ingredient.name) do
+        Logger.info("Skipping equipment: #{ingredient.name}")
+        {:ok, :equipment_skipped}
       else
-        # Save all unique densities
-        saved_count =
-          Enum.reduce(all_densities, 0, fn density_attrs, count ->
-            case Ingredients.upsert_density(density_attrs) do
-              {:ok, _} -> count + 1
-              {:error, reason} ->
-                Logger.warning("Failed to save density for #{ingredient.name}: #{inspect(reason)}")
-                count
-            end
-          end)
+        # Generate search variations using preprocessor
+        variations = SearchQueryPreprocessor.search_variations(ingredient.name, ingredient.display_name)
+        Logger.info("Fetching density data for: #{ingredient.name}, variations: #{inspect(variations)}")
 
-        Logger.info("Saved #{saved_count} densities for #{ingredient.name}")
-        {:ok, %{saved: saved_count}}
+        # Try each API with variations
+        fatsecret_densities = try_fatsecret_with_variations(ingredient, variations)
+        usda_densities = try_usda_with_variations(ingredient, variations)
+        off_densities = try_open_food_facts_with_variations(ingredient, variations)
+
+        # Combine and deduplicate by (unit, preparation), keeping highest confidence
+        all_densities =
+          (fatsecret_densities ++ usda_densities ++ off_densities)
+          |> deduplicate_by_unit()
+
+        if Enum.empty?(all_densities) do
+          Logger.info("No density data found for: #{ingredient.name}")
+          {:ok, :no_data}
+        else
+          # Save all unique densities
+          saved_count =
+            Enum.reduce(all_densities, 0, fn density_attrs, count ->
+              case Ingredients.upsert_density(density_attrs) do
+                {:ok, _} -> count + 1
+                {:error, reason} ->
+                  Logger.warning("Failed to save density for #{ingredient.name}: #{inspect(reason)}")
+                  count
+              end
+            end)
+
+          Logger.info("Saved #{saved_count} densities for #{ingredient.name}")
+          {:ok, %{saved: saved_count}}
+        end
       end
     else
       Logger.warning("Ingredient not found: #{ingredient_id}")
@@ -176,129 +180,139 @@ defmodule Controlcopypasta.Nutrition.DensityEnrichmentWorker do
     end
   end
 
-  defp try_fatsecret(ingredient) do
+  # Try FatSecret with each search variation until results found
+  defp try_fatsecret_with_variations(ingredient, variations) do
     if FatSecretClient.credentials_configured?() do
-      case FatSecretClient.get_food_with_raw(search_fatsecret(ingredient)) do
-        {:ok, %{raw: raw_food}} ->
-          densities = FatSecretClient.extract_densities_from_raw(raw_food, ingredient.id)
-          Logger.debug("FatSecret returned #{length(densities)} densities for #{ingredient.name}")
-          densities
+      # Try each variation until we get results
+      Enum.reduce_while(variations, [], fn query, _acc ->
+        case search_and_get_fatsecret(query, ingredient.id) do
+          densities when is_list(densities) and length(densities) > 0 ->
+            Logger.debug("FatSecret returned #{length(densities)} densities for query: #{query}")
+            {:halt, densities}
 
-        {:error, :not_found} ->
-          # Try with display_name if different
-          if ingredient.display_name && ingredient.display_name != ingredient.name do
-            case search_and_get_fatsecret(ingredient.display_name, ingredient.id) do
-              densities when is_list(densities) -> densities
+          _ ->
+            {:cont, []}
+        end
+      end)
+    else
+      []
+    end
+  end
+
+  defp search_and_get_fatsecret(query, ingredient_id) do
+    case FatSecretClient.search(query, max_results: 5) do
+      {:ok, [_ | _] = results} ->
+        # Use string similarity to find best match
+        alias Controlcopypasta.Nutrition.StringSimilarity
+
+        scored =
+          results
+          |> Enum.map(fn r -> {r, StringSimilarity.match_score(query, r.food_name || "")} end)
+          |> Enum.filter(fn {_, score} -> score >= 0.4 end)
+          |> Enum.sort_by(fn {_, score} -> -score end)
+
+        case scored do
+          [{best, _} | _] ->
+            case FatSecretClient.get_food_with_raw(best.food_id) do
+              {:ok, %{raw: raw_food}} ->
+                FatSecretClient.extract_densities_from_raw(raw_food, ingredient_id)
               _ -> []
             end
-          else
-            []
-          end
-
-        {:error, reason} ->
-          Logger.warning("FatSecret fetch failed for #{ingredient.name}: #{inspect(reason)}")
-          []
-      end
-    else
-      []
-    end
-  end
-
-  defp search_fatsecret(ingredient) do
-    # Search for the food first, then get the first result's ID
-    case FatSecretClient.search(ingredient.name, max_results: 1) do
-      {:ok, [first | _]} -> first.food_id
-      _ -> nil
-    end
-  end
-
-  defp search_and_get_fatsecret(name, ingredient_id) do
-    case FatSecretClient.search(name, max_results: 1) do
-      {:ok, [first | _]} ->
-        case FatSecretClient.get_food_with_raw(first.food_id) do
-          {:ok, %{raw: raw_food}} ->
-            FatSecretClient.extract_densities_from_raw(raw_food, ingredient_id)
-          _ -> []
+          [] -> []
         end
+
+      {:error, reason} ->
+        Logger.debug("FatSecret search failed for #{query}: #{inspect(reason)}")
+        []
+
       _ -> []
     end
   end
 
-  defp try_usda(ingredient) do
+  # Try USDA with each search variation, using fallback to Branded data
+  defp try_usda_with_variations(ingredient, variations) do
     if USDAClient.api_key_configured?() do
-      case USDAClient.search(ingredient.name, page_size: 1) do
-        {:ok, [first | _]} ->
-          case USDAClient.get_food_with_raw(first.fdc_id) do
-            {:ok, %{raw: raw_food}} ->
-              densities = USDAClient.extract_densities_from_raw(raw_food, ingredient.id)
-              Logger.debug("USDA returned #{length(densities)} densities for #{ingredient.name}")
-              densities
+      Enum.reduce_while(variations, [], fn query, _acc ->
+        case search_and_get_usda(query, ingredient.id) do
+          densities when is_list(densities) and length(densities) > 0 ->
+            Logger.debug("USDA returned #{length(densities)} densities for query: #{query}")
+            {:halt, densities}
 
-            {:error, reason} ->
-              Logger.warning("USDA get_food failed for #{ingredient.name}: #{inspect(reason)}")
-              []
-          end
-
-        {:ok, []} ->
-          # Try with display_name if different
-          if ingredient.display_name && ingredient.display_name != ingredient.name do
-            search_and_get_usda(ingredient.display_name, ingredient.id)
-          else
-            []
-          end
-
-        {:error, reason} ->
-          Logger.warning("USDA search failed for #{ingredient.name}: #{inspect(reason)}")
-          []
-      end
+          _ ->
+            {:cont, []}
+        end
+      end)
     else
       []
     end
   end
 
-  defp search_and_get_usda(name, ingredient_id) do
-    case USDAClient.search(name, page_size: 1) do
-      {:ok, [first | _]} ->
-        case USDAClient.get_food_with_raw(first.fdc_id) do
-          {:ok, %{raw: raw_food}} ->
-            USDAClient.extract_densities_from_raw(raw_food, ingredient_id)
-          _ -> []
+  defp search_and_get_usda(query, ingredient_id) do
+    alias Controlcopypasta.Nutrition.StringSimilarity
+
+    # Use search_with_fallback to try Foundation/SR Legacy first, then Branded
+    case USDAClient.search_with_fallback(query, page_size: 5) do
+      {:ok, [_ | _] = results} ->
+        # Score results by similarity
+        scored =
+          results
+          |> Enum.map(fn r ->
+            score = StringSimilarity.match_score(query, r.description)
+            # Bonus for Foundation/SR Legacy
+            type_bonus = case r.data_type do
+              "Foundation" -> 0.1
+              "SR Legacy" -> 0.05
+              _ -> 0
+            end
+            {r, score + type_bonus}
+          end)
+          |> Enum.filter(fn {_, score} -> score >= 0.4 end)
+          |> Enum.sort_by(fn {_, score} -> -score end)
+
+        case scored do
+          [{best, _} | _] ->
+            case USDAClient.get_food_with_raw(best.fdc_id) do
+              {:ok, %{raw: raw_food}} ->
+                USDAClient.extract_densities_from_raw(raw_food, ingredient_id)
+              _ -> []
+            end
+          [] -> []
         end
+
+      {:error, reason} ->
+        Logger.debug("USDA search failed for #{query}: #{inspect(reason)}")
+        []
+
       _ -> []
     end
   end
 
-  defp try_open_food_facts(ingredient) do
-    # Open Food Facts doesn't require credentials
-    case OpenFoodFactsClient.search_and_get_first(ingredient.name) do
-      {:ok, %{raw: raw_product}} ->
-        densities = OpenFoodFactsClient.extract_densities_from_raw(raw_product, ingredient.id)
-        Logger.debug("Open Food Facts returned #{length(densities)} densities for #{ingredient.name}")
-        densities
+  # Try Open Food Facts with each search variation
+  defp try_open_food_facts_with_variations(ingredient, variations) do
+    Enum.reduce_while(variations, [], fn query, _acc ->
+      case search_and_get_off(query, ingredient.id) do
+        densities when is_list(densities) and length(densities) > 0 ->
+          Logger.debug("Open Food Facts returned #{length(densities)} densities for query: #{query}")
+          {:halt, densities}
 
-      {:error, :not_found} ->
-        # Try with display_name if different
-        if ingredient.display_name && ingredient.display_name != ingredient.name do
-          search_and_get_off(ingredient.display_name, ingredient.id)
-        else
-          []
-        end
+        _ ->
+          {:cont, []}
+      end
+    end)
+  end
+
+  defp search_and_get_off(query, ingredient_id) do
+    case OpenFoodFactsClient.search_and_get_first(query) do
+      {:ok, %{raw: raw_product}} ->
+        OpenFoodFactsClient.extract_densities_from_raw(raw_product, ingredient_id)
 
       {:error, :rate_limited} ->
-        Logger.warning("Open Food Facts rate limited for #{ingredient.name}")
+        Logger.warning("Open Food Facts rate limited for #{query}")
         []
 
       {:error, reason} ->
-        Logger.warning("Open Food Facts fetch failed for #{ingredient.name}: #{inspect(reason)}")
+        Logger.debug("Open Food Facts search failed for #{query}: #{inspect(reason)}")
         []
-    end
-  end
-
-  defp search_and_get_off(name, ingredient_id) do
-    case OpenFoodFactsClient.search_and_get_first(name) do
-      {:ok, %{raw: raw_product}} ->
-        OpenFoodFactsClient.extract_densities_from_raw(raw_product, ingredient_id)
-      _ -> []
     end
   end
 
