@@ -185,6 +185,17 @@
 		return n.toLocaleString();
 	}
 
+	// Parse datetime string from server (assumes UTC) and format to local time
+	function formatLocalTime(dateStr: string): string {
+		const normalized = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z';
+		return new Date(normalized).toLocaleTimeString();
+	}
+
+	function formatLocalDateTime(dateStr: string): string {
+		const normalized = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z';
+		return new Date(normalized).toLocaleString();
+	}
+
 	async function captureScreenshot(domain: string) {
 		const token = authStore.getToken();
 		if (!token) return;
@@ -290,7 +301,7 @@
 										{browserStatus.stats.last_result}
 									</span>
 									{#if browserStatus.stats.last_action_at}
-										<span class="last-action-time">{new Date(browserStatus.stats.last_action_at).toLocaleString()}</span>
+										<span class="last-action-time">{formatLocalDateTime(browserStatus.stats.last_action_at)}</span>
 									{/if}
 								</div>
 								{#if browserStatus.stats.last_url}
@@ -302,7 +313,7 @@
 						{/if}
 						{#if browserStatus.stats.started_at}
 							<div class="browser-uptime">
-								Started: {new Date(browserStatus.stats.started_at).toLocaleString()}
+								Started: {formatLocalDateTime(browserStatus.stats.started_at)}
 							</div>
 						{/if}
 					</div>
@@ -357,7 +368,7 @@
 								<div class="worker-item">
 									<span class="worker-id">#{worker.id}</span>
 									<span class="worker-url" title={worker.url}>{worker.url}</span>
-									<span class="worker-time">{new Date(worker.started_at).toLocaleTimeString()}</span>
+									<span class="worker-time">{formatLocalTime(worker.started_at)}</span>
 								</div>
 							{/each}
 						</div>

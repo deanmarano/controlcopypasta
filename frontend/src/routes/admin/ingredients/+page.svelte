@@ -135,6 +135,18 @@
 		return n.toLocaleString();
 	}
 
+	// Parse datetime string from server (assumes UTC) and format to local time
+	function formatLocalTime(dateStr: string): string {
+		// If no timezone indicator, assume UTC
+		const normalized = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z';
+		return new Date(normalized).toLocaleTimeString();
+	}
+
+	function formatLocalDateTime(dateStr: string): string {
+		const normalized = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z';
+		return new Date(normalized).toLocaleString();
+	}
+
 	async function loadEnrichmentStats() {
 		const token = authStore.getToken();
 		if (!token) return;
@@ -323,7 +335,7 @@
 								{#if job.force}
 									<span class="job-force">Force</span>
 								{/if}
-								<span class="job-time">{new Date(job.inserted_at).toLocaleTimeString()}</span>
+								<span class="job-time">{formatLocalTime(job.inserted_at)}</span>
 							</div>
 						{/each}
 					</div>
@@ -332,7 +344,7 @@
 
 			{#if parsingStats.last_completed}
 				<div class="parsing-last">
-					<span>Last completed batch: offset {parsingStats.last_completed.offset} at {new Date(parsingStats.last_completed.completed_at).toLocaleString()}</span>
+					<span>Last completed batch: offset {parsingStats.last_completed.offset} at {formatLocalDateTime(parsingStats.last_completed.completed_at)}</span>
 				</div>
 			{/if}
 		</section>

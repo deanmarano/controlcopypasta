@@ -220,6 +220,12 @@
 			.join(' ');
 	}
 
+	// Parse datetime string from server (assumes UTC) and format to local date
+	function formatLocalDate(dateStr: string): string {
+		const normalized = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z';
+		return new Date(normalized).toLocaleDateString();
+	}
+
 	const filteredPending = $derived(
 		searchQuery
 			? pending.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -361,7 +367,7 @@
 								<span class="status-badge status-{item.status}">{item.status}</span>
 								{#if item.reviewed_at}
 									<span class="reviewed-at">
-										{new Date(item.reviewed_at).toLocaleDateString()}
+										{formatLocalDate(item.reviewed_at)}
 									</span>
 								{/if}
 							</div>
