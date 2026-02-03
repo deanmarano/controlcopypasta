@@ -53,12 +53,18 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     :vitamin_d_mcg
   ]
 
+  # Valid nutrition sources
+  @valid_sources [:composite, :usda, :manual, :fatsecret, :open_food_facts, :nutritionix, :estimated]
+
   @doc """
   Calculates nutrition for a recipe.
 
   ## Options
 
   - `:servings_override` - Override the recipe's serving count
+  - `:source` - Nutrition source to use (default: `:composite`)
+    - `:composite` - Weighted average of all available sources (recommended)
+    - `:usda`, `:fatsecret`, etc. - Use specific source only
 
   ## Returns
 
@@ -66,14 +72,15 @@ defmodule Controlcopypasta.Nutrition.Calculator do
   """
   def calculate_recipe_nutrition(%Recipe{} = recipe, opts \\ []) do
     servings = parse_servings(Keyword.get(opts, :servings_override) || recipe.servings)
+    source = Keyword.get(opts, :source, :composite)
 
     # Build ingredient lookup for efficient parsing
     lookup = Ingredients.build_ingredient_lookup()
 
-    # Process each ingredient
+    # Process each ingredient with source selection
     ingredient_results =
       recipe.ingredients
-      |> Enum.map(&process_ingredient(&1, lookup))
+      |> Enum.map(&process_ingredient(&1, lookup, source))
 
     # Calculate totals
     totals = sum_nutrients(ingredient_results)
@@ -88,15 +95,25 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     # Generate warnings
     warnings = generate_warnings(ingredient_results, completeness)
 
+    # Collect available sources across all ingredients
+    available_sources = collect_available_sources(ingredient_results)
+
     %{
       total: format_nutrients_map(totals),
       per_serving: format_nutrients_map(per_serving),
       servings: servings,
       completeness: Float.round(completeness, 2),
+      source_used: source,
+      available_sources: available_sources,
       ingredients: Enum.map(ingredient_results, &format_ingredient_result/1),
       warnings: warnings
     }
   end
+
+  @doc """
+  Returns the list of valid nutrition sources.
+  """
+  def valid_sources, do: @valid_sources
 
   # Format all nutrients in a map
   defp format_nutrients_map(nutrients) do
@@ -117,16 +134,22 @@ defmodule Controlcopypasta.Nutrition.Calculator do
   Calculates nutrition for a single ingredient text.
 
   Useful for testing or ad-hoc calculations.
+
+  ## Options
+
+  - `:lookup` - Pre-built ingredient lookup map
+  - `:source` - Nutrition source to use (default: `:composite`)
   """
   def calculate_ingredient_nutrition(ingredient_text, opts \\ []) do
     lookup = Keyword.get_lazy(opts, :lookup, fn -> Ingredients.build_ingredient_lookup() end)
+    source = Keyword.get(opts, :source, :composite)
 
     ingredient_map = %{"text" => ingredient_text}
-    process_ingredient(ingredient_map, lookup)
+    process_ingredient(ingredient_map, lookup, source)
   end
 
   # Process a single ingredient map
-  defp process_ingredient(%{"text" => text}, lookup) do
+  defp process_ingredient(%{"text" => text}, lookup, source) do
     # Parse the ingredient using TokenParser
     parsed = TokenParser.parse(text, lookup: lookup)
 
@@ -134,6 +157,14 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     primary = parsed.primary_ingredient
     canonical_id = if primary, do: primary.canonical_id, else: nil
     canonical_name = if primary, do: primary.canonical_name, else: nil
+
+    # Get available sources for this ingredient
+    available_sources = if canonical_id do
+      Ingredients.list_nutrition_sources(canonical_id)
+      |> Enum.map(fn n -> %{source: n.source, confidence: decimal_to_float(n.confidence), is_primary: n.is_primary} end)
+    else
+      []
+    end
 
     result = %{
       original: text,
@@ -145,7 +176,9 @@ defmodule Controlcopypasta.Nutrition.Calculator do
       nutrients: empty_nutrients(),
       error: nil,
       measurement_type: nil,
-      conversion_method: nil
+      conversion_method: nil,
+      source_used: nil,
+      available_sources: available_sources
     }
 
     # Check if we have a canonical match
@@ -157,11 +190,11 @@ defmodule Controlcopypasta.Nutrition.Calculator do
         %{result | status: :no_quantity, error: "No quantity found"}
 
       true ->
-        calculate_ingredient_nutrients(result, parsed, canonical_id, canonical_name)
+        calculate_ingredient_nutrients(result, parsed, canonical_id, canonical_name, source)
     end
   end
 
-  defp process_ingredient(_ingredient_map, _lookup) do
+  defp process_ingredient(_ingredient_map, _lookup, _source) do
     %{
       original: "",
       parsed: nil,
@@ -172,11 +205,19 @@ defmodule Controlcopypasta.Nutrition.Calculator do
       nutrients: empty_nutrients(),
       error: "Invalid ingredient format",
       measurement_type: nil,
-      conversion_method: nil
+      conversion_method: nil,
+      source_used: nil,
+      available_sources: []
     }
   end
 
-  defp calculate_ingredient_nutrients(result, parsed, canonical_id, canonical_name) do
+  # Helper to convert Decimal to float safely
+  defp decimal_to_float(nil), do: nil
+  defp decimal_to_float(%Decimal{} = d), do: Decimal.to_float(d)
+  defp decimal_to_float(f) when is_float(f), do: f
+  defp decimal_to_float(i) when is_integer(i), do: i * 1.0
+
+  defp calculate_ingredient_nutrients(result, parsed, canonical_id, canonical_name, source) do
     # Get the canonical ingredient for category and measurement_type info
     canonical = Ingredients.get_canonical_ingredient(canonical_id)
     category = if canonical, do: canonical.category, else: nil
@@ -203,16 +244,17 @@ defmodule Controlcopypasta.Nutrition.Calculator do
            measurement_type: measurement_type
          ) do
       {:ok, grams_range} ->
-        # Look up nutrition data
-        case Ingredients.get_nutrition(canonical_id) do
-          {:ok, nutrition} ->
+        # Look up nutrition data based on source
+        case get_nutrition_for_source(canonical_id, source) do
+          {:ok, nutrition, source_used} ->
             # Scale nutrients with range propagation
             nutrients = scale_nutrients_with_range(nutrition, grams_range)
             %{result |
               status: :calculated,
               grams: Range.round_range(grams_range, 1),
               nutrients: nutrients,
-              conversion_method: conversion_method
+              conversion_method: conversion_method,
+              source_used: source_used
             }
 
           {:error, :not_found} ->
@@ -226,7 +268,7 @@ defmodule Controlcopypasta.Nutrition.Calculator do
 
       {:error, :no_density} ->
         # We might have nutrition but no density - try alternate method
-        case try_nutrition_with_weight_unit_range(result, parsed, canonical_id) do
+        case try_nutrition_with_weight_unit_range(result, parsed, canonical_id, source) do
           {:ok, updated_result} -> updated_result
           :error ->
             %{result | status: :no_density, error: "No density data to convert volume to grams"}
@@ -234,7 +276,7 @@ defmodule Controlcopypasta.Nutrition.Calculator do
 
       {:error, :no_count_density} ->
         # Same fallback for count items
-        case try_nutrition_with_weight_unit_range(result, parsed, canonical_id) do
+        case try_nutrition_with_weight_unit_range(result, parsed, canonical_id, source) do
           {:ok, updated_result} -> updated_result
           :error ->
             %{result | status: :no_density, error: "No density data for count item"}
@@ -242,7 +284,7 @@ defmodule Controlcopypasta.Nutrition.Calculator do
 
       {:error, :volume_not_recommended} ->
         # Weight-primary ingredient used with volume unit - warn but try weight fallback
-        case try_nutrition_with_weight_unit_range(result, parsed, canonical_id) do
+        case try_nutrition_with_weight_unit_range(result, parsed, canonical_id, source) do
           {:ok, updated_result} -> updated_result
           :error ->
             %{result | status: :no_density, error: "This ingredient is typically measured by weight, not volume"}
@@ -251,6 +293,119 @@ defmodule Controlcopypasta.Nutrition.Calculator do
       {:error, reason} ->
         %{result | status: :error, error: "Conversion error: #{inspect(reason)}"}
     end
+  end
+
+  # Get nutrition for a specific source, or composite if requested
+  defp get_nutrition_for_source(canonical_id, :composite) do
+    sources = Ingredients.list_nutrition_sources(canonical_id)
+
+    if Enum.empty?(sources) do
+      {:error, :not_found}
+    else
+      composite = composite_nutrition(sources)
+      {:ok, composite, :composite}
+    end
+  end
+
+  defp get_nutrition_for_source(canonical_id, source) when is_atom(source) do
+    case Ingredients.get_nutrition_by_source(canonical_id, source) do
+      nil ->
+        # Fall back to primary source if specific source not available
+        case Ingredients.get_nutrition(canonical_id) do
+          {:ok, nutrition} -> {:ok, nutrition, nutrition.source}
+          {:error, :not_found} -> {:error, :not_found}
+        end
+
+      nutrition ->
+        {:ok, nutrition, source}
+    end
+  end
+
+  # Calculate weighted average nutrition across multiple sources
+  defp composite_nutrition(sources) when is_list(sources) do
+    # Calculate total confidence for weighting
+    raw_confidence =
+      sources
+      |> Enum.map(&(decimal_to_float(&1.confidence) || 0.5))
+      |> Enum.sum()
+
+    # If no confidence data, use equal weights
+    _total_confidence = if raw_confidence == +0.0, do: length(sources) * 0.5, else: raw_confidence
+
+    # Build a composite IngredientNutrition struct with weighted averages
+    # First, get the serving size from the first source (they should all use the same reference)
+    first_source = hd(sources)
+
+    # Calculate weighted average for each nutrient field
+    nutrient_fields = IngredientNutrition.all_nutrient_fields()
+
+    weighted_nutrients =
+      nutrient_fields
+      |> Enum.map(fn field ->
+        weighted_value =
+          sources
+          |> Enum.reduce({0.0, 0.0}, fn source, {sum, weight_sum} ->
+            value = Map.get(source, field)
+            confidence = decimal_to_float(source.confidence) || 0.5
+
+            if value do
+              value_float = decimal_to_float(value)
+              {sum + value_float * confidence, weight_sum + confidence}
+            else
+              {sum, weight_sum}
+            end
+          end)
+          |> case do
+            {_, ws} when ws == 0.0 -> nil
+            {sum, weight_sum} -> Decimal.from_float(sum / weight_sum)
+          end
+
+        {field, weighted_value}
+      end)
+      |> Map.new()
+
+    # Calculate composite confidence (weighted average of source confidences)
+    composite_confidence =
+      sources
+      |> Enum.map(&(decimal_to_float(&1.confidence) || 0.5))
+      |> then(fn confidences ->
+        if Enum.empty?(confidences) do
+          Decimal.new("0.5")
+        else
+          avg = Enum.sum(confidences) / length(confidences)
+          Decimal.from_float(avg)
+        end
+      end)
+
+    # Build composite struct
+    %IngredientNutrition{
+      canonical_ingredient_id: first_source.canonical_ingredient_id,
+      source: :estimated,  # Mark as composite/estimated
+      serving_size_value: first_source.serving_size_value,
+      serving_size_unit: first_source.serving_size_unit,
+      is_primary: false,
+      confidence: composite_confidence
+    }
+    |> Map.merge(weighted_nutrients)
+  end
+
+  # Collect unique available sources across all ingredients
+  defp collect_available_sources(ingredient_results) do
+    ingredient_results
+    |> Enum.flat_map(fn r -> r.available_sources || [] end)
+    |> Enum.reduce(%{}, fn source_info, acc ->
+      # Keep the highest confidence for each source type
+      key = source_info.source
+      existing = Map.get(acc, key)
+
+      if is_nil(existing) || (source_info.confidence || 0) > (existing.confidence || 0) do
+        Map.put(acc, key, source_info)
+      else
+        acc
+      end
+    end)
+    |> Map.values()
+    |> Enum.sort_by(fn s -> -(s.confidence || 0) end)
   end
 
   # Determine the conversion method based on unit type and measurement_type
@@ -269,7 +424,7 @@ defmodule Controlcopypasta.Nutrition.Calculator do
   end
 
   # If the unit is already a weight unit, we don't need density
-  defp try_nutrition_with_weight_unit_range(result, parsed, canonical_id) do
+  defp try_nutrition_with_weight_unit_range(result, parsed, canonical_id, source) do
     if DensityConverter.weight_unit?(parsed.unit) do
       case DensityConverter.to_grams_range(
              canonical_id,
@@ -279,14 +434,15 @@ defmodule Controlcopypasta.Nutrition.Calculator do
              parsed.unit
            ) do
         {:ok, grams_range} ->
-          case Ingredients.get_nutrition(canonical_id) do
-            {:ok, nutrition} ->
+          case get_nutrition_for_source(canonical_id, source) do
+            {:ok, nutrition, source_used} ->
               nutrients = scale_nutrients_with_range(nutrition, grams_range)
               {:ok, %{result |
                 status: :calculated,
                 grams: Range.round_range(grams_range, 1),
                 nutrients: nutrients,
-                conversion_method: "weight"
+                conversion_method: "weight",
+                source_used: source_used
               }}
 
             {:error, _} ->
@@ -484,7 +640,9 @@ defmodule Controlcopypasta.Nutrition.Calculator do
       fat_total_g: format_nutrient_range(get_in(result, [:nutrients, :fat_total_g])),
       error: result.error,
       measurement_type: result.measurement_type,
-      conversion_method: result.conversion_method
+      conversion_method: result.conversion_method,
+      source_used: result.source_used,
+      available_sources: result.available_sources || []
     }
   end
 

@@ -366,6 +366,15 @@ export interface NutrientDataWithRanges {
 export type MeasurementType = 'standard' | 'liquid' | 'weight_primary' | 'count_primary';
 export type ConversionMethod = 'weight' | 'volume_density' | 'liquid_density' | 'count' | 'unknown' | null;
 
+// Nutrition source types for multi-source support
+export type NutritionSource = 'composite' | 'usda' | 'manual' | 'fatsecret' | 'open_food_facts' | 'nutritionix' | 'estimated';
+
+export interface SourceInfo {
+  source: NutritionSource;
+  confidence: number;
+  is_primary: boolean;
+}
+
 export interface IngredientNutritionResult {
   original: string;
   status: 'calculated' | 'no_match' | 'no_quantity' | 'no_density' | 'no_nutrition' | 'error' | 'invalid';
@@ -383,6 +392,8 @@ export interface IngredientNutritionResult {
   error: string | null;
   measurement_type: MeasurementType | null;
   conversion_method: ConversionMethod;
+  source_used: NutritionSource | null;
+  available_sources: SourceInfo[];
 }
 
 export interface RecipeNutrition {
@@ -390,6 +401,8 @@ export interface RecipeNutrition {
   recipe_title: string;
   servings: number;
   completeness: number;
+  source_used: NutritionSource;
+  available_sources: SourceInfo[];
   total: NutrientData;
   per_serving: NutrientData;
   ingredients: IngredientNutritionResult[];
@@ -476,9 +489,10 @@ export const recipes = {
   compare: (token: string, id: string, compareId: string) =>
     request<{ data: RecipeComparison }>(`/recipes/${id}/compare/${compareId}`, { token }),
 
-  nutrition: (token: string, id: string, params?: { servings?: number; decisions?: Record<number, string> }) => {
+  nutrition: (token: string, id: string, params?: { servings?: number; decisions?: Record<number, string>; source?: NutritionSource }) => {
     const searchParams = new URLSearchParams();
     if (params?.servings) searchParams.set('servings', params.servings.toString());
+    if (params?.source) searchParams.set('source', params.source);
     if (params?.decisions) {
       for (const [idx, canonicalId] of Object.entries(params.decisions)) {
         searchParams.set(`decisions[${idx}]`, canonicalId);
@@ -722,9 +736,10 @@ export const browse = {
   getRecipe: (token: string, domain: string, id: string) =>
     request<{ data: Recipe }>(`/browse/domains/${encodeURIComponent(domain)}/recipes/${id}`, { token }),
 
-  nutrition: (token: string, domain: string, id: string, params?: { servings?: number }) => {
+  nutrition: (token: string, domain: string, id: string, params?: { servings?: number; source?: NutritionSource }) => {
     const searchParams = new URLSearchParams();
     if (params?.servings) searchParams.set('servings', params.servings.toString());
+    if (params?.source) searchParams.set('source', params.source);
     const query = searchParams.toString();
     return request<{ data: RecipeNutrition }>(`/browse/domains/${encodeURIComponent(domain)}/recipes/${id}/nutrition${query ? `?${query}` : ''}`, { token });
   }

@@ -93,11 +93,21 @@ defmodule ControlcopypastaWeb.RecipeJSON do
         recipe_title: recipe.title,
         servings: nutrition.servings,
         completeness: nutrition.completeness,
+        source_used: nutrition.source_used,
+        available_sources: Enum.map(nutrition.available_sources || [], &format_source_info/1),
         total: nutrition_data(nutrition.total),
         per_serving: nutrition_data(nutrition.per_serving),
         ingredients: Enum.map(nutrition.ingredients, &ingredient_nutrition_data/1),
         warnings: nutrition.warnings
       }
+    }
+  end
+
+  defp format_source_info(source_info) do
+    %{
+      source: source_info.source,
+      confidence: source_info.confidence,
+      is_primary: source_info[:is_primary] || false
     }
   end
 
@@ -145,7 +155,11 @@ defmodule ControlcopypastaWeb.RecipeJSON do
       protein_g: format_nutrient_value(ing.protein_g),
       carbohydrates_g: format_nutrient_value(ing.carbohydrates_g),
       fat_total_g: format_nutrient_value(ing.fat_total_g),
-      error: ing.error
+      error: ing.error,
+      measurement_type: ing[:measurement_type],
+      conversion_method: ing[:conversion_method],
+      source_used: ing[:source_used],
+      available_sources: Enum.map(ing[:available_sources] || [], &format_source_info/1)
     }
   end
 

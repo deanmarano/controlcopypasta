@@ -211,6 +211,7 @@ defmodule ControlcopypastaWeb.RecipeController do
     user = conn.assigns.current_user
     servings_override = Map.get(params, "servings")
     decisions_params = Map.get(params, "decisions", %{})
+    source = parse_source_param(Map.get(params, "source"))
 
     case Recipes.get_recipe_for_user(user.id, id) do
       nil ->
@@ -230,13 +231,27 @@ defmodule ControlcopypastaWeb.RecipeController do
 
         opts = [
           servings_override: if(servings_override, do: parse_int(servings_override, nil)),
-          decisions: decisions
+          decisions: decisions,
+          source: source
         ] |> Enum.reject(fn {_k, v} -> is_nil(v) end)
 
         nutrition = Calculator.calculate_recipe_nutrition(recipe, opts)
         render(conn, :nutrition, nutrition: nutrition, recipe: recipe)
     end
   end
+
+  # Parse source parameter into atom, default to :composite
+  defp parse_source_param(nil), do: :composite
+  defp parse_source_param(source) when is_binary(source) do
+    valid_sources = Calculator.valid_sources() |> Enum.map(&Atom.to_string/1)
+
+    if source in valid_sources do
+      String.to_existing_atom(source)
+    else
+      :composite
+    end
+  end
+  defp parse_source_param(_), do: :composite
 
   defp parse_int(val, default) when is_binary(val) do
     case Integer.parse(val) do

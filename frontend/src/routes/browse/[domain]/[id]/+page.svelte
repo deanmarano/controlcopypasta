@@ -3,7 +3,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { browse, recipes, type Recipe, type RecipeNutrition } from '$lib/api/client';
+	import { browse, recipes, type Recipe, type RecipeNutrition, type NutritionSource } from '$lib/api/client';
 	import NutritionPanel from '$lib/components/NutritionPanel.svelte';
 	import IngredientDiagnostics from '$lib/components/IngredientDiagnostics.svelte';
 	import PrepList from '$lib/components/PrepList.svelte';
@@ -20,6 +20,7 @@
 	let loadingNutrition = $state(false);
 	let nutritionError = $state('');
 	let showNutrition = $state(false);
+	let nutritionSource = $state<NutritionSource>('composite');
 
 	const domain = $derived($page.params.domain);
 	const recipeId = $derived($page.params.id);
@@ -195,23 +196,28 @@
 		scale = Math.max(0.25, Math.min(4, newScale));
 	}
 
-	async function loadNutrition() {
+	async function loadNutrition(forceReload = false) {
 		const token = authStore.getToken();
 		if (!token || !domain || !recipeId) return;
 
-		// Don't reload if we already have nutrition data
-		if (nutrition) return;
+		// Don't reload if we already have nutrition data (unless forced)
+		if (nutrition && !forceReload) return;
 
 		loadingNutrition = true;
 		nutritionError = '';
 		try {
-			const result = await browse.nutrition(token, domain, recipeId);
+			const result = await browse.nutrition(token, domain, recipeId, { source: nutritionSource });
 			nutrition = result.data;
 		} catch (e) {
 			nutritionError = 'Could not load nutrition data';
 		} finally {
 			loadingNutrition = false;
 		}
+	}
+
+	function handleSourceChange(event: CustomEvent<NutritionSource>) {
+		nutritionSource = event.detail;
+		loadNutrition(true);
 	}
 
 	function toggleNutrition() {
@@ -335,6 +341,8 @@
 						nutrition={nutrition}
 						loading={loadingNutrition}
 						error={nutritionError}
+						selectedSource={nutritionSource}
+						on:sourceChange={handleSourceChange}
 					/>
 				</div>
 			{/if}

@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { recipes, ingredients as ingredientsApi, shoppingLists, type Recipe, type Ingredient, type SimilarRecipe, type ScaledIngredient, type ShoppingList, type RecipeNutrition, type IngredientDecision } from '$lib/api/client';
+	import { recipes, ingredients as ingredientsApi, shoppingLists, type Recipe, type Ingredient, type SimilarRecipe, type ScaledIngredient, type ShoppingList, type RecipeNutrition, type IngredientDecision, type NutritionSource } from '$lib/api/client';
 	import NutritionPanel from '$lib/components/NutritionPanel.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import IngredientDiagnostics from '$lib/components/IngredientDiagnostics.svelte';
@@ -25,6 +25,7 @@
 	let loadingNutrition = $state(false);
 	let nutritionError = $state('');
 	let showNutrition = $state(false);
+	let nutritionSource = $state<NutritionSource>('composite');
 
 	// Shopping list modal state
 	let showShoppingModal = $state(false);
@@ -70,6 +71,7 @@
 		nutrition = null;
 		nutritionError = '';
 		showNutrition = false;
+		nutritionSource = 'composite';
 		decisions = new Map();
 
 		try {
@@ -130,7 +132,7 @@
 
 			// Refresh nutrition if it's being shown
 			if (showNutrition && nutrition) {
-				loadNutrition();
+				loadNutrition(true);
 			}
 		} catch {
 			// Revert on error
@@ -154,23 +156,28 @@
 		}
 	}
 
-	async function loadNutrition() {
+	async function loadNutrition(forceReload = false) {
 		const token = authStore.getToken();
 		if (!token || !recipe) return;
 
-		// Don't reload if we already have nutrition data
-		if (nutrition) return;
+		// Don't reload if we already have nutrition data (unless forced)
+		if (nutrition && !forceReload) return;
 
 		loadingNutrition = true;
 		nutritionError = '';
 		try {
-			const result = await recipes.nutrition(token, recipe.id);
+			const result = await recipes.nutrition(token, recipe.id, { source: nutritionSource });
 			nutrition = result.data;
 		} catch (e) {
 			nutritionError = 'Could not load nutrition data';
 		} finally {
 			loadingNutrition = false;
 		}
+	}
+
+	function handleSourceChange(event: CustomEvent<NutritionSource>) {
+		nutritionSource = event.detail;
+		loadNutrition(true);
 	}
 
 	function toggleNutrition() {
@@ -759,6 +766,8 @@
 						nutrition={nutrition}
 						loading={loadingNutrition}
 						error={nutritionError}
+						selectedSource={nutritionSource}
+						on:sourceChange={handleSourceChange}
 					/>
 				</div>
 			{/if}

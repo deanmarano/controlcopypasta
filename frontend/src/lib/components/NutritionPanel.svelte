@@ -1,16 +1,54 @@
 <script lang="ts">
-	import type { RecipeNutrition, NutrientData, NutrientRange, MeasurementType, ConversionMethod } from '$lib/api/client';
+	import type { RecipeNutrition, NutrientData, NutrientRange, MeasurementType, ConversionMethod, NutritionSource, SourceInfo } from '$lib/api/client';
 	import { getNutrientValue, isNutrientRange } from '$lib/api/client';
 	import NutrientRangeBar from './NutrientRangeBar.svelte';
+	import { createEventDispatcher } from 'svelte';
 
 	interface Props {
 		nutrition: RecipeNutrition | null;
 		loading?: boolean;
 		error?: string;
 		showRangeBars?: boolean;
+		selectedSource?: NutritionSource;
 	}
 
-	let { nutrition, loading = false, error = '', showRangeBars = true }: Props = $props();
+	let { nutrition, loading = false, error = '', showRangeBars = true, selectedSource = 'composite' }: Props = $props();
+
+	const dispatch = createEventDispatcher<{ sourceChange: NutritionSource }>();
+
+	// Format source name for display
+	function formatSourceName(source: NutritionSource): string {
+		const names: Record<NutritionSource, string> = {
+			composite: 'Composite',
+			usda: 'USDA',
+			manual: 'Manual',
+			fatsecret: 'FatSecret',
+			open_food_facts: 'Open Food Facts',
+			nutritionix: 'Nutritionix',
+			estimated: 'Estimated'
+		};
+		return names[source] || source;
+	}
+
+	function handleSourceChange(event: Event) {
+		const select = event.target as HTMLSelectElement;
+		const newSource = select.value as NutritionSource;
+		dispatch('sourceChange', newSource);
+	}
+
+	// Get the confidence for the selected/used source
+	function getSourceConfidence(): number {
+		if (!nutrition) return 1.0;
+		if (nutrition.source_used === 'composite') {
+			// For composite, average all source confidences
+			if (nutrition.available_sources.length === 0) return 1.0;
+			const sum = nutrition.available_sources.reduce((acc, s) => acc + s.confidence, 0);
+			return sum / nutrition.available_sources.length;
+		}
+		// For specific source, find its confidence
+		const source = nutrition.available_sources.find(s => s.source === nutrition.source_used);
+		return source?.confidence ?? 1.0;
+	}
 
 	// Extract "best" value from a NutrientRange or scalar
 	function getValue(value: NutrientRange | number | null): number | null {
@@ -213,6 +251,28 @@
 					</div>
 				</div>
 
+				{#if nutrition.available_sources && nutrition.available_sources.length > 0}
+					<div class="source-selector">
+						<label for="nutrition-source">Data source:</label>
+						<select
+							id="nutrition-source"
+							value={selectedSource}
+							onchange={handleSourceChange}
+						>
+							<option value="composite">Composite (Recommended)</option>
+							{#each nutrition.available_sources as src}
+								<option value={src.source}>
+									{formatSourceName(src.source)} ({Math.round(src.confidence * 100)}%)
+									{#if src.is_primary}(Primary){/if}
+								</option>
+							{/each}
+						</select>
+						<span class="source-confidence" title="Confidence in the nutrition data">
+							{Math.round(getSourceConfidence() * 100)}% confidence
+						</span>
+					</div>
+				{/if}
+
 				<div class="nutrition-facts">
 			<div class="calories-row">
 				<span class="label">Calories</span>
@@ -308,9 +368,9 @@
 				</div>
 			</div>
 
-			{#if avgConfidence() < 0.9}
+			{#if getSourceConfidence() < 0.9}
 				<div class="confidence-note">
-					Data confidence: {Math.round(avgConfidence() * 100)}%
+					{formatSourceName(nutrition.source_used)} confidence: {Math.round(getSourceConfidence() * 100)}%
 				</div>
 			{/if}
 
@@ -522,6 +582,44 @@
 		background: var(--color-pasta-200);
 		border-radius: var(--radius-full);
 		color: var(--color-pasta-700);
+	}
+
+	.source-selector {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		margin-bottom: var(--space-3);
+		padding: var(--space-2);
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+		font-size: var(--text-xs);
+	}
+
+	.source-selector label {
+		color: var(--text-secondary);
+		white-space: nowrap;
+	}
+
+	.source-selector select {
+		flex: 1;
+		padding: var(--space-1) var(--space-2);
+		border: var(--border-width-thin) solid var(--border-default);
+		border-radius: var(--radius-sm);
+		background: var(--bg-card);
+		font-size: var(--text-xs);
+		cursor: pointer;
+	}
+
+	.source-selector select:hover {
+		border-color: var(--color-marinara-500);
+	}
+
+	.source-confidence {
+		padding: var(--space-1) var(--space-2);
+		background: var(--color-basil-100);
+		border-radius: var(--radius-full);
+		color: var(--color-basil-700);
+		white-space: nowrap;
 	}
 
 	.warnings {

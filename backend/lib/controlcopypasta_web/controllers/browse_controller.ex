@@ -43,17 +43,35 @@ defmodule ControlcopypastaWeb.BrowseController do
 
   def nutrition(conn, %{"domain" => domain, "id" => id} = params) do
     servings_override = Map.get(params, "servings")
+    source = parse_source_param(Map.get(params, "source"))
 
     case Recipes.get_recipe_by_domain(domain, id) do
       nil ->
         {:error, :not_found}
 
       recipe ->
-        opts = if servings_override, do: [servings_override: parse_int(servings_override, nil)], else: []
+        opts = [
+          servings_override: if(servings_override, do: parse_int(servings_override, nil)),
+          source: source
+        ] |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+
         nutrition = Calculator.calculate_recipe_nutrition(recipe, opts)
         render(conn, :nutrition, nutrition: nutrition, recipe: recipe)
     end
   end
+
+  # Parse source parameter into atom, default to :composite
+  defp parse_source_param(nil), do: :composite
+  defp parse_source_param(source) when is_binary(source) do
+    valid_sources = Calculator.valid_sources() |> Enum.map(&Atom.to_string/1)
+
+    if source in valid_sources do
+      String.to_existing_atom(source)
+    else
+      :composite
+    end
+  end
+  defp parse_source_param(_), do: :composite
 
   # Check if we should filter out avoided ingredients
   defp maybe_add_avoided_filter(params, user) do
