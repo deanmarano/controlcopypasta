@@ -1034,6 +1034,15 @@ export const shoppingLists = {
 };
 
 // Admin API types
+export interface MatchingRules {
+  boost_words?: string[];
+  anti_patterns?: string[];
+  required_words?: string[];
+  exclude_patterns?: string[];
+  boost_amount?: number;
+  anti_penalty?: number;
+}
+
 export interface AdminIngredient {
   id: string;
   name: string;
@@ -1043,11 +1052,43 @@ export interface AdminIngredient {
   animal_type: string | null;
   tags: string[];
   usage_count: number;
+  matching_rules: MatchingRules | null;
+  aliases: string[];
 }
 
 export interface AdminIngredientOptions {
   categories: string[];
   animal_types: string[];
+}
+
+export interface ScoringDetails {
+  rules_applied: boolean;
+  excluded?: boolean;
+  reason?: string;
+  boost_count?: number;
+  anti_count?: number;
+  boost_adjustment?: number;
+  anti_adjustment?: number;
+  base_score?: number;
+}
+
+export interface TestScorerResult {
+  input: string;
+  match: {
+    name: string;
+    canonical_name: string | null;
+    canonical_id: string | null;
+    confidence: number;
+    scoring_details: ScoringDetails | null;
+  };
+  alternatives: Array<{
+    canonical_name: string;
+    canonical_id: string;
+    score: number;
+    matched: boolean;
+    has_rules: boolean;
+    details: ScoringDetails;
+  }>;
 }
 
 // Admin API types
@@ -1271,7 +1312,10 @@ export const admin = {
       return request<{ data: AdminIngredient[] }>(`/admin/ingredients${query ? `?${query}` : ''}`, { token });
     },
 
-    update: (token: string, id: string, attrs: { animal_type?: string | null; category?: string; subcategory?: string; tags?: string[] }) =>
+    get: (token: string, id: string) =>
+      request<{ data: AdminIngredient }>(`/admin/ingredients/${id}`, { token }),
+
+    update: (token: string, id: string, attrs: { animal_type?: string | null; category?: string; subcategory?: string; tags?: string[]; matching_rules?: MatchingRules | null }) =>
       request<{ data: AdminIngredient }>(`/admin/ingredients/${id}`, {
         method: 'PUT',
         token,
@@ -1279,7 +1323,14 @@ export const admin = {
       }),
 
     options: (token: string) =>
-      request<AdminIngredientOptions>('/admin/ingredients/options', { token })
+      request<AdminIngredientOptions>('/admin/ingredients/options', { token }),
+
+    testScorer: (token: string, input: string) =>
+      request<{ data: TestScorerResult }>('/admin/ingredients/test-scorer', {
+        method: 'POST',
+        token,
+        body: { input }
+      })
   },
 
   pendingIngredients: {

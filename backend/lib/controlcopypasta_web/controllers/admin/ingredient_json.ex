@@ -23,6 +23,35 @@ defmodule ControlcopypastaWeb.Admin.IngredientJSON do
     }
   end
 
+  @doc """
+  Renders test scorer results.
+  """
+  def test_scorer(%{input: input, match: match, alternatives: alternatives}) do
+    %{
+      data: %{
+        input: input,
+        match: %{
+          name: match.name,
+          canonical_name: match.canonical_name,
+          canonical_id: match.canonical_id,
+          confidence: match.confidence,
+          scoring_details: Map.get(match, :scoring_details)
+        },
+        alternatives:
+          Enum.map(alternatives, fn alt ->
+            %{
+              canonical_name: alt.canonical_name,
+              canonical_id: alt.canonical_id,
+              score: alt.score,
+              matched: alt.matched,
+              has_rules: alt.has_rules,
+              details: alt.details
+            }
+          end)
+      }
+    }
+  end
+
   defp data(ingredient) do
     %{
       id: ingredient.id,
@@ -32,7 +61,9 @@ defmodule ControlcopypastaWeb.Admin.IngredientJSON do
       subcategory: ingredient.subcategory,
       animal_type: ingredient.animal_type,
       tags: ingredient.tags || [],
-      usage_count: ingredient.usage_count || 0
+      usage_count: ingredient.usage_count || 0,
+      matching_rules: ingredient.matching_rules,
+      aliases: ingredient.aliases || []
     }
   end
 end

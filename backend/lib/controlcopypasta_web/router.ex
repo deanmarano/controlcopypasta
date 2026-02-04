@@ -139,8 +139,10 @@ defmodule ControlcopypastaWeb.Router do
 
     # Ingredient management
     get "/admin/ingredients", Admin.IngredientController, :index
-    put "/admin/ingredients/:id", Admin.IngredientController, :update
     get "/admin/ingredients/options", Admin.IngredientController, :options
+    post "/admin/ingredients/test-scorer", Admin.IngredientController, :test_scorer
+    get "/admin/ingredients/:id", Admin.IngredientController, :show
+    put "/admin/ingredients/:id", Admin.IngredientController, :update
 
     # Scraper management
     get "/admin/scraper/domains", Admin.ScraperController, :domains

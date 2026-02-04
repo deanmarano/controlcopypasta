@@ -7,7 +7,9 @@
 		type AdminIngredient,
 		type AdminIngredientOptions,
 		type IngredientEnrichmentStats,
-		type ParsingStats
+		type ParsingStats,
+		type TestScorerResult,
+		type MatchingRules
 	} from '$lib/api/client';
 
 	let ingredients = $state<AdminIngredient[]>([]);
@@ -29,6 +31,18 @@
 	let editingId = $state<string | null>(null);
 	let editingValue = $state<string | null>(null);
 	let saving = $state(false);
+
+	// Test Scorer
+	let scorerInput = $state('');
+	let scorerResult = $state<TestScorerResult | null>(null);
+	let scorerLoading = $state(false);
+	let scorerError = $state('');
+
+	// Matching Rules Modal
+	let rulesModalIngredient = $state<AdminIngredient | null>(null);
+	let rulesEditJson = $state('');
+	let rulesJsonError = $state('');
+	let rulesSaving = $state(false);
 
 	$effect(() => {
 		if (!$isAuthenticated) goto('/login');
@@ -275,6 +289,89 @@
 			loadIngredients();
 		}, 300);
 	}
+
+	// Test Scorer
+	async function runTestScorer() {
+		const token = authStore.getToken();
+		if (!token || !scorerInput.trim()) return;
+
+		scorerLoading = true;
+		scorerError = '';
+		scorerResult = null;
+
+		try {
+			const result = await admin.ingredients.testScorer(token, scorerInput.trim());
+			scorerResult = result.data;
+		} catch {
+			scorerError = 'Failed to test scorer';
+		} finally {
+			scorerLoading = false;
+		}
+	}
+
+	// Matching Rules Modal
+	function openRulesModal(ingredient: AdminIngredient) {
+		rulesModalIngredient = ingredient;
+		rulesEditJson = ingredient.matching_rules
+			? JSON.stringify(ingredient.matching_rules, null, 2)
+			: JSON.stringify({
+				boost_words: [],
+				anti_patterns: [],
+				required_words: [],
+				exclude_patterns: [],
+				boost_amount: 0.05,
+				anti_penalty: 0.15
+			}, null, 2);
+		rulesJsonError = '';
+	}
+
+	function closeRulesModal() {
+		rulesModalIngredient = null;
+		rulesEditJson = '';
+		rulesJsonError = '';
+	}
+
+	async function saveMatchingRules() {
+		const token = authStore.getToken();
+		if (!token || !rulesModalIngredient) return;
+
+		// Validate JSON
+		let parsedRules: MatchingRules | null = null;
+		try {
+			const trimmed = rulesEditJson.trim();
+			if (trimmed === '' || trimmed === '{}' || trimmed === 'null') {
+				parsedRules = null;
+			} else {
+				parsedRules = JSON.parse(trimmed);
+			}
+		} catch {
+			rulesJsonError = 'Invalid JSON';
+			return;
+		}
+
+		rulesSaving = true;
+		rulesJsonError = '';
+
+		try {
+			const result = await admin.ingredients.update(token, rulesModalIngredient.id, {
+				matching_rules: parsedRules
+			});
+			// Update in list
+			ingredients = ingredients.map(i =>
+				i.id === rulesModalIngredient!.id ? result.data : i
+			);
+			message = `Updated matching rules for ${rulesModalIngredient.display_name}`;
+			closeRulesModal();
+		} catch {
+			rulesJsonError = 'Failed to save matching rules';
+		} finally {
+			rulesSaving = false;
+		}
+	}
+
+	function formatScore(score: number): string {
+		return (score * 100).toFixed(1) + '%';
+	}
 </script>
 
 <div class="admin-page">
@@ -291,6 +388,73 @@
 	{#if message}
 		<p class="message">{message}</p>
 	{/if}
+
+	<!-- Test Scorer Section -->
+	<section class="scorer-section">
+		<h2>Test Ingredient Scorer</h2>
+		<div class="scorer-form">
+			<input
+				type="text"
+				bind:value={scorerInput}
+				placeholder="Enter ingredient text (e.g., '2 boneless skinless chicken breasts')..."
+				onkeydown={(e) => e.key === 'Enter' && runTestScorer()}
+			/>
+			<button onclick={runTestScorer} disabled={scorerLoading || !scorerInput.trim()} class="btn-primary">
+				{scorerLoading ? 'Testing...' : 'Test'}
+			</button>
+		</div>
+		{#if scorerError}
+			<p class="error">{scorerError}</p>
+		{/if}
+		{#if scorerResult}
+			<div class="scorer-results">
+				<div class="scorer-match">
+					<h3>Best Match</h3>
+					{#if scorerResult.match.canonical_name}
+						<div class="match-card">
+							<span class="match-name">{scorerResult.match.canonical_name}</span>
+							<span class="match-score" class:high={scorerResult.match.confidence >= 0.9} class:medium={scorerResult.match.confidence >= 0.7 && scorerResult.match.confidence < 0.9} class:low={scorerResult.match.confidence < 0.7}>
+								{formatScore(scorerResult.match.confidence)}
+							</span>
+						</div>
+						{#if scorerResult.match.scoring_details}
+							<div class="scoring-details">
+								{#if scorerResult.match.scoring_details.boost_count}
+									<span class="detail boost">+{scorerResult.match.scoring_details.boost_count} boost</span>
+								{/if}
+								{#if scorerResult.match.scoring_details.anti_count}
+									<span class="detail anti">-{scorerResult.match.scoring_details.anti_count} anti</span>
+								{/if}
+								{#if scorerResult.match.scoring_details.base_score !== undefined}
+									<span class="detail base">base: {formatScore(scorerResult.match.scoring_details.base_score)}</span>
+								{/if}
+							</div>
+						{/if}
+					{:else}
+						<p class="no-match">No match found</p>
+					{/if}
+				</div>
+				{#if scorerResult.alternatives.length > 0}
+					<div class="scorer-alternatives">
+						<h3>Alternatives</h3>
+						<ul>
+							{#each scorerResult.alternatives as alt}
+								<li class="alt-item">
+									<span class="alt-name">{alt.canonical_name}</span>
+									<span class="alt-score" class:high={alt.score >= 0.9} class:medium={alt.score >= 0.7 && alt.score < 0.9} class:low={alt.score < 0.7}>
+										{formatScore(alt.score)}
+									</span>
+									{#if alt.has_rules}
+										<span class="has-rules" title="Has matching rules">R</span>
+									{/if}
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
+			</div>
+		{/if}
+	</section>
 
 	<!-- Ingredient Parsing Status -->
 	{#if parsingStats}
@@ -490,6 +654,7 @@
 					<th>Category</th>
 					<th>Subcategory</th>
 					<th>Animal Type</th>
+					<th>Rules</th>
 					<th>Usage</th>
 					<th>Actions</th>
 				</tr>
@@ -520,6 +685,11 @@
 							{:else}
 								<span class="missing">Not set</span>
 							{/if}
+						</td>
+						<td class="rules-cell">
+							<button onclick={() => openRulesModal(ingredient)} class="rules-btn" class:has-rules={ingredient.matching_rules}>
+								{ingredient.matching_rules ? 'Edit' : 'Add'}
+							</button>
 						</td>
 						<td class="usage-cell">{ingredient.usage_count}</td>
 						<td class="actions-cell">
@@ -553,6 +723,48 @@
 	{/if}
 	{/if}
 </div>
+
+<!-- Matching Rules Modal -->
+{#if rulesModalIngredient}
+	<div class="modal-backdrop" onclick={closeRulesModal} onkeydown={(e) => e.key === 'Escape' && closeRulesModal()} role="dialog" aria-modal="true" tabindex="-1">
+		<div class="modal" onclick={(e) => e.stopPropagation()}>
+			<div class="modal-header">
+				<h2>Matching Rules: {rulesModalIngredient.display_name}</h2>
+				<button class="modal-close" onclick={closeRulesModal}>&times;</button>
+			</div>
+			<div class="modal-body">
+				<p class="modal-help">
+					Define scoring rules for this ingredient. The scorer uses these rules to adjust confidence when matching ingredient text.
+				</p>
+				<div class="rules-field-help">
+					<ul>
+						<li><strong>boost_words</strong>: Words that increase confidence (e.g., ["fresh", "boneless"])</li>
+						<li><strong>anti_patterns</strong>: Words that decrease confidence (e.g., ["sauce", "powder"])</li>
+						<li><strong>required_words</strong>: Words that must be present (e.g., ["sauce"] for tomato sauce)</li>
+						<li><strong>exclude_patterns</strong>: Regex patterns that disqualify matches (e.g., ["\\btomato\\s+sauce\\b"])</li>
+						<li><strong>boost_amount</strong>: Points added per boost word (default: 0.05)</li>
+						<li><strong>anti_penalty</strong>: Points subtracted per anti-pattern (default: 0.15)</li>
+					</ul>
+				</div>
+				<textarea
+					bind:value={rulesEditJson}
+					class="rules-editor"
+					rows="15"
+					spellcheck="false"
+				></textarea>
+				{#if rulesJsonError}
+					<p class="error">{rulesJsonError}</p>
+				{/if}
+			</div>
+			<div class="modal-footer">
+				<button class="btn-secondary" onclick={closeRulesModal}>Cancel</button>
+				<button class="btn-primary" onclick={saveMatchingRules} disabled={rulesSaving}>
+					{rulesSaving ? 'Saving...' : 'Save Rules'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.admin-page {
@@ -1083,5 +1295,299 @@
 
 	.btn-success:hover {
 		background: var(--color-basil-600);
+	}
+
+	/* Test Scorer Section */
+	.scorer-section {
+		background: var(--bg-card);
+		border-radius: var(--radius-lg);
+		padding: var(--space-5);
+		margin-bottom: var(--space-5);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.scorer-form {
+		display: flex;
+		gap: var(--space-3);
+		margin-bottom: var(--space-4);
+	}
+
+	.scorer-form input {
+		flex: 1;
+		padding: var(--space-2) var(--space-3);
+		border: var(--border-width-default) solid var(--border-default);
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+	}
+
+	.scorer-form input:focus {
+		outline: none;
+		border-color: var(--color-basil-500);
+		box-shadow: 0 0 0 2px var(--color-basil-100);
+	}
+
+	.scorer-results {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--space-4);
+	}
+
+	.scorer-match,
+	.scorer-alternatives {
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+		padding: var(--space-4);
+	}
+
+	.match-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-3);
+		padding: var(--space-3);
+		background: var(--bg-card);
+		border-radius: var(--radius-md);
+		margin-bottom: var(--space-2);
+	}
+
+	.match-name {
+		font-weight: var(--font-medium);
+		color: var(--text-primary);
+	}
+
+	.match-score,
+	.alt-score {
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-sm);
+		font-weight: var(--font-bold);
+	}
+
+	.match-score.high,
+	.alt-score.high {
+		background: var(--color-basil-100);
+		color: var(--color-basil-700);
+	}
+
+	.match-score.medium,
+	.alt-score.medium {
+		background: var(--color-pasta-100);
+		color: var(--color-pasta-700);
+	}
+
+	.match-score.low,
+	.alt-score.low {
+		background: var(--color-marinara-100);
+		color: var(--color-marinara-700);
+	}
+
+	.scoring-details {
+		display: flex;
+		gap: var(--space-2);
+		flex-wrap: wrap;
+	}
+
+	.detail {
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+	}
+
+	.detail.boost {
+		background: var(--color-basil-100);
+		color: var(--color-basil-700);
+	}
+
+	.detail.anti {
+		background: var(--color-marinara-100);
+		color: var(--color-marinara-700);
+	}
+
+	.detail.base {
+		background: var(--color-gray-200);
+		color: var(--text-secondary);
+	}
+
+	.no-match {
+		color: var(--text-muted);
+		font-style: italic;
+	}
+
+	.scorer-alternatives ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.alt-item {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2);
+		border-bottom: var(--border-width-thin) solid var(--border-light);
+	}
+
+	.alt-item:last-child {
+		border-bottom: none;
+	}
+
+	.alt-name {
+		flex: 1;
+		font-size: var(--text-sm);
+	}
+
+	.has-rules {
+		padding: var(--space-1);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+		font-weight: var(--font-bold);
+		background: var(--color-basil-100);
+		color: var(--color-basil-700);
+	}
+
+	/* Rules Cell */
+	.rules-cell {
+		text-align: center;
+	}
+
+	.rules-btn {
+		padding: var(--space-1) var(--space-2);
+		border: var(--border-width-default) solid var(--border-default);
+		border-radius: var(--radius-sm);
+		background: var(--bg-surface);
+		font-size: var(--text-xs);
+		cursor: pointer;
+	}
+
+	.rules-btn:hover {
+		background: var(--color-pasta-100);
+		border-color: var(--color-pasta-300);
+	}
+
+	.rules-btn.has-rules {
+		background: var(--color-basil-100);
+		border-color: var(--color-basil-300);
+		color: var(--color-basil-700);
+	}
+
+	/* Modal */
+	.modal-backdrop {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+	}
+
+	.modal {
+		background: var(--bg-card);
+		border-radius: var(--radius-lg);
+		width: 90%;
+		max-width: 600px;
+		max-height: 90vh;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		box-shadow: var(--shadow-lg);
+	}
+
+	.modal-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: var(--space-4);
+		border-bottom: var(--border-width-thin) solid var(--border-light);
+	}
+
+	.modal-header h2 {
+		margin: 0;
+		font-size: var(--text-lg);
+	}
+
+	.modal-close {
+		background: none;
+		border: none;
+		font-size: var(--text-2xl);
+		cursor: pointer;
+		color: var(--text-muted);
+		line-height: 1;
+		padding: 0;
+	}
+
+	.modal-close:hover {
+		color: var(--text-primary);
+	}
+
+	.modal-body {
+		padding: var(--space-4);
+		overflow-y: auto;
+		flex: 1;
+	}
+
+	.modal-help {
+		margin: 0 0 var(--space-3);
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+	}
+
+	.rules-field-help {
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+		padding: var(--space-3);
+		margin-bottom: var(--space-4);
+	}
+
+	.rules-field-help ul {
+		margin: 0;
+		padding-left: var(--space-4);
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+	}
+
+	.rules-field-help li {
+		margin-bottom: var(--space-1);
+	}
+
+	.rules-field-help strong {
+		color: var(--text-primary);
+	}
+
+	.rules-editor {
+		width: 100%;
+		font-family: monospace;
+		font-size: var(--text-sm);
+		padding: var(--space-3);
+		border: var(--border-width-default) solid var(--border-default);
+		border-radius: var(--radius-md);
+		resize: vertical;
+	}
+
+	.rules-editor:focus {
+		outline: none;
+		border-color: var(--color-basil-500);
+		box-shadow: 0 0 0 2px var(--color-basil-100);
+	}
+
+	.modal-footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--space-3);
+		padding: var(--space-4);
+		border-top: var(--border-width-thin) solid var(--border-light);
+	}
+
+	.modal-footer button {
+		min-width: 100px;
+	}
+
+	.btn-primary:disabled,
+	.btn-secondary:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 </style>
