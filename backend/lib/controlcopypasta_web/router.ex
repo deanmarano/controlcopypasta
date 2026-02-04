@@ -176,6 +176,7 @@ defmodule ControlcopypastaWeb.Router do
     post "/admin/pending-ingredients/:id/approve", Admin.PendingIngredientController, :approve
     post "/admin/pending-ingredients/:id/reject", Admin.PendingIngredientController, :reject
     post "/admin/pending-ingredients/:id/merge", Admin.PendingIngredientController, :merge
+    post "/admin/pending-ingredients/:id/tool", Admin.PendingIngredientController, :mark_as_tool
   end
 
   # Enable LiveDashboard in development

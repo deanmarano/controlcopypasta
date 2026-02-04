@@ -5,7 +5,7 @@
 	import { admin, ingredients, type PendingIngredient, type PendingIngredientStats, type CanonicalIngredient } from '$lib/api/client';
 
 	let pending = $state<PendingIngredient[]>([]);
-	let stats = $state<PendingIngredientStats>({ pending: 0, approved: 0, rejected: 0, merged: 0, total: 0 });
+	let stats = $state<PendingIngredientStats>({ pending: 0, approved: 0, rejected: 0, merged: 0, tool: 0, total: 0 });
 	let loading = $state(true);
 	let error = $state('');
 	let success = $state('');
@@ -129,6 +129,21 @@
 			await loadPending();
 		} catch {
 			error = 'Failed to reject ingredient';
+		} finally {
+			processing = null;
+		}
+	}
+
+	async function handleMarkAsTool(item: PendingIngredient) {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		processing = item.id;
+		try {
+			await admin.pendingIngredients.markAsTool(token, item.id);
+			await loadPending();
+		} catch {
+			error = 'Failed to mark as tool';
 		} finally {
 			processing = null;
 		}
@@ -273,6 +288,12 @@
 						<span class="stat-label">Merged</span>
 					</button>
 				</div>
+				<div class="stat" class:active={statusFilter === 'tool'}>
+					<button onclick={() => { statusFilter = 'tool'; loadPending(true); }}>
+						<span class="stat-value">{stats.tool}</span>
+						<span class="stat-label">Tools</span>
+					</button>
+				</div>
 		</div>
 
 		<div class="filters">
@@ -353,6 +374,13 @@
 									class="merge-btn"
 								>
 									Merge
+								</button>
+								<button
+									onclick={() => handleMarkAsTool(item)}
+									disabled={processing === item.id}
+									class="tool-btn"
+								>
+									Tool
 								</button>
 								<button
 									onclick={() => handleReject(item)}
@@ -703,6 +731,7 @@
 
 	.approve-btn,
 	.merge-btn,
+	.tool-btn,
 	.reject-btn {
 		padding: var(--space-2) var(--space-3);
 		border: none;
@@ -728,6 +757,15 @@
 
 	.merge-btn:hover:not(:disabled) {
 		background: var(--color-pasta-300);
+	}
+
+	.tool-btn {
+		background: var(--color-marinara-200);
+		color: var(--color-marinara-800);
+	}
+
+	.tool-btn:hover:not(:disabled) {
+		background: var(--color-marinara-300);
 	}
 
 	.reject-btn {
@@ -766,6 +804,11 @@
 	.status-merged {
 		background: var(--color-pasta-100);
 		color: var(--color-pasta-700);
+	}
+
+	.status-tool {
+		background: var(--color-marinara-100);
+		color: var(--color-marinara-700);
 	}
 
 	.reviewed-at {

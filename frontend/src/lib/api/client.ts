@@ -1376,6 +1376,12 @@ export const admin = {
         body: { canonical_id: canonicalId }
       }),
 
+    markAsTool: (token: string, id: string) =>
+      request<{ message: string; data: PendingIngredient }>(`/admin/pending-ingredients/${id}/tool`, {
+        method: 'POST',
+        token
+      }),
+
     scan: (token: string) =>
       request<{ message: string; job_id: number; cleared_count?: number }>('/admin/pending-ingredients/scan', {
         method: 'POST',
@@ -1390,7 +1396,7 @@ export interface PendingIngredient {
   name: string;
   occurrence_count: number;
   sample_texts: string[];
-  status: 'pending' | 'approved' | 'rejected' | 'merged';
+  status: 'pending' | 'approved' | 'rejected' | 'merged' | 'tool';
   fatsecret_id: string | null;
   fatsecret_name: string | null;
   suggested_display_name: string | null;
@@ -1405,6 +1411,7 @@ export interface PendingIngredientStats {
   approved: number;
   rejected: number;
   merged: number;
+  tool: number;
   total: number;
 }
 

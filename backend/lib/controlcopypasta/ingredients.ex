@@ -1503,13 +1503,15 @@ defmodule Controlcopypasta.Ingredients do
     approved = Repo.aggregate(from(p in PendingIngredient, where: p.status == "approved"), :count, :id)
     rejected = Repo.aggregate(from(p in PendingIngredient, where: p.status == "rejected"), :count, :id)
     merged = Repo.aggregate(from(p in PendingIngredient, where: p.status == "merged"), :count, :id)
+    tool = Repo.aggregate(from(p in PendingIngredient, where: p.status == "tool"), :count, :id)
 
     %{
       pending: pending,
       approved: approved,
       rejected: rejected,
       merged: merged,
-      total: pending + approved + rejected + merged
+      tool: tool,
+      total: pending + approved + rejected + merged + tool
     }
   end
 
@@ -1557,6 +1559,21 @@ defmodule Controlcopypasta.Ingredients do
     pending
     |> PendingIngredient.changeset(%{
       status: "rejected",
+      reviewed_at: DateTime.utc_now(),
+      reviewed_by_id: user_id
+    })
+    |> Repo.update()
+  end
+
+  @doc """
+  Marks a pending ingredient as a kitchen tool/utensil (not a real ingredient).
+  """
+  def mark_pending_as_tool(pending_id, user_id \\ nil) do
+    pending = Repo.get!(PendingIngredient, pending_id)
+
+    pending
+    |> PendingIngredient.changeset(%{
+      status: "tool",
       reviewed_at: DateTime.utc_now(),
       reviewed_by_id: user_id
     })

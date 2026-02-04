@@ -133,6 +133,23 @@ defmodule ControlcopypastaWeb.Admin.PendingIngredientController do
   end
 
   @doc """
+  Marks a pending ingredient as a kitchen tool/utensil (not a real ingredient).
+  """
+  def mark_as_tool(conn, %{"id" => id}) do
+    user_id = conn.assigns[:current_user] && conn.assigns.current_user.id
+
+    case Ingredients.mark_pending_as_tool(id, user_id) do
+      {:ok, pending} ->
+        json(conn, %{message: "Marked as tool", data: serialize(pending)})
+
+      {:error, changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: format_errors(changeset)})
+    end
+  end
+
+  @doc """
   Triggers a scan for new pending ingredients.
   Clears existing pending ingredients before re-scanning.
   """

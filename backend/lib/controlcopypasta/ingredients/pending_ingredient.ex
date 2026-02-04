@@ -44,7 +44,7 @@ defmodule Controlcopypasta.Ingredients.PendingIngredient do
     timestamps()
   end
 
-  @valid_statuses ~w(pending approved rejected merged)
+  @valid_statuses ~w(pending approved rejected merged tool)
   @valid_categories Controlcopypasta.Ingredients.CanonicalIngredient.valid_categories()
 
   def changeset(pending, attrs) do
