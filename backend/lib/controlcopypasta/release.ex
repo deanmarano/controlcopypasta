@@ -364,6 +364,34 @@ defmodule Controlcopypasta.Release do
       end)
   end
 
+  @doc """
+  Generates a JWT token for a user by email.
+  Useful for testing admin endpoints.
+
+  Example:
+    ./bin/controlcopypasta eval "Controlcopypasta.Release.generate_token(\"user@example.com\")"
+  """
+  def generate_token(email) do
+    load_app()
+    # Start the app to get Guardian working
+    Application.ensure_all_started(@app)
+
+    alias Controlcopypasta.Accounts
+    alias Controlcopypasta.Accounts.Guardian
+
+    case Accounts.get_user_by_email(email) do
+      nil ->
+        IO.puts("Error: User not found: #{email}")
+        {:error, :user_not_found}
+
+      user ->
+        {:ok, token, _claims} = Guardian.encode_and_sign(user, %{}, ttl: {30, :day})
+        IO.puts("Token for #{email} (valid 30 days):")
+        IO.puts(token)
+        {:ok, token}
+    end
+  end
+
   defp repos do
     Application.fetch_env!(@app, :ecto_repos)
   end
