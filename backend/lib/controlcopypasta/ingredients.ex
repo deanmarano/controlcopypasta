@@ -422,6 +422,61 @@ defmodule Controlcopypasta.Ingredients do
   end
 
   @doc """
+  Builds a lookup map with matching rules for ingredient scoring.
+
+  Returns a map where keys are lowercase names/aliases and values are
+  `{canonical_name, canonical_id, matching_rules}` tuples.
+
+  Only loads matching_rules for top N ingredients by usage_count (default 300).
+  Long tail ingredients have `matching_rules: nil`.
+
+  ## Options
+
+  - `:top_n` - Number of top ingredients to load rules for (default: 300)
+
+  ## Examples
+
+      iex> lookup = build_ingredient_lookup_with_rules()
+      iex> lookup["chicken breast"]
+      {"chicken breast", "some-uuid", %{"boost_words" => ["boneless"], ...}}
+
+      iex> lookup["obscure ingredient"]
+      {"obscure ingredient", "some-other-uuid", nil}
+  """
+  def build_ingredient_lookup_with_rules(opts \\ []) do
+    top_n = Keyword.get(opts, :top_n, 300)
+
+    # Get top N ingredient IDs by usage
+    top_ids =
+      from(i in CanonicalIngredient,
+        order_by: [desc: i.usage_count],
+        limit: ^top_n,
+        select: i.id
+      )
+      |> Repo.all()
+      |> MapSet.new()
+
+    # Load all ingredients with matching_rules for top N only
+    CanonicalIngredient
+    |> select([i], {i.id, i.name, i.aliases, i.matching_rules})
+    |> Repo.all()
+    |> Enum.flat_map(fn {id, name, aliases, rules} ->
+      # Only include rules for top N ingredients
+      effective_rules = if MapSet.member?(top_ids, id), do: rules, else: nil
+
+      # Map both the canonical name and all aliases to {canonical_name, id, rules}
+      entries = [{name, {name, id, effective_rules}}]
+
+      alias_entries =
+        (aliases || [])
+        |> Enum.map(&{&1, {name, id, effective_rules}})
+
+      entries ++ alias_entries
+    end)
+    |> Map.new()
+  end
+
+  @doc """
   Builds a lookup map from all preparation names and aliases to their info.
 
   Returns a map where keys are lowercase names/aliases and values are

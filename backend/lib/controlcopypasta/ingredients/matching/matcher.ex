@@ -12,18 +12,27 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
   5. Progressively shorter matches (0.9)
   6. Single word match (0.8)
   7. Fuzzy prefix match (0.7)
+
+  When the lookup includes matching_rules (3-tuple values), the IngredientScorer
+  is applied to adjust confidence based on boost words, anti-patterns, etc.
   """
 
   alias Controlcopypasta.Ingredients.Parsing.Singularizer
+  alias Controlcopypasta.Ingredients.Matching.IngredientScorer
 
   @doc """
   Matches an ingredient name to a canonical ingredient.
+
+  Supports two lookup formats:
+  - Legacy: `%{name => {canonical_name, canonical_id}}`
+  - With rules: `%{name => {canonical_name, canonical_id, matching_rules}}`
 
   Returns a map with:
   - `name`: Original input name
   - `canonical_name`: Matched canonical name (or nil)
   - `canonical_id`: Matched canonical ID (or nil)
   - `confidence`: Match confidence (0.0-1.0)
+  - `scoring_details`: Optional map with scoring breakdown (when rules applied)
 
   ## Examples
 
@@ -33,11 +42,20 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
 
       iex> Matcher.match("fresh basil", %{"basil" => {"basil", "id456"}})
       %{name: "fresh basil", canonical_name: "basil", canonical_id: "id456", confidence: 0.95}
+
+      iex> rules = %{"boost_words" => ["boneless", "skinless"]}
+      iex> lookup = %{"chicken breast" => {"chicken breast", "id789", rules}}
+      iex> Matcher.match("boneless skinless chicken breast", lookup)
+      %{name: "...", canonical_name: "chicken breast", canonical_id: "id789",
+        confidence: 1.0, scoring_details: %{boost_count: 2, ...}}
   """
   def match(name, lookup) do
     normalized = String.downcase(name) |> String.trim()
 
     case find_canonical_match(normalized, lookup) do
+      {canonical_name, canonical_id, base_confidence, matching_rules} ->
+        apply_scoring(name, canonical_name, canonical_id, base_confidence, matching_rules)
+
       {canonical_name, canonical_id, confidence} ->
         %{
           name: name,
@@ -56,23 +74,75 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
     end
   end
 
+  # Apply IngredientScorer when matching_rules exist
+  defp apply_scoring(name, canonical_name, canonical_id, base_confidence, nil) do
+    %{
+      name: name,
+      canonical_name: canonical_name,
+      canonical_id: canonical_id,
+      confidence: base_confidence
+    }
+  end
+
+  defp apply_scoring(name, canonical_name, canonical_id, base_confidence, matching_rules) do
+    score_result = IngredientScorer.score(name, matching_rules, base_confidence)
+
+    result = %{
+      name: name,
+      canonical_name: canonical_name,
+      canonical_id: canonical_id,
+      confidence: score_result.score
+    }
+
+    # Only include scoring_details if rules were actually applied
+    if score_result.details[:rules_applied] do
+      Map.put(result, :scoring_details, score_result.details)
+    else
+      result
+    end
+  end
+
   @doc """
   Find canonical match using various strategies.
 
-  Returns `{canonical_name, canonical_id, confidence}` or `nil`.
+  Returns one of:
+  - `{canonical_name, canonical_id, confidence, matching_rules}` (with rules)
+  - `{canonical_name, canonical_id, confidence}` (legacy)
+  - `nil` (no match)
   """
   def find_canonical_match(name, lookup) do
     # Strategy 1: Exact match
-    case Map.get(lookup, name) do
-      {canonical_name, id} -> {canonical_name, id, 1.0}
-      nil ->
+    case lookup_get(lookup, name) do
+      {:found, result, confidence_override} ->
+        with_confidence(result, confidence_override || 1.0)
+
+      :not_found ->
         # Strategy 1b: Try singularized form
         singular = singularize_phrase(name)
-        case if(singular != name, do: Map.get(lookup, singular)) do
-          {canonical_name, id} -> {canonical_name, id, 0.98}
-          _ -> try_partial_match(name, lookup)
+
+        if singular != name do
+          case lookup_get(lookup, singular) do
+            {:found, result, _} -> with_confidence(result, 0.98)
+            :not_found -> try_partial_match(name, lookup)
+          end
+        else
+          try_partial_match(name, lookup)
         end
     end
+  end
+
+  # Normalize lookup results to handle both 2-tuple and 3-tuple values
+  defp lookup_get(lookup, key) do
+    case Map.get(lookup, key) do
+      nil -> :not_found
+      {name, id} -> {:found, {name, id, nil}, nil}
+      {name, id, rules} -> {:found, {name, id, rules}, nil}
+    end
+  end
+
+  # Convert normalized result to return tuple with confidence
+  defp with_confidence({name, id, rules}, confidence) do
+    {name, id, confidence, rules}
   end
 
   # Leading modifiers to strip (adjectives that describe ingredient state/size)
@@ -86,14 +156,22 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
 
     # Strategy 2: Remove leading adjectives (fresh, large, etc.)
     stripped = strip_leading_modifiers(words)
-    case Map.get(lookup, stripped) do
-      {canonical_name, id} -> {canonical_name, id, 0.95}
-      nil ->
+
+    case lookup_get(lookup, stripped) do
+      {:found, result, _} ->
+        with_confidence(result, 0.95)
+
+      :not_found ->
         # Strategy 2b: Try singularized stripped form
         singular_stripped = singularize_phrase(stripped)
-        case if(singular_stripped != stripped, do: Map.get(lookup, singular_stripped)) do
-          {canonical_name, id} -> {canonical_name, id, 0.93}
-          _ -> try_shorter_matches(words, lookup)
+
+        if singular_stripped != stripped do
+          case lookup_get(lookup, singular_stripped) do
+            {:found, result, _} -> with_confidence(result, 0.93)
+            :not_found -> try_shorter_matches(words, lookup)
+          end
+        else
+          try_shorter_matches(words, lookup)
         end
     end
   end
@@ -108,22 +186,26 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
   defp try_shorter_matches(words, lookup) when length(words) > 1 do
     # Try removing first word
     shorter_front = words |> tl() |> Enum.join(" ")
-    case Map.get(lookup, shorter_front) do
-      {canonical_name, id} -> {canonical_name, id, 0.9}
-      nil ->
+
+    case lookup_get(lookup, shorter_front) do
+      {:found, result, _} ->
+        with_confidence(result, 0.9)
+
+      :not_found ->
         # Try removing last word
         shorter_back = words |> Enum.take(length(words) - 1) |> Enum.join(" ")
-        case Map.get(lookup, shorter_back) do
-          {canonical_name, id} -> {canonical_name, id, 0.9}
-          nil -> try_shorter_matches(tl(words), lookup)
+
+        case lookup_get(lookup, shorter_back) do
+          {:found, result, _} -> with_confidence(result, 0.9)
+          :not_found -> try_shorter_matches(tl(words), lookup)
         end
     end
   end
 
   defp try_shorter_matches([single_word], lookup) do
-    case Map.get(lookup, single_word) do
-      {canonical_name, id} -> {canonical_name, id, 0.8}
-      nil -> try_fuzzy_match(single_word, lookup)
+    case lookup_get(lookup, single_word) do
+      {:found, result, _} -> with_confidence(result, 0.8)
+      :not_found -> try_fuzzy_match(single_word, lookup)
     end
   end
 
@@ -134,13 +216,15 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
     # Only try prefix matching for longer names
     if String.length(name) >= 4 do
       # Find canonical that starts with this name or vice versa
-      match = Enum.find(lookup, fn {key, _} ->
-        String.starts_with?(key, name <> " ") or
-        String.starts_with?(name, key <> " ")
-      end)
+      match =
+        Enum.find(lookup, fn {key, _} ->
+          String.starts_with?(key, name <> " ") or
+            String.starts_with?(name, key <> " ")
+        end)
 
       case match do
-        {_key, {canonical_name, id}} -> {canonical_name, id, 0.7}
+        {_key, {canonical_name, id}} -> {canonical_name, id, 0.7, nil}
+        {_key, {canonical_name, id, rules}} -> {canonical_name, id, 0.7, rules}
         nil -> nil
       end
     else

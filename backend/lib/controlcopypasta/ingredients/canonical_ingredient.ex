@@ -67,6 +67,17 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
     # Matching
     field :aliases, {:array, :string}, default: []
 
+    # Per-ingredient scoring rules for matching
+    # %{
+    #   "boost_words" => ["fresh", "boneless"],
+    #   "anti_patterns" => ["sauce", "powder"],
+    #   "required_words" => [],
+    #   "exclude_patterns" => ["\\bsauce\\b"],
+    #   "boost_amount" => 0.05,
+    #   "anti_penalty" => 0.15
+    # }
+    field :matching_rules, :map
+
     # Branding
     field :brand, :string
     field :parent_company, :string
@@ -105,7 +116,8 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
     :parent_company,
     :is_branded,
     :image_url,
-    :measurement_type
+    :measurement_type,
+    :matching_rules
   ]
 
   @valid_categories ~w(protein dairy produce grain spice herb condiment oil sweetener leavening nut legume beverage other)
