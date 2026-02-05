@@ -1071,6 +1071,19 @@ export interface AdminPreparationOptions {
   categories: string[];
 }
 
+export interface AdminKitchenTool {
+  id: string;
+  name: string;
+  display_name: string;
+  category: string | null;
+  metadata: Record<string, unknown>;
+  aliases: string[];
+}
+
+export interface AdminKitchenToolOptions {
+  categories: string[];
+}
+
 export interface AdminIngredientOptions {
   categories: string[];
   animal_types: string[];
@@ -1391,6 +1404,42 @@ export const admin = {
 
     options: (token: string) =>
       request<AdminPreparationOptions>('/admin/preparations/options', { token })
+  },
+
+  kitchenTools: {
+    list: (token: string, params?: { category?: string; search?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.category) searchParams.set('category', params.category);
+      if (params?.search) searchParams.set('search', params.search);
+      const query = searchParams.toString();
+      return request<{ data: AdminKitchenTool[] }>(`/admin/kitchen-tools${query ? `?${query}` : ''}`, { token });
+    },
+
+    get: (token: string, id: string) =>
+      request<{ data: AdminKitchenTool }>(`/admin/kitchen-tools/${id}`, { token }),
+
+    create: (token: string, attrs: { name: string; display_name: string; category?: string; aliases?: string[]; metadata?: Record<string, unknown> }) =>
+      request<{ data: AdminKitchenTool }>('/admin/kitchen-tools', {
+        method: 'POST',
+        token,
+        body: { kitchen_tool: attrs }
+      }),
+
+    update: (token: string, id: string, attrs: { name?: string; display_name?: string; category?: string; aliases?: string[]; metadata?: Record<string, unknown> }) =>
+      request<{ data: AdminKitchenTool }>(`/admin/kitchen-tools/${id}`, {
+        method: 'PUT',
+        token,
+        body: { kitchen_tool: attrs }
+      }),
+
+    delete: (token: string, id: string) =>
+      request<null>(`/admin/kitchen-tools/${id}`, {
+        method: 'DELETE',
+        token
+      }),
+
+    options: (token: string) =>
+      request<AdminKitchenToolOptions>('/admin/kitchen-tools/options', { token })
   },
 
   pendingIngredients: {

@@ -15,6 +15,7 @@ defmodule Controlcopypasta.Ingredients do
   alias Controlcopypasta.Ingredients.{
     CanonicalIngredient,
     Preparation,
+    KitchenTool,
     IngredientForm,
     BrandPackageSize,
     IngredientDensity,
@@ -365,6 +366,97 @@ defmodule Controlcopypasta.Ingredients do
   """
   def delete_preparation(%Preparation{} = preparation) do
     Repo.delete(preparation)
+  end
+
+  # =============================================================================
+  # Kitchen Tools
+  # =============================================================================
+
+  @doc """
+  Returns a list of all kitchen tools.
+
+  Accepts optional filters:
+  - `{:category, category}` — filter by category
+  - `{:search, term}` — search by name or display_name
+  - `{:order_by, field}` — order by field (default: :name)
+  """
+  def list_kitchen_tools(filters \\ []) do
+    KitchenTool
+    |> apply_kitchen_tool_filters(filters)
+    |> Repo.all()
+  end
+
+  defp apply_kitchen_tool_filters(query, []), do: query
+
+  defp apply_kitchen_tool_filters(query, [{:category, category} | rest]) when is_binary(category) and category != "" do
+    query
+    |> where([t], t.category == ^category)
+    |> apply_kitchen_tool_filters(rest)
+  end
+
+  defp apply_kitchen_tool_filters(query, [{:search, term} | rest]) when is_binary(term) and term != "" do
+    like_term = "%#{term}%"
+
+    query
+    |> where([t], ilike(t.name, ^like_term) or ilike(t.display_name, ^like_term))
+    |> apply_kitchen_tool_filters(rest)
+  end
+
+  defp apply_kitchen_tool_filters(query, [{:order_by, :name} | rest]) do
+    query
+    |> order_by([t], t.name)
+    |> apply_kitchen_tool_filters(rest)
+  end
+
+  defp apply_kitchen_tool_filters(query, [_ | rest]) do
+    apply_kitchen_tool_filters(query, rest)
+  end
+
+  @doc """
+  Gets a single kitchen tool by ID.
+  """
+  def get_kitchen_tool(id) do
+    Repo.get(KitchenTool, id)
+  end
+
+  @doc """
+  Gets a kitchen tool by ID, raising if not found.
+  """
+  def get_kitchen_tool!(id) do
+    Repo.get!(KitchenTool, id)
+  end
+
+  @doc """
+  Gets a kitchen tool by name (exact match, case-insensitive).
+  """
+  def get_kitchen_tool_by_name(name) when is_binary(name) do
+    normalized = String.downcase(String.trim(name))
+    Repo.get_by(KitchenTool, name: normalized)
+  end
+
+  @doc """
+  Creates a kitchen tool.
+  """
+  def create_kitchen_tool(attrs \\ %{}) do
+    %KitchenTool{}
+    |> KitchenTool.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a kitchen tool.
+  """
+  def update_kitchen_tool(%KitchenTool{} = tool, attrs) do
+    tool
+    |> KitchenTool.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a kitchen tool.
+  """
+  def delete_kitchen_tool(%KitchenTool{} = tool) do
+    Repo.delete(tool)
   end
 
   # =============================================================================

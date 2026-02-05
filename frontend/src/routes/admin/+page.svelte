@@ -31,6 +31,11 @@
 			<p>Manage preparation words used by the recipe parser (dice, chop, mince, etc.)</p>
 		</a>
 
+		<a href="/admin/tools" class="admin-card">
+			<h2>Kitchen Tools</h2>
+			<p>Manage kitchen tools and equipment referenced by preparations (knife, grater, whisk, etc.)</p>
+		</a>
+
 		<a href="/admin/pending-ingredients" class="admin-card">
 			<h2>Pending Ingredients</h2>
 			<p>Review and approve new ingredients discovered from recipes.</p>
