@@ -11,6 +11,8 @@ defmodule Controlcopypasta.Ingredients.PendingIngredient do
   - `approved` - Approved and converted to canonical ingredient
   - `rejected` - Rejected (not a real ingredient, parsing error, etc.)
   - `merged` - Merged into an existing canonical as an alias
+  - `tool` - Marked as a kitchen tool/utensil (not a real ingredient)
+  - `preparation` - Marked as a preparation method (not a real ingredient)
   """
 
   use Ecto.Schema
@@ -44,7 +46,7 @@ defmodule Controlcopypasta.Ingredients.PendingIngredient do
     timestamps()
   end
 
-  @valid_statuses ~w(pending approved rejected merged tool)
+  @valid_statuses ~w(pending approved rejected merged tool preparation)
   @valid_categories Controlcopypasta.Ingredients.CanonicalIngredient.valid_categories()
 
   def changeset(pending, attrs) do

@@ -1696,6 +1696,7 @@ defmodule Controlcopypasta.Ingredients do
     rejected = Repo.aggregate(from(p in PendingIngredient, where: p.status == "rejected"), :count, :id)
     merged = Repo.aggregate(from(p in PendingIngredient, where: p.status == "merged"), :count, :id)
     tool = Repo.aggregate(from(p in PendingIngredient, where: p.status == "tool"), :count, :id)
+    preparation = Repo.aggregate(from(p in PendingIngredient, where: p.status == "preparation"), :count, :id)
 
     %{
       pending: pending,
@@ -1703,7 +1704,8 @@ defmodule Controlcopypasta.Ingredients do
       rejected: rejected,
       merged: merged,
       tool: tool,
-      total: pending + approved + rejected + merged + tool
+      preparation: preparation,
+      total: pending + approved + rejected + merged + tool + preparation
     }
   end
 
@@ -1751,6 +1753,21 @@ defmodule Controlcopypasta.Ingredients do
     pending
     |> PendingIngredient.changeset(%{
       status: "rejected",
+      reviewed_at: DateTime.utc_now(),
+      reviewed_by_id: user_id
+    })
+    |> Repo.update()
+  end
+
+  @doc """
+  Marks a pending ingredient as a preparation method (not a real ingredient).
+  """
+  def mark_pending_as_preparation(pending_id, user_id \\ nil) do
+    pending = Repo.get!(PendingIngredient, pending_id)
+
+    pending
+    |> PendingIngredient.changeset(%{
+      status: "preparation",
       reviewed_at: DateTime.utc_now(),
       reviewed_by_id: user_id
     })

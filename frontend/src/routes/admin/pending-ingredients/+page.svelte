@@ -5,7 +5,7 @@
 	import { admin, ingredients, type PendingIngredient, type PendingIngredientStats, type CanonicalIngredient } from '$lib/api/client';
 
 	let pending = $state<PendingIngredient[]>([]);
-	let stats = $state<PendingIngredientStats>({ pending: 0, approved: 0, rejected: 0, merged: 0, tool: 0, total: 0 });
+	let stats = $state<PendingIngredientStats>({ pending: 0, approved: 0, rejected: 0, merged: 0, tool: 0, preparation: 0, total: 0 });
 	let loading = $state(true);
 	let error = $state('');
 	let success = $state('');
@@ -144,6 +144,21 @@
 			await loadPending();
 		} catch {
 			error = 'Failed to mark as tool';
+		} finally {
+			processing = null;
+		}
+	}
+
+	async function handleMarkAsPreparation(item: PendingIngredient) {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		processing = item.id;
+		try {
+			await admin.pendingIngredients.markAsPreparation(token, item.id);
+			await loadPending();
+		} catch {
+			error = 'Failed to mark as preparation';
 		} finally {
 			processing = null;
 		}
@@ -294,6 +309,12 @@
 						<span class="stat-label">Tools</span>
 					</button>
 				</div>
+				<div class="stat" class:active={statusFilter === 'preparation'}>
+					<button onclick={() => { statusFilter = 'preparation'; loadPending(true); }}>
+						<span class="stat-value">{stats.preparation}</span>
+						<span class="stat-label">Preps</span>
+					</button>
+				</div>
 		</div>
 
 		<div class="filters">
@@ -381,6 +402,13 @@
 									class="tool-btn"
 								>
 									Tool
+								</button>
+								<button
+									onclick={() => handleMarkAsPreparation(item)}
+									disabled={processing === item.id}
+									class="prep-btn"
+								>
+									Prep
 								</button>
 								<button
 									onclick={() => handleReject(item)}
@@ -732,6 +760,7 @@
 	.approve-btn,
 	.merge-btn,
 	.tool-btn,
+	.prep-btn,
 	.reject-btn {
 		padding: var(--space-2) var(--space-3);
 		border: none;
@@ -766,6 +795,15 @@
 
 	.tool-btn:hover:not(:disabled) {
 		background: var(--color-marinara-300);
+	}
+
+	.prep-btn {
+		background: var(--color-pasta-200);
+		color: var(--color-pasta-800);
+	}
+
+	.prep-btn:hover:not(:disabled) {
+		background: var(--color-pasta-300);
 	}
 
 	.reject-btn {
@@ -809,6 +847,11 @@
 	.status-tool {
 		background: var(--color-marinara-100);
 		color: var(--color-marinara-700);
+	}
+
+	.status-preparation {
+		background: var(--color-pasta-100);
+		color: var(--color-pasta-700);
 	}
 
 	.reviewed-at {

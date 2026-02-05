@@ -1485,6 +1485,12 @@ export const admin = {
         body: { canonical_id: canonicalId }
       }),
 
+    markAsPreparation: (token: string, id: string) =>
+      request<{ message: string; data: PendingIngredient }>(`/admin/pending-ingredients/${id}/preparation`, {
+        method: 'POST',
+        token
+      }),
+
     markAsTool: (token: string, id: string) =>
       request<{ message: string; data: PendingIngredient }>(`/admin/pending-ingredients/${id}/tool`, {
         method: 'POST',
@@ -1521,6 +1527,7 @@ export interface PendingIngredientStats {
   rejected: number;
   merged: number;
   tool: number;
+  preparation: number;
   total: number;
 }
 
