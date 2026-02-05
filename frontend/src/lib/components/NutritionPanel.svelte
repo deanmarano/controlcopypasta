@@ -239,146 +239,146 @@
 
 		<div class="nutrition-layout">
 			<div class="facts-column">
-				<div class="nutrition-header">
-					<h3>Nutrition Facts</h3>
-					<div class="serving-info">
-						<span class="servings">{nutrition.servings} serving{nutrition.servings !== 1 ? 's' : ''}</span>
-						{#if nutrition.completeness < 1}
-							<span class="completeness" title="Percentage of ingredients with nutrition data">
-								{Math.round(nutrition.completeness * 100)}% calculated
+				<div class="nutrition-facts">
+					<div class="nutrition-header">
+						<h3>Nutrition Facts</h3>
+						<div class="serving-info">
+							<span class="servings">{nutrition.servings} serving{nutrition.servings !== 1 ? 's' : ''}</span>
+							{#if nutrition.completeness < 1}
+								<span class="completeness" title="Percentage of ingredients with nutrition data">
+									{Math.round(nutrition.completeness * 100)}% calculated
+								</span>
+							{/if}
+						</div>
+					</div>
+
+					{#if nutrition.available_sources && nutrition.available_sources.length > 0}
+						<div class="source-selector">
+							<label for="nutrition-source">Source:</label>
+							<select
+								id="nutrition-source"
+								value={selectedSource}
+								onchange={handleSourceChange}
+							>
+								<option value="composite">Composite</option>
+								{#each nutrition.available_sources as src}
+									<option value={src.source}>
+										{formatSourceName(src.source)} ({Math.round(src.confidence * 100)}%)
+										{#if src.is_primary}(Primary){/if}
+									</option>
+								{/each}
+							</select>
+							<span class="source-confidence" title="Confidence in the nutrition data">
+								{Math.round(getSourceConfidence() * 100)}%
 							</span>
+						</div>
+					{/if}
+
+					<div class="calories-row">
+						<span class="label">Calories</span>
+						<span class="value">{formatNumber(nutrition.per_serving.calories)}</span>
+						{#if hasRange(nutrition.per_serving.calories)}
+							<span class="range-indicator" title="Range: {formatRange(nutrition.per_serving.calories)}">~</span>
 						{/if}
 					</div>
-				</div>
 
-				{#if nutrition.available_sources && nutrition.available_sources.length > 0}
-					<div class="source-selector">
-						<label for="nutrition-source">Data source:</label>
-						<select
-							id="nutrition-source"
-							value={selectedSource}
-							onchange={handleSourceChange}
-						>
-							<option value="composite">Composite (Recommended)</option>
-							{#each nutrition.available_sources as src}
-								<option value={src.source}>
-									{formatSourceName(src.source)} ({Math.round(src.confidence * 100)}%)
-									{#if src.is_primary}(Primary){/if}
-								</option>
-							{/each}
-						</select>
-						<span class="source-confidence" title="Confidence in the nutrition data">
-							{Math.round(getSourceConfidence() * 100)}% confidence
-						</span>
+					{#if showRangeBars && toRange(nutrition.per_serving.calories)}
+						{@const calRange = toRange(nutrition.per_serving.calories)}
+						{#if calRange}
+							<div class="calories-range-bar">
+								<NutrientRangeBar range={calRange} unit="" label="" maxValue={2000} />
+							</div>
+						{/if}
+					{/if}
+
+					<div class="divider thick"></div>
+
+					<div class="daily-value-header">% Daily Value*</div>
+
+					<div class="nutrient-row">
+						<span class="label bold">Total Fat</span>
+						<span class="value">{formatNumber(nutrition.per_serving.fat_total_g)}g</span>
+						<span class="daily">{getDailyPercent('fat_total_g', nutrition.per_serving.fat_total_g) || '-'}</span>
 					</div>
-				{/if}
 
-				<div class="nutrition-facts">
-			<div class="calories-row">
-				<span class="label">Calories</span>
-				<span class="value">{formatNumber(nutrition.per_serving.calories)}</span>
-				{#if hasRange(nutrition.per_serving.calories)}
-					<span class="range-indicator" title="Range: {formatRange(nutrition.per_serving.calories)}">~</span>
-				{/if}
-			</div>
-
-			{#if showRangeBars && toRange(nutrition.per_serving.calories)}
-				{@const calRange = toRange(nutrition.per_serving.calories)}
-				{#if calRange}
-					<div class="calories-range-bar">
-						<NutrientRangeBar range={calRange} unit="" label="" maxValue={2000} />
+					<div class="nutrient-row indent">
+						<span class="label">Saturated Fat</span>
+						<span class="value">{formatNumber(nutrition.per_serving.fat_saturated_g)}g</span>
+						<span class="daily">{getDailyPercent('fat_saturated_g', nutrition.per_serving.fat_saturated_g) || '-'}</span>
 					</div>
-				{/if}
-			{/if}
 
-			<div class="divider thick"></div>
+					<div class="nutrient-row">
+						<span class="label bold">Cholesterol</span>
+						<span class="value">{formatNumber(nutrition.per_serving.cholesterol_mg)}mg</span>
+						<span class="daily">{getDailyPercent('cholesterol_mg', nutrition.per_serving.cholesterol_mg) || '-'}</span>
+					</div>
 
-			<div class="daily-value-header">% Daily Value*</div>
+					<div class="nutrient-row">
+						<span class="label bold">Sodium</span>
+						<span class="value">{formatNumber(nutrition.per_serving.sodium_mg)}mg</span>
+						<span class="daily">{getDailyPercent('sodium_mg', nutrition.per_serving.sodium_mg) || '-'}</span>
+					</div>
 
-			<div class="nutrient-row">
-				<span class="label bold">Total Fat</span>
-				<span class="value">{formatNumber(nutrition.per_serving.fat_total_g)}g</span>
-				<span class="daily">{getDailyPercent('fat_total_g', nutrition.per_serving.fat_total_g) || '-'}</span>
-			</div>
+					<div class="nutrient-row">
+						<span class="label bold">Total Carbohydrate</span>
+						<span class="value">{formatNumber(nutrition.per_serving.carbohydrates_g)}g</span>
+						<span class="daily">{getDailyPercent('carbohydrates_g', nutrition.per_serving.carbohydrates_g) || '-'}</span>
+					</div>
 
-			<div class="nutrient-row indent">
-				<span class="label">Saturated Fat</span>
-				<span class="value">{formatNumber(nutrition.per_serving.fat_saturated_g)}g</span>
-				<span class="daily">{getDailyPercent('fat_saturated_g', nutrition.per_serving.fat_saturated_g) || '-'}</span>
-			</div>
+					<div class="nutrient-row indent">
+						<span class="label">Dietary Fiber</span>
+						<span class="value">{formatNumber(nutrition.per_serving.fiber_g)}g</span>
+						<span class="daily">{getDailyPercent('fiber_g', nutrition.per_serving.fiber_g) || '-'}</span>
+					</div>
 
-			<div class="nutrient-row">
-				<span class="label bold">Cholesterol</span>
-				<span class="value">{formatNumber(nutrition.per_serving.cholesterol_mg)}mg</span>
-				<span class="daily">{getDailyPercent('cholesterol_mg', nutrition.per_serving.cholesterol_mg) || '-'}</span>
-			</div>
+					<div class="nutrient-row indent">
+						<span class="label">Total Sugars</span>
+						<span class="value">{formatNumber(nutrition.per_serving.sugar_g)}g</span>
+						<span class="daily"></span>
+					</div>
 
-			<div class="nutrient-row">
-				<span class="label bold">Sodium</span>
-				<span class="value">{formatNumber(nutrition.per_serving.sodium_mg)}mg</span>
-				<span class="daily">{getDailyPercent('sodium_mg', nutrition.per_serving.sodium_mg) || '-'}</span>
-			</div>
+					<div class="nutrient-row">
+						<span class="label bold">Protein</span>
+						<span class="value">{formatNumber(nutrition.per_serving.protein_g)}g</span>
+						<span class="daily">{getDailyPercent('protein_g', nutrition.per_serving.protein_g) || '-'}</span>
+					</div>
 
-			<div class="nutrient-row">
-				<span class="label bold">Total Carbohydrate</span>
-				<span class="value">{formatNumber(nutrition.per_serving.carbohydrates_g)}g</span>
-				<span class="daily">{getDailyPercent('carbohydrates_g', nutrition.per_serving.carbohydrates_g) || '-'}</span>
-			</div>
+					<div class="divider thick"></div>
 
-			<div class="nutrient-row indent">
-				<span class="label">Dietary Fiber</span>
-				<span class="value">{formatNumber(nutrition.per_serving.fiber_g)}g</span>
-				<span class="daily">{getDailyPercent('fiber_g', nutrition.per_serving.fiber_g) || '-'}</span>
-			</div>
+					<div class="vitamins-minerals">
+						<div class="vitamin-row">
+							<span class="label">Vitamin D</span>
+							<span class="value">{formatNumber(nutrition.per_serving.vitamin_d_mcg, 1)}mcg</span>
+							<span class="daily">{getDailyPercent('vitamin_d_mcg', nutrition.per_serving.vitamin_d_mcg) || '-'}</span>
+						</div>
+						<div class="vitamin-row">
+							<span class="label">Calcium</span>
+							<span class="value">{formatNumber(nutrition.per_serving.calcium_mg)}mg</span>
+							<span class="daily">{getDailyPercent('calcium_mg', nutrition.per_serving.calcium_mg) || '-'}</span>
+						</div>
+						<div class="vitamin-row">
+							<span class="label">Iron</span>
+							<span class="value">{formatNumber(nutrition.per_serving.iron_mg, 1)}mg</span>
+							<span class="daily">{getDailyPercent('iron_mg', nutrition.per_serving.iron_mg) || '-'}</span>
+						</div>
+						<div class="vitamin-row">
+							<span class="label">Potassium</span>
+							<span class="value">{formatNumber(nutrition.per_serving.potassium_mg)}mg</span>
+							<span class="daily">{getDailyPercent('potassium_mg', nutrition.per_serving.potassium_mg) || '-'}</span>
+						</div>
+					</div>
 
-			<div class="nutrient-row indent">
-				<span class="label">Total Sugars</span>
-				<span class="value">{formatNumber(nutrition.per_serving.sugar_g)}g</span>
-				<span class="daily"></span>
-			</div>
+					{#if getSourceConfidence() < 0.9}
+						<div class="confidence-note">
+							{formatSourceName(nutrition.source_used)} confidence: {Math.round(getSourceConfidence() * 100)}%
+						</div>
+					{/if}
 
-			<div class="nutrient-row">
-				<span class="label bold">Protein</span>
-				<span class="value">{formatNumber(nutrition.per_serving.protein_g)}g</span>
-				<span class="daily">{getDailyPercent('protein_g', nutrition.per_serving.protein_g) || '-'}</span>
-			</div>
-
-			<div class="divider thick"></div>
-
-			<div class="vitamins-minerals">
-				<div class="vitamin-row">
-					<span class="label">Vitamin D</span>
-					<span class="value">{formatNumber(nutrition.per_serving.vitamin_d_mcg, 1)}mcg</span>
-					<span class="daily">{getDailyPercent('vitamin_d_mcg', nutrition.per_serving.vitamin_d_mcg) || '-'}</span>
-				</div>
-				<div class="vitamin-row">
-					<span class="label">Calcium</span>
-					<span class="value">{formatNumber(nutrition.per_serving.calcium_mg)}mg</span>
-					<span class="daily">{getDailyPercent('calcium_mg', nutrition.per_serving.calcium_mg) || '-'}</span>
-				</div>
-				<div class="vitamin-row">
-					<span class="label">Iron</span>
-					<span class="value">{formatNumber(nutrition.per_serving.iron_mg, 1)}mg</span>
-					<span class="daily">{getDailyPercent('iron_mg', nutrition.per_serving.iron_mg) || '-'}</span>
-				</div>
-				<div class="vitamin-row">
-					<span class="label">Potassium</span>
-					<span class="value">{formatNumber(nutrition.per_serving.potassium_mg)}mg</span>
-					<span class="daily">{getDailyPercent('potassium_mg', nutrition.per_serving.potassium_mg) || '-'}</span>
+					<div class="footnote">
+						*The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.
+					</div>
 				</div>
 			</div>
-
-			{#if getSourceConfidence() < 0.9}
-				<div class="confidence-note">
-					{formatSourceName(nutrition.source_used)} confidence: {Math.round(getSourceConfidence() * 100)}%
-				</div>
-			{/if}
-
-			<div class="footnote">
-					*The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.
-				</div>
-			</div>
-		</div>
 
 		<div class="breakdown-column">
 			<div class="breakdown-header">
@@ -549,7 +549,15 @@
 		overflow-x: auto;
 	}
 
-	.nutrition-header,
+	.nutrition-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: var(--space-2);
+		padding-bottom: var(--space-2);
+		border-bottom: 1px solid var(--text-primary);
+	}
+
 	.breakdown-header {
 		display: flex;
 		justify-content: space-between;
@@ -557,7 +565,13 @@
 		margin-bottom: var(--space-3);
 	}
 
-	.nutrition-header h3,
+	.nutrition-header h3 {
+		margin: 0;
+		font-size: var(--text-2xl);
+		font-weight: 900;
+		line-height: 1.1;
+	}
+
 	.breakdown-header h3 {
 		margin: 0;
 		font-size: var(--text-lg);
@@ -586,9 +600,10 @@
 
 	.source-selector {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		gap: var(--space-2);
-		margin-bottom: var(--space-3);
+		margin-bottom: var(--space-2);
 		padding: var(--space-2);
 		background: var(--bg-surface);
 		border-radius: var(--radius-md);
@@ -602,6 +617,7 @@
 
 	.source-selector select {
 		flex: 1;
+		min-width: 0;
 		padding: var(--space-1) var(--space-2);
 		border: var(--border-width-thin) solid var(--border-default);
 		border-radius: var(--radius-sm);
@@ -620,6 +636,7 @@
 		border-radius: var(--radius-full);
 		color: var(--color-basil-700);
 		white-space: nowrap;
+		font-size: var(--text-xs);
 	}
 
 	.warnings {
@@ -636,8 +653,8 @@
 	}
 
 	.nutrition-facts {
-		border: 1px solid var(--text-primary);
-		padding: var(--space-2);
+		border: 2px solid var(--text-primary);
+		padding: var(--space-3);
 	}
 
 	.calories-row {
