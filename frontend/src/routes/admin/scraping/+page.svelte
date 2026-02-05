@@ -24,7 +24,6 @@
 	let accessDenied = $state(false);
 
 	// Add domain form
-	let newDomain = $state('');
 	let newSeedUrl = $state('');
 	let adding = $state(false);
 
@@ -119,9 +118,25 @@
 		}
 	}
 
+	function extractDomain(url: string): string {
+		try {
+			const hostname = new URL(url).hostname;
+			return hostname.replace(/^www\./, '');
+		} catch {
+			return '';
+		}
+	}
+
 	async function addDomain(e: Event) {
 		e.preventDefault();
-		if (!newDomain.trim() || !newSeedUrl.trim()) return;
+		const seedUrl = newSeedUrl.trim();
+		if (!seedUrl) return;
+
+		const domain = extractDomain(seedUrl);
+		if (!domain) {
+			error = 'Could not parse domain from URL';
+			return;
+		}
 
 		const token = authStore.getToken();
 		if (!token) return;
@@ -130,9 +145,8 @@
 		error = '';
 		message = '';
 		try {
-			const result = await admin.scraper.addDomain(token, newDomain.trim(), [newSeedUrl.trim()]);
+			const result = await admin.scraper.addDomain(token, domain, [seedUrl]);
 			message = `Added ${result.data.domain}: ${result.data.enqueued} URLs enqueued`;
-			newDomain = '';
 			newSeedUrl = '';
 			await loadDomains();
 		} catch {
@@ -387,16 +401,7 @@
 			<h2>Add Domain</h2>
 			<form onsubmit={addDomain}>
 				<div class="form-row">
-					<label>
-						<span>Domain</span>
-						<input
-							type="text"
-							bind:value={newDomain}
-							placeholder="halfbakedharvest.com"
-							disabled={adding}
-						/>
-					</label>
-					<label>
+					<label class="seed-url-label">
 						<span>Seed URL</span>
 						<input
 							type="url"
@@ -405,7 +410,7 @@
 							disabled={adding}
 						/>
 					</label>
-					<button type="submit" disabled={adding || !newDomain.trim() || !newSeedUrl.trim()}>
+					<button type="submit" disabled={adding || !newSeedUrl.trim()}>
 						{adding ? 'Adding...' : 'Add Domain'}
 					</button>
 				</div>
