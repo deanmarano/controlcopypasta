@@ -43,11 +43,19 @@
 	function handleScreenshotError(domain: string) {
 		failedScreenshots = new Set([...failedScreenshots, domain]);
 	}
+
+	const totalRecipes = $derived(domains.reduce((sum, d) => sum + d.count, 0));
+
+	function abbreviateCount(n: number): string {
+		if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+		if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}k`;
+		return n.toString();
+	}
 </script>
 
 <div class="browse-page">
 	<header class="page-header">
-		<h1>Browse Recipes</h1>
+		<h1>Browse {totalRecipes > 0 ? `${abbreviateCount(totalRecipes)} ` : ''}Recipes</h1>
 		<p class="subtitle">Discover recipes from various sources</p>
 	</header>
 
