@@ -465,10 +465,21 @@ defmodule Controlcopypasta.Scraper do
 
   @doc """
   Gets all domains with their metadata.
+
+  Counts actual recipes per domain from the recipes table rather than
+  scraped URL counts, so the numbers accurately reflect available recipes.
   """
   def list_domains_with_metadata do
-    # Get domains from scrape_urls with counts
-    domain_stats = get_domain_stats()
+    alias Controlcopypasta.Recipes.Recipe
+
+    # Count actual recipes per domain
+    recipe_counts =
+      Recipe
+      |> where([r], not is_nil(r.source_domain) and r.source_domain != "")
+      |> group_by([r], r.source_domain)
+      |> select([r], {r.source_domain, count(r.id)})
+      |> Repo.all()
+      |> Map.new()
 
     # Get domain metadata
     domains_map =
@@ -476,17 +487,19 @@ defmodule Controlcopypasta.Scraper do
       |> Repo.all()
       |> Map.new(fn d -> {d.domain, d} end)
 
-    # Merge stats with metadata
-    Enum.map(domain_stats, fn stats ->
-      domain_meta = Map.get(domains_map, stats.domain)
+    # Build list from all domains that have recipes
+    recipe_counts
+    |> Enum.map(fn {domain, count} ->
+      domain_meta = Map.get(domains_map, domain)
 
       %{
-        domain: stats.domain,
-        count: stats.completed,
+        domain: domain,
+        count: count,
         has_screenshot: domain_meta != nil && domain_meta.screenshot != nil,
         favicon_url: if(domain_meta, do: domain_meta.favicon_url, else: nil)
       }
     end)
+    |> Enum.sort_by(& &1.count, :desc)
   end
 
   @doc """
