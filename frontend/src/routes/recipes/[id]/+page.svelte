@@ -24,7 +24,7 @@
 	let nutrition = $state<RecipeNutrition | null>(null);
 	let loadingNutrition = $state(false);
 	let nutritionError = $state('');
-	let showNutrition = $state(false);
+	let showNutrition = $state(true);
 	let nutritionSource = $state<NutritionSource>('composite');
 
 	// Shopping list modal state
@@ -77,9 +77,10 @@
 		try {
 			const result = await recipes.get(token, recipeId);
 			recipe = result.data;
-			// Load similar recipes and decisions in the background
+			// Load similar recipes, decisions, and nutrition in the background
 			loadSimilarRecipes();
 			loadDecisions(recipeId);
+			loadNutrition();
 		} catch {
 			error = 'Recipe not found';
 		} finally {
