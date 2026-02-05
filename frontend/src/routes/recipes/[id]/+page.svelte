@@ -644,12 +644,14 @@
 					<ul>
 						{#each recipe.ingredients as ingredient, i}
 							<li>
-								<span class="ingredient-text">{scaleIngredient(ingredient.text)}</span>
-								{#if scale !== 1 && getPackageSuggestion(ingredient.text)}
-									<span class="package-hint" title={getPackageSuggestion(ingredient.text)}>
-										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-									</span>
-								{/if}
+								<div class="ingredient-line">
+									<span class="ingredient-text">{scaleIngredient(ingredient.text)}</span>
+									{#if scale !== 1 && getPackageSuggestion(ingredient.text)}
+										<span class="package-hint" title={getPackageSuggestion(ingredient.text)}>
+											<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+										</span>
+									{/if}
+								</div>
 								<IngredientDecisionComponent
 									{ingredient}
 									index={i}
@@ -1257,9 +1259,9 @@
 
 	.ingredient-cell {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: var(--space-2);
+		flex-direction: column;
+		align-items: flex-start;
+		gap: var(--space-1);
 	}
 
 	.ingredient-name {
@@ -1285,6 +1287,9 @@
 	.ingredients li {
 		margin-bottom: var(--space-2);
 		line-height: var(--leading-relaxed);
+	}
+
+	.ingredient-line {
 		display: flex;
 		align-items: flex-start;
 		gap: var(--space-2);
