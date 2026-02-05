@@ -252,13 +252,13 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
     gram grams kilogram kilograms kg
     pinch pinches dash dashes bunch bunches
     sprig sprigs clove cloves slice slices piece pieces
-    head heads stalk stalks can cans jar jars
+    head heads stalk stalks can cans tin tins jar jars
     bottle bottles bag bags box boxes package packages
   )
 
   defp starts_with_unit?(name) do
     Enum.any?(@unit_words, fn unit ->
-      String.starts_with?(name, unit <> " ")
+      name == unit or String.starts_with?(name, unit <> " ")
     end)
   end
 

@@ -806,4 +806,173 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
       assert result.unit == "cup"
     end
   end
+
+  describe "standalone metric formats" do
+    # These tests cover UK/metric-style ingredients where the quantity and
+    # metric unit are attached (e.g., "400g") without a separate imperial measurement.
+    # The tokenizer should split "400g" into "400" (qty) + "g" (unit) so the
+    # ingredient name is correctly extracted.
+
+    test "parses '400g chickpeas' - gram weight with ingredient" do
+      result = TokenParser.parse("400g chickpeas")
+
+      assert result.quantity == 400.0
+      assert result.unit == "g"
+      assert result.primary_ingredient != nil
+      names = Enum.map(result.ingredients, & &1.name)
+      assert Enum.any?(names, &String.contains?(&1, "chickpeas"))
+    end
+
+    test "parses '200ml coconut milk' - milliliter with ingredient" do
+      result = TokenParser.parse("200ml coconut milk")
+
+      assert result.quantity == 200.0
+      assert result.unit == "ml"
+      assert result.primary_ingredient != nil
+      names = Enum.map(result.ingredients, & &1.name)
+      assert Enum.any?(names, &String.contains?(&1, "coconut milk"))
+    end
+
+    test "parses '1.5kg flour' - decimal kilogram" do
+      result = TokenParser.parse("1.5kg flour")
+
+      assert result.quantity == 1.5
+      assert result.unit == "kg"
+      assert result.primary_ingredient != nil
+      names = Enum.map(result.ingredients, & &1.name)
+      assert Enum.any?(names, &String.contains?(&1, "flour"))
+    end
+
+    test "parses '500g minced beef' - metric with modifier" do
+      result = TokenParser.parse("500g minced beef")
+
+      assert result.quantity == 500.0
+      assert result.unit == "g"
+      assert result.primary_ingredient != nil
+      names = Enum.map(result.ingredients, & &1.name)
+      assert Enum.any?(names, &String.contains?(&1, "beef"))
+    end
+
+    test "parses '250ml double cream' - metric with modifier" do
+      result = TokenParser.parse("250ml double cream")
+
+      assert result.quantity == 250.0
+      assert result.unit == "ml"
+      assert result.primary_ingredient != nil
+    end
+
+    test "parses '100g caster sugar, plus extra for dusting'" do
+      result = TokenParser.parse("100g caster sugar, plus extra for dusting")
+
+      assert result.quantity == 100.0
+      assert result.unit == "g"
+      assert result.primary_ingredient != nil
+    end
+  end
+
+  describe "metric container patterns" do
+    # Tests for patterns like "400g tin chopped tomatoes" and "1 x 400g tin"
+    # where a metric weight describes the container size rather than ingredient quantity.
+
+    test "parses '400g tin chopped tomatoes' - metric container" do
+      result = TokenParser.parse("400g tin chopped tomatoes")
+
+      assert result.primary_ingredient != nil
+      names = Enum.map(result.ingredients, & &1.name)
+      assert Enum.any?(names, &String.contains?(&1, "tomatoes"))
+      assert result.container != nil
+      assert result.container.size_value == 400.0
+      assert result.container.size_unit == "g"
+      assert result.container.container_type == "tin"
+    end
+
+    test "parses '1 x 400g tin chickpeas' - multiplier with metric container" do
+      result = TokenParser.parse("1 x 400g tin chickpeas")
+
+      assert result.quantity == 1.0
+      assert result.primary_ingredient != nil
+      names = Enum.map(result.ingredients, & &1.name)
+      assert Enum.any?(names, &String.contains?(&1, "chickpeas"))
+      assert result.container != nil
+      assert result.container.size_value == 400.0
+      assert result.container.size_unit == "g"
+    end
+
+    test "parses '2 x 400g tins chopped tomatoes'" do
+      result = TokenParser.parse("2 x 400g tins chopped tomatoes")
+
+      assert result.quantity == 2.0
+      assert result.primary_ingredient != nil
+      names = Enum.map(result.ingredients, & &1.name)
+      assert Enum.any?(names, &String.contains?(&1, "tomatoes"))
+      assert result.container != nil
+      assert result.container.size_value == 400.0
+    end
+
+    test "parses '200ml can coconut milk' - ml container" do
+      result = TokenParser.parse("200ml can coconut milk")
+
+      assert result.primary_ingredient != nil
+      names = Enum.map(result.ingredients, & &1.name)
+      assert Enum.any?(names, &String.contains?(&1, "coconut milk"))
+      assert result.container != nil
+      assert result.container.size_value == 200.0
+      assert result.container.size_unit == "ml"
+    end
+
+    test "does not create false metric container for imperial units" do
+      # "2 cups jar" should NOT create a metric container
+      result = TokenParser.parse("2 cups marinara sauce")
+
+      # No container because cups is not a metric unit
+      assert result.container == nil
+      assert result.unit == "cup"
+    end
+  end
+
+  describe "metric tokenizer splitting" do
+    # Tests that verify the tokenizer correctly splits attached metric units
+
+    alias Controlcopypasta.Ingredients.Tokenizer
+
+    test "splits '400g' into qty and unit tokens" do
+      tokens = Tokenizer.tokenize("400g chickpeas")
+      labels = Enum.map(tokens, & &1.label)
+
+      assert :qty in labels
+      assert :unit in labels
+      refute :metric_weight in labels
+    end
+
+    test "splits '200ml' into qty and unit tokens" do
+      tokens = Tokenizer.tokenize("200ml milk")
+      labels = Enum.map(tokens, & &1.label)
+
+      assert :qty in labels
+      assert :unit in labels
+    end
+
+    test "labels 'x' as multiplier between quantities" do
+      tokens = Tokenizer.tokenize("1 x 400g tin")
+      labels = Enum.map(tokens, & &1.label)
+
+      assert :multiplier in labels
+    end
+
+    test "does not split fractions like '1/2g'" do
+      # "1/2g" should NOT become "1/ 2 g" - the fraction should stay intact
+      tokens = Tokenizer.tokenize("1/2 cup flour")
+      qty_tokens = Enum.filter(tokens, &(&1.label == :qty))
+
+      # Should have "1/2" as a single qty token
+      assert Enum.any?(qty_tokens, &(&1.text == "1/2"))
+    end
+
+    test "does not split 'egg' or other words ending in metric-like letters" do
+      tokens = Tokenizer.tokenize("2 eggs")
+      word_tokens = Enum.filter(tokens, &(&1.label == :word))
+
+      assert Enum.any?(word_tokens, &(&1.text == "eggs"))
+    end
+  end
 end

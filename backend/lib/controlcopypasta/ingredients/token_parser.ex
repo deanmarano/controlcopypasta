@@ -496,6 +496,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     # Try multiple patterns in order of specificity
     find_paren_sequence(tokens) ||
       find_size_container_pattern(tokens) ||
+      find_metric_container_pattern(tokens) ||
       find_qty_container_pattern(tokens)
   end
 
@@ -543,7 +544,32 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     end)
   end
 
-  # Pattern 3: qty container - e.g., "2 cans", "1 jar" (no size specified)
+  # Pattern 3: qty unit container - e.g., "400 g tin", "200 ml bottle"
+  # Matches metric-sized containers where size is qty+unit before container type
+  # Only matches metric units (g, kg, ml, l) to avoid false positives
+  defp find_metric_container_pattern(tokens) do
+    tokens
+    |> Enum.chunk_every(3, 1, :discard)
+    |> Enum.find_value(fn
+      [%{label: :qty, text: qty_text}, %{label: :unit, text: unit_text}, %{label: :container, text: container_text}] ->
+        normalized_unit = normalize_unit(unit_text)
+
+        if normalized_unit in ~w(g kg ml l) do
+          %{
+            size_value: parse_single_quantity(qty_text),
+            size_unit: normalized_unit,
+            container_type: container_text
+          }
+        else
+          nil
+        end
+
+      _ ->
+        nil
+    end)
+  end
+
+  # Pattern 4: qty container - e.g., "2 cans", "1 jar" (no size specified)
   defp find_qty_container_pattern(tokens) do
     # Find :qty token followed by :container token
     tokens

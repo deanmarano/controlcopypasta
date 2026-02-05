@@ -12,6 +12,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   - :conj      - Conjunction (or, and)
   - :punct     - Punctuation (, ; ( ))
   - :note      - Recipe note (optional, divided, to taste)
+  - :multiplier - Multiplier connector (x) between quantities
   - :word      - Unclassified word (likely ingredient or adjective)
   """
 
@@ -54,7 +55,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   )
 
   # Container types
-  @containers ~w(can cans jar jars bottle bottles bag bags box boxes package packages pkg container containers carton cartons)
+  @containers ~w(can cans tin tins jar jars bottle bottles bag bags box boxes package packages pkg container containers carton cartons)
 
   alias Controlcopypasta.Ingredients.ParserCache
 
@@ -141,6 +142,9 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
 
         should_label_as_unit_connector?(token, tokens, idx) ->
           %{token | label: :unit_connector}
+
+        should_label_as_multiplier?(token, tokens, idx) ->
+          %{token | label: :multiplier}
 
         true ->
           token
@@ -244,6 +248,15 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   end
 
   defp should_label_as_unit_connector?(_token, _tokens, _idx), do: false
+
+  # "x" between two quantities: "1 x 400" -> :multiplier
+  defp should_label_as_multiplier?(%Token{label: :word, text: "x"}, tokens, idx) do
+    prev = if idx > 0, do: Enum.at(tokens, idx - 1)
+    next = Enum.at(tokens, idx + 1)
+    prev != nil and prev.label == :qty and next != nil and next.label == :qty
+  end
+
+  defp should_label_as_multiplier?(_token, _tokens, _idx), do: false
 
   @doc """
   Returns a compact string representation of labeled tokens.
@@ -427,6 +440,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     |> String.replace("—", "-")  # Normalize em-dash
     |> normalize_range_patterns()  # "1 -2" or "1 - 2" -> "1-2"
     |> mark_note_phrases()
+    |> split_attached_metric()  # "400g" -> "400 g", "200ml" -> "200 ml"
     |> String.replace(~r/\s+/, " ")
   end
 
@@ -436,6 +450,13 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   defp normalize_range_patterns(text) do
     text
     |> String.replace(~r/(\d)\s*-\s*(\d)/, "\\1-\\2")
+  end
+
+  # Split attached metric units: "400g" -> "400 g", "200ml" -> "200 ml"
+  # Only matches when the number+unit is preceded by whitespace or is at the start
+  # of the string, to avoid splitting inside fractions like "1/2g"
+  defp split_attached_metric(text) do
+    Regex.replace(~r/(?<!\S)(\d+(?:[.,]\d+)?)(g|kg|ml|l)\b/, text, "\\1 \\2")
   end
 
   # Replace multi-word note phrases with a single marker token
@@ -585,11 +606,13 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   end
 
   # Analysis helpers
-  # Extract quantities, but stop at first parenthesis to ignore metric equivalents
+  # Extract quantities, but stop at first parenthesis or multiplier to ignore
+  # metric equivalents and container-size quantities.
   # e.g., "2 pounds (907 g)" should return ["2"], not ["2", "907"]
+  # e.g., "1 x 400 g tin" should return ["1"], not ["1", "400"]
   defp extract_quantity(tokens) do
     tokens
-    |> Enum.take_while(&(&1.text != "("))
+    |> Enum.take_while(&(&1.text != "(" and &1.label != :multiplier))
     |> Enum.filter(&(&1.label == :qty))
     |> Enum.map(& &1.text)
   end
