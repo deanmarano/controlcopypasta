@@ -31,6 +31,20 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
   def add_domain(conn, %{"domain" => domain, "seed_urls" => seed_urls}) do
     {:ok, result} = Scraper.enqueue_domain(domain, seed_urls)
 
+    # Capture screenshot asynchronously so it doesn't block the response
+    Task.start(fn ->
+      url = "https://#{result.domain}"
+
+      case BrowserPool.screenshot(url, timeout: 60_000) do
+        {:ok, base64_screenshot} ->
+          screenshot = Base.decode64!(base64_screenshot)
+          Scraper.update_domain_screenshot(result.domain, screenshot)
+
+        {:error, _reason} ->
+          :ok
+      end
+    end)
+
     conn
     |> put_status(:created)
     |> json(%{

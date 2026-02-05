@@ -112,8 +112,8 @@
 </script>
 
 {#if allSteps.length > 0}
-	<div class="prep-list-container" class:expanded>
-		{#if !expanded}
+	<div class="prep-list-container" class:expanded={initialExpanded}>
+		{#if !initialExpanded}
 			<button class="prep-list-toggle" onclick={() => (showPrepList = !showPrepList)}>
 				<span class="toggle-icon">{showPrepList ? '−' : '+'}</span>
 				<span class="toggle-text">{showPrepList ? 'Hide' : 'Show'} Prep List</span>
