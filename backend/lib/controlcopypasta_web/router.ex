@@ -166,6 +166,7 @@ defmodule ControlcopypastaWeb.Router do
     post "/admin/scraper/enqueue-density", Admin.ScraperController, :enqueue_density_enrichment
     post "/admin/scraper/resume-nutrition", Admin.ScraperController, :resume_nutrition_enrichment
     post "/admin/scraper/resume-density", Admin.ScraperController, :resume_density_enrichment
+    post "/admin/scraper/enqueue-nutrition-all-sources", Admin.ScraperController, :enqueue_nutrition_all_sources
 
     # Pending ingredients review
     get "/admin/pending-ingredients", Admin.PendingIngredientController, :index

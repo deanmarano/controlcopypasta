@@ -6,8 +6,8 @@
 		expanded?: boolean;
 	}
 
-	let { ingredients, expanded = false }: Props = $props();
-	let showPrepList = $state(expanded);
+	let { ingredients, expanded: initialExpanded = false }: Props = $props();
+	let showPrepList = $state(initialExpanded);
 	let checkedSteps = $state<Set<string>>(new Set());
 
 	const categoryLabels: Record<string, string> = {

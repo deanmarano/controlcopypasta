@@ -216,6 +216,113 @@ defmodule Controlcopypasta.Nutrition.OpenFoodFactsClient do
   end
 
   @doc """
+  Extracts nutrition data from a raw Open Food Facts product response into attrs
+  suitable for IngredientNutrition creation/upsert.
+
+  Maps the `nutriments` keys (e.g., `energy-kcal_100g`, `proteins_100g`) to
+  IngredientNutrition schema fields. All values are per 100g.
+
+  ## Parameters
+
+  - `raw_product` - Raw product map from the Open Food Facts API
+  - `canonical_ingredient_id` - ID of the canonical ingredient
+
+  ## Examples
+
+      iex> {:ok, %{raw: raw}} = OpenFoodFactsClient.search_and_get_first("olive oil")
+      iex> attrs = OpenFoodFactsClient.extract_nutrition_from_raw(raw, ingredient.id)
+      iex> Ingredients.upsert_nutrition(attrs)
+  """
+  def extract_nutrition_from_raw(raw_product, canonical_ingredient_id) do
+    nutriments = raw_product["nutriments"] || %{}
+    code = raw_product["code"]
+    product_name = raw_product["product_name"]
+
+    %{
+      canonical_ingredient_id: canonical_ingredient_id,
+      source: :open_food_facts,
+      source_id: code,
+      source_name: product_name,
+      source_url: "https://world.openfoodfacts.org/product/#{code}",
+      serving_size_value: Decimal.new("100"),
+      serving_size_unit: "g",
+      serving_description: raw_product["serving_size"],
+      calories: off_decimal(nutriments, "energy-kcal_100g"),
+      protein_g: off_decimal(nutriments, "proteins_100g"),
+      fat_total_g: off_decimal(nutriments, "fat_100g"),
+      fat_saturated_g: off_decimal(nutriments, "saturated-fat_100g"),
+      fat_trans_g: off_decimal(nutriments, "trans-fat_100g"),
+      fat_polyunsaturated_g: off_decimal(nutriments, "polyunsaturated-fat_100g"),
+      fat_monounsaturated_g: off_decimal(nutriments, "monounsaturated-fat_100g"),
+      carbohydrates_g: off_decimal(nutriments, "carbohydrates_100g"),
+      fiber_g: off_decimal(nutriments, "fiber_100g"),
+      sugar_g: off_decimal(nutriments, "sugars_100g"),
+      sugar_added_g: off_decimal(nutriments, "added-sugars_100g"),
+      sodium_mg: off_sodium_mg(nutriments),
+      potassium_mg: off_mg_from_g(nutriments, "potassium_100g"),
+      calcium_mg: off_mg_from_g(nutriments, "calcium_100g"),
+      iron_mg: off_mg_from_g(nutriments, "iron_100g"),
+      magnesium_mg: off_mg_from_g(nutriments, "magnesium_100g"),
+      phosphorus_mg: off_mg_from_g(nutriments, "phosphorus_100g"),
+      zinc_mg: off_mg_from_g(nutriments, "zinc_100g"),
+      vitamin_a_mcg: off_mcg_from_g(nutriments, "vitamin-a_100g"),
+      vitamin_c_mg: off_mg_from_g(nutriments, "vitamin-c_100g"),
+      vitamin_d_mcg: off_mcg_from_g(nutriments, "vitamin-d_100g"),
+      vitamin_e_mg: off_mg_from_g(nutriments, "vitamin-e_100g"),
+      vitamin_k_mcg: off_mcg_from_g(nutriments, "vitamin-k_100g"),
+      vitamin_b6_mg: off_mg_from_g(nutriments, "vitamin-b6_100g"),
+      vitamin_b12_mcg: off_mcg_from_g(nutriments, "vitamin-b12_100g"),
+      folate_mcg: off_mcg_from_g(nutriments, "folates_100g"),
+      thiamin_mg: off_mg_from_g(nutriments, "vitamin-b1_100g"),
+      riboflavin_mg: off_mg_from_g(nutriments, "vitamin-b2_100g"),
+      niacin_mg: off_mg_from_g(nutriments, "vitamin-pp_100g"),
+      cholesterol_mg: off_mg_from_g(nutriments, "cholesterol_100g"),
+      water_g: off_decimal(nutriments, "water_100g"),
+      confidence: Decimal.new("0.70"),
+      retrieved_at: DateTime.utc_now()
+    }
+  end
+
+  # Open Food Facts stores sodium in g, we need mg
+  defp off_sodium_mg(nutriments) do
+    case nutriments["sodium_100g"] do
+      nil -> nil
+      val when is_number(val) -> Decimal.from_float(val * 1000)
+      _ -> nil
+    end
+  end
+
+  # OFF often stores minerals/vitamins in g; convert to mg
+  defp off_mg_from_g(nutriments, key) do
+    case nutriments[key] do
+      nil -> nil
+      val when is_number(val) ->
+        # OFF sometimes stores values already in mg if > 1, in g if < 1
+        # Use heuristic: if value seems like grams (very small for minerals), convert
+        if val < 1, do: Decimal.from_float(val * 1000), else: Decimal.from_float(val)
+      _ -> nil
+    end
+  end
+
+  # OFF stores some vitamins in g; convert to mcg
+  defp off_mcg_from_g(nutriments, key) do
+    case nutriments[key] do
+      nil -> nil
+      val when is_number(val) ->
+        if val < 0.001, do: Decimal.from_float(val * 1_000_000), else: Decimal.from_float(val)
+      _ -> nil
+    end
+  end
+
+  defp off_decimal(nutriments, key) do
+    case nutriments[key] do
+      nil -> nil
+      val when is_number(val) -> Decimal.from_float(val * 1.0)
+      _ -> nil
+    end
+  end
+
+  @doc """
   Extracts density data from raw Open Food Facts API response.
 
   Parses serving_size strings like:

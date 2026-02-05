@@ -249,6 +249,26 @@
 		}
 	}
 
+	async function enqueueNutritionAllSources() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		if (!confirm('This will enqueue ALL ingredients for multi-source nutrition enrichment. Continue?')) {
+			return;
+		}
+
+		error = '';
+		message = '';
+
+		try {
+			const result = await admin.scraper.enqueueNutritionAllSources(token);
+			message = `Enqueued ${result.data.enqueued} ingredients for multi-source nutrition enrichment`;
+			await loadEnrichmentStats();
+		} catch {
+			error = 'Failed to enqueue multi-source nutrition enrichment';
+		}
+	}
+
 	async function resumeNutrition() {
 		const token = authStore.getToken();
 		if (!token) return;
@@ -519,17 +539,17 @@
 		<section class="enrichment-section">
 			<h2>Ingredient Enrichment</h2>
 			<div class="enrichment-grid">
-				<!-- Nutrition (FatSecret) -->
+				<!-- Nutrition (Multi-Source) -->
 				<div class="enrichment-card">
 					<h3>Nutrition Data</h3>
-					<p class="enrichment-sources">Source: FatSecret</p>
+					<p class="enrichment-sources">Sources: FatSecret, USDA, Open Food Facts</p>
 					<div class="enrichment-stats">
 						<div class="enrichment-stat">
-							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.with_fatsecret_data || 0)}</span>
+							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.with_nutrition_data || enrichmentStats.nutrition.with_fatsecret_data || 0)}</span>
 							<span class="enrichment-stat-label">With Data</span>
 						</div>
 						<div class="enrichment-stat">
-							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.total_ingredients - (enrichmentStats.nutrition.with_fatsecret_data || 0))}</span>
+							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.total_ingredients - (enrichmentStats.nutrition.with_nutrition_data || enrichmentStats.nutrition.with_fatsecret_data || 0))}</span>
 							<span class="enrichment-stat-label">Without Data</span>
 						</div>
 						<div class="enrichment-stat">
@@ -537,18 +557,26 @@
 							<span class="enrichment-stat-label">Pending</span>
 						</div>
 					</div>
+					{#if enrichmentStats.nutrition.by_source && Object.keys(enrichmentStats.nutrition.by_source).length > 0}
+						<div class="enrichment-by-source">
+							{#each Object.entries(enrichmentStats.nutrition.by_source) as [source, count]}
+								<span class="source-badge">{source}: {formatNumber(count as number)}</span>
+							{/each}
+						</div>
+					{/if}
 					<div class="enrichment-progress">
 						<div class="progress-bar">
-							<div class="progress-fill" style="width: {enrichmentStats.nutrition.total_ingredients > 0 ? Math.round(((enrichmentStats.nutrition.with_fatsecret_data || 0) / enrichmentStats.nutrition.total_ingredients) * 100) : 0}%"></div>
+							<div class="progress-fill" style="width: {enrichmentStats.nutrition.total_ingredients > 0 ? Math.round(((enrichmentStats.nutrition.with_nutrition_data || enrichmentStats.nutrition.with_fatsecret_data || 0) / enrichmentStats.nutrition.total_ingredients) * 100) : 0}%"></div>
 						</div>
-						<span class="progress-text">{enrichmentStats.nutrition.total_ingredients > 0 ? Math.round(((enrichmentStats.nutrition.with_fatsecret_data || 0) / enrichmentStats.nutrition.total_ingredients) * 100) : 0}% complete</span>
+						<span class="progress-text">{enrichmentStats.nutrition.total_ingredients > 0 ? Math.round(((enrichmentStats.nutrition.with_nutrition_data || enrichmentStats.nutrition.with_fatsecret_data || 0) / enrichmentStats.nutrition.total_ingredients) * 100) : 0}% complete</span>
 					</div>
 					<div class="enrichment-rate">
 						<span>Today: {enrichmentStats.nutrition.completed_today}/{enrichmentStats.nutrition.daily_limit}</span>
 						<span>This hour: {enrichmentStats.nutrition.completed_this_hour}/{enrichmentStats.nutrition.hourly_limit}</span>
 					</div>
 					<div class="enrichment-actions">
-						<button onclick={enqueueNutrition} class="btn-secondary">Enqueue All</button>
+						<button onclick={enqueueNutrition} class="btn-secondary">Enqueue Missing</button>
+						<button onclick={enqueueNutritionAllSources} class="btn-secondary">All Sources</button>
 						<button onclick={resumeNutrition} class="btn-success">Resume Queue</button>
 					</div>
 				</div>
@@ -727,7 +755,7 @@
 <!-- Matching Rules Modal -->
 {#if rulesModalIngredient}
 	<div class="modal-backdrop" onclick={closeRulesModal} onkeydown={(e) => e.key === 'Escape' && closeRulesModal()} role="dialog" aria-modal="true" tabindex="-1">
-		<div class="modal" onclick={(e) => e.stopPropagation()}>
+		<div class="modal" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && closeRulesModal()} role="document" tabindex="-1">
 			<div class="modal-header">
 				<h2>Matching Rules: {rulesModalIngredient.display_name}</h2>
 				<button class="modal-close" onclick={closeRulesModal}>&times;</button>
@@ -1229,6 +1257,23 @@
 	.enrichment-stat-label {
 		font-size: var(--text-xs);
 		color: var(--text-secondary);
+	}
+
+	.enrichment-by-source {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
+		margin-bottom: var(--space-3);
+	}
+
+	.source-badge {
+		display: inline-block;
+		padding: var(--space-1) var(--space-2);
+		background: var(--color-pasta-100);
+		color: var(--color-pasta-700);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+		font-weight: var(--font-medium);
 	}
 
 	.enrichment-progress {

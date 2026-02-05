@@ -10,10 +10,10 @@ if config_env() in [:dev, :test] do
 
   # Oban config for dev - scraping disabled by default
   # Set ENABLE_SCRAPING=true in .env to enable
-  # Note: fatsecret and density queues are always enabled for ingredient enrichment
+  # Note: fatsecret, density, and nutrition queues are always enabled for ingredient enrichment
   scraping_enabled = System.get_env("ENABLE_SCRAPING") == "true"
 
-  dev_queues = [scheduled: 1, fatsecret: 1, density: 1]
+  dev_queues = [scheduled: 1, fatsecret: 1, density: 1, nutrition: 1]
   dev_queues = if scraping_enabled, do: [{:scraper, 1} | dev_queues], else: dev_queues
 
   config :controlcopypasta, Oban,
@@ -151,9 +151,9 @@ if config_env() == :prod do
 
   scraper_queues =
     if scraping_enabled do
-      [scraper: scraper_concurrency, scheduled: 1, fatsecret: 1, density: 1]
+      [scraper: scraper_concurrency, scheduled: 1, fatsecret: 1, density: 1, nutrition: 1]
     else
-      [scheduled: 1, fatsecret: 1, density: 1]
+      [scheduled: 1, fatsecret: 1, density: 1, nutrition: 1]
     end
 
   scraper_cron =

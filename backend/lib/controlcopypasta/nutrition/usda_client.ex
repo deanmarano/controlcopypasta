@@ -368,6 +368,75 @@ defmodule Controlcopypasta.Nutrition.USDAClient do
   def nutrient_ids, do: @nutrient_ids
 
   @doc """
+  Extracts nutrition data from a parsed USDA food response into attrs
+  suitable for IngredientNutrition creation/upsert.
+
+  ## Parameters
+
+  - `parsed_food` - Parsed food response from `get_food/1` or `search_and_get_nutrition/1`
+  - `canonical_ingredient_id` - ID of the canonical ingredient
+
+  ## Examples
+
+      iex> {:ok, food} = USDAClient.search_and_get_nutrition("chicken breast")
+      iex> attrs = USDAClient.extract_nutrition_from_parsed(food, ingredient.id)
+      iex> Ingredients.upsert_nutrition(attrs)
+  """
+  def extract_nutrition_from_parsed(parsed_food, canonical_ingredient_id) do
+    nutrients = parsed_food.nutrients || %{}
+    fdc_id = parsed_food.fdc_id
+
+    %{
+      canonical_ingredient_id: canonical_ingredient_id,
+      source: :usda,
+      source_id: "#{fdc_id}",
+      source_name: parsed_food.description,
+      source_url: "https://fdc.nal.usda.gov/fdc-app.html#/food-details/#{fdc_id}",
+      serving_size_value: Decimal.new("100"),
+      serving_size_unit: "g",
+      serving_description: parsed_food[:serving_description],
+      calories: to_decimal(nutrients[:calories]),
+      protein_g: to_decimal(nutrients[:protein_g]),
+      fat_total_g: to_decimal(nutrients[:fat_total_g]),
+      fat_saturated_g: to_decimal(nutrients[:fat_saturated_g]),
+      fat_trans_g: to_decimal(nutrients[:fat_trans_g]),
+      fat_polyunsaturated_g: to_decimal(nutrients[:fat_polyunsaturated_g]),
+      fat_monounsaturated_g: to_decimal(nutrients[:fat_monounsaturated_g]),
+      carbohydrates_g: to_decimal(nutrients[:carbohydrates_g]),
+      fiber_g: to_decimal(nutrients[:fiber_g]),
+      sugar_g: to_decimal(nutrients[:sugar_g]),
+      sugar_added_g: to_decimal(nutrients[:sugar_added_g]),
+      sodium_mg: to_decimal(nutrients[:sodium_mg]),
+      potassium_mg: to_decimal(nutrients[:potassium_mg]),
+      calcium_mg: to_decimal(nutrients[:calcium_mg]),
+      iron_mg: to_decimal(nutrients[:iron_mg]),
+      magnesium_mg: to_decimal(nutrients[:magnesium_mg]),
+      phosphorus_mg: to_decimal(nutrients[:phosphorus_mg]),
+      zinc_mg: to_decimal(nutrients[:zinc_mg]),
+      vitamin_a_mcg: to_decimal(nutrients[:vitamin_a_mcg]),
+      vitamin_c_mg: to_decimal(nutrients[:vitamin_c_mg]),
+      vitamin_d_mcg: to_decimal(nutrients[:vitamin_d_mcg]),
+      vitamin_e_mg: to_decimal(nutrients[:vitamin_e_mg]),
+      vitamin_k_mcg: to_decimal(nutrients[:vitamin_k_mcg]),
+      vitamin_b6_mg: to_decimal(nutrients[:vitamin_b6_mg]),
+      vitamin_b12_mcg: to_decimal(nutrients[:vitamin_b12_mcg]),
+      folate_mcg: to_decimal(nutrients[:folate_mcg]),
+      thiamin_mg: to_decimal(nutrients[:thiamin_mg]),
+      riboflavin_mg: to_decimal(nutrients[:riboflavin_mg]),
+      niacin_mg: to_decimal(nutrients[:niacin_mg]),
+      cholesterol_mg: to_decimal(nutrients[:cholesterol_mg]),
+      water_g: to_decimal(nutrients[:water_g]),
+      confidence: Decimal.new("0.95"),
+      retrieved_at: DateTime.utc_now()
+    }
+  end
+
+  defp to_decimal(nil), do: nil
+  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
+  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
+  defp to_decimal(value), do: Decimal.new("#{value}")
+
+  @doc """
   Extracts density data from USDA foodPortions.
   Returns list of maps ready for IngredientDensity creation.
 

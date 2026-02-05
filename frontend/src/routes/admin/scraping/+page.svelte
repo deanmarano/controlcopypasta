@@ -877,22 +877,6 @@
 		background: var(--color-gray-600);
 	}
 
-	/* Rate Limits */
-	.rate-limits {
-		display: flex;
-		gap: var(--space-6);
-		margin-bottom: var(--space-3);
-	}
-
-	.rate-limit p {
-		margin: 0;
-		font-size: var(--text-lg);
-	}
-
-	.remaining {
-		color: var(--text-muted);
-		font-size: var(--text-sm);
-	}
 
 	.config-info {
 		display: flex;

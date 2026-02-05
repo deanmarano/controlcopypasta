@@ -1,5 +1,12 @@
 defmodule Controlcopypasta.Nutrition.FatSecretEnrichmentWorker do
   @moduledoc """
+  **Deprecated**: Use `Controlcopypasta.Nutrition.NutritionEnrichmentWorker` instead,
+  which fetches from FatSecret, USDA, and Open Food Facts in a single pass.
+
+  This module is kept functional for in-flight Oban jobs on the `:fatsecret` queue.
+
+  ---
+
   Oban worker to fetch FatSecret nutrition data for canonical ingredients.
 
   Respects API rate limits:

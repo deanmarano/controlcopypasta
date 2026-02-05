@@ -4,8 +4,8 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
   alias Controlcopypasta.Scraper
   alias Controlcopypasta.Browser.Pool, as: BrowserPool
   alias Controlcopypasta.Workers.IngredientParser
-  alias Controlcopypasta.Nutrition.FatSecretEnrichmentWorker
   alias Controlcopypasta.Nutrition.DensityEnrichmentWorker
+  alias Controlcopypasta.Nutrition.NutritionEnrichmentWorker
   alias Controlcopypasta.Repo
   import Ecto.Query
 
@@ -205,7 +205,7 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
   Gets ingredient enrichment stats (nutrition and density progress).
   """
   def ingredient_enrichment_stats(conn, _params) do
-    nutrition_stats = FatSecretEnrichmentWorker.progress()
+    nutrition_stats = NutritionEnrichmentWorker.progress()
     density_stats = DensityEnrichmentWorker.progress()
 
     json(conn, %{
@@ -217,41 +217,35 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
   end
 
   @doc """
-  Triggers nutrition enrichment for all ingredients without FatSecret data.
+  Triggers nutrition enrichment for all ingredients without nutrition data.
   """
   def enqueue_nutrition_enrichment(conn, _params) do
-    case FatSecretEnrichmentWorker.enqueue_all() do
-      {:ok, count} ->
-        json(conn, %{data: %{status: "started", enqueued: count}})
-
-      {:error, reason} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{error: "Failed to start nutrition enrichment: #{inspect(reason)}"})
-    end
+    {:ok, count} = NutritionEnrichmentWorker.enqueue_all()
+    json(conn, %{data: %{status: "started", enqueued: count}})
   end
 
   @doc """
   Triggers density enrichment for all ingredients without density data.
   """
   def enqueue_density_enrichment(conn, _params) do
-    case DensityEnrichmentWorker.enqueue_all() do
-      {:ok, count} ->
-        json(conn, %{data: %{status: "started", enqueued: count}})
-
-      {:error, reason} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{error: "Failed to start density enrichment: #{inspect(reason)}"})
-    end
+    {:ok, count} = DensityEnrichmentWorker.enqueue_all()
+    json(conn, %{data: %{status: "started", enqueued: count}})
   end
 
   @doc """
-  Resumes the FatSecret enrichment queue if paused.
+  Resumes the nutrition enrichment queue if paused.
   """
   def resume_nutrition_enrichment(conn, _params) do
-    FatSecretEnrichmentWorker.resume()
+    NutritionEnrichmentWorker.resume()
     json(conn, %{data: %{status: "resumed"}})
+  end
+
+  @doc """
+  Triggers nutrition enrichment for ALL ingredients from all sources (backfill).
+  """
+  def enqueue_nutrition_all_sources(conn, _params) do
+    {:ok, count} = NutritionEnrichmentWorker.enqueue_all_sources()
+    json(conn, %{data: %{status: "started", enqueued: count}})
   end
 
   @doc """

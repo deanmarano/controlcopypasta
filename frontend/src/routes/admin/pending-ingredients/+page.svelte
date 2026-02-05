@@ -420,8 +420,8 @@
 
 <!-- Merge Modal -->
 {#if mergeModalOpen && mergeTarget}
-	<div class="modal-overlay" onclick={closeMergeModal}>
-		<div class="modal" onclick={(e) => e.stopPropagation()}>
+	<div class="modal-overlay" onclick={closeMergeModal} onkeydown={(e) => e.key === 'Escape' && closeMergeModal()} role="dialog" aria-modal="true" tabindex="-1">
+		<div class="modal" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && closeMergeModal()} role="document" tabindex="-1">
 			<h2>Merge "{mergeTarget.name}"</h2>
 			<p class="modal-desc">Select an existing canonical ingredient to merge this as an alias:</p>
 

@@ -175,10 +175,6 @@ defmodule Controlcopypasta.Ingredients.IngredientNutrition do
     |> validate_number(:confidence, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)
     |> validate_non_negative_nutrients()
     |> unique_constraint([:canonical_ingredient_id, :source, :source_id])
-    |> unique_constraint([:canonical_ingredient_id],
-        name: :ingredient_nutrition_one_primary_per_ingredient,
-        message: "already has a primary nutrition source"
-      )
   end
 
   defp validate_non_negative_nutrients(changeset) do

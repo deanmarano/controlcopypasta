@@ -1165,8 +1165,11 @@ export interface FailedUrl {
 export interface EnrichmentProgress {
   total_ingredients: number;
   with_fatsecret_data?: number;
+  with_nutrition_data?: number;
   with_density_data?: number;
+  without_nutrition_data?: number;
   without_density_data?: number;
+  by_source?: Record<string, number>;
   pending_jobs: number;
   completed_today: number;
   completed_this_hour: number;
@@ -1296,6 +1299,12 @@ export const admin = {
 
     resumeDensity: (token: string) =>
       request<{ data: { status: string } }>('/admin/scraper/resume-density', {
+        method: 'POST',
+        token
+      }),
+
+    enqueueNutritionAllSources: (token: string) =>
+      request<{ data: { status: string; enqueued: number } }>('/admin/scraper/enqueue-nutrition-all-sources', {
         method: 'POST',
         token
       })

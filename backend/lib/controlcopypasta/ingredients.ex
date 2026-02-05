@@ -800,12 +800,13 @@ defmodule Controlcopypasta.Ingredients do
         {:ok, nutrition}
 
       nil ->
-        # Fall back to highest-trust source
+        # Fall back to highest-trust source, using confidence as tiebreaker
         fallback_query =
           from(n in IngredientNutrition,
             where: n.canonical_ingredient_id == ^canonical_ingredient_id,
             order_by: [
-              asc: fragment("array_position(ARRAY['usda','manual','open_food_facts','nutritionix','estimated']::nutrition_source[], ?)", n.source)
+              asc: fragment("array_position(ARRAY['usda','manual','fatsecret','open_food_facts','nutritionix','estimated']::nutrition_source[], ?)", n.source),
+              desc: n.confidence
             ],
             limit: 1
           )
@@ -824,7 +825,8 @@ defmodule Controlcopypasta.Ingredients do
     from(n in IngredientNutrition,
       where: n.canonical_ingredient_id == ^canonical_ingredient_id,
       order_by: [
-        asc: fragment("array_position(ARRAY['usda','manual','open_food_facts','nutritionix','estimated']::nutrition_source[], ?)", n.source)
+        asc: fragment("array_position(ARRAY['usda','manual','fatsecret','open_food_facts','nutritionix','estimated']::nutrition_source[], ?)", n.source),
+        desc: n.confidence
       ]
     )
     |> Repo.all()
@@ -906,13 +908,45 @@ defmodule Controlcopypasta.Ingredients do
   end
 
   @doc """
+  Upserts nutrition data for an ingredient (insert or update on conflict).
+
+  Conflicts on `(canonical_ingredient_id, source, source_id)`.
+  On conflict, replaces nutrient values and metadata.
+  """
+  def upsert_nutrition(attrs) do
+    %IngredientNutrition{}
+    |> IngredientNutrition.changeset(attrs)
+    |> maybe_calculate_confidence()
+    |> Repo.insert(
+      on_conflict: {:replace, [
+        :source_name, :source_url, :serving_size_value, :serving_size_unit, :serving_description,
+        :calories, :protein_g, :fat_total_g, :fat_saturated_g, :fat_trans_g,
+        :fat_polyunsaturated_g, :fat_monounsaturated_g, :carbohydrates_g,
+        :fiber_g, :sugar_g, :sugar_added_g,
+        :sodium_mg, :potassium_mg, :calcium_mg, :iron_mg, :magnesium_mg,
+        :phosphorus_mg, :zinc_mg,
+        :vitamin_a_mcg, :vitamin_c_mg, :vitamin_d_mcg, :vitamin_e_mg, :vitamin_k_mcg,
+        :vitamin_b6_mg, :vitamin_b12_mcg, :folate_mcg, :thiamin_mg, :riboflavin_mg, :niacin_mg,
+        :cholesterol_mg, :water_g,
+        :confidence, :confidence_factors, :retrieved_at, :last_checked_at,
+        :updated_at
+      ]},
+      conflict_target: [:canonical_ingredient_id, :source, :source_id]
+    )
+  end
+
+  @doc """
   Gets nutrition data for an ingredient by source.
+
+  Returns the highest-confidence record for that source.
   """
   def get_nutrition_by_source(canonical_ingredient_id, source) when is_atom(source) do
-    Repo.get_by(IngredientNutrition,
-      canonical_ingredient_id: canonical_ingredient_id,
-      source: source
+    from(n in IngredientNutrition,
+      where: n.canonical_ingredient_id == ^canonical_ingredient_id and n.source == ^source,
+      order_by: [desc: n.confidence],
+      limit: 1
     )
+    |> Repo.one()
   end
 
   @doc """
