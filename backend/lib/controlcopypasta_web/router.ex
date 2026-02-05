@@ -144,6 +144,14 @@ defmodule ControlcopypastaWeb.Router do
     get "/admin/ingredients/:id", Admin.IngredientController, :show
     put "/admin/ingredients/:id", Admin.IngredientController, :update
 
+    # Preparation management
+    get "/admin/preparations", Admin.PreparationController, :index
+    get "/admin/preparations/options", Admin.PreparationController, :options
+    post "/admin/preparations", Admin.PreparationController, :create
+    get "/admin/preparations/:id", Admin.PreparationController, :show
+    put "/admin/preparations/:id", Admin.PreparationController, :update
+    delete "/admin/preparations/:id", Admin.PreparationController, :delete
+
     # Scraper management
     get "/admin/scraper/domains", Admin.ScraperController, :domains
     post "/admin/scraper/domains", Admin.ScraperController, :add_domain

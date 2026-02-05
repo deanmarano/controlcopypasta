@@ -49,13 +49,15 @@ defmodule Controlcopypasta.Ingredients.Preparation do
     field :name, :string
     field :display_name, :string
     field :category, :string
+    field :verb, :string
+    field :metadata, :map, default: %{}
     field :aliases, {:array, :string}, default: []
 
     timestamps()
   end
 
   @required_fields [:name, :display_name]
-  @optional_fields [:category, :aliases]
+  @optional_fields [:category, :verb, :metadata, :aliases]
 
   @valid_categories ~w(cut heat temperature texture process measure other)
 

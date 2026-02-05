@@ -249,9 +249,42 @@ defmodule Controlcopypasta.Ingredients do
 
   @doc """
   Returns a list of all preparations.
+
+  Accepts optional filters:
+  - `{:category, category}` — filter by category
+  - `{:search, term}` — search by name or display_name
+  - `{:order_by, field}` — order by field (default: :name)
   """
-  def list_preparations do
-    Repo.all(Preparation)
+  def list_preparations(filters \\ []) do
+    Preparation
+    |> apply_preparation_filters(filters)
+    |> Repo.all()
+  end
+
+  defp apply_preparation_filters(query, []), do: query
+
+  defp apply_preparation_filters(query, [{:category, category} | rest]) when is_binary(category) and category != "" do
+    query
+    |> where([p], p.category == ^category)
+    |> apply_preparation_filters(rest)
+  end
+
+  defp apply_preparation_filters(query, [{:search, term} | rest]) when is_binary(term) and term != "" do
+    like_term = "%#{term}%"
+
+    query
+    |> where([p], ilike(p.name, ^like_term) or ilike(p.display_name, ^like_term))
+    |> apply_preparation_filters(rest)
+  end
+
+  defp apply_preparation_filters(query, [{:order_by, :name} | rest]) do
+    query
+    |> order_by([p], p.name)
+    |> apply_preparation_filters(rest)
+  end
+
+  defp apply_preparation_filters(query, [_ | rest]) do
+    apply_preparation_filters(query, rest)
   end
 
   @doc """
@@ -480,16 +513,49 @@ defmodule Controlcopypasta.Ingredients do
   Builds a lookup map from all preparation names and aliases to their info.
 
   Returns a map where keys are lowercase names/aliases and values are
-  `{canonical_name, id}` tuples.
+  `{canonical_name, id, metadata}` tuples including verb, category, tool, and timing.
   """
   def build_preparation_lookup do
     Preparation
-    |> select([p], {p.id, p.name, p.aliases})
+    |> select([p], {p.id, p.name, p.aliases, p.verb, p.category, p.metadata})
     |> Repo.all()
-    |> Enum.flat_map(fn {id, name, aliases} ->
-      [{name, {name, id}} | Enum.map(aliases || [], &{&1, {name, id}})]
+    |> Enum.flat_map(fn {id, name, aliases, verb, category, metadata} ->
+      meta = %{verb: verb, category: category, metadata: metadata}
+      [{name, {name, id, meta}} | Enum.map(aliases || [], &{&1, {name, id, meta}})]
     end)
     |> Map.new()
+  end
+
+  @doc """
+  Builds a normalizer lookup map from canonical_ingredients with similarity_name.
+
+  Returns a map where keys are variant names (ingredient names + aliases) and
+  values are the canonical form (similarity_name or ingredient name).
+  """
+  def build_normalizer_lookup do
+    CanonicalIngredient
+    |> select([ci], {ci.name, ci.aliases, ci.similarity_name})
+    |> Repo.all()
+    |> Enum.flat_map(fn {name, aliases, similarity_name} ->
+      # If ingredient has a similarity_name, map its name to that
+      base = if similarity_name, do: [{name, similarity_name}], else: []
+
+      # Map all aliases to the similarity_name (if set) or the ingredient name
+      alias_entries =
+        (aliases || [])
+        |> Enum.map(fn alias_name -> {alias_name, similarity_name || name} end)
+
+      base ++ alias_entries
+    end)
+    |> Map.new()
+  end
+
+  @doc """
+  Refreshes the parser cache (preparations + normalizer) from the database.
+  Call this after admin edits to preparations or canonical ingredients.
+  """
+  def refresh_parser_cache! do
+    Controlcopypasta.Ingredients.ParserCache.refresh!()
   end
 
   @doc """

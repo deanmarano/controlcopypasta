@@ -63,7 +63,8 @@ defmodule ControlcopypastaWeb.Admin.IngredientJSON do
       tags: ingredient.tags || [],
       usage_count: ingredient.usage_count || 0,
       matching_rules: ingredient.matching_rules,
-      aliases: ingredient.aliases || []
+      aliases: ingredient.aliases || [],
+      similarity_name: ingredient.similarity_name
     }
   end
 end

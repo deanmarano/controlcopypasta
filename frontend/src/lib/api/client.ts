@@ -1050,10 +1050,25 @@ export interface AdminIngredient {
   category: string | null;
   subcategory: string | null;
   animal_type: string | null;
+  similarity_name: string | null;
   tags: string[];
   usage_count: number;
   matching_rules: MatchingRules | null;
   aliases: string[];
+}
+
+export interface AdminPreparation {
+  id: string;
+  name: string;
+  display_name: string;
+  category: string | null;
+  verb: string | null;
+  metadata: Record<string, unknown>;
+  aliases: string[];
+}
+
+export interface AdminPreparationOptions {
+  categories: string[];
 }
 
 export interface AdminIngredientOptions {
@@ -1324,7 +1339,7 @@ export const admin = {
     get: (token: string, id: string) =>
       request<{ data: AdminIngredient }>(`/admin/ingredients/${id}`, { token }),
 
-    update: (token: string, id: string, attrs: { animal_type?: string | null; category?: string; subcategory?: string; tags?: string[]; matching_rules?: MatchingRules | null }) =>
+    update: (token: string, id: string, attrs: { animal_type?: string | null; category?: string; subcategory?: string; tags?: string[]; matching_rules?: MatchingRules | null; similarity_name?: string | null }) =>
       request<{ data: AdminIngredient }>(`/admin/ingredients/${id}`, {
         method: 'PUT',
         token,
@@ -1340,6 +1355,42 @@ export const admin = {
         token,
         body: { input }
       })
+  },
+
+  preparations: {
+    list: (token: string, params?: { category?: string; search?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.category) searchParams.set('category', params.category);
+      if (params?.search) searchParams.set('search', params.search);
+      const query = searchParams.toString();
+      return request<{ data: AdminPreparation[] }>(`/admin/preparations${query ? `?${query}` : ''}`, { token });
+    },
+
+    get: (token: string, id: string) =>
+      request<{ data: AdminPreparation }>(`/admin/preparations/${id}`, { token }),
+
+    create: (token: string, attrs: { name: string; display_name: string; category?: string; verb?: string; aliases?: string[]; metadata?: Record<string, unknown> }) =>
+      request<{ data: AdminPreparation }>('/admin/preparations', {
+        method: 'POST',
+        token,
+        body: { preparation: attrs }
+      }),
+
+    update: (token: string, id: string, attrs: { name?: string; display_name?: string; category?: string; verb?: string; aliases?: string[]; metadata?: Record<string, unknown> }) =>
+      request<{ data: AdminPreparation }>(`/admin/preparations/${id}`, {
+        method: 'PUT',
+        token,
+        body: { preparation: attrs }
+      }),
+
+    delete: (token: string, id: string) =>
+      request<null>(`/admin/preparations/${id}`, {
+        method: 'DELETE',
+        token
+      }),
+
+    options: (token: string) =>
+      request<AdminPreparationOptions>('/admin/preparations/options', { token })
   },
 
   pendingIngredients: {

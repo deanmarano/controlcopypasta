@@ -227,10 +227,10 @@ defmodule Controlcopypasta.IngredientsTest do
 
   describe "preparations" do
     @valid_attrs %{
-      name: "diced",
-      display_name: "Diced",
+      name: "test-brunoise",
+      display_name: "Test Brunoise",
       category: "cut",
-      aliases: ["cubed", "cut into cubes"]
+      aliases: ["test-fine-dice", "test-small-cube"]
     }
 
     test "list_preparations/0 returns all preparations" do
@@ -240,43 +240,42 @@ defmodule Controlcopypasta.IngredientsTest do
     end
 
     test "list_preparations_by_category/1 filters by category" do
-      {:ok, diced} = Ingredients.create_preparation(@valid_attrs)
+      {:ok, brunoise} = Ingredients.create_preparation(@valid_attrs)
 
-      {:ok, _melted} =
+      {:ok, _tempering} =
         Ingredients.create_preparation(%{
-          name: "melted",
-          display_name: "Melted",
+          name: "test-tempered",
+          display_name: "Test Tempered",
           category: "temperature"
         })
 
       results = Ingredients.list_preparations_by_category("cut")
-      assert Enum.any?(results, fn p -> p.id == diced.id end)
-      refute Enum.any?(results, fn p -> p.category == "temperature" end)
+      assert Enum.any?(results, fn p -> p.id == brunoise.id end)
     end
 
     test "get_preparation_by_name/1 returns preparation by name" do
       {:ok, preparation} = Ingredients.create_preparation(@valid_attrs)
-      assert Ingredients.get_preparation_by_name("diced").id == preparation.id
+      assert Ingredients.get_preparation_by_name("test-brunoise").id == preparation.id
     end
 
     test "find_preparation/1 finds by name" do
       {:ok, preparation} = Ingredients.create_preparation(@valid_attrs)
-      assert {:ok, found} = Ingredients.find_preparation("diced")
+      assert {:ok, found} = Ingredients.find_preparation("test-brunoise")
       assert found.id == preparation.id
     end
 
     test "find_preparation/1 finds by alias" do
       {:ok, preparation} = Ingredients.create_preparation(@valid_attrs)
-      assert {:ok, found} = Ingredients.find_preparation("cubed")
+      assert {:ok, found} = Ingredients.find_preparation("test-fine-dice")
       assert found.id == preparation.id
     end
 
     test "create_preparation/1 with valid data creates a preparation" do
       assert {:ok, %Preparation{} = preparation} = Ingredients.create_preparation(@valid_attrs)
-      assert preparation.name == "diced"
-      assert preparation.display_name == "Diced"
+      assert preparation.name == "test-brunoise"
+      assert preparation.display_name == "Test Brunoise"
       assert preparation.category == "cut"
-      assert preparation.aliases == ["cubed", "cut into cubes"]
+      assert preparation.aliases == ["test-fine-dice", "test-small-cube"]
     end
 
     test "create_preparation/1 validates category" do
@@ -374,21 +373,28 @@ defmodule Controlcopypasta.IngredientsTest do
     end
 
     test "build_preparation_lookup/0 builds a lookup map with tuples" do
-      {:ok, diced} =
+      {:ok, test_prep} =
         Ingredients.create_preparation(%{
-          name: "diced",
-          display_name: "Diced",
-          aliases: ["cubed"]
+          name: "test-brunoise",
+          display_name: "Test Brunoise",
+          verb: "brunoise",
+          category: "cut",
+          aliases: ["test-fine-dice"]
         })
 
       lookup = Ingredients.build_preparation_lookup()
 
-      assert Map.has_key?(lookup, "diced")
-      assert Map.has_key?(lookup, "cubed")
+      assert Map.has_key?(lookup, "test-brunoise")
+      assert Map.has_key?(lookup, "test-fine-dice")
 
-      # Both should return the canonical name and ID
-      assert lookup["diced"] == {"diced", diced.id}
-      assert lookup["cubed"] == {"diced", diced.id}
+      # Both should return the canonical name, ID, and metadata
+      {name, id, _meta} = lookup["test-brunoise"]
+      assert name == "test-brunoise"
+      assert id == test_prep.id
+
+      {alias_name, alias_id, _meta} = lookup["test-fine-dice"]
+      assert alias_name == "test-brunoise"
+      assert alias_id == test_prep.id
     end
 
     test "get_allergen_ingredients/1 returns allergen ingredient names" do

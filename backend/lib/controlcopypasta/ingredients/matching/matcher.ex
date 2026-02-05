@@ -204,12 +204,40 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
 
   defp try_shorter_matches([single_word], lookup) do
     case lookup_get(lookup, single_word) do
-      {:found, result, _} -> with_confidence(result, 0.8)
-      :not_found -> try_fuzzy_match(single_word, lookup)
+      {:found, result, _} ->
+        with_confidence(result, 0.8)
+
+      :not_found ->
+        # Try splitting compound words (e.g., "almondmilk" → "almond milk")
+        try_compound_split(single_word, lookup) || try_fuzzy_match(single_word, lookup)
     end
   end
 
   defp try_shorter_matches([], _lookup), do: nil
+
+  # Try splitting a compound word at each position to find a match
+  # e.g., "almondmilk" → tries "a lmondmilk", "al mondmilk", ... "almond milk", ...
+  defp try_compound_split(word, lookup) when byte_size(word) >= 6 do
+    1..(String.length(word) - 2)
+    |> Enum.find_value(fn i ->
+      {left, right} = String.split_at(word, i)
+      spaced = "#{left} #{right}"
+
+      case lookup_get(lookup, spaced) do
+        {:found, result, _} -> with_confidence(result, 0.85)
+        :not_found ->
+          singular = singularize_phrase(spaced)
+          if singular != spaced do
+            case lookup_get(lookup, singular) do
+              {:found, result, _} -> with_confidence(result, 0.83)
+              :not_found -> nil
+            end
+          end
+      end
+    end)
+  end
+
+  defp try_compound_split(_word, _lookup), do: nil
 
   # Conservative fuzzy matching
   defp try_fuzzy_match(name, lookup) do

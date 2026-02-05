@@ -571,15 +571,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     end
   end
 
-  # Common preparation words that signal end of choices
-  @prep_indicators ~w(
-    scaled gutted cleaned peeled minced diced chopped sliced julienned
-    grated shredded crushed mashed beaten whisked melted softened
-    toasted roasted grilled baked fried sauteed braised steamed
-    drained rinsed soaked marinated seasoned trimmed deboned
-    thawed frozen chilled warmed heated cooled halved quartered
-    cubed cut divided separated packed pressed sifted strained
-  )
+  alias Controlcopypasta.Ingredients.ParserCache
 
   # Extract choices from "such as X, Y, or Z" patterns
   # Returns {choices, preparations_found_after_choices}
@@ -645,7 +637,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       token.label == :punct and token.text == "," ->
         # Check if next word is a prep indicator
         next_word = Enum.find(rest, &(&1.label == :word))
-        if next_word && String.downcase(next_word.text) in @prep_indicators do
+        if next_word && MapSet.member?(ParserCache.preparations(), String.downcase(next_word.text)) do
           choices = finalize_choice(current_choice, choices)
           {Enum.reverse(choices), collect_preps(rest)}
         else
@@ -661,7 +653,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
 
       # Word token - could be choice or prep
       token.label == :word ->
-        if text in @prep_indicators do
+        if MapSet.member?(ParserCache.preparations(), text) do
           # This is a prep - finalize choices and collect preps
           choices = finalize_choice(current_choice, choices)
           {Enum.reverse(choices), collect_preps([token | rest])}
@@ -687,7 +679,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     tokens
     |> Enum.filter(&(&1.label == :word))
     |> Enum.map(&String.downcase(&1.text))
-    |> Enum.filter(&(&1 in @prep_indicators))
+    |> Enum.filter(&MapSet.member?(ParserCache.preparations(), &1))
   end
 
   @ingredient_stop_words ~w(

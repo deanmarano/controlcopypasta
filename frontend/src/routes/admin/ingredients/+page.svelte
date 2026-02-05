@@ -27,10 +27,15 @@
 	let showMissingOnly = $state(true);
 	let searchQuery = $state('');
 
-	// Editing
+	// Editing animal_type
 	let editingId = $state<string | null>(null);
 	let editingValue = $state<string | null>(null);
 	let saving = $state(false);
+
+	// Editing similarity_name
+	let editingSimilarityId = $state<string | null>(null);
+	let editingSimilarityValue = $state<string | null>(null);
+	let savingSimilarity = $state(false);
 
 	// Test Scorer
 	let scorerInput = $state('');
@@ -135,6 +140,35 @@
 			ingredients = ingredients.map((i) => (i.id === ingredient.id ? result.data : i));
 		} catch {
 			error = 'Failed to save changes';
+		}
+	}
+
+	function startEditSimilarity(ingredient: AdminIngredient) {
+		editingSimilarityId = ingredient.id;
+		editingSimilarityValue = ingredient.similarity_name;
+	}
+
+	function cancelEditSimilarity() {
+		editingSimilarityId = null;
+		editingSimilarityValue = null;
+	}
+
+	async function saveEditSimilarity(ingredient: AdminIngredient) {
+		const token = authStore.getToken();
+		if (!token || editingSimilarityId !== ingredient.id) return;
+
+		savingSimilarity = true;
+		try {
+			const result = await admin.ingredients.update(token, ingredient.id, {
+				similarity_name: editingSimilarityValue || null
+			});
+			ingredients = ingredients.map((i) => (i.id === ingredient.id ? result.data : i));
+			editingSimilarityId = null;
+			editingSimilarityValue = null;
+		} catch {
+			error = 'Failed to save similarity name';
+		} finally {
+			savingSimilarity = false;
 		}
 	}
 
@@ -681,6 +715,7 @@
 					<th>Name</th>
 					<th>Category</th>
 					<th>Subcategory</th>
+					<th>Similarity Name</th>
 					<th>Animal Type</th>
 					<th>Rules</th>
 					<th>Usage</th>
@@ -698,6 +733,37 @@
 						</td>
 						<td>{ingredient.category ? formatLabel(ingredient.category) : '-'}</td>
 						<td>{ingredient.subcategory ? formatLabel(ingredient.subcategory) : '-'}</td>
+						<td class="similarity-cell">
+							{#if editingSimilarityId === ingredient.id}
+								<div class="inline-edit">
+									<input
+										type="text"
+										bind:value={editingSimilarityValue}
+										disabled={savingSimilarity}
+										placeholder="e.g., flour"
+										onkeydown={(e) => {
+											if (e.key === 'Enter') saveEditSimilarity(ingredient);
+											if (e.key === 'Escape') cancelEditSimilarity();
+										}}
+									/>
+									<button onclick={() => saveEditSimilarity(ingredient)} disabled={savingSimilarity} class="save-btn">
+										{savingSimilarity ? '...' : 'Save'}
+									</button>
+									<button onclick={cancelEditSimilarity} disabled={savingSimilarity} class="cancel-btn">Cancel</button>
+								</div>
+							{:else}
+								<span
+									class="editable"
+									class:has-value={!!ingredient.similarity_name}
+									onclick={() => startEditSimilarity(ingredient)}
+									onkeydown={(e) => e.key === 'Enter' && startEditSimilarity(ingredient)}
+									role="button"
+									tabindex="0"
+								>
+									{ingredient.similarity_name || '-'}
+								</span>
+							{/if}
+						</td>
 						<td class="animal-type-cell">
 							{#if editingId === ingredient.id}
 								<select bind:value={editingValue} disabled={saving}>
@@ -935,6 +1001,36 @@
 		color: var(--text-muted);
 		font-size: var(--text-xs);
 		display: block;
+	}
+
+	.similarity-cell .inline-edit {
+		display: flex;
+		align-items: center;
+		gap: var(--space-1);
+	}
+
+	.similarity-cell .inline-edit input {
+		padding: var(--space-1) var(--space-2);
+		font-size: var(--text-sm);
+		border: var(--border-width-default) solid var(--border-default);
+		border-radius: var(--radius-sm);
+		min-width: 100px;
+	}
+
+	.editable {
+		cursor: pointer;
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		transition: background var(--transition-fast);
+	}
+
+	.editable:hover {
+		background: var(--color-pasta-100);
+	}
+
+	.editable:not(.has-value) {
+		color: var(--text-muted);
+		font-style: italic;
 	}
 
 	.animal-type-cell select {

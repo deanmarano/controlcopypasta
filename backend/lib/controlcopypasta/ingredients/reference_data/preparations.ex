@@ -2,6 +2,10 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Preparations do
   @moduledoc """
   Canonical preparation definitions with metadata.
 
+  Delegates to ParserCache for DB-backed lookups at runtime.
+  Falls back to hardcoded defaults when cache is not available
+  (e.g., during seeding or testing without a running application).
+
   Single source of truth for:
   - Preparation word recognition
   - Verb forms for mise en place instructions
@@ -9,9 +13,10 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Preparations do
   - Categorization (cut, cook, process, temperature)
   """
 
-  # Preparation metadata: verb, category, tool, timing
-  # Time estimates are rough and depend on quantity
-  @preparations %{
+  alias Controlcopypasta.Ingredients.ParserCache
+
+  # Default preparations kept for seeding migrations and test fallback
+  @default_preparations %{
     # Cutting preparations
     "diced" => %{verb: "dice", category: :cut, tool: "knife", time_per_cup: 2},
     "minced" => %{verb: "mince", category: :cut, tool: "knife", time_per_cup: 3},
@@ -102,21 +107,19 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Preparations do
     "packed" => %{verb: "pack", category: :process, time_min: 1}
   }
 
-  # Simple list of all prep words for tokenizer (without metadata)
-  @all_preparations Map.keys(@preparations) ++
-                    ~w(lengthwise crosswise diagonally horizontally vertically)
-
   @doc """
   Returns all preparation words (for tokenizer).
   """
-  def all_preparations, do: @all_preparations
+  def all_preparations do
+    ParserCache.preparations() |> MapSet.to_list()
+  end
 
   @doc """
   Checks if a word is a known preparation.
   """
   def is_preparation?(nil), do: false
   def is_preparation?(word) when is_binary(word) do
-    String.downcase(word) in @all_preparations
+    MapSet.member?(ParserCache.preparations(), String.downcase(word))
   end
 
   @doc """
@@ -133,7 +136,7 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Preparations do
       nil
   """
   def get_metadata(prep) when is_binary(prep) do
-    Map.get(@preparations, String.downcase(prep))
+    Map.get(ParserCache.preparation_metadata(), String.downcase(prep))
   end
   def get_metadata(_), do: nil
 
@@ -180,13 +183,15 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Preparations do
 
   Useful for PreStepGenerator.
   """
-  def all_with_metadata, do: @preparations
+  def all_with_metadata do
+    ParserCache.preparation_metadata()
+  end
 
   @doc """
   Returns preparations that are cutting actions.
   """
   def cutting_preparations do
-    @preparations
+    ParserCache.preparation_metadata()
     |> Enum.filter(fn {_, meta} -> meta[:category] == :cut end)
     |> Enum.map(fn {prep, _} -> prep end)
   end
@@ -195,8 +200,13 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Preparations do
   Returns preparations that are temperature-related.
   """
   def temperature_preparations do
-    @preparations
+    ParserCache.preparation_metadata()
     |> Enum.filter(fn {_, meta} -> meta[:category] == :temperature end)
     |> Enum.map(fn {prep, _} -> prep end)
   end
+
+  @doc """
+  Returns the default preparations map (for seeding/testing).
+  """
+  def default_preparations, do: @default_preparations
 end

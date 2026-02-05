@@ -67,6 +67,7 @@ defmodule Controlcopypasta.Workers.IngredientParser do
   def perform(%Oban.Job{args: args}) do
     offset = Map.get(args, "offset", 0)
     force = Map.get(args, "force", false)
+    if force and offset == 0, do: Ingredients.refresh_parser_cache!()
     parse_all_batch(offset, force)
   end
 

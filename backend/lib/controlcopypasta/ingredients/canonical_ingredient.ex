@@ -66,6 +66,7 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
 
     # Matching
     field :aliases, {:array, :string}, default: []
+    field :similarity_name, :string
 
     # Per-ingredient scoring rules for matching
     # %{
@@ -112,6 +113,7 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
     :dietary_flags,
     :animal_type,
     :aliases,
+    :similarity_name,
     :brand,
     :parent_company,
     :is_branded,

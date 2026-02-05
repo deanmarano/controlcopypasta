@@ -56,22 +56,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   # Container types
   @containers ~w(can cans jar jars bottle bottles bag bags box boxes package packages pkg container containers carton cartons)
 
-  # Preparations
-  @preparations ~w(
-    chopped diced minced sliced cubed julienned shredded grated
-    crushed smashed halved quartered torn crumbled
-    melted softened chilled cooled thawed frozen
-    drained rinsed strained peeled seeded cored pitted trimmed deveined
-    mashed pureed beaten whisked sifted
-    toasted roasted
-    removed packed divided
-    lengthwise crosswise diagonally horizontally vertically
-    bruised separated
-    juiced zested
-    warmed heated pressed bundled dissolved segmented destemmed
-    blanched marinated brined deboned shucked
-    washed stemmed cleaned scrubbed patted scored
-  )
+  alias Controlcopypasta.Ingredients.ParserCache
 
   # Modifiers (adjectives that describe ingredient state/size/type)
   @modifiers ~w(
@@ -210,27 +195,46 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   # Written numbers in compound ingredient names like "five spice", "seven spice"
   # These should be part of the ingredient name, not treated as quantities
   @compound_qty_followers ~w(spice pepper bean layer grain)
-  @written_number_words ~w(one two three four five six seven eight nine ten eleven twelve a an)
+  @written_number_words ~w(one two three four five six seven eight nine ten eleven twelve a an half quarter third)
   defp should_relabel_qty_as_word?(%Token{label: :qty, text: text}, tokens, idx) do
     # Only apply to written numbers, not numeric quantities
     downcased = String.downcase(text)
     is_written_number = downcased in @written_number_words
 
     if is_written_number do
-      # Check what comes after
       tokens_after = Enum.drop(tokens, idx + 1)
       next_token = List.first(tokens_after)
 
-      # If followed by a word that's part of a compound ingredient name
-      next_token != nil and
-        next_token.label == :word and
-        String.downcase(next_token.text) in @compound_qty_followers
+      cond do
+        # "half and half" - "half" is part of the ingredient name
+        downcased == "half" and is_half_and_half?(tokens_after) ->
+          true
+
+        # If followed by a word that's part of a compound ingredient name
+        next_token != nil and
+          next_token.label == :word and
+          String.downcase(next_token.text) in @compound_qty_followers ->
+          true
+
+        true ->
+          false
+      end
     else
       false
     end
   end
 
   defp should_relabel_qty_as_word?(_token, _tokens, _idx), do: false
+
+  # Check if remaining tokens form "and half" (for "half and half")
+  defp is_half_and_half?(tokens) do
+    case tokens do
+      [%Token{text: and_text}, %Token{text: half_text} | _] ->
+        String.downcase(and_text) == "and" and String.downcase(half_text) == "half"
+      _ ->
+        false
+    end
+  end
 
   # "of" immediately after a unit ("dashes of", "cups of")
   defp should_label_as_unit_connector?(%Token{label: :word, text: "of"}, tokens, idx) do
@@ -515,7 +519,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
       String.downcase(text) in @containers -> :container
 
       # Preparations
-      String.downcase(text) in @preparations -> :prep
+      MapSet.member?(ParserCache.preparations(), String.downcase(text)) -> :prep
 
       # Modifiers
       String.downcase(text) in @modifiers -> :mod
@@ -549,7 +553,8 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   @written_numbers %{
     "one" => 1, "two" => 2, "three" => 3, "four" => 4, "five" => 5,
     "six" => 6, "seven" => 7, "eight" => 8, "nine" => 9, "ten" => 10,
-    "eleven" => 11, "twelve" => 12, "a" => 1, "an" => 1
+    "eleven" => 11, "twelve" => 12, "a" => 1, "an" => 1,
+    "half" => 0.5, "quarter" => 0.25, "third" => 0.333
   }
 
   # Quantity detection

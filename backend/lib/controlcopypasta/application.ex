@@ -12,7 +12,9 @@ defmodule Controlcopypasta.Application do
         ControlcopypastaWeb.Telemetry,
         Controlcopypasta.Repo,
         {DNSCluster, query: Application.get_env(:controlcopypasta, :dns_cluster_query) || :ignore},
-        {Phoenix.PubSub, name: Controlcopypasta.PubSub}
+        {Phoenix.PubSub, name: Controlcopypasta.PubSub},
+        # Parser vocabulary cache (loads preparations + normalizer from DB)
+        Controlcopypasta.Ingredients.ParserCache
       ] ++
         # Browser pool for scraping (optional - disabled if DISABLE_BROWSER_POOL is set)
         if System.get_env("DISABLE_BROWSER_POOL") do
