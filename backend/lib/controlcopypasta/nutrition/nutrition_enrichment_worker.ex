@@ -56,8 +56,9 @@ defmodule Controlcopypasta.Nutrition.NutritionEnrichmentWorker do
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"canonical_ingredient_id" => ingredient_id} = args}) do
     if rate_limit_exceeded?() do
-      Logger.info("Nutrition enrichment rate limit exceeded, pausing queue")
-      Oban.pause_queue(queue: :nutrition)
+      Logger.info("Nutrition enrichment rate limit exceeded, snoozing job for 1 hour")
+      # Don't pause the entire queue - just snooze this job
+      # Other jobs may succeed with different APIs
       {:snooze, 3600}
     else
       apply_delay()

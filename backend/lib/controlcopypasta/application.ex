@@ -32,7 +32,15 @@ defmodule Controlcopypasta.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Controlcopypasta.Supervisor]
-    Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children, opts)
+
+    # Resume nutrition queue in case it was paused from a previous run
+    Task.start(fn ->
+      Process.sleep(5000)
+      Oban.resume_queue(queue: :nutrition)
+    end)
+
+    result
   end
 
   # Tell Phoenix to update the endpoint configuration
