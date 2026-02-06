@@ -37,7 +37,10 @@ defmodule Controlcopypasta.Application do
     # Resume nutrition queue in case it was paused from a previous run
     Task.start(fn ->
       Process.sleep(5000)
-      Oban.resume_queue(queue: :nutrition)
+      require Logger
+      Logger.info("Resuming nutrition queue on startup")
+      result = Oban.resume_queue(queue: :nutrition)
+      Logger.info("Nutrition queue resume result: #{inspect(result)}")
     end)
 
     result
