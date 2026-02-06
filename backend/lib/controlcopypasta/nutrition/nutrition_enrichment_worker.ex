@@ -19,6 +19,12 @@ defmodule Controlcopypasta.Nutrition.NutritionEnrichmentWorker do
       # Enqueue a specific ingredient
       NutritionEnrichmentWorker.enqueue(canonical_ingredient_id)
 
+      # Refetch ALL ingredients (delete old data, fetch fresh)
+      NutritionEnrichmentWorker.enqueue_refetch_all()
+
+      # Refetch a specific ingredient
+      NutritionEnrichmentWorker.enqueue_refetch(canonical_ingredient_id)
+
       # Check progress
       NutritionEnrichmentWorker.progress()
 
@@ -48,13 +54,19 @@ defmodule Controlcopypasta.Nutrition.NutritionEnrichmentWorker do
   @default_delay_ms 6000
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"canonical_ingredient_id" => ingredient_id}}) do
+  def perform(%Oban.Job{args: %{"canonical_ingredient_id" => ingredient_id} = args}) do
     if rate_limit_exceeded?() do
       Logger.info("Nutrition enrichment rate limit exceeded, pausing queue")
       Oban.pause_queue(queue: :nutrition)
       {:snooze, 3600}
     else
       apply_delay()
+
+      # If refetch mode, delete existing nutrition data first
+      if args["refetch"] do
+        delete_existing_nutrition(ingredient_id)
+      end
+
       fetch_and_save_nutrition(ingredient_id)
     end
   end
@@ -89,14 +101,19 @@ defmodule Controlcopypasta.Nutrition.NutritionEnrichmentWorker do
     enqueue_list(ingredients)
   end
 
-  defp enqueue_list(ingredients) do
+  defp enqueue_list(ingredients, opts \\ []) do
+    refetch = Keyword.get(opts, :refetch, false)
+
     ingredients
     |> Enum.with_index()
     |> Enum.each(fn {ingredient, index} ->
       scheduled_at = DateTime.add(DateTime.utc_now(), index * 2, :second)
       priority = min(3, div(index, 100))
 
-      %{canonical_ingredient_id: ingredient.id}
+      args = %{canonical_ingredient_id: ingredient.id}
+      args = if refetch, do: Map.put(args, :refetch, true), else: args
+
+      args
       |> new(scheduled_at: scheduled_at, priority: priority)
       |> Oban.insert()
     end)
@@ -109,6 +126,33 @@ defmodule Controlcopypasta.Nutrition.NutritionEnrichmentWorker do
   """
   def enqueue(canonical_ingredient_id) do
     %{canonical_ingredient_id: canonical_ingredient_id}
+    |> new()
+    |> Oban.insert()
+  end
+
+  @doc """
+  Refetch ALL ingredients - deletes existing nutrition data and fetches fresh.
+  Use this after improving the matching algorithm to get better matches.
+  Prioritizes by usage_count (most used first).
+  """
+  def enqueue_refetch_all do
+    ingredients =
+      from(ci in CanonicalIngredient,
+        order_by: [desc: coalesce(ci.usage_count, 0)],
+        select: ci
+      )
+      |> Repo.all()
+
+    Logger.info("Enqueueing #{length(ingredients)} ingredients for nutrition REFETCH (delete + fetch)")
+
+    enqueue_list(ingredients, refetch: true)
+  end
+
+  @doc """
+  Refetch a single ingredient - deletes existing nutrition and fetches fresh.
+  """
+  def enqueue_refetch(canonical_ingredient_id) do
+    %{canonical_ingredient_id: canonical_ingredient_id, refetch: true}
     |> new()
     |> Oban.insert()
   end
@@ -314,6 +358,20 @@ defmodule Controlcopypasta.Nutrition.NutritionEnrichmentWorker do
   defp to_decimal(nil), do: nil
   defp to_decimal(value) when is_number(value), do: Decimal.from_float(value * 1.0)
   defp to_decimal(value), do: Decimal.new("#{value}")
+
+  defp delete_existing_nutrition(ingredient_id) do
+    {deleted, _} =
+      from(n in IngredientNutrition,
+        where: n.canonical_ingredient_id == ^ingredient_id
+      )
+      |> Repo.delete_all()
+
+    if deleted > 0 do
+      Logger.info("Deleted #{deleted} existing nutrition records for ingredient #{ingredient_id}")
+    end
+
+    deleted
+  end
 
   defp list_ingredients_without_nutrition do
     subquery = from(n in IngredientNutrition, select: n.canonical_ingredient_id)
