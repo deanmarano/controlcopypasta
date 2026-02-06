@@ -70,7 +70,7 @@
 		showShoppingTips = false;
 		nutrition = null;
 		nutritionError = '';
-		showNutrition = false;
+		showNutrition = true;
 		nutritionSource = 'composite';
 		decisions = new Map();
 
