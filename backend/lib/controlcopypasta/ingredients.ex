@@ -19,6 +19,7 @@ defmodule Controlcopypasta.Ingredients do
     IngredientForm,
     BrandPackageSize,
     IngredientDensity,
+    IngredientNutrition,
     PendingIngredient
   }
 
@@ -47,8 +48,17 @@ defmodule Controlcopypasta.Ingredients do
   - `:search` - Search by name or alias (partial match)
   """
   def list_canonical_ingredients(opts) when is_list(opts) do
+    # Preload primary nutrition for list view
+    primary_nutrition_query =
+      from(n in IngredientNutrition,
+        where: n.is_primary == true,
+        order_by: [asc: n.id],
+        limit: 1
+      )
+
     CanonicalIngredient
     |> apply_filters(opts)
+    |> preload(nutrition_sources: ^primary_nutrition_query)
     |> Repo.all()
   end
 

@@ -99,6 +99,7 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
 
     has_many :forms, Controlcopypasta.Ingredients.IngredientForm
     has_many :package_sizes, Controlcopypasta.Ingredients.BrandPackageSize
+    has_many :nutrition_sources, Controlcopypasta.Ingredients.IngredientNutrition
 
     timestamps()
   end

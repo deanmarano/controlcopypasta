@@ -67,6 +67,13 @@ defmodule ControlcopypastaWeb.IngredientJSON do
   # Private helpers
 
   defp ingredient_data(%CanonicalIngredient{} = ingredient) do
+    # Get primary nutrition from preloaded association if available
+    nutrition = case ingredient.nutrition_sources do
+      %Ecto.Association.NotLoaded{} -> nil
+      [] -> nil
+      [primary | _] -> nutrition_data(primary)
+    end
+
     %{
       id: ingredient.id,
       name: ingredient.name,
@@ -82,7 +89,8 @@ defmodule ControlcopypastaWeb.IngredientJSON do
       brand: ingredient.brand,
       parent_company: ingredient.parent_company,
       image_url: ingredient.image_url,
-      usage_count: ingredient.usage_count
+      usage_count: ingredient.usage_count,
+      nutrition: nutrition
     }
   end
 
