@@ -304,6 +304,9 @@
 						<div class="nutrition-divider"></div>
 
 						<div class="source">
+							{#if selectedNutrition.source_name}
+								<p class="source-match">Matched: {selectedNutrition.source_name}</p>
+							{/if}
 							<p>
 								Source: {getSourceLabel(selectedNutrition.source)}
 								{#if selectedNutrition.source_url}
@@ -616,6 +619,12 @@
 		font-size: var(--text-xs);
 		color: var(--text-secondary);
 		margin-top: var(--space-2);
+	}
+
+	.source .source-match {
+		font-weight: var(--font-medium);
+		color: var(--text-primary);
+		margin-bottom: var(--space-1);
 	}
 
 	.source a {
