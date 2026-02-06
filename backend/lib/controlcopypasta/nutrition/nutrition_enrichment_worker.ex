@@ -113,8 +113,12 @@ defmodule Controlcopypasta.Nutrition.NutritionEnrichmentWorker do
       args = %{canonical_ingredient_id: ingredient.id}
       args = if refetch, do: Map.put(args, :refetch, true), else: args
 
+      # Use replace for refetch to override existing completed/discarded jobs
+      job_opts = [scheduled_at: scheduled_at, priority: priority]
+      job_opts = if refetch, do: Keyword.put(job_opts, :replace, [:args, :scheduled_at, :state]), else: job_opts
+
       args
-      |> new(scheduled_at: scheduled_at, priority: priority)
+      |> new(job_opts)
       |> Oban.insert()
     end)
 
@@ -153,7 +157,7 @@ defmodule Controlcopypasta.Nutrition.NutritionEnrichmentWorker do
   """
   def enqueue_refetch(canonical_ingredient_id) do
     %{canonical_ingredient_id: canonical_ingredient_id, refetch: true}
-    |> new()
+    |> new(replace: [:args, :scheduled_at])
     |> Oban.insert()
   end
 
