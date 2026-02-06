@@ -194,13 +194,41 @@ defmodule Controlcopypasta.Nutrition.OpenFoodFactsClient do
         {:error, :not_found}
 
       {:ok, results} ->
-        # Score results by similarity to query
+        # Determine if query looks like a raw ingredient
+        is_raw_query = StringSimilarity.is_raw_ingredient_query?(query)
+
+        # Score results by similarity to query with brand/product adjustments
         scored =
           results
           |> Enum.map(fn result ->
             product_name = result.product_name || ""
-            score = StringSimilarity.match_score(query, product_name)
-            {result, score}
+            base_score = StringSimilarity.match_score(query, product_name)
+
+            # Penalty for branded products when searching for raw ingredients
+            brand_penalty =
+              cond do
+                # No brand - likely a generic/raw product
+                is_nil(result.brands) or result.brands == "" -> 0.15
+
+                # Has brand but query mentions it
+                String.contains?(String.downcase(query), String.downcase(result.brands || "")) -> 0.0
+
+                # Has brand and query is raw ingredient - heavy penalty
+                is_raw_query -> -0.25
+
+                # Has brand, query is not raw - small penalty
+                true -> -0.1
+              end
+
+            # Penalize prepared products when searching for raw ingredients
+            prepared_penalty =
+              if is_raw_query and StringSimilarity.is_prepared_product?(product_name) do
+                -0.3
+              else
+                0.0
+              end
+
+            {result, base_score + brand_penalty + prepared_penalty}
           end)
           |> Enum.filter(fn {_, score} -> score >= 0.4 end)
           |> Enum.sort_by(fn {_, score} -> -score end)

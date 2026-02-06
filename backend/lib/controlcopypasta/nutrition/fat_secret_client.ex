@@ -127,24 +127,47 @@ defmodule Controlcopypasta.Nutrition.FatSecretClient do
         {:error, :not_found}
 
       {:ok, results} ->
+        # Determine if query looks like a raw ingredient
+        is_raw_query = StringSimilarity.is_raw_ingredient_query?(query)
+
         # Score each result by similarity to query
         scored =
           results
           |> Enum.map(fn result ->
             # Use food_name for matching (more reliable than brand + name)
             food_name = result.food_name || ""
-            score = StringSimilarity.match_score(query, food_name)
+            base_score = StringSimilarity.match_score(query, food_name)
 
-            # Bonus for generic foods (no brand) when query seems generic
-            # Penalty for branded foods when query doesn't mention brand
-            brand_adjustment =
+            # Strong adjustments based on food type and brand
+            type_adjustment =
               cond do
-                is_nil(result.brand_name) -> 0.05  # Small bonus for generic
-                String.contains?(String.downcase(query), String.downcase(result.brand_name || "")) -> 0.1  # Query mentions brand
-                true -> -0.05  # Branded but query doesn't mention brand
+                # Generic foods get a significant bonus when query is raw ingredient
+                result.food_type == "Generic" and is_raw_query -> 0.25
+
+                # Generic foods always get a small bonus
+                result.food_type == "Generic" -> 0.1
+
+                # Branded foods get heavy penalty when query is raw ingredient
+                result.food_type == "Brand" and is_raw_query -> -0.25
+
+                # Branded foods where query mentions the brand are OK
+                result.brand_name && String.contains?(String.downcase(query), String.downcase(result.brand_name)) -> 0.1
+
+                # Other branded foods get small penalty
+                result.food_type == "Brand" -> -0.1
+
+                true -> 0.0
               end
 
-            {result, score + brand_adjustment}
+            # Penalize prepared products when searching for raw ingredients
+            prepared_penalty =
+              if is_raw_query and StringSimilarity.is_prepared_product?(food_name) do
+                -0.3
+              else
+                0.0
+              end
+
+            {result, base_score + type_adjustment + prepared_penalty}
           end)
           |> Enum.filter(fn {_, score} -> score >= 0.4 end)
           |> Enum.sort_by(fn {_, score} -> -score end)

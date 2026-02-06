@@ -264,4 +264,101 @@ defmodule Controlcopypasta.Nutrition.StringSimilarity do
     # Clamp to 0.0-1.0
     max(0.0, min(1.0, score))
   end
+
+  @doc """
+  Detects if a food name appears to be a prepared/processed product rather than
+  a raw ingredient.
+
+  Returns true for things like "Mushroom Ravioli", "Pasta Sauce", "Chicken Soup"
+  that are prepared foods containing the ingredient rather than the ingredient itself.
+
+  ## Examples
+
+      iex> StringSimilarity.is_prepared_product?("Crimini Mushroom Ravioli")
+      true
+
+      iex> StringSimilarity.is_prepared_product?("Brown Mushrooms (Crimini Italian)")
+      false
+
+      iex> StringSimilarity.is_prepared_product?("Portobello Mushroom Pasta Sauce")
+      true
+  """
+  @prepared_product_indicators ~w(
+    sauce pasta ravioli lasagna pizza soup stew casserole
+    sandwich wrap burrito taco quesadilla
+    salad slaw coleslaw
+    chips crackers cookies biscuits bread muffin cake pie
+    cereal granola bar
+    frozen dinner meal entree
+    dip spread hummus
+    juice drink smoothie shake
+    ice cream yogurt pudding
+    seasoning mix blend spice rub
+    broth stock bouillon
+    dressing marinade glaze
+    jam jelly preserve marmalade
+    syrup topping
+    candy chocolate
+    snack trail mix
+  )
+
+  def is_prepared_product?(food_name) when is_binary(food_name) do
+    name = String.downcase(food_name)
+    words = String.split(name, ~r/[\s,\-–—]+/)
+
+    Enum.any?(@prepared_product_indicators, fn indicator ->
+      indicator in words or String.contains?(name, indicator)
+    end)
+  end
+
+  @doc """
+  Detects if a query appears to be a raw/simple ingredient (not a branded product query).
+
+  Returns true for queries like "crimini mushroom", "olive oil", "chicken breast"
+  Returns false for queries like "Cheerios", "Classico Pasta Sauce"
+
+  ## Examples
+
+      iex> StringSimilarity.is_raw_ingredient_query?("crimini mushroom")
+      true
+
+      iex> StringSimilarity.is_raw_ingredient_query?("olive oil")
+      true
+
+      iex> StringSimilarity.is_raw_ingredient_query?("cheerios cereal")
+      false
+  """
+  @raw_ingredient_patterns [
+    # Simple ingredient patterns (1-3 words, no brand indicators)
+    ~r/^[a-z]+(\s+[a-z]+){0,2}$/,
+    # Ingredient with descriptor: "fresh basil", "dried oregano"
+    ~r/^(fresh|dried|frozen|raw|cooked|ground|whole|organic|boneless|skinless)\s+[a-z]+/,
+    # Ingredient with type: "olive oil", "sesame oil", "chicken breast"
+    ~r/^[a-z]+\s+(oil|breast|thigh|leg|wing|fillet|steak|chop|roast|flour|sugar|salt|pepper|vinegar|juice|zest)$/
+  ]
+
+  def is_raw_ingredient_query?(query) when is_binary(query) do
+    q = String.downcase(String.trim(query))
+
+    # Short queries (1-3 words) without numbers are likely raw ingredients
+    word_count = length(String.split(q))
+    has_numbers = Regex.match?(~r/\d/, q)
+
+    cond do
+      # Contains numbers (likely a branded product or serving size)
+      has_numbers -> false
+
+      # Very short queries are likely raw ingredients
+      word_count <= 2 -> true
+
+      # Check for raw ingredient patterns
+      Enum.any?(@raw_ingredient_patterns, &Regex.match?(&1, q)) -> true
+
+      # Longer queries might be branded
+      word_count > 3 -> false
+
+      # Default to true for simple queries
+      true -> true
+    end
+  end
 end
