@@ -258,7 +258,7 @@ defmodule Controlcopypasta.Nutrition.FatSecretEnrichmentWorker do
   end
 
   defp to_decimal(nil), do: nil
-  defp to_decimal(value) when is_number(value), do: Decimal.from_float(value)
+  defp to_decimal(value) when is_number(value), do: Decimal.from_float(value * 1.0)
   defp to_decimal(value), do: Decimal.new("#{value}")
 
   defp rate_limit_exceeded? do

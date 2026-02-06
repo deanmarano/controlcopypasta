@@ -315,7 +315,7 @@ defmodule Controlcopypasta.Nutrition.OpenFoodFactsClient do
   defp off_sodium_mg(nutriments) do
     case nutriments["sodium_100g"] do
       nil -> nil
-      val when is_number(val) -> Decimal.from_float(val * 1000)
+      val when is_number(val) -> Decimal.from_float(val * 1000.0)
       _ -> nil
     end
   end
@@ -327,7 +327,8 @@ defmodule Controlcopypasta.Nutrition.OpenFoodFactsClient do
       val when is_number(val) ->
         # OFF sometimes stores values already in mg if > 1, in g if < 1
         # Use heuristic: if value seems like grams (very small for minerals), convert
-        if val < 1, do: Decimal.from_float(val * 1000), else: Decimal.from_float(val)
+        # Multiply by 1.0 to ensure float for Decimal.from_float
+        if val < 1, do: Decimal.from_float(val * 1000.0), else: Decimal.from_float(val * 1.0)
       _ -> nil
     end
   end
@@ -337,7 +338,8 @@ defmodule Controlcopypasta.Nutrition.OpenFoodFactsClient do
     case nutriments[key] do
       nil -> nil
       val when is_number(val) ->
-        if val < 0.001, do: Decimal.from_float(val * 1_000_000), else: Decimal.from_float(val)
+        # Multiply by 1.0 to ensure float for Decimal.from_float
+        if val < 0.001, do: Decimal.from_float(val * 1_000_000.0), else: Decimal.from_float(val * 1.0)
       _ -> nil
     end
   end
