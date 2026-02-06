@@ -36,10 +36,18 @@
 
 	// Ingredient decisions state
 	let decisions = $state<Map<number, IngredientDecision>>(new Map());
+	let showDecisions = $state(true);
 
 	// Check if recipe has any ingredients with alternatives
 	const hasAlternatives = $derived(
 		recipe?.ingredients.some((i) => i.is_alternative && i.alternatives && i.alternatives.length > 0) ?? false
+	);
+
+	// Get ingredients that have alternatives (for the decisions section)
+	const ingredientsWithAlternatives = $derived(
+		recipe?.ingredients
+			.map((ing, index) => ({ ingredient: ing, index }))
+			.filter(({ ingredient }) => ingredient.is_alternative && ingredient.alternatives && ingredient.alternatives.length > 0) ?? []
 	);
 
 	$effect(() => {
@@ -652,12 +660,6 @@
 										</span>
 									{/if}
 								</div>
-								<IngredientDecisionComponent
-									{ingredient}
-									index={i}
-									currentDecision={decisions.get(i)}
-									ondecide={handleDecision}
-								/>
 							</li>
 						{/each}
 					</ul>
@@ -720,12 +722,6 @@
 												{#if ingredient.canonical_name && ingredient.canonical_name !== displayName}
 													<span class="canonical-hint">({ingredient.canonical_name})</span>
 												{/if}
-												<IngredientDecisionComponent
-													{ingredient}
-													index={i}
-													currentDecision={decisions.get(i)}
-													ondecide={handleDecision}
-												/>
 											</td>
 										</tr>
 									{/each}
@@ -775,6 +771,31 @@
 				</div>
 			{/if}
 		</section>
+
+		{#if hasAlternatives}
+			<section class="decisions-section no-print">
+				<button class="section-toggle" onclick={() => showDecisions = !showDecisions}>
+					<span class="toggle-icon">{showDecisions ? '▼' : '▶'}</span>
+					<h2>Ingredient Choices ({ingredientsWithAlternatives.length})</h2>
+				</button>
+				{#if showDecisions}
+					<div class="decisions-content">
+						<p class="decisions-hint">Some ingredients have multiple possible matches. Choose the correct one for accurate nutrition calculations.</p>
+						{#each ingredientsWithAlternatives as { ingredient, index }}
+							<div class="decision-item">
+								<div class="decision-ingredient-text">{ingredient.text}</div>
+								<IngredientDecisionComponent
+									{ingredient}
+									{index}
+									currentDecision={decisions.get(index)}
+									ondecide={handleDecision}
+								/>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</section>
+		{/if}
 
 		{#if recipe.ingredients.some(i => i._diagnostics)}
 			<section class="diagnostics-section no-print">
@@ -1635,6 +1656,58 @@
 
 	.nutrition-content {
 		margin-top: var(--space-4);
+	}
+
+	/* Decisions section */
+	.decisions-section {
+		margin-top: var(--space-8);
+		padding-top: var(--space-6);
+		border-top: var(--border-width-thin) solid var(--border-light);
+	}
+
+	.section-toggle {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0;
+		width: 100%;
+		text-align: left;
+	}
+
+	.section-toggle:hover {
+		opacity: 0.8;
+	}
+
+	.section-toggle h2 {
+		margin: 0;
+		padding-bottom: 0;
+		border-bottom: none;
+	}
+
+	.decisions-content {
+		margin-top: var(--space-4);
+	}
+
+	.decisions-hint {
+		font-size: var(--text-sm);
+		color: var(--text-muted);
+		margin-bottom: var(--space-4);
+	}
+
+	.decision-item {
+		margin-bottom: var(--space-4);
+		padding: var(--space-3);
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+	}
+
+	.decision-ingredient-text {
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+		margin-bottom: var(--space-2);
 	}
 
 	/* Print styles */
