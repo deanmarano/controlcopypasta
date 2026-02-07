@@ -88,7 +88,10 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     "reserved from above", "recipe above", "from above",
     "recipe below", "recipe follows", "homemade recipe below",
     "if lumpy", "if needed", "if necessary", "if desired", "if grilling",
-    "your choice", "any flavor", "any color", "any kind"
+    "if you have them", "if you have it", "if you like", "if you want",
+    "if available", "if using", "if making",
+    "your choice", "any flavor", "any color", "any kind",
+    "shaken well", "well shaken"
   ]
 
   # Parts of ingredients that are often removed (seeds, ribs, stems, etc.)
@@ -153,7 +156,12 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   end
 
   # "cloves" etc. at end without word after, preceded by modifier or another unit
-  defp should_relabel_unit_as_word?(%Token{label: :unit}, tokens, idx) do
+  # BUT only relabel if:
+  # 1. There's an actual ingredient word before (not just qty + mod), OR
+  # 2. The unit itself is also a known ingredient (like "cloves" the spice)
+  # This prevents "thick slices" from becoming an ingredient name while
+  # allowing "whole cloves" (the spice) to be correctly identified.
+  defp should_relabel_unit_as_word?(%Token{label: :unit, text: text}, tokens, idx) do
     tokens_after = Enum.drop(tokens, idx + 1)
     has_word_after = Enum.any?(tokens_after, &(&1.label == :word))
 
@@ -162,6 +170,11 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     else
       tokens_before = Enum.take(tokens, idx)
 
+      # Check if there's an actual :word token before (indicating an ingredient)
+      # If so, this unit is part of the ingredient name (e.g., "whole cloves")
+      has_word_before = Enum.any?(tokens_before, &(&1.label == :word))
+
+      # Also check for modifier before (e.g., "fresh cloves", "dried cloves")
       has_modifier_before = tokens_before
         |> Enum.reverse()
         |> Enum.take_while(&(&1.label in [:mod, :qty]))
@@ -169,7 +182,17 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
 
       has_unit_before = Enum.any?(tokens_before, &(&1.label == :unit))
 
-      has_modifier_before or has_unit_before
+      # Check if this unit is also a known ingredient (e.g., "cloves" the spice)
+      # This disambiguates "whole cloves" (spice) from "thick slices" (not an ingredient)
+      is_known_ingredient = ParserCache.is_known_ingredient?(text)
+
+      # Relabel if any of:
+      # 1. An actual word before (ingredient name like "whole cloves")
+      # 2. A modifier AND another unit before (e.g., "2 cups fresh cloves")
+      # 3. A modifier before AND the unit is also a known ingredient (e.g., "whole cloves")
+      has_word_before or
+        (has_modifier_before and has_unit_before) or
+        (has_modifier_before and is_known_ingredient)
     end
   end
 

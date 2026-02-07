@@ -239,6 +239,25 @@ defmodule Controlcopypasta.Ingredients.ParserCache do
   end
 
   @doc """
+  Checks if a word is a known ingredient name (exists in normalizer as key or value).
+
+  This is useful for disambiguating words that could be both units and ingredients,
+  like "cloves" (unit of garlic) vs "cloves" (the spice).
+
+  Uses O(1) lookup via a pre-built MapSet of all known ingredient names.
+  """
+  def is_known_ingredient?(word) when is_binary(word) do
+    normalized = String.downcase(word)
+    ingredient_names = try do
+      :persistent_term.get(:parser_ingredient_names)
+    rescue
+      ArgumentError -> MapSet.new()
+    end
+
+    MapSet.member?(ingredient_names, normalized)
+  end
+
+  @doc """
   Reloads all cached data from the database.
   """
   def refresh! do
@@ -372,6 +391,10 @@ defmodule Controlcopypasta.Ingredients.ParserCache do
     # Merge: start with defaults, overlay DB data (DB takes priority)
     entries = Map.merge(@default_normalizer_map, db_entries)
 
+    # Build a set of all known ingredient names (keys + values) for fast lookups
+    all_names = MapSet.new(Map.keys(entries) ++ Map.values(entries))
+
     :persistent_term.put(:parser_normalizer, entries)
+    :persistent_term.put(:parser_ingredient_names, all_names)
   end
 end

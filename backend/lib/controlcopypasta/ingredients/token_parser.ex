@@ -715,9 +715,11 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     dutch-process warmed heated cooled reserved broken
     crusts cubed shaved pressed packed medium scoops
     lumpy soaked overnight mild-flavored cut you
-    inch\ slices cut\ into butt fat woody fronds
+    inch\ slices cut\ into butt fat woody fronds heads
     deboned butterflied spatchcocked peeling any color
     temp room gluten\ free needed packet recipe
+    thick\ slices thin\ slices have them using
+    shaken\ well well\ shaken
   )
 
   # Clean ingredient names (remove asterisks, extra whitespace, stop words, etc.)
