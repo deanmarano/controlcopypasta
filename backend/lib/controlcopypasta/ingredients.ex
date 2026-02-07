@@ -1847,4 +1847,176 @@ defmodule Controlcopypasta.Ingredients do
     |> Enum.map(&String.capitalize/1)
     |> Enum.join(" ")
   end
+
+  @doc """
+  Fixes ingredients that have nutrition data but no primary source selected.
+
+  For each ingredient without a primary, selects the highest-confidence
+  nutrition record and sets it as primary.
+
+  Returns {:ok, count} with the number of ingredients fixed.
+  """
+  def fix_missing_primary_nutrition do
+    # Find ingredients with nutrition but no primary
+    ingredients_without_primary =
+      from(n in IngredientNutrition,
+        where: n.is_primary == false or is_nil(n.is_primary),
+        group_by: n.canonical_ingredient_id,
+        having: fragment("NOT EXISTS (SELECT 1 FROM ingredient_nutrition n2 WHERE n2.canonical_ingredient_id = ? AND n2.is_primary = true)", n.canonical_ingredient_id),
+        select: n.canonical_ingredient_id
+      )
+      |> Repo.all()
+
+    fixed_count =
+      Enum.reduce(ingredients_without_primary, 0, fn ingredient_id, count ->
+        # Get the highest confidence nutrition for this ingredient
+        best_nutrition =
+          from(n in IngredientNutrition,
+            where: n.canonical_ingredient_id == ^ingredient_id,
+            order_by: [desc: n.confidence],
+            limit: 1
+          )
+          |> Repo.one()
+
+        if best_nutrition do
+          case set_primary_nutrition(best_nutrition) do
+            {:ok, _} -> count + 1
+            _ -> count
+          end
+        else
+          count
+        end
+      end)
+
+    {:ok, fixed_count}
+  end
+
+  @doc """
+  Returns statistics about nutrition data quality.
+  """
+  def nutrition_quality_stats do
+    total_with_nutrition =
+      from(n in IngredientNutrition,
+        select: count(fragment("DISTINCT ?", n.canonical_ingredient_id))
+      )
+      |> Repo.one()
+
+    with_primary =
+      from(n in IngredientNutrition,
+        where: n.is_primary == true,
+        select: count(n.id)
+      )
+      |> Repo.one()
+
+    by_source =
+      from(n in IngredientNutrition,
+        group_by: n.source,
+        select: {n.source, count(n.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    primary_by_source =
+      from(n in IngredientNutrition,
+        where: n.is_primary == true,
+        group_by: n.source,
+        select: {n.source, count(n.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    avg_confidence =
+      from(n in IngredientNutrition,
+        where: n.is_primary == true,
+        select: avg(n.confidence)
+      )
+      |> Repo.one()
+
+    %{
+      total_ingredients_with_nutrition: total_with_nutrition,
+      with_primary_set: with_primary,
+      without_primary: total_with_nutrition - with_primary,
+      records_by_source: by_source,
+      primary_by_source: primary_by_source,
+      avg_primary_confidence: avg_confidence
+    }
+  end
+
+  @doc """
+  Verifies nutrition data quality by checking for anomalies.
+
+  Returns a map of potential issues found in the primary nutrition records.
+  """
+  def verify_nutrition_quality do
+    # Get all primary nutrition records with ingredient names
+    primary_records =
+      from(n in IngredientNutrition,
+        join: ci in CanonicalIngredient,
+        on: ci.id == n.canonical_ingredient_id,
+        where: n.is_primary == true,
+        select: %{
+          id: n.id,
+          ingredient_name: ci.name,
+          source: n.source,
+          source_name: n.source_name,
+          calories: n.calories,
+          protein_g: n.protein_g,
+          fat_total_g: n.fat_total_g,
+          carbohydrates_g: n.carbohydrates_g,
+          confidence: n.confidence
+        }
+      )
+      |> Repo.all()
+
+    # Check for missing core macros
+    missing_calories =
+      Enum.filter(primary_records, fn r -> is_nil(r.calories) end)
+      |> Enum.map(& &1.ingredient_name)
+
+    missing_all_macros =
+      Enum.filter(primary_records, fn r ->
+        is_nil(r.protein_g) and is_nil(r.fat_total_g) and is_nil(r.carbohydrates_g)
+      end)
+      |> Enum.map(& &1.ingredient_name)
+
+    # Check for low confidence records
+    low_confidence =
+      Enum.filter(primary_records, fn r ->
+        r.confidence && Decimal.compare(r.confidence, Decimal.new("0.5")) == :lt
+      end)
+      |> Enum.map(fn r -> {r.ingredient_name, Decimal.to_float(r.confidence)} end)
+
+    # Check for potentially mismatched source names (different from ingredient name)
+    suspicious_matches =
+      Enum.filter(primary_records, fn r ->
+        r.source_name && r.confidence &&
+          Decimal.compare(r.confidence, Decimal.new("0.65")) == :lt
+      end)
+      |> Enum.map(fn r ->
+        %{
+          ingredient: r.ingredient_name,
+          matched_to: r.source_name,
+          source: r.source,
+          confidence: Decimal.to_float(r.confidence)
+        }
+      end)
+      |> Enum.sort_by(& &1.confidence)
+      |> Enum.take(20)
+
+    %{
+      total_primary_records: length(primary_records),
+      issues: %{
+        missing_calories: missing_calories,
+        missing_all_macros: missing_all_macros,
+        low_confidence_count: length(low_confidence),
+        low_confidence_samples: Enum.take(low_confidence, 10)
+      },
+      suspicious_matches: suspicious_matches,
+      summary: %{
+        has_issues: length(missing_calories) > 0 or length(missing_all_macros) > 0,
+        missing_calories_count: length(missing_calories),
+        missing_all_macros_count: length(missing_all_macros)
+      }
+    }
+  end
 end

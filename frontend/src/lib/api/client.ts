@@ -1203,11 +1203,42 @@ export interface EnrichmentProgress {
   completed_this_hour: number;
   daily_limit: number;
   hourly_limit: number;
+  // Quality fields (nutrition only)
+  with_primary_set?: number;
+  avg_confidence?: string;
+  primary_by_source?: Record<string, number>;
 }
 
 export interface IngredientEnrichmentStats {
   nutrition: EnrichmentProgress;
   density: EnrichmentProgress;
+}
+
+export interface NutritionQualityStats {
+  coverage: {
+    total_ingredients: number;
+    with_nutrition: number;
+    without_nutrition: number;
+    coverage_percent: number;
+  };
+  quality: {
+    with_primary_set: number;
+    without_primary: number;
+    avg_confidence: string;
+    primary_by_source: Record<string, number>;
+    records_by_source: Record<string, number>;
+  };
+  issues: {
+    missing_calories: string[];
+    missing_all_macros: string[];
+    low_confidence_count: number;
+  };
+  suspicious_matches: Array<{
+    ingredient: string;
+    matched_to: string;
+    source: string;
+    confidence: number;
+  }>;
 }
 
 export interface ParsingStats {
@@ -1307,6 +1338,9 @@ export const admin = {
     ingredientEnrichment: (token: string) =>
       request<{ data: IngredientEnrichmentStats }>('/admin/scraper/ingredient-enrichment', { token }),
 
+    nutritionQuality: (token: string) =>
+      request<{ data: NutritionQualityStats }>('/admin/scraper/nutrition-quality', { token }),
+
     enqueueNutrition: (token: string) =>
       request<{ data: { status: string; enqueued: number } }>('/admin/scraper/enqueue-nutrition', {
         method: 'POST',
@@ -1319,20 +1353,14 @@ export const admin = {
         token
       }),
 
-    resumeNutrition: (token: string) =>
-      request<{ data: { status: string } }>('/admin/scraper/resume-nutrition', {
+    fixPrimaryNutrition: (token: string) =>
+      request<{ data: { fixed: number } }>('/admin/scraper/fix-primary-nutrition', {
         method: 'POST',
         token
       }),
 
-    resumeDensity: (token: string) =>
-      request<{ data: { status: string } }>('/admin/scraper/resume-density', {
-        method: 'POST',
-        token
-      }),
-
-    enqueueNutritionAllSources: (token: string) =>
-      request<{ data: { status: string; enqueued: number } }>('/admin/scraper/enqueue-nutrition-all-sources', {
+    refetchNutrition: (token: string) =>
+      request<{ data: { status: string; enqueued: number } }>('/admin/scraper/refetch-nutrition', {
         method: 'POST',
         token
       })

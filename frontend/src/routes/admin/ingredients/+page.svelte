@@ -7,6 +7,7 @@
 		type AdminIngredient,
 		type AdminIngredientOptions,
 		type IngredientEnrichmentStats,
+		type NutritionQualityStats,
 		type ParsingStats,
 		type TestScorerResult,
 		type MatchingRules
@@ -15,11 +16,14 @@
 	let ingredients = $state<AdminIngredient[]>([]);
 	let options = $state<AdminIngredientOptions | null>(null);
 	let enrichmentStats = $state<IngredientEnrichmentStats | null>(null);
+	let qualityStats = $state<NutritionQualityStats | null>(null);
 	let parsingStats = $state<ParsingStats | null>(null);
 	let loading = $state(true);
 	let error = $state('');
 	let message = $state('');
 	let accessDenied = $state(false);
+	let showQualityIssues = $state(false);
+	let showAdvanced = $state(false);
 
 	// Filters
 	let categoryFilter = $state('protein');
@@ -54,7 +58,7 @@
 	});
 
 	onMount(async () => {
-		await Promise.all([loadOptions(), loadIngredients(), loadEnrichmentStats(), loadParsingStats()]);
+		await Promise.all([loadOptions(), loadIngredients(), loadEnrichmentStats(), loadQualityStats(), loadParsingStats()]);
 	});
 
 	async function loadOptions() {
@@ -206,6 +210,17 @@
 		}
 	}
 
+	async function loadQualityStats() {
+		const token = authStore.getToken();
+		if (!token) return;
+		try {
+			const result = await admin.scraper.nutritionQuality(token);
+			qualityStats = result.data;
+		} catch {
+			qualityStats = null;
+		}
+	}
+
 	async function loadParsingStats() {
 		const token = authStore.getToken();
 		if (!token) return;
@@ -261,7 +276,7 @@
 		try {
 			const result = await admin.scraper.enqueueNutrition(token);
 			message = `Enqueued ${result.data.enqueued} ingredients for nutrition enrichment`;
-			await loadEnrichmentStats();
+			await Promise.all([loadEnrichmentStats(), loadQualityStats()]);
 		} catch {
 			error = 'Failed to enqueue nutrition enrichment';
 		}
@@ -283,11 +298,27 @@
 		}
 	}
 
-	async function enqueueNutritionAllSources() {
+	async function fixPrimaryNutrition() {
 		const token = authStore.getToken();
 		if (!token) return;
 
-		if (!confirm('This will enqueue ALL ingredients for multi-source nutrition enrichment. Continue?')) {
+		error = '';
+		message = '';
+
+		try {
+			const result = await admin.scraper.fixPrimaryNutrition(token);
+			message = `Fixed ${result.data.fixed} ingredients missing primary nutrition source`;
+			await loadQualityStats();
+		} catch {
+			error = 'Failed to fix primary nutrition sources';
+		}
+	}
+
+	async function refetchNutrition() {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		if (!confirm('This will delete ALL existing nutrition data and refetch from all sources. This is useful after improving the matching algorithm. Continue?')) {
 			return;
 		}
 
@@ -295,43 +326,11 @@
 		message = '';
 
 		try {
-			const result = await admin.scraper.enqueueNutritionAllSources(token);
-			message = `Enqueued ${result.data.enqueued} ingredients for multi-source nutrition enrichment`;
-			await loadEnrichmentStats();
+			const result = await admin.scraper.refetchNutrition(token);
+			message = `Started refetching nutrition for ${result.data.enqueued} ingredients`;
+			await Promise.all([loadEnrichmentStats(), loadQualityStats()]);
 		} catch {
-			error = 'Failed to enqueue multi-source nutrition enrichment';
-		}
-	}
-
-	async function resumeNutrition() {
-		const token = authStore.getToken();
-		if (!token) return;
-
-		error = '';
-		message = '';
-
-		try {
-			await admin.scraper.resumeNutrition(token);
-			message = 'Resumed nutrition enrichment queue';
-			await loadEnrichmentStats();
-		} catch {
-			error = 'Failed to resume nutrition enrichment';
-		}
-	}
-
-	async function resumeDensity() {
-		const token = authStore.getToken();
-		if (!token) return;
-
-		error = '';
-		message = '';
-
-		try {
-			await admin.scraper.resumeDensity(token);
-			message = 'Resumed density enrichment queue';
-			await loadEnrichmentStats();
-		} catch {
-			error = 'Failed to resume density enrichment';
+			error = 'Failed to start nutrition refetch';
 		}
 	}
 
@@ -568,86 +567,189 @@
 		</section>
 	{/if}
 
-	<!-- Ingredient Enrichment -->
-	{#if enrichmentStats}
-		<section class="enrichment-section">
-			<h2>Ingredient Enrichment</h2>
-			<div class="enrichment-grid">
-				<!-- Nutrition (Multi-Source) -->
-				<div class="enrichment-card">
-					<h3>Nutrition Data</h3>
-					<p class="enrichment-sources">Sources: FatSecret, USDA, Open Food Facts</p>
-					<div class="enrichment-stats">
-						<div class="enrichment-stat">
-							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.with_nutrition_data || enrichmentStats.nutrition.with_fatsecret_data || 0)}</span>
-							<span class="enrichment-stat-label">With Data</span>
+	<!-- Data Quality Section -->
+	{#if qualityStats}
+		<section class="quality-section">
+			<h2>Data Quality</h2>
+			<div class="quality-grid">
+				<div class="quality-card">
+					<div class="quality-header">
+						<h3>Nutrition Coverage</h3>
+						<span class="quality-percent">{qualityStats.coverage.coverage_percent}%</span>
+					</div>
+					<div class="quality-stats">
+						<div class="quality-stat">
+							<span class="stat-value">{formatNumber(qualityStats.coverage.with_nutrition)}</span>
+							<span class="stat-label">With Data</span>
 						</div>
-						<div class="enrichment-stat">
-							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.total_ingredients - (enrichmentStats.nutrition.with_nutrition_data || enrichmentStats.nutrition.with_fatsecret_data || 0))}</span>
-							<span class="enrichment-stat-label">Without Data</span>
+						<div class="quality-stat">
+							<span class="stat-value">{formatNumber(qualityStats.coverage.without_nutrition)}</span>
+							<span class="stat-label">Missing</span>
 						</div>
-						<div class="enrichment-stat">
-							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.nutrition.pending_jobs)}</span>
-							<span class="enrichment-stat-label">Pending</span>
+						<div class="quality-stat">
+							<span class="stat-value">{formatNumber(qualityStats.coverage.total_ingredients)}</span>
+							<span class="stat-label">Total</span>
 						</div>
 					</div>
-					{#if enrichmentStats.nutrition.by_source && Object.keys(enrichmentStats.nutrition.by_source).length > 0}
-						<div class="enrichment-by-source">
-							{#each Object.entries(enrichmentStats.nutrition.by_source) as [source, count]}
+					<div class="quality-progress">
+						<div class="progress-bar">
+							<div class="progress-fill" style="width: {qualityStats.coverage.coverage_percent}%"></div>
+						</div>
+					</div>
+				</div>
+
+				<div class="quality-card">
+					<div class="quality-header">
+						<h3>Primary Sources</h3>
+						{#if qualityStats.quality.without_primary === 0}
+							<span class="quality-badge success">All Set</span>
+						{:else}
+							<span class="quality-badge warning">{qualityStats.quality.without_primary} Missing</span>
+						{/if}
+					</div>
+					<div class="quality-stats">
+						<div class="quality-stat">
+							<span class="stat-value">{formatNumber(qualityStats.quality.with_primary_set)}</span>
+							<span class="stat-label">Primary Set</span>
+						</div>
+						<div class="quality-stat">
+							<span class="stat-value">{parseFloat(qualityStats.quality.avg_confidence).toFixed(2)}</span>
+							<span class="stat-label">Avg Confidence</span>
+						</div>
+					</div>
+					{#if Object.keys(qualityStats.quality.primary_by_source).length > 0}
+						<div class="source-breakdown">
+							{#each Object.entries(qualityStats.quality.primary_by_source) as [source, count]}
 								<span class="source-badge">{source}: {formatNumber(count as number)}</span>
 							{/each}
 						</div>
 					{/if}
-					<div class="enrichment-progress">
-						<div class="progress-bar">
-							<div class="progress-fill" style="width: {enrichmentStats.nutrition.total_ingredients > 0 ? Math.round(((enrichmentStats.nutrition.with_nutrition_data || enrichmentStats.nutrition.with_fatsecret_data || 0) / enrichmentStats.nutrition.total_ingredients) * 100) : 0}%"></div>
-						</div>
-						<span class="progress-text">{enrichmentStats.nutrition.total_ingredients > 0 ? Math.round(((enrichmentStats.nutrition.with_nutrition_data || enrichmentStats.nutrition.with_fatsecret_data || 0) / enrichmentStats.nutrition.total_ingredients) * 100) : 0}% complete</span>
-					</div>
-					<div class="enrichment-rate">
-						<span>Today: {enrichmentStats.nutrition.completed_today}/{enrichmentStats.nutrition.daily_limit}</span>
-						<span>This hour: {enrichmentStats.nutrition.completed_this_hour}/{enrichmentStats.nutrition.hourly_limit}</span>
-					</div>
-					<div class="enrichment-actions">
-						<button onclick={enqueueNutrition} class="btn-secondary">Enqueue Missing</button>
-						<button onclick={enqueueNutritionAllSources} class="btn-secondary">All Sources</button>
-						<button onclick={resumeNutrition} class="btn-success">Resume Queue</button>
-					</div>
+					{#if qualityStats.quality.without_primary > 0}
+						<button onclick={fixPrimaryNutrition} class="btn-small">Fix Missing Primary</button>
+					{/if}
 				</div>
 
-				<!-- Density -->
-				<div class="enrichment-card">
-					<h3>Density Data</h3>
-					<p class="enrichment-sources">Sources: FatSecret, USDA, Open Food Facts</p>
-					<div class="enrichment-stats">
-						<div class="enrichment-stat">
-							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.density.with_density_data || 0)}</span>
-							<span class="enrichment-stat-label">With Data</span>
-						</div>
-						<div class="enrichment-stat">
-							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.density.without_density_data || 0)}</span>
-							<span class="enrichment-stat-label">Without Data</span>
-						</div>
-						<div class="enrichment-stat">
-							<span class="enrichment-stat-value">{formatNumber(enrichmentStats.density.pending_jobs)}</span>
-							<span class="enrichment-stat-label">Pending</span>
-						</div>
+				<div class="quality-card">
+					<div class="quality-header">
+						<h3>Issues</h3>
+						{#if qualityStats.issues.missing_calories.length === 0 && qualityStats.issues.missing_all_macros.length === 0}
+							<span class="quality-badge success">None</span>
+						{:else}
+							<span class="quality-badge warning">{qualityStats.issues.missing_calories.length + qualityStats.issues.missing_all_macros.length}</span>
+						{/if}
 					</div>
-					<div class="enrichment-progress">
-						<div class="progress-bar">
-							<div class="progress-fill" style="width: {enrichmentStats.density.total_ingredients > 0 ? Math.round(((enrichmentStats.density.with_density_data || 0) / enrichmentStats.density.total_ingredients) * 100) : 0}%"></div>
-						</div>
-						<span class="progress-text">{enrichmentStats.density.total_ingredients > 0 ? Math.round(((enrichmentStats.density.with_density_data || 0) / enrichmentStats.density.total_ingredients) * 100) : 0}% complete</span>
+					<div class="issue-summary">
+						<p>Missing calories: {qualityStats.issues.missing_calories.length}</p>
+						<p>Missing all macros: {qualityStats.issues.missing_all_macros.length}</p>
+						<p>Low confidence: {qualityStats.issues.low_confidence_count}</p>
 					</div>
-					<div class="enrichment-rate">
-						<span>Today: {enrichmentStats.density.completed_today}/{enrichmentStats.density.daily_limit}</span>
-						<span>This hour: {enrichmentStats.density.completed_this_hour}/{enrichmentStats.density.hourly_limit}</span>
-					</div>
-					<div class="enrichment-actions">
-						<button onclick={enqueueDensity} class="btn-secondary">Enqueue All</button>
-						<button onclick={resumeDensity} class="btn-success">Resume Queue</button>
-					</div>
+					{#if qualityStats.issues.missing_calories.length > 0 || qualityStats.suspicious_matches.length > 0}
+						<button onclick={() => showQualityIssues = !showQualityIssues} class="btn-small btn-secondary">
+							{showQualityIssues ? 'Hide' : 'View'} Details
+						</button>
+					{/if}
 				</div>
+			</div>
+
+			{#if showQualityIssues}
+				<div class="quality-issues-detail">
+					{#if qualityStats.issues.missing_calories.length > 0}
+						<div class="issue-list">
+							<h4>Missing Calories ({qualityStats.issues.missing_calories.length})</h4>
+							<div class="issue-items">
+								{#each qualityStats.issues.missing_calories as name}
+									<span class="issue-item">{name}</span>
+								{/each}
+							</div>
+						</div>
+					{/if}
+					{#if qualityStats.suspicious_matches.length > 0}
+						<div class="issue-list">
+							<h4>Suspicious Matches (Low Confidence)</h4>
+							<table class="mini-table">
+								<thead>
+									<tr><th>Ingredient</th><th>Matched To</th><th>Source</th><th>Conf</th></tr>
+								</thead>
+								<tbody>
+									{#each qualityStats.suspicious_matches as match}
+										<tr>
+											<td>{match.ingredient}</td>
+											<td>{match.matched_to}</td>
+											<td>{match.source}</td>
+											<td>{match.confidence.toFixed(2)}</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{/if}
+				</div>
+			{/if}
+		</section>
+	{/if}
+
+	<!-- Enrichment Queues Section -->
+	{#if enrichmentStats}
+		<section class="enrichment-section">
+			<h2>Enrichment Queues</h2>
+			<div class="enrichment-grid">
+				<div class="enrichment-card compact">
+					<div class="enrichment-header">
+						<h3>Nutrition</h3>
+						<span class="queue-status">
+							{#if enrichmentStats.nutrition.pending_jobs > 0}
+								<span class="status-dot active"></span> {formatNumber(enrichmentStats.nutrition.pending_jobs)} pending
+							{:else}
+								<span class="status-dot idle"></span> Idle
+							{/if}
+						</span>
+					</div>
+					<div class="enrichment-mini-stats">
+						<span>{formatNumber(enrichmentStats.nutrition.with_nutrition_data || 0)} complete</span>
+						<span>{formatNumber(enrichmentStats.nutrition.total_ingredients - (enrichmentStats.nutrition.with_nutrition_data || 0))} missing</span>
+					</div>
+					<div class="enrichment-rate-compact">
+						Today: {enrichmentStats.nutrition.completed_today}/{enrichmentStats.nutrition.daily_limit} |
+						Hour: {enrichmentStats.nutrition.completed_this_hour}/{enrichmentStats.nutrition.hourly_limit}
+					</div>
+					<button onclick={enqueueNutrition} class="btn-primary btn-small">Enqueue Missing</button>
+				</div>
+
+				<div class="enrichment-card compact">
+					<div class="enrichment-header">
+						<h3>Density</h3>
+						<span class="queue-status">
+							{#if enrichmentStats.density.pending_jobs > 0}
+								<span class="status-dot active"></span> {formatNumber(enrichmentStats.density.pending_jobs)} pending
+							{:else}
+								<span class="status-dot idle"></span> Idle
+							{/if}
+						</span>
+					</div>
+					<div class="enrichment-mini-stats">
+						<span>{formatNumber(enrichmentStats.density.with_density_data || 0)} complete</span>
+						<span>{formatNumber(enrichmentStats.density.without_density_data || 0)} missing</span>
+					</div>
+					<div class="enrichment-rate-compact">
+						Today: {enrichmentStats.density.completed_today}/{enrichmentStats.density.daily_limit} |
+						Hour: {enrichmentStats.density.completed_this_hour}/{enrichmentStats.density.hourly_limit}
+					</div>
+					<button onclick={enqueueDensity} class="btn-primary btn-small">Enqueue Missing</button>
+				</div>
+			</div>
+
+			<div class="advanced-section">
+				<button onclick={() => showAdvanced = !showAdvanced} class="btn-link">
+					{showAdvanced ? 'Hide' : 'Show'} Advanced Options
+				</button>
+				{#if showAdvanced}
+					<div class="advanced-actions">
+						<button onclick={refetchNutrition} class="btn-danger btn-small">
+							Refetch All Nutrition
+						</button>
+						<p class="help-text">Deletes all nutrition data and refetches from scratch. Use after improving matching algorithms.</p>
+					</div>
+				{/if}
 			</div>
 		</section>
 	{/if}
@@ -1296,8 +1398,8 @@
 		color: var(--text-secondary);
 	}
 
-	/* Enrichment Section */
-	.enrichment-section {
+	/* Quality Section */
+	.quality-section {
 		background: var(--bg-card);
 		border-radius: var(--radius-lg);
 		padding: var(--space-5);
@@ -1305,37 +1407,67 @@
 		box-shadow: var(--shadow-sm);
 	}
 
-	.enrichment-grid {
+	.quality-section h2 {
+		margin: 0 0 var(--space-4);
+		font-size: var(--text-lg);
+		color: var(--color-marinara-800);
+	}
+
+	.quality-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 		gap: var(--space-4);
 	}
 
-	.enrichment-card {
+	.quality-card {
 		background: var(--bg-surface);
 		border-radius: var(--radius-md);
 		padding: var(--space-4);
 	}
 
-	.enrichment-card h3 {
-		margin: 0 0 var(--space-1);
+	.quality-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: var(--space-3);
+	}
+
+	.quality-header h3 {
+		margin: 0;
 		font-size: var(--text-base);
 		color: var(--text-primary);
 	}
 
-	.enrichment-sources {
-		margin: 0 0 var(--space-3);
-		font-size: var(--text-xs);
-		color: var(--text-muted);
+	.quality-percent {
+		font-size: var(--text-xl);
+		font-weight: var(--font-bold);
+		color: var(--color-basil-600);
 	}
 
-	.enrichment-stats {
+	.quality-badge {
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+		font-weight: var(--font-medium);
+	}
+
+	.quality-badge.success {
+		background: var(--color-basil-100);
+		color: var(--color-basil-700);
+	}
+
+	.quality-badge.warning {
+		background: var(--color-pasta-100);
+		color: var(--color-pasta-700);
+	}
+
+	.quality-stats {
 		display: flex;
 		gap: var(--space-3);
 		margin-bottom: var(--space-3);
 	}
 
-	.enrichment-stat {
+	.quality-stat {
 		flex: 1;
 		text-align: center;
 		padding: var(--space-2);
@@ -1343,19 +1475,23 @@
 		border-radius: var(--radius-sm);
 	}
 
-	.enrichment-stat-value {
+	.quality-stat .stat-value {
 		display: block;
 		font-size: var(--text-lg);
 		font-weight: var(--font-bold);
 		color: var(--color-marinara-600);
 	}
 
-	.enrichment-stat-label {
+	.quality-stat .stat-label {
 		font-size: var(--text-xs);
 		color: var(--text-secondary);
 	}
 
-	.enrichment-by-source {
+	.quality-progress {
+		margin-bottom: var(--space-2);
+	}
+
+	.source-breakdown {
 		display: flex;
 		flex-wrap: wrap;
 		gap: var(--space-2);
@@ -1372,27 +1508,169 @@
 		font-weight: var(--font-medium);
 	}
 
-	.enrichment-progress {
+	.issue-summary {
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
 		margin-bottom: var(--space-3);
 	}
 
-	.enrichment-rate {
+	.issue-summary p {
+		margin: var(--space-1) 0;
+	}
+
+	.quality-issues-detail {
+		margin-top: var(--space-4);
+		padding: var(--space-4);
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+	}
+
+	.issue-list {
+		margin-bottom: var(--space-4);
+	}
+
+	.issue-list h4 {
+		margin: 0 0 var(--space-2);
+		font-size: var(--text-sm);
+		color: var(--text-primary);
+	}
+
+	.issue-items {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
+	}
+
+	.issue-item {
+		padding: var(--space-1) var(--space-2);
+		background: var(--color-marinara-100);
+		color: var(--color-marinara-700);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+	}
+
+	.mini-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: var(--text-xs);
+	}
+
+	.mini-table th,
+	.mini-table td {
+		padding: var(--space-2);
+		text-align: left;
+		border-bottom: 1px solid var(--border-light);
+	}
+
+	.mini-table th {
+		background: var(--bg-card);
+		font-weight: var(--font-medium);
+		color: var(--text-secondary);
+	}
+
+	/* Enrichment Section */
+	.enrichment-section {
+		background: var(--bg-card);
+		border-radius: var(--radius-lg);
+		padding: var(--space-5);
+		margin-bottom: var(--space-5);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.enrichment-section h2 {
+		margin: 0 0 var(--space-4);
+		font-size: var(--text-lg);
+		color: var(--color-marinara-800);
+	}
+
+	.enrichment-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: var(--space-4);
+	}
+
+	.enrichment-card {
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+		padding: var(--space-4);
+	}
+
+	.enrichment-card.compact {
+		padding: var(--space-3);
+	}
+
+	.enrichment-header {
 		display: flex;
 		justify-content: space-between;
+		align-items: center;
+		margin-bottom: var(--space-2);
+	}
+
+	.enrichment-header h3 {
+		margin: 0;
+		font-size: var(--text-base);
+		color: var(--text-primary);
+	}
+
+	.queue-status {
+		display: flex;
+		align-items: center;
+		gap: var(--space-1);
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+	}
+
+	.status-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+	}
+
+	.status-dot.active {
+		background: var(--color-basil-500);
+		animation: pulse 1.5s infinite;
+	}
+
+	.status-dot.idle {
+		background: var(--color-gray-400);
+	}
+
+	@keyframes pulse {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0.5; }
+	}
+
+	.enrichment-mini-stats {
+		display: flex;
+		justify-content: space-between;
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+		margin-bottom: var(--space-2);
+	}
+
+	.enrichment-rate-compact {
 		font-size: var(--text-xs);
 		color: var(--text-muted);
 		margin-bottom: var(--space-3);
 	}
 
-	.enrichment-actions {
-		display: flex;
-		gap: var(--space-2);
+	.advanced-section {
+		margin-top: var(--space-4);
+		padding-top: var(--space-4);
+		border-top: 1px solid var(--border-light);
 	}
 
-	.enrichment-actions button {
-		flex: 1;
-		padding: var(--space-2);
-		font-size: var(--text-sm);
+	.advanced-actions {
+		margin-top: var(--space-3);
+		padding: var(--space-3);
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+	}
+
+	.help-text {
+		margin: var(--space-2) 0 0;
+		font-size: var(--text-xs);
+		color: var(--text-muted);
 	}
 
 	/* Button styles */
@@ -1424,8 +1702,8 @@
 		background: var(--color-gray-600);
 	}
 
-	.btn-success {
-		background: var(--color-basil-500);
+	.btn-danger {
+		background: var(--color-marinara-500);
 		color: white;
 		border: none;
 		padding: var(--space-2) var(--space-4);
@@ -1434,8 +1712,26 @@
 		font-weight: var(--font-medium);
 	}
 
-	.btn-success:hover {
-		background: var(--color-basil-600);
+	.btn-danger:hover {
+		background: var(--color-marinara-600);
+	}
+
+	.btn-small {
+		padding: var(--space-1) var(--space-3);
+		font-size: var(--text-sm);
+	}
+
+	.btn-link {
+		background: none;
+		border: none;
+		color: var(--color-basil-600);
+		cursor: pointer;
+		font-size: var(--text-sm);
+		padding: 0;
+	}
+
+	.btn-link:hover {
+		text-decoration: underline;
 	}
 
 	/* Test Scorer Section */

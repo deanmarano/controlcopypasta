@@ -221,13 +221,66 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
   def ingredient_enrichment_stats(conn, _params) do
     nutrition_stats = NutritionEnrichmentWorker.progress()
     density_stats = DensityEnrichmentWorker.progress()
+    quality_stats = Controlcopypasta.Ingredients.nutrition_quality_stats()
+
+    # Add quality info to nutrition stats
+    nutrition_with_quality = Map.merge(nutrition_stats, %{
+      with_primary_set: quality_stats.with_primary_set,
+      avg_confidence: quality_stats.avg_primary_confidence,
+      primary_by_source: quality_stats.primary_by_source
+    })
 
     json(conn, %{
       data: %{
-        nutrition: nutrition_stats,
+        nutrition: nutrition_with_quality,
         density: density_stats
       }
     })
+  end
+
+  @doc """
+  Gets nutrition data quality stats including issues.
+  """
+  def nutrition_quality(conn, _params) do
+    quality_stats = Controlcopypasta.Ingredients.nutrition_quality_stats()
+    verification = Controlcopypasta.Ingredients.verify_nutrition_quality()
+    coverage = Controlcopypasta.Ingredients.nutrition_coverage_stats()
+
+    json(conn, %{
+      data: %{
+        coverage: coverage,
+        quality: %{
+          with_primary_set: quality_stats.with_primary_set,
+          without_primary: quality_stats.without_primary,
+          avg_confidence: quality_stats.avg_primary_confidence,
+          primary_by_source: quality_stats.primary_by_source,
+          records_by_source: quality_stats.records_by_source
+        },
+        issues: %{
+          missing_calories: verification.issues.missing_calories,
+          missing_all_macros: verification.issues.missing_all_macros,
+          low_confidence_count: verification.issues.low_confidence_count
+        },
+        suspicious_matches: verification.suspicious_matches
+      }
+    })
+  end
+
+  @doc """
+  Fixes ingredients that have nutrition data but no primary source selected.
+  """
+  def fix_primary_nutrition(conn, _params) do
+    {:ok, fixed_count} = Controlcopypasta.Ingredients.fix_missing_primary_nutrition()
+    json(conn, %{data: %{fixed: fixed_count}})
+  end
+
+  @doc """
+  Triggers a full refetch of nutrition data for all ingredients.
+  Deletes existing data and fetches fresh from all sources.
+  """
+  def refetch_nutrition(conn, _params) do
+    {:ok, count} = NutritionEnrichmentWorker.enqueue_refetch_all()
+    json(conn, %{data: %{status: "started", enqueued: count}})
   end
 
   @doc """

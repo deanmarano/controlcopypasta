@@ -246,6 +246,9 @@ defmodule Controlcopypasta.Nutrition.NutritionEnrichmentWorker do
               end
             end)
 
+          # Select and set the best nutrition source as primary
+          set_best_primary(ingredient_id)
+
           Logger.info("Saved #{saved_count} nutrition records for #{ingredient.name}")
           {:ok, %{saved: saved_count}}
         end
@@ -419,5 +422,27 @@ defmodule Controlcopypasta.Nutrition.NutritionEnrichmentWorker do
   defp get_config(key, default) do
     Application.get_env(:controlcopypasta, :nutrition_enrichment, [])
     |> Keyword.get(key, default)
+  end
+
+  # Select the best nutrition source (highest confidence) and set it as primary
+  defp set_best_primary(canonical_ingredient_id) do
+    best_nutrition =
+      from(n in IngredientNutrition,
+        where: n.canonical_ingredient_id == ^canonical_ingredient_id,
+        order_by: [desc: n.confidence],
+        limit: 1
+      )
+      |> Repo.one()
+
+    if best_nutrition do
+      case Ingredients.set_primary_nutrition(best_nutrition) do
+        {:ok, _} ->
+          Logger.debug("Set #{best_nutrition.source} as primary for ingredient #{canonical_ingredient_id}")
+          :ok
+        {:error, reason} ->
+          Logger.warning("Failed to set primary nutrition: #{inspect(reason)}")
+          :error
+      end
+    end
   end
 end
