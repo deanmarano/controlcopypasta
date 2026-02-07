@@ -48,13 +48,13 @@ defmodule Controlcopypasta.Ingredients do
   - `:search` - Search by name or alias (partial match)
   """
   def list_canonical_ingredients(opts) when is_list(opts) do
-    # Preload best nutrition for list view:
+    # Preload best nutrition for list view using DISTINCT ON to get one per ingredient:
     # - Primary if is_primary is set, otherwise highest confidence
     # - Order by: is_primary desc (true first), then confidence desc, then id for determinism
     best_nutrition_query =
       from(n in IngredientNutrition,
-        order_by: [desc: n.is_primary, desc: n.confidence, asc: n.id],
-        limit: 1
+        distinct: n.canonical_ingredient_id,
+        order_by: [asc: n.canonical_ingredient_id, desc: n.is_primary, desc: n.confidence, asc: n.id]
       )
 
     CanonicalIngredient
