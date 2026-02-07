@@ -671,18 +671,18 @@
 				<div class="quality-card">
 					<div class="quality-header">
 						<h3>Issues</h3>
-						{#if qualityStats.issues.missing_calories.length === 0 && qualityStats.issues.missing_nutrition.length === 0}
+						{#if (qualityStats.issues.missing_calories?.length || 0) === 0 && (qualityStats.issues.missing_nutrition?.length || 0) === 0}
 							<span class="quality-badge success">None</span>
 						{:else}
-							<span class="quality-badge warning">{qualityStats.issues.missing_calories.length + qualityStats.issues.missing_nutrition.length}</span>
+							<span class="quality-badge warning">{(qualityStats.issues.missing_calories?.length || 0) + (qualityStats.issues.missing_nutrition?.length || 0)}</span>
 						{/if}
 					</div>
 					<div class="issue-summary">
-						<p>No nutrition data: {qualityStats.issues.missing_nutrition.length}</p>
-						<p>Missing calories: {qualityStats.issues.missing_calories.length}</p>
-						<p>Low confidence: {qualityStats.issues.low_confidence_count}</p>
+						<p>No nutrition data: {qualityStats.issues.missing_nutrition?.length || 0}</p>
+						<p>Missing calories: {qualityStats.issues.missing_calories?.length || 0}</p>
+						<p>Low confidence: {qualityStats.issues.low_confidence_count || 0}</p>
 					</div>
-					{#if qualityStats.issues.missing_calories.length > 0 || qualityStats.issues.missing_nutrition.length > 0 || qualityStats.suspicious_matches.length > 0}
+					{#if (qualityStats.issues.missing_calories?.length || 0) > 0 || (qualityStats.issues.missing_nutrition?.length || 0) > 0 || (qualityStats.suspicious_matches?.length || 0) > 0}
 						<button onclick={() => showQualityIssues = !showQualityIssues} class="btn-small btn-secondary">
 							{showQualityIssues ? 'Hide' : 'View'} Details
 						</button>
@@ -692,16 +692,16 @@
 
 			{#if showQualityIssues}
 				<div class="quality-issues-detail">
-					{#if qualityStats.issues.missing_nutrition.length > 0}
+					{#if (qualityStats.issues.missing_nutrition?.length || 0) > 0}
 						<div class="issue-list">
-							<h4>No Nutrition Data ({qualityStats.issues.missing_nutrition.length})</h4>
+							<h4>No Nutrition Data ({qualityStats.issues.missing_nutrition?.length || 0})</h4>
 							<p class="issue-help">These ingredients don't have nutrition data. Refetch to try again, or mark as "No nutrition needed" for items like water, salt, etc.</p>
 							<table class="mini-table">
 								<thead>
 									<tr><th>Ingredient</th><th>Actions</th></tr>
 								</thead>
 								<tbody>
-									{#each qualityStats.issues.missing_nutrition as item}
+									{#each qualityStats.issues.missing_nutrition || [] as item}
 										<tr>
 											<td>{item.name}</td>
 											<td class="action-cell">
@@ -726,16 +726,16 @@
 							</table>
 						</div>
 					{/if}
-					{#if qualityStats.issues.missing_calories.length > 0}
+					{#if (qualityStats.issues.missing_calories?.length || 0) > 0}
 						<div class="issue-list">
-							<h4>Missing Calories ({qualityStats.issues.missing_calories.length})</h4>
+							<h4>Missing Calories ({qualityStats.issues.missing_calories?.length || 0})</h4>
 							<p class="issue-help">These have nutrition data but no calorie value. This may indicate a bad match.</p>
 							<table class="mini-table">
 								<thead>
 									<tr><th>Ingredient</th><th>Actions</th></tr>
 								</thead>
 								<tbody>
-									{#each qualityStats.issues.missing_calories as item}
+									{#each qualityStats.issues.missing_calories || [] as item}
 										<tr>
 											<td>{item.name}</td>
 											<td class="action-cell">
@@ -760,7 +760,7 @@
 							</table>
 						</div>
 					{/if}
-					{#if qualityStats.suspicious_matches.length > 0}
+					{#if (qualityStats.suspicious_matches?.length || 0) > 0}
 						<div class="issue-list">
 							<h4>Suspicious Matches (Low Confidence)</h4>
 							<p class="issue-help">These matches have low confidence scores and may be incorrect.</p>
@@ -769,7 +769,7 @@
 									<tr><th>Ingredient</th><th>Matched To</th><th>Source</th><th>Conf</th><th>Actions</th></tr>
 								</thead>
 								<tbody>
-									{#each qualityStats.suspicious_matches as match}
+									{#each qualityStats.suspicious_matches || [] as match}
 										<tr>
 											<td>{match.ingredient}</td>
 											<td>{match.matched_to}</td>

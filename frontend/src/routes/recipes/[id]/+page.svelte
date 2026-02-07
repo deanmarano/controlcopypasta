@@ -369,23 +369,37 @@
 	}
 
 	function formatQuantity(num: number): string {
-		// Convert to nice fractions for common values
-		const fractions: Record<number, string> = {
-			0.25: '1/4',
-			0.33: '1/3',
-			0.5: '1/2',
-			0.67: '2/3',
-			0.75: '3/4'
-		};
+		// Convert to nice Unicode fractions for common values
+		const fractions: [number, string][] = [
+			[0.125, '⅛'],
+			[0.2, '⅕'],
+			[0.25, '¼'],
+			[0.333, '⅓'],
+			[0.375, '⅜'],
+			[0.4, '⅖'],
+			[0.5, '½'],
+			[0.6, '⅗'],
+			[0.625, '⅝'],
+			[0.667, '⅔'],
+			[0.75, '¾'],
+			[0.8, '⅘'],
+			[0.833, '⅚'],
+			[0.875, '⅞']
+		];
 
 		const whole = Math.floor(num);
 		const frac = num - whole;
 
 		// Check if the fractional part is close to a common fraction
-		for (const [val, str] of Object.entries(fractions)) {
-			if (Math.abs(frac - parseFloat(val)) < 0.05) {
-				return whole > 0 ? `${whole} ${str}` : str;
+		for (const [val, str] of fractions) {
+			if (Math.abs(frac - val) < 0.03) {
+				return whole > 0 ? `${whole}${str}` : str;
 			}
+		}
+
+		// Check for very small fractional part (essentially whole number)
+		if (frac < 0.03) {
+			return whole.toString();
 		}
 
 		// Otherwise, round to 2 decimal places
