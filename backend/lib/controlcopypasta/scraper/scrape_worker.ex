@@ -15,20 +15,44 @@ defmodule Controlcopypasta.Scraper.ScrapeWorker do
   alias Controlcopypasta.Scraper.{ScrapeUrl, LinkExtractor}
 
   @impl Oban.Worker
+  # Dispatcher mode: pick the next URL via round-robin and scrape it
+  def perform(%Oban.Job{args: args}) when args == %{} or map_size(args) == 0 do
+    case Scraper.next_url_round_robin() do
+      {:ok, scrape_url} ->
+        domain = scrape_url.domain
+
+        if Scraper.rate_limit_exceeded?(domain) do
+          Logger.info("Rate limit exceeded for #{domain}, snoozing dispatcher")
+          {:snooze, 300}
+        else
+          do_scrape(scrape_url.url, scrape_url.id)
+          schedule_next_dispatcher()
+          :ok
+        end
+
+      {:empty, :all_rate_limited} ->
+        Logger.info("All domains rate-limited, snoozing dispatcher for 5 minutes")
+        {:snooze, 300}
+
+      {:empty, :no_pending_urls} ->
+        Logger.info("No pending URLs, dispatcher stopping")
+        :ok
+    end
+  end
+
+  # Legacy mode: backward compat for in-flight jobs with explicit URL
   def perform(%Oban.Job{args: %{"url" => url, "scrape_url_id" => scrape_url_id}}) do
     domain = extract_domain(url)
 
-    # Check rate limits per domain - if exceeded, snooze job to retry later
-    if rate_limit_exceeded?(domain) do
+    if Scraper.rate_limit_exceeded?(domain) do
       Logger.info("Rate limit exceeded for #{domain}, snoozing job")
-      {:snooze, 3600}  # Retry in 1 hour
+      {:snooze, 3600}
     else
       do_scrape(url, scrape_url_id)
     end
   end
 
   def perform(%Oban.Job{args: %{"url" => url}}) do
-    # Fallback for jobs without scrape_url_id (shouldn't happen normally)
     Logger.warning("Scrape job missing scrape_url_id for URL: #{url}")
     {:error, "Missing scrape_url_id"}
   end
@@ -273,28 +297,10 @@ defmodule Controlcopypasta.Scraper.ScrapeWorker do
     Process.sleep(delay)
   end
 
-  defp rate_limit_exceeded?(domain) do
-    config = Application.get_env(:controlcopypasta, :scraping, [])
-    max_per_hour = Keyword.get(config, :max_per_hour, 0)
-    max_per_day = Keyword.get(config, :max_per_day, 0)
-
-    cond do
-      max_per_hour > 0 && count_completed_since(domain, hours: 1) >= max_per_hour -> true
-      max_per_day > 0 && count_completed_since(domain, hours: 24) >= max_per_day -> true
-      true -> false
-    end
-  end
-
-  defp count_completed_since(domain, hours: hours) do
-    import Ecto.Query
-    since = DateTime.utc_now() |> DateTime.add(-hours * 3600, :second)
-    normalized_domain = normalize_domain(domain)
-
-    Controlcopypasta.Scraper.ScrapeUrl
-    |> where([s], s.status == "completed")
-    |> where([s], s.updated_at >= ^since)
-    |> where([s], fragment("replace(lower(?), 'www.', '') = ?", s.domain, ^normalized_domain))
-    |> Repo.aggregate(:count)
+  defp schedule_next_dispatcher do
+    %{}
+    |> __MODULE__.new()
+    |> Oban.insert()
   end
 
   defp extract_domain(url) do

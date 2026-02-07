@@ -19,8 +19,8 @@ defmodule Controlcopypasta.Workers.ScraperUnpauser do
   @impl Oban.Worker
   def perform(_job) do
     if under_rate_limits?() do
-      Logger.info("Rate limits OK, resuming scraper queue")
-      Oban.resume_queue(queue: :scraper)
+      Logger.info("Rate limits OK, ensuring dispatcher is running")
+      Controlcopypasta.Scraper.ensure_dispatcher_running()
     end
 
     :ok

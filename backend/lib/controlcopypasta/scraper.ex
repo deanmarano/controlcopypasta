@@ -25,11 +25,7 @@ defmodule Controlcopypasta.Scraper do
 
         case create_scrape_url(attrs) do
           {:ok, scrape_url} ->
-            # Create Oban job
-            %{url: url, scrape_url_id: scrape_url.id}
-            |> ScrapeWorker.new()
-            |> Oban.insert()
-
+            ensure_dispatcher_running()
             {:ok, scrape_url}
 
           error ->
@@ -144,7 +140,7 @@ defmodule Controlcopypasta.Scraper do
   @doc """
   Retries failed scrape URLs.
 
-  Resets status to pending and creates new Oban jobs.
+  Resets status to pending and ensures dispatcher jobs are running.
   """
   def retry_failed(opts \\ []) do
     domain = opts[:domain]
@@ -160,16 +156,12 @@ defmodule Controlcopypasta.Scraper do
     results =
       failed_urls
       |> Enum.map(fn scrape_url ->
-        with {:ok, updated} <- update_scrape_url(scrape_url, %{status: "pending", error: nil}) do
-          %{url: updated.url, scrape_url_id: updated.id}
-          |> ScrapeWorker.new()
-          |> Oban.insert()
-
-          {:ok, updated}
-        end
+        update_scrape_url(scrape_url, %{status: "pending", error: nil})
       end)
 
     ok_count = Enum.count(results, &match?({:ok, _}, &1))
+
+    if ok_count > 0, do: ensure_dispatcher_running()
 
     {:ok, %{retried: ok_count}}
   end
@@ -336,6 +328,116 @@ defmodule Controlcopypasta.Scraper do
     }
   end
 
+  @doc """
+  Checks if a domain has exceeded its rate limits (hourly or daily).
+  """
+  def rate_limit_exceeded?(domain) do
+    config = Application.get_env(:controlcopypasta, :scraping, [])
+    max_per_hour = Keyword.get(config, :max_per_hour, 0)
+    max_per_day = Keyword.get(config, :max_per_day, 0)
+
+    cond do
+      max_per_hour > 0 && get_completed_count_since_for_domain(domain, hours_ago(1)) >= max_per_hour -> true
+      max_per_day > 0 && get_completed_count_since_for_domain(domain, hours_ago(24)) >= max_per_day -> true
+      true -> false
+    end
+  end
+
+  @doc """
+  Picks the next pending URL using round-robin across domains.
+
+  Selects from the domain that was least recently active (oldest MAX(updated_at)
+  among completed/processing URLs), ensuring fair distribution across domains.
+
+  Returns:
+  - `{:ok, scrape_url}` — a pending URL ready for scraping
+  - `{:empty, :all_rate_limited}` — pending URLs exist but all domains are rate-limited
+  - `{:empty, :no_pending_urls}` — no pending URLs in queue
+  """
+  def next_url_round_robin do
+    # Get distinct domains that have pending URLs
+    pending_domains =
+      ScrapeUrl
+      |> where([s], s.status == "pending")
+      |> select([s], s.domain)
+      |> distinct(true)
+      |> Repo.all()
+
+    if Enum.empty?(pending_domains) do
+      {:empty, :no_pending_urls}
+    else
+      # Filter out rate-limited domains
+      eligible_domains = Enum.reject(pending_domains, &rate_limit_exceeded?/1)
+
+      if Enum.empty?(eligible_domains) do
+        {:empty, :all_rate_limited}
+      else
+        # For each eligible domain, get the MAX(updated_at) of completed/processing URLs
+        # to determine which domain was least recently active
+        domain_activity =
+          Enum.map(eligible_domains, fn domain ->
+            last_active =
+              ScrapeUrl
+              |> where([s], s.domain == ^domain)
+              |> where([s], s.status in ["completed", "processing"])
+              |> select([s], max(s.updated_at))
+              |> Repo.one()
+
+            {domain, last_active}
+          end)
+
+        # Pick domain with oldest (or nil) last_active — least recently active
+        {target_domain, _} =
+          Enum.min_by(domain_activity, fn {_domain, last_active} ->
+            # nil sorts first (domain never active = highest priority)
+            last_active || ~U[1970-01-01 00:00:00Z]
+          end)
+
+        # Get one pending URL from target domain, with row-level locking
+        query =
+          ScrapeUrl
+          |> where([s], s.domain == ^target_domain)
+          |> where([s], s.status == "pending")
+          |> order_by([s], asc: s.inserted_at)
+          |> limit(1)
+          |> lock("FOR UPDATE SKIP LOCKED")
+
+        case Repo.one(query) do
+          nil -> {:empty, :no_pending_urls}
+          scrape_url -> {:ok, scrape_url}
+        end
+      end
+    end
+  end
+
+  @doc """
+  Ensures enough dispatcher jobs are running in the Oban scraper queue.
+
+  Counts active Oban scraper jobs and inserts new dispatcher jobs (with empty args)
+  if fewer than the configured queue concurrency.
+  """
+  def ensure_dispatcher_running do
+    concurrency = get_queue_concurrency()
+
+    active_count =
+      Oban.Job
+      |> where([j], j.queue == "scraper")
+      |> where([j], j.state in ["available", "executing", "scheduled", "retryable"])
+      |> Repo.aggregate(:count)
+
+    needed = concurrency - active_count
+
+    if needed > 0 do
+      Enum.each(1..needed, fn _ ->
+        %{}
+        |> ScrapeWorker.new()
+        |> Oban.insert()
+      end)
+    end
+
+    :ok
+  end
+
   defp get_active_domains do
     ScrapeUrl
     |> where([s], s.status in ["pending", "processing", "paused"])
@@ -393,16 +495,13 @@ defmodule Controlcopypasta.Scraper do
 
     results =
       Enum.map(paused_urls, fn scrape_url ->
-        with {:ok, updated} <- update_scrape_url(scrape_url, %{status: "pending"}) do
-          %{url: updated.url, scrape_url_id: updated.id}
-          |> ScrapeWorker.new()
-          |> Oban.insert()
-
-          {:ok, updated}
-        end
+        update_scrape_url(scrape_url, %{status: "pending"})
       end)
 
     ok_count = Enum.count(results, &match?({:ok, _}, &1))
+
+    if ok_count > 0, do: ensure_dispatcher_running()
+
     {:ok, %{resumed: ok_count}}
   end
 

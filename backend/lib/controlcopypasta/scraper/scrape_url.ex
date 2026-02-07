@@ -32,7 +32,7 @@ defmodule Controlcopypasta.Scraper.ScrapeUrl do
     scrape_url
     |> cast(attrs, [:url, :domain, :status, :error, :recipe_id, :attempts])
     |> validate_required([:url, :domain])
-    |> validate_inclusion(:status, ["pending", "processing", "completed", "failed"])
+    |> validate_inclusion(:status, ["pending", "processing", "completed", "failed", "paused"])
     |> unique_constraint(:url)
     |> maybe_extract_domain()
   end

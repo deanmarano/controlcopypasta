@@ -148,7 +148,7 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
       |> Enum.map(fn job ->
         %{
           id: job.id,
-          url: get_in(job.args, ["url"]),
+          url: get_in(job.args, ["url"]) || "(dispatcher)",
           started_at: job.attempted_at
         }
       end)
