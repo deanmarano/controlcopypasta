@@ -29,7 +29,7 @@ defmodule Controlcopypasta.Nutrition.Calculator do
   ```
   """
 
-  alias Controlcopypasta.Ingredients
+  alias Controlcopypasta.{Ingredients, SafeDecimal}
   alias Controlcopypasta.Ingredients.{TokenParser, IngredientNutrition}
   alias Controlcopypasta.Nutrition.{DensityConverter, Range}
   alias Controlcopypasta.Recipes.Recipe
@@ -357,7 +357,7 @@ defmodule Controlcopypasta.Nutrition.Calculator do
           end)
           |> case do
             {_, ws} when ws == 0.0 -> nil
-            {sum, weight_sum} -> Decimal.from_float(sum / weight_sum)
+            {sum, weight_sum} -> SafeDecimal.from_number(sum / weight_sum)
           end
 
         {field, weighted_value}
@@ -373,7 +373,7 @@ defmodule Controlcopypasta.Nutrition.Calculator do
           Decimal.new("0.5")
         else
           avg = Enum.sum(confidences) / length(confidences)
-          Decimal.from_float(avg)
+          SafeDecimal.from_number(avg)
         end
       end)
 

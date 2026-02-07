@@ -160,12 +160,14 @@ if config_env() == :prod do
     if scraping_enabled do
       [
         {"*/5 * * * *", Controlcopypasta.Workers.ScraperUnpauser},
+        {"*/5 * * * *", Controlcopypasta.Workers.QueueHealthChecker},
         {"0 */6 * * *", Controlcopypasta.Workers.IngredientParser},
         {"0 2 * * *", Controlcopypasta.Workers.ImageSeeder},
         {"0 3 * * 0", Controlcopypasta.Workers.UsageCountUpdater}
       ]
     else
       [
+        {"*/5 * * * *", Controlcopypasta.Workers.QueueHealthChecker},
         {"0 */6 * * *", Controlcopypasta.Workers.IngredientParser},
         {"0 2 * * *", Controlcopypasta.Workers.ImageSeeder},
         {"0 3 * * 0", Controlcopypasta.Workers.UsageCountUpdater}

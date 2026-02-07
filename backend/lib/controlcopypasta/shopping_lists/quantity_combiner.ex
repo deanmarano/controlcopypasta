@@ -3,6 +3,8 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
   Handles unit conversion and quantity combining for shopping list items.
   """
 
+  alias Controlcopypasta.SafeDecimal
+
   # Volume conversions to milliliters
   @volume_to_ml %{
     "cup" => 236.588,
@@ -163,8 +165,8 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
   defp is_weight_unit?(unit), do: Map.has_key?(@weight_to_g, unit)
 
   defp combine_volumes(qty1, unit1, qty2, unit2) do
-    ml1 = Decimal.mult(qty1, Decimal.from_float(@volume_to_ml[unit1]))
-    ml2 = Decimal.mult(qty2, Decimal.from_float(@volume_to_ml[unit2]))
+    ml1 = Decimal.mult(qty1, SafeDecimal.from_number(@volume_to_ml[unit1]))
+    ml2 = Decimal.mult(qty2, SafeDecimal.from_number(@volume_to_ml[unit2]))
     total_ml = Decimal.add(ml1, ml2)
 
     {display_unit, display_qty} = convert_to_best_volume_unit(total_ml)
@@ -172,8 +174,8 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
   end
 
   defp combine_weights(qty1, unit1, qty2, unit2) do
-    g1 = Decimal.mult(qty1, Decimal.from_float(@weight_to_g[unit1]))
-    g2 = Decimal.mult(qty2, Decimal.from_float(@weight_to_g[unit2]))
+    g1 = Decimal.mult(qty1, SafeDecimal.from_number(@weight_to_g[unit1]))
+    g2 = Decimal.mult(qty2, SafeDecimal.from_number(@weight_to_g[unit2]))
     total_g = Decimal.add(g1, g2)
 
     {display_unit, display_qty} = convert_to_best_weight_unit(total_g)
@@ -191,7 +193,7 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
   defp find_best_unit(value, unit_order) do
     # Find the largest unit where the result is >= 1
     Enum.find_value(unit_order, fn {unit, factor} ->
-      converted = Decimal.div(value, Decimal.from_float(factor))
+      converted = Decimal.div(value, SafeDecimal.from_number(factor))
       if Decimal.compare(converted, Decimal.new(1)) in [:gt, :eq] do
         {unit, round_decimal(converted)}
       end
@@ -199,7 +201,7 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
       # Fall back to smallest unit
       case List.last(unit_order) do
         {unit, factor} ->
-          {unit, round_decimal(Decimal.div(value, Decimal.from_float(factor)))}
+          {unit, round_decimal(Decimal.div(value, SafeDecimal.from_number(factor)))}
       end
   end
 

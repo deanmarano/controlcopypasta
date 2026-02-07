@@ -25,6 +25,8 @@ defmodule Controlcopypasta.Nutrition.USDAClient do
 
   require Logger
 
+  alias Controlcopypasta.SafeDecimal
+
   @base_url "https://api.nal.usda.gov/fdc/v1"
 
   # Nutrient IDs from USDA FoodData Central
@@ -432,8 +434,7 @@ defmodule Controlcopypasta.Nutrition.USDAClient do
   end
 
   defp to_decimal(nil), do: nil
-  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
-  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
+  defp to_decimal(value) when is_number(value), do: SafeDecimal.from_number(value)
   defp to_decimal(value), do: Decimal.new("#{value}")
 
   @doc """
@@ -595,6 +596,6 @@ defmodule Controlcopypasta.Nutrition.USDAClient do
         true -> base - 0.15
       end
 
-    Decimal.from_float(confidence)
+    SafeDecimal.from_number(confidence)
   end
 end

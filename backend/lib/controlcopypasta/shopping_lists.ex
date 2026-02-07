@@ -4,7 +4,7 @@ defmodule Controlcopypasta.ShoppingLists do
   """
 
   import Ecto.Query, warn: false
-  alias Controlcopypasta.Repo
+  alias Controlcopypasta.{Repo, SafeDecimal}
   alias Controlcopypasta.ShoppingLists.{ShoppingList, ShoppingListItem, QuantityCombiner}
   alias Controlcopypasta.Recipes
   alias Controlcopypasta.Similarity.IngredientParser
@@ -240,8 +240,8 @@ defmodule Controlcopypasta.ShoppingLists do
     quantity =
       if parsed.quantity do
         parsed.quantity
-        |> Decimal.from_float()
-        |> Decimal.mult(Decimal.from_float(scale))
+        |> SafeDecimal.from_number()
+        |> Decimal.mult(SafeDecimal.from_number(scale))
       else
         nil
       end

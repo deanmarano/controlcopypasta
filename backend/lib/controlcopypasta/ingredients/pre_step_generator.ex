@@ -100,11 +100,11 @@ defmodule Controlcopypasta.Ingredients.PreStepGenerator do
 
       meta ->
         %PreStep{
-          action: meta.verb,
+          action: meta[:verb] || prep,  # Fall back to prep string if verb missing
           target: get_target_name(ingredient),
           quantity: ingredient.quantity,
           unit: ingredient.unit,
-          category: meta.category,
+          category: meta[:category] || :other,
           estimated_time_min: estimate_time(meta, ingredient),
           tool: meta[:tool],
           original_prep: prep

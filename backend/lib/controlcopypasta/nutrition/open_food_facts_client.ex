@@ -19,6 +19,8 @@ defmodule Controlcopypasta.Nutrition.OpenFoodFactsClient do
 
   require Logger
 
+  alias Controlcopypasta.SafeDecimal
+
   # Use US database for better serving size data (tbsp, cups)
   @api_base "https://us.openfoodfacts.org"
   @world_api_base "https://world.openfoodfacts.org"
@@ -315,7 +317,7 @@ defmodule Controlcopypasta.Nutrition.OpenFoodFactsClient do
   defp off_sodium_mg(nutriments) do
     case nutriments["sodium_100g"] do
       nil -> nil
-      val when is_number(val) -> Decimal.from_float(val * 1000.0)
+      val when is_number(val) -> SafeDecimal.from_number_with_factor(val, 1000)
       _ -> nil
     end
   end
@@ -327,8 +329,7 @@ defmodule Controlcopypasta.Nutrition.OpenFoodFactsClient do
       val when is_number(val) ->
         # OFF sometimes stores values already in mg if > 1, in g if < 1
         # Use heuristic: if value seems like grams (very small for minerals), convert
-        # Multiply by 1.0 to ensure float for Decimal.from_float
-        if val < 1, do: Decimal.from_float(val * 1000.0), else: Decimal.from_float(val * 1.0)
+        if val < 1, do: SafeDecimal.from_number_with_factor(val, 1000), else: SafeDecimal.from_number(val)
       _ -> nil
     end
   end
@@ -338,8 +339,7 @@ defmodule Controlcopypasta.Nutrition.OpenFoodFactsClient do
     case nutriments[key] do
       nil -> nil
       val when is_number(val) ->
-        # Multiply by 1.0 to ensure float for Decimal.from_float
-        if val < 0.001, do: Decimal.from_float(val * 1_000_000.0), else: Decimal.from_float(val * 1.0)
+        if val < 0.001, do: SafeDecimal.from_number_with_factor(val, 1_000_000), else: SafeDecimal.from_number(val)
       _ -> nil
     end
   end
@@ -347,7 +347,7 @@ defmodule Controlcopypasta.Nutrition.OpenFoodFactsClient do
   defp off_decimal(nutriments, key) do
     case nutriments[key] do
       nil -> nil
-      val when is_number(val) -> Decimal.from_float(val * 1.0)
+      val when is_number(val) -> SafeDecimal.from_number(val)
       _ -> nil
     end
   end
