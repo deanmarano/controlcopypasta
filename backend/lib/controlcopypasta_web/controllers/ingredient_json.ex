@@ -67,11 +67,16 @@ defmodule ControlcopypastaWeb.IngredientJSON do
   # Private helpers
 
   defp ingredient_data(%CanonicalIngredient{} = ingredient) do
-    # Get primary nutrition from preloaded association if available
+    # Get best nutrition from preloaded association:
+    # - Primary (is_primary=true) if available
+    # - Otherwise highest confidence
     nutrition = case ingredient.nutrition_sources do
       %Ecto.Association.NotLoaded{} -> nil
       [] -> nil
-      [primary | _] -> nutrition_data(primary)
+      sources ->
+        best = Enum.find(sources, fn n -> n.is_primary end) ||
+               Enum.max_by(sources, fn n -> n.confidence || 0 end, fn -> nil end)
+        if best, do: nutrition_data(best), else: nil
     end
 
     %{
