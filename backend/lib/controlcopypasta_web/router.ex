@@ -183,6 +183,7 @@ defmodule ControlcopypastaWeb.Router do
     post "/admin/scraper/enqueue-density", Admin.ScraperController, :enqueue_density_enrichment
     post "/admin/scraper/fix-primary-nutrition", Admin.ScraperController, :fix_primary_nutrition
     post "/admin/scraper/refetch-nutrition", Admin.ScraperController, :refetch_nutrition
+    post "/admin/scraper/refetch-nutrition/:id", Admin.ScraperController, :refetch_ingredient_nutrition
 
     # Pending ingredients review
     get "/admin/pending-ingredients", Admin.PendingIngredientController, :index

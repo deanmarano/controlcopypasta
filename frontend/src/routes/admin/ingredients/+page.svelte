@@ -24,6 +24,7 @@
 	let accessDenied = $state(false);
 	let showQualityIssues = $state(false);
 	let showAdvanced = $state(false);
+	let refetchingIds = $state<Set<string>>(new Set());
 
 	// Filters
 	let categoryFilter = $state('protein');
@@ -331,6 +332,25 @@
 			await Promise.all([loadEnrichmentStats(), loadQualityStats()]);
 		} catch {
 			error = 'Failed to start nutrition refetch';
+		}
+	}
+
+	async function refetchIngredient(ingredientId: string, ingredientName: string) {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		refetchingIds = new Set([...refetchingIds, ingredientId]);
+
+		try {
+			await admin.scraper.refetchIngredientNutrition(token, ingredientId);
+			message = `Queued refetch for "${ingredientName}"`;
+		} catch {
+			error = `Failed to queue refetch for "${ingredientName}"`;
+		} finally {
+			// Keep showing as "queued" for a bit, then remove
+			setTimeout(() => {
+				refetchingIds = new Set([...refetchingIds].filter(id => id !== ingredientId));
+			}, 3000);
 		}
 	}
 
@@ -657,8 +677,17 @@
 						<div class="issue-list">
 							<h4>Missing Calories ({qualityStats.issues.missing_calories.length})</h4>
 							<div class="issue-items">
-								{#each qualityStats.issues.missing_calories as name}
-									<span class="issue-item">{name}</span>
+								{#each qualityStats.issues.missing_calories as item}
+									<span class="issue-item actionable">
+										{item.name}
+										<button
+											class="issue-action"
+											onclick={() => refetchIngredient(item.id, item.name)}
+											disabled={refetchingIds.has(item.id)}
+										>
+											{refetchingIds.has(item.id) ? 'Queued' : 'Refetch'}
+										</button>
+									</span>
 								{/each}
 							</div>
 						</div>
@@ -668,7 +697,7 @@
 							<h4>Suspicious Matches (Low Confidence)</h4>
 							<table class="mini-table">
 								<thead>
-									<tr><th>Ingredient</th><th>Matched To</th><th>Source</th><th>Conf</th></tr>
+									<tr><th>Ingredient</th><th>Matched To</th><th>Source</th><th>Conf</th><th>Action</th></tr>
 								</thead>
 								<tbody>
 									{#each qualityStats.suspicious_matches as match}
@@ -677,6 +706,15 @@
 											<td>{match.matched_to}</td>
 											<td>{match.source}</td>
 											<td>{match.confidence.toFixed(2)}</td>
+											<td>
+												<button
+													class="btn-tiny"
+													onclick={() => refetchIngredient(match.id, match.ingredient)}
+													disabled={refetchingIds.has(match.id)}
+												>
+													{refetchingIds.has(match.id) ? 'Queued' : 'Refetch'}
+												</button>
+											</td>
 										</tr>
 									{/each}
 								</tbody>
@@ -1547,6 +1585,50 @@
 		color: var(--color-marinara-700);
 		border-radius: var(--radius-sm);
 		font-size: var(--text-xs);
+	}
+
+	.issue-item.actionable {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+
+	.issue-action {
+		padding: 2px 6px;
+		font-size: 10px;
+		background: var(--color-basil-500);
+		color: white;
+		border: none;
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+	}
+
+	.issue-action:hover:not(:disabled) {
+		background: var(--color-basil-600);
+	}
+
+	.issue-action:disabled {
+		background: var(--color-gray-400);
+		cursor: default;
+	}
+
+	.btn-tiny {
+		padding: 2px 8px;
+		font-size: 11px;
+		background: var(--color-basil-500);
+		color: white;
+		border: none;
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+	}
+
+	.btn-tiny:hover:not(:disabled) {
+		background: var(--color-basil-600);
+	}
+
+	.btn-tiny:disabled {
+		background: var(--color-gray-400);
+		cursor: default;
 	}
 
 	.mini-table {

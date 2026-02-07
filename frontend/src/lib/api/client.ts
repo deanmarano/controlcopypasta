@@ -1214,6 +1214,11 @@ export interface IngredientEnrichmentStats {
   density: EnrichmentProgress;
 }
 
+export interface NutritionIssueItem {
+  id: string;
+  name: string;
+}
+
 export interface NutritionQualityStats {
   coverage: {
     total_ingredients: number;
@@ -1229,11 +1234,12 @@ export interface NutritionQualityStats {
     records_by_source: Record<string, number>;
   };
   issues: {
-    missing_calories: string[];
-    missing_all_macros: string[];
+    missing_calories: NutritionIssueItem[];
+    missing_all_macros: NutritionIssueItem[];
     low_confidence_count: number;
   };
   suspicious_matches: Array<{
+    id: string;
     ingredient: string;
     matched_to: string;
     source: string;
@@ -1361,6 +1367,12 @@ export const admin = {
 
     refetchNutrition: (token: string) =>
       request<{ data: { status: string; enqueued: number } }>('/admin/scraper/refetch-nutrition', {
+        method: 'POST',
+        token
+      }),
+
+    refetchIngredientNutrition: (token: string, ingredientId: string) =>
+      request<{ data: { status: string; ingredient_id: string } }>(`/admin/scraper/refetch-nutrition/${ingredientId}`, {
         method: 'POST',
         token
       })

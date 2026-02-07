@@ -1948,7 +1948,7 @@ defmodule Controlcopypasta.Ingredients do
   Returns a map of potential issues found in the primary nutrition records.
   """
   def verify_nutrition_quality do
-    # Get all primary nutrition records with ingredient names
+    # Get all primary nutrition records with ingredient names and IDs
     primary_records =
       from(n in IngredientNutrition,
         join: ci in CanonicalIngredient,
@@ -1956,6 +1956,7 @@ defmodule Controlcopypasta.Ingredients do
         where: n.is_primary == true,
         select: %{
           id: n.id,
+          ingredient_id: ci.id,
           ingredient_name: ci.name,
           source: n.source,
           source_name: n.source_name,
@@ -1968,23 +1969,23 @@ defmodule Controlcopypasta.Ingredients do
       )
       |> Repo.all()
 
-    # Check for missing core macros
+    # Check for missing core macros - include ID for actions
     missing_calories =
       Enum.filter(primary_records, fn r -> is_nil(r.calories) end)
-      |> Enum.map(& &1.ingredient_name)
+      |> Enum.map(fn r -> %{id: r.ingredient_id, name: r.ingredient_name} end)
 
     missing_all_macros =
       Enum.filter(primary_records, fn r ->
         is_nil(r.protein_g) and is_nil(r.fat_total_g) and is_nil(r.carbohydrates_g)
       end)
-      |> Enum.map(& &1.ingredient_name)
+      |> Enum.map(fn r -> %{id: r.ingredient_id, name: r.ingredient_name} end)
 
     # Check for low confidence records
     low_confidence =
       Enum.filter(primary_records, fn r ->
         r.confidence && Decimal.compare(r.confidence, Decimal.new("0.5")) == :lt
       end)
-      |> Enum.map(fn r -> {r.ingredient_name, Decimal.to_float(r.confidence)} end)
+      |> Enum.map(fn r -> %{id: r.ingredient_id, name: r.ingredient_name, confidence: Decimal.to_float(r.confidence)} end)
 
     # Check for potentially mismatched source names (different from ingredient name)
     suspicious_matches =
@@ -1994,6 +1995,7 @@ defmodule Controlcopypasta.Ingredients do
       end)
       |> Enum.map(fn r ->
         %{
+          id: r.ingredient_id,
           ingredient: r.ingredient_name,
           matched_to: r.source_name,
           source: r.source,

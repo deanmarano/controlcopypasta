@@ -284,6 +284,22 @@ defmodule ControlcopypastaWeb.Admin.ScraperController do
   end
 
   @doc """
+  Refetches nutrition data for a single ingredient.
+  Deletes existing data and fetches fresh from all sources.
+  """
+  def refetch_ingredient_nutrition(conn, %{"id" => ingredient_id}) do
+    case NutritionEnrichmentWorker.enqueue_refetch(ingredient_id) do
+      {:ok, _job} ->
+        json(conn, %{data: %{status: "queued", ingredient_id: ingredient_id}})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: "Failed to queue refetch: #{inspect(reason)}"})
+    end
+  end
+
+  @doc """
   Triggers nutrition enrichment for all ingredients without nutrition data.
   """
   def enqueue_nutrition_enrichment(conn, _params) do
