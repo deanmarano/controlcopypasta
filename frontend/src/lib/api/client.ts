@@ -1055,6 +1055,7 @@ export interface AdminIngredient {
   usage_count: number;
   matching_rules: MatchingRules | null;
   aliases: string[];
+  skip_nutrition: boolean;
 }
 
 export interface AdminPreparation {
@@ -1236,6 +1237,7 @@ export interface NutritionQualityStats {
   issues: {
     missing_calories: NutritionIssueItem[];
     missing_all_macros: NutritionIssueItem[];
+    missing_nutrition: NutritionIssueItem[];
     low_confidence_count: number;
   };
   suspicious_matches: Array<{
@@ -1392,11 +1394,18 @@ export const admin = {
     get: (token: string, id: string) =>
       request<{ data: AdminIngredient }>(`/admin/ingredients/${id}`, { token }),
 
-    update: (token: string, id: string, attrs: { animal_type?: string | null; category?: string; subcategory?: string; tags?: string[]; matching_rules?: MatchingRules | null; similarity_name?: string | null }) =>
+    update: (token: string, id: string, attrs: { animal_type?: string | null; category?: string; subcategory?: string; tags?: string[]; matching_rules?: MatchingRules | null; similarity_name?: string | null; skip_nutrition?: boolean }) =>
       request<{ data: AdminIngredient }>(`/admin/ingredients/${id}`, {
         method: 'PUT',
         token,
         body: { ingredient: attrs }
+      }),
+
+    setSkipNutrition: (token: string, id: string, skipNutrition: boolean) =>
+      request<{ data: AdminIngredient }>(`/admin/ingredients/${id}`, {
+        method: 'PUT',
+        token,
+        body: { ingredient: { skip_nutrition: skipNutrition } }
       }),
 
     options: (token: string) =>

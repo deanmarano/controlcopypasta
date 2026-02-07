@@ -45,7 +45,7 @@ defmodule ControlcopypastaWeb.Admin.IngredientController do
 
       ingredient ->
         # Only allow updating certain fields via admin
-        allowed_attrs = Map.take(attrs, ["animal_type", "category", "subcategory", "tags", "matching_rules", "similarity_name"])
+        allowed_attrs = Map.take(attrs, ["animal_type", "category", "subcategory", "tags", "matching_rules", "similarity_name", "skip_nutrition"])
 
         case Ingredients.update_canonical_ingredient(ingredient, allowed_attrs) do
           {:ok, updated} ->

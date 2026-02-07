@@ -25,6 +25,7 @@
 	let showQualityIssues = $state(false);
 	let showAdvanced = $state(false);
 	let refetchingIds = $state<Set<string>>(new Set());
+	let skippingIds = $state<Set<string>>(new Set());
 
 	// Filters
 	let categoryFilter = $state('protein');
@@ -354,6 +355,24 @@
 		}
 	}
 
+	async function markSkipNutrition(ingredientId: string, ingredientName: string) {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		skippingIds = new Set([...skippingIds, ingredientId]);
+
+		try {
+			await admin.ingredients.setSkipNutrition(token, ingredientId, true);
+			message = `Marked "${ingredientName}" as no nutrition needed`;
+			// Refresh quality stats to remove it from the list
+			await loadQualityStats();
+		} catch {
+			error = `Failed to update "${ingredientName}"`;
+		} finally {
+			skippingIds = new Set([...skippingIds].filter(id => id !== ingredientId));
+		}
+	}
+
 	// Debounced search
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	function handleSearchInput() {
@@ -652,18 +671,18 @@
 				<div class="quality-card">
 					<div class="quality-header">
 						<h3>Issues</h3>
-						{#if qualityStats.issues.missing_calories.length === 0 && qualityStats.issues.missing_all_macros.length === 0}
+						{#if qualityStats.issues.missing_calories.length === 0 && qualityStats.issues.missing_nutrition.length === 0}
 							<span class="quality-badge success">None</span>
 						{:else}
-							<span class="quality-badge warning">{qualityStats.issues.missing_calories.length + qualityStats.issues.missing_all_macros.length}</span>
+							<span class="quality-badge warning">{qualityStats.issues.missing_calories.length + qualityStats.issues.missing_nutrition.length}</span>
 						{/if}
 					</div>
 					<div class="issue-summary">
+						<p>No nutrition data: {qualityStats.issues.missing_nutrition.length}</p>
 						<p>Missing calories: {qualityStats.issues.missing_calories.length}</p>
-						<p>Missing all macros: {qualityStats.issues.missing_all_macros.length}</p>
 						<p>Low confidence: {qualityStats.issues.low_confidence_count}</p>
 					</div>
-					{#if qualityStats.issues.missing_calories.length > 0 || qualityStats.suspicious_matches.length > 0}
+					{#if qualityStats.issues.missing_calories.length > 0 || qualityStats.issues.missing_nutrition.length > 0 || qualityStats.suspicious_matches.length > 0}
 						<button onclick={() => showQualityIssues = !showQualityIssues} class="btn-small btn-secondary">
 							{showQualityIssues ? 'Hide' : 'View'} Details
 						</button>
@@ -673,31 +692,81 @@
 
 			{#if showQualityIssues}
 				<div class="quality-issues-detail">
+					{#if qualityStats.issues.missing_nutrition.length > 0}
+						<div class="issue-list">
+							<h4>No Nutrition Data ({qualityStats.issues.missing_nutrition.length})</h4>
+							<p class="issue-help">These ingredients don't have nutrition data. Refetch to try again, or mark as "No nutrition needed" for items like water, salt, etc.</p>
+							<table class="mini-table">
+								<thead>
+									<tr><th>Ingredient</th><th>Actions</th></tr>
+								</thead>
+								<tbody>
+									{#each qualityStats.issues.missing_nutrition as item}
+										<tr>
+											<td>{item.name}</td>
+											<td class="action-cell">
+												<button
+													class="btn-tiny"
+													onclick={() => refetchIngredient(item.id, item.name)}
+													disabled={refetchingIds.has(item.id)}
+												>
+													{refetchingIds.has(item.id) ? 'Queued' : 'Refetch'}
+												</button>
+												<button
+													class="btn-tiny btn-muted"
+													onclick={() => markSkipNutrition(item.id, item.name)}
+													disabled={skippingIds.has(item.id)}
+												>
+													{skippingIds.has(item.id) ? 'Saving...' : 'No Nutrition Needed'}
+												</button>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{/if}
 					{#if qualityStats.issues.missing_calories.length > 0}
 						<div class="issue-list">
 							<h4>Missing Calories ({qualityStats.issues.missing_calories.length})</h4>
-							<div class="issue-items">
-								{#each qualityStats.issues.missing_calories as item}
-									<span class="issue-item actionable">
-										{item.name}
-										<button
-											class="issue-action"
-											onclick={() => refetchIngredient(item.id, item.name)}
-											disabled={refetchingIds.has(item.id)}
-										>
-											{refetchingIds.has(item.id) ? 'Queued' : 'Refetch'}
-										</button>
-									</span>
-								{/each}
-							</div>
+							<p class="issue-help">These have nutrition data but no calorie value. This may indicate a bad match.</p>
+							<table class="mini-table">
+								<thead>
+									<tr><th>Ingredient</th><th>Actions</th></tr>
+								</thead>
+								<tbody>
+									{#each qualityStats.issues.missing_calories as item}
+										<tr>
+											<td>{item.name}</td>
+											<td class="action-cell">
+												<button
+													class="btn-tiny"
+													onclick={() => refetchIngredient(item.id, item.name)}
+													disabled={refetchingIds.has(item.id)}
+												>
+													{refetchingIds.has(item.id) ? 'Queued' : 'Refetch'}
+												</button>
+												<button
+													class="btn-tiny btn-muted"
+													onclick={() => markSkipNutrition(item.id, item.name)}
+													disabled={skippingIds.has(item.id)}
+												>
+													{skippingIds.has(item.id) ? 'Saving...' : 'No Nutrition Needed'}
+												</button>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
 						</div>
 					{/if}
 					{#if qualityStats.suspicious_matches.length > 0}
 						<div class="issue-list">
 							<h4>Suspicious Matches (Low Confidence)</h4>
+							<p class="issue-help">These matches have low confidence scores and may be incorrect.</p>
 							<table class="mini-table">
 								<thead>
-									<tr><th>Ingredient</th><th>Matched To</th><th>Source</th><th>Conf</th><th>Action</th></tr>
+									<tr><th>Ingredient</th><th>Matched To</th><th>Source</th><th>Conf</th><th>Actions</th></tr>
 								</thead>
 								<tbody>
 									{#each qualityStats.suspicious_matches as match}
@@ -706,7 +775,7 @@
 											<td>{match.matched_to}</td>
 											<td>{match.source}</td>
 											<td>{match.confidence.toFixed(2)}</td>
-											<td>
+											<td class="action-cell">
 												<button
 													class="btn-tiny"
 													onclick={() => refetchIngredient(match.id, match.ingredient)}
@@ -1629,6 +1698,26 @@
 	.btn-tiny:disabled {
 		background: var(--color-gray-400);
 		cursor: default;
+	}
+
+	.btn-tiny.btn-muted {
+		background: var(--color-gray-500);
+	}
+
+	.btn-tiny.btn-muted:hover:not(:disabled) {
+		background: var(--color-gray-600);
+	}
+
+	.action-cell {
+		display: flex;
+		gap: var(--space-2);
+		flex-wrap: wrap;
+	}
+
+	.issue-help {
+		font-size: var(--text-xs);
+		color: var(--text-muted);
+		margin: 0 0 var(--space-2);
 	}
 
 	.mini-table {

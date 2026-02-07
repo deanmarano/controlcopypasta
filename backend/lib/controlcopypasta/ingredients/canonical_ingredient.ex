@@ -97,6 +97,9 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
     # - "count_primary": Per-piece items (hot dogs, rolls), look up per-unit nutrition
     field :measurement_type, :string, default: "standard"
 
+    # Skip nutrition lookup for items that don't need nutrition data (water, salt, etc.)
+    field :skip_nutrition, :boolean, default: false
+
     has_many :forms, Controlcopypasta.Ingredients.IngredientForm
     has_many :package_sizes, Controlcopypasta.Ingredients.BrandPackageSize
     has_many :nutrition_sources, Controlcopypasta.Ingredients.IngredientNutrition
@@ -120,7 +123,8 @@ defmodule Controlcopypasta.Ingredients.CanonicalIngredient do
     :is_branded,
     :image_url,
     :measurement_type,
-    :matching_rules
+    :matching_rules,
+    :skip_nutrition
   ]
 
   @valid_categories ~w(protein dairy produce grain spice herb condiment oil sweetener leavening nut legume beverage other)

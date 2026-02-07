@@ -1954,6 +1954,7 @@ defmodule Controlcopypasta.Ingredients do
         join: ci in CanonicalIngredient,
         on: ci.id == n.canonical_ingredient_id,
         where: n.is_primary == true,
+        where: ci.skip_nutrition == false,
         select: %{
           id: n.id,
           ingredient_id: ci.id,
@@ -1966,6 +1967,17 @@ defmodule Controlcopypasta.Ingredients do
           carbohydrates_g: n.carbohydrates_g,
           confidence: n.confidence
         }
+      )
+      |> Repo.all()
+
+    # Get ingredients without nutrition that aren't marked as skip
+    ingredients_without_nutrition =
+      from(ci in CanonicalIngredient,
+        left_join: n in IngredientNutrition,
+        on: n.canonical_ingredient_id == ci.id,
+        where: is_nil(n.id),
+        where: ci.skip_nutrition == false,
+        select: %{id: ci.id, name: ci.name}
       )
       |> Repo.all()
 
@@ -2010,14 +2022,16 @@ defmodule Controlcopypasta.Ingredients do
       issues: %{
         missing_calories: missing_calories,
         missing_all_macros: missing_all_macros,
+        missing_nutrition: Enum.take(ingredients_without_nutrition, 20),
         low_confidence_count: length(low_confidence),
         low_confidence_samples: Enum.take(low_confidence, 10)
       },
       suspicious_matches: suspicious_matches,
       summary: %{
-        has_issues: length(missing_calories) > 0 or length(missing_all_macros) > 0,
+        has_issues: length(missing_calories) > 0 or length(missing_all_macros) > 0 or length(ingredients_without_nutrition) > 0,
         missing_calories_count: length(missing_calories),
-        missing_all_macros_count: length(missing_all_macros)
+        missing_all_macros_count: length(missing_all_macros),
+        missing_nutrition_count: length(ingredients_without_nutrition)
       }
     }
   end
