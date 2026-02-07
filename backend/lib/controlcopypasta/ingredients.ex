@@ -48,17 +48,18 @@ defmodule Controlcopypasta.Ingredients do
   - `:search` - Search by name or alias (partial match)
   """
   def list_canonical_ingredients(opts) when is_list(opts) do
-    # Preload primary nutrition for list view
-    primary_nutrition_query =
+    # Preload best nutrition for list view:
+    # - Primary if is_primary is set, otherwise highest confidence
+    # - Order by: is_primary desc (true first), then confidence desc, then id for determinism
+    best_nutrition_query =
       from(n in IngredientNutrition,
-        where: n.is_primary == true,
-        order_by: [asc: n.id],
+        order_by: [desc: n.is_primary, desc: n.confidence, asc: n.id],
         limit: 1
       )
 
     CanonicalIngredient
     |> apply_filters(opts)
-    |> preload(nutrition_sources: ^primary_nutrition_query)
+    |> preload(nutrition_sources: ^best_nutrition_query)
     |> Repo.all()
   end
 
