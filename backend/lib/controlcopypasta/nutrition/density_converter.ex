@@ -56,6 +56,7 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
     "teaspoon" => "tsp",
     "teaspoons" => "tsp",
     "fl oz" => "fl oz",
+    "fl_oz" => "fl oz",
     "fluid oz" => "fl oz",
     "fluid ounce" => "fl oz",
     "fluid ounces" => "fl oz",
@@ -121,6 +122,52 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
     "gallon" => 3785.41
   }
 
+  # Count units for countable items (eggs, lemons, garlic cloves, tofu blocks, etc.)
+  @count_units ~w(each whole piece pieces item items unit units count
+                  clove cloves head heads block blocks
+                  stalk stalks sprig sprigs bunch bunches
+                  slice slices can cans
+                  pinch pinches dash leaf leaves
+                  fillet fillets filet filets)
+
+  # Map plural/variant count units to the singular canonical form used in density records
+  @count_unit_canonical %{
+    "each" => "each",
+    "whole" => "whole",
+    "piece" => "piece",
+    "pieces" => "piece",
+    "item" => "each",
+    "items" => "each",
+    "unit" => "each",
+    "units" => "each",
+    "count" => "each",
+    "clove" => "each",
+    "cloves" => "each",
+    "head" => "each",
+    "heads" => "each",
+    "block" => "block",
+    "blocks" => "block",
+    "stalk" => "stalk",
+    "stalks" => "stalk",
+    "sprig" => "sprig",
+    "sprigs" => "sprig",
+    "bunch" => "bunch",
+    "bunches" => "bunch",
+    "slice" => "slice",
+    "slices" => "slice",
+    "can" => "can",
+    "cans" => "can",
+    "pinch" => "pinch",
+    "pinches" => "pinch",
+    "dash" => "pinch",
+    "leaf" => "leaf",
+    "leaves" => "leaf",
+    "fillet" => "fillet",
+    "fillets" => "fillet",
+    "filet" => "fillet",
+    "filets" => "fillet"
+  }
+
   @doc """
   Converts a quantity to grams using ingredient-specific density.
 
@@ -157,7 +204,7 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
 
   # Handle nil/count units (e.g., "3 eggs" with no unit)
   def to_grams(canonical_id, quantity, nil, opts) do
-    convert_count_to_grams(canonical_id, quantity, opts)
+    convert_count_to_grams(canonical_id, quantity, "each", opts)
   end
 
   def to_grams(canonical_id, quantity, unit, opts) do
@@ -174,7 +221,8 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
 
       # Count units (each, whole, etc.)
       count_unit?(normalized_unit) ->
-        convert_count_to_grams(canonical_id, quantity, opts)
+        canonical_count_unit = Map.get(@count_unit_canonical, normalized_unit, "each")
+        convert_count_to_grams(canonical_id, quantity, canonical_count_unit, opts)
 
       # Unknown unit
       true ->
@@ -216,7 +264,7 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
 
   # Handle nil/count units (e.g., "3 eggs" with no unit)
   def to_grams_range(canonical_id, qty, qty_min, qty_max, nil, opts) do
-    convert_count_to_grams_range(canonical_id, qty, qty_min, qty_max, opts)
+    convert_count_to_grams_range(canonical_id, qty, qty_min, qty_max, "each", opts)
   end
 
   def to_grams_range(canonical_id, qty, qty_min, qty_max, unit, opts) do
@@ -236,7 +284,8 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
 
       # Count units (each, whole, etc.)
       count_unit?(normalized_unit) ->
-        convert_count_to_grams_range(canonical_id, qty, qty_min, qty_max, opts)
+        canonical_count_unit = Map.get(@count_unit_canonical, normalized_unit, "each")
+        convert_count_to_grams_range(canonical_id, qty, qty_min, qty_max, canonical_count_unit, opts)
 
       # Unknown unit
       true ->
@@ -377,16 +426,27 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
   end
 
   # Count-based conversion with range
-  defp convert_count_to_grams_range(canonical_id, qty, qty_min, qty_max, opts) do
+  defp convert_count_to_grams_range(canonical_id, qty, qty_min, qty_max, count_unit, opts) do
     category = Keyword.get(opts, :category)
     canonical_name = Keyword.get(opts, :canonical_name)
 
-    # Try "each" first, then "whole"
-    case Ingredients.get_density(canonical_id, "each", nil) do
+    # Build lookup order: specific unit first, then "each", then "whole" (skip duplicates)
+    units_to_try =
+      [count_unit, "each", "whole"]
+      |> Enum.uniq()
+
+    try_density_range_lookup(canonical_id, qty, qty_min, qty_max, units_to_try, category, canonical_name)
+  end
+
+  defp try_density_range_lookup(_canonical_id, _qty, _qty_min, _qty_max, [], _category, _canonical_name) do
+    {:error, :no_count_density}
+  end
+
+  defp try_density_range_lookup(canonical_id, qty, qty_min, qty_max, [unit | rest], category, canonical_name) do
+    case Ingredients.get_density(canonical_id, unit, nil) do
       {:ok, density} ->
         grams_per_item = Decimal.to_float(density.grams_per_unit)
 
-        # Try to get explicit count item range, or use density with category variation
         density_range =
           if canonical_name do
             DensityRanges.count_item_range_or_fallback(canonical_name, grams_per_item, category)
@@ -400,25 +460,7 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
         {:ok, grams_range}
 
       {:error, :not_found} ->
-        case Ingredients.get_density(canonical_id, "whole", nil) do
-          {:ok, density} ->
-            grams_per_item = Decimal.to_float(density.grams_per_unit)
-
-            density_range =
-              if canonical_name do
-                DensityRanges.count_item_range_or_fallback(canonical_name, grams_per_item, category)
-              else
-                DensityRanges.density_to_range(grams_per_item, category, nil)
-              end
-
-            qty_range = Range.from_range(to_float(qty_min), to_float(qty), to_float(qty_max))
-            grams_range = Range.multiply_ranges(qty_range, density_range)
-
-            {:ok, grams_range}
-
-          {:error, :not_found} ->
-            {:error, :no_count_density}
-        end
+        try_density_range_lookup(canonical_id, qty, qty_min, qty_max, rest, category, canonical_name)
     end
   end
 
@@ -466,12 +508,6 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
 
   def volume_unit?(_), do: false
 
-  # Count units for countable items (eggs, lemons, garlic cloves, tofu blocks, etc.)
-  @count_units ~w(each whole piece pieces item items unit units count
-                  clove cloves head heads block blocks
-                  stalk stalks sprig sprigs bunch bunches
-                  slice slices can cans)
-
   @doc """
   Checks if a unit is a count unit (for countable items like eggs).
   """
@@ -492,7 +528,13 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
 
   # Private functions
 
-  defp normalize_unit(unit) when is_binary(unit), do: String.downcase(String.trim(unit))
+  defp normalize_unit(unit) when is_binary(unit) do
+    unit
+    |> String.trim()
+    |> String.downcase()
+    |> String.replace(~r/\.+$/, "")
+  end
+
   defp normalize_unit(_), do: nil
 
   defp convert_weight_to_grams(quantity, unit) do
@@ -588,21 +630,27 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
   end
 
   # Convert count-based items (eggs, lemons, etc.) to grams
-  # Looks up density with volume_unit "each" or "whole"
-  defp convert_count_to_grams(canonical_id, quantity, _opts) do
-    # Try "each" first, then "whole"
-    case Ingredients.get_density(canonical_id, "each", nil) do
+  # Looks up density with the specific unit first, then falls back to "each" and "whole"
+  defp convert_count_to_grams(canonical_id, quantity, count_unit, _opts) do
+    # Build lookup order: specific unit first, then "each", then "whole" (skip duplicates)
+    units_to_try =
+      [count_unit, "each", "whole"]
+      |> Enum.uniq()
+
+    try_density_lookup(canonical_id, quantity, units_to_try)
+  end
+
+  defp try_density_lookup(_canonical_id, _quantity, []) do
+    {:error, :no_count_density}
+  end
+
+  defp try_density_lookup(canonical_id, quantity, [unit | rest]) do
+    case Ingredients.get_density(canonical_id, unit, nil) do
       {:ok, density} ->
         {:ok, to_float(quantity) * Decimal.to_float(density.grams_per_unit)}
 
       {:error, :not_found} ->
-        case Ingredients.get_density(canonical_id, "whole", nil) do
-          {:ok, density} ->
-            {:ok, to_float(quantity) * Decimal.to_float(density.grams_per_unit)}
-
-          {:error, :not_found} ->
-            {:error, :no_count_density}
-        end
+        try_density_lookup(canonical_id, quantity, rest)
     end
   end
 

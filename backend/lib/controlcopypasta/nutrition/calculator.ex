@@ -226,18 +226,22 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     # Add measurement_type to result
     result = %{result | measurement_type: measurement_type}
 
+    # Resolve effective unit: if no unit but container present, use container info
+    {effective_qty, effective_qty_min, effective_qty_max, effective_unit} =
+      resolve_effective_unit(parsed)
+
     # Determine conversion method based on unit type
-    conversion_method = determine_conversion_method(parsed.unit, measurement_type)
+    conversion_method = determine_conversion_method(effective_unit, measurement_type)
 
     # Convert to grams range (accounts for quantity ranges and density variation)
     preparation = List.first(parsed.preparations || [])
 
     case DensityConverter.to_grams_range(
            canonical_id,
-           parsed.quantity,
-           parsed.quantity_min,
-           parsed.quantity_max,
-           parsed.unit,
+           effective_qty,
+           effective_qty_min,
+           effective_qty_max,
+           effective_unit,
            preparation: preparation,
            category: category,
            canonical_name: canonical_name,
@@ -406,6 +410,41 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     end)
     |> Map.values()
     |> Enum.sort_by(fn s -> -(s.confidence || 0) end)
+  end
+
+  # Resolve effective unit from parsed ingredient
+  # When unit is nil but a container is present, use container info for conversion
+  defp resolve_effective_unit(parsed) do
+    qty = parsed.quantity
+    qty_min = parsed.quantity_min
+    qty_max = parsed.quantity_max
+    unit = parsed.unit
+
+    cond do
+      # Already has a unit - use as-is
+      not is_nil(unit) ->
+        {qty, qty_min, qty_max, unit}
+
+      # No unit but container with size info (e.g., "1 (15-oz) can chickpeas")
+      # Convert using: quantity * container_size in container_size_unit
+      not is_nil(parsed.container) and not is_nil(parsed.container.size_value) and
+          not is_nil(parsed.container.size_unit) ->
+        # Multiply quantity by container size (e.g., 2 cans × 15 oz = 30 oz)
+        size_val = parsed.container.size_value
+        total_qty = (qty || 1.0) * size_val
+        total_min = (qty_min || qty || 1.0) * size_val
+        total_max = (qty_max || qty || 1.0) * size_val
+        {total_qty, total_min, total_max, parsed.container.size_unit}
+
+      # No unit but container type only (e.g., "1 can chickpeas")
+      # Use container_type as the count unit for density lookup
+      not is_nil(parsed.container) ->
+        {qty, qty_min, qty_max, parsed.container.container_type}
+
+      # No unit, no container - plain count item
+      true ->
+        {qty, qty_min, qty_max, nil}
+    end
   end
 
   # Determine the conversion method based on unit type and measurement_type

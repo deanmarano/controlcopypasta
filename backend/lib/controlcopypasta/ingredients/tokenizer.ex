@@ -52,6 +52,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     stalks stalk
     sheets sheet
     leaves leaf
+    blocks block
   )
 
   # Container types

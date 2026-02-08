@@ -177,10 +177,21 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
 
       true ->
         text
+        |> strip_leading_optional()
+        |> normalize_smart_quotes()
+        |> normalize_to_range()
         |> normalize_slash_measurements()
         |> normalize_gram_measurements()
+        |> normalize_parenthetical_notes()
         |> normalize_stick_butter()
         |> normalize_ginger_size()
+        |> normalize_each_and_pattern()
+        |> normalize_dual_measurements()
+        |> normalize_semicolon_notes()
+        |> strip_trailing_flavor_notes()
+        |> normalize_hard_boiled()
+        |> normalize_handful()
+        |> normalize_multi_or_adjective()
     end
   end
 
@@ -234,7 +245,9 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
         String.contains?(String.downcase(text), "piece")) do
 
       text
-      # Pattern: X (size)" piece -> X piece (remove the size quote notation)
+      # Pattern: X (size") piece -> X piece (with parenthesized inch notation)
+      |> String.replace(~r/(\d+)\s*\(\s*\d+(?:\/\d+)?["″]\s*\)\s*piece/i, "\\1 piece")
+      # Pattern: X size" piece -> X piece (without parentheses)
       |> String.replace(~r/(\d+)\s+\d+(?:\/\d+)?["″]\s*piece/i, "\\1 piece")
       # Pattern: X Y-inch piece -> X piece
       |> String.replace(~r/(\d+)\s+\d+(?:\/\d+)?(?:-|\s)?inch(?:es)?\s*piece/i, "\\1 piece")
@@ -246,6 +259,142 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       |> String.trim()
     else
       text
+    end
+  end
+
+  # Strip leading "optional:" or "optional -" prefix
+  # "optional: 1/4 teaspoon cayenne" -> "1/4 teaspoon cayenne"
+  defp strip_leading_optional(text) do
+    text
+    |> String.replace(~r/^\s*optional\s*[:–\-]\s*/i, "")
+  end
+
+  # Normalize smart quotes and special whitespace to regular ASCII equivalents
+  # "1 (1\u201D) piece" -> "1 (1\") piece"
+  # Non-breaking spaces (\u00A0) -> regular spaces
+  defp normalize_smart_quotes(text) do
+    text
+    |> String.replace("\u00A0", " ")   # non-breaking space
+    |> String.replace("\u201C", "\"")  # left double smart quote
+    |> String.replace("\u201D", "\"")  # right double smart quote
+    |> String.replace("\u2018", "'")   # left single smart quote
+    |> String.replace("\u2019", "'")   # right single smart quote
+    |> String.replace("\u2033", "\"")  # double prime
+  end
+
+  # Remove parenthetical notes that contain only descriptive text (not measurements)
+  # Handles double parens: "((fine or medium grind))" -> ""
+  # Handles notes: "(store bought or homemade)" -> ""
+  # Handles conversions: "(about 2 tablespoons)" -> ""
+  # Handles per-container sizes: "(15 ounces each)" -> convert to container pattern
+  # Preserves measurement parens: "(14 oz) can" stays
+  defp normalize_parenthetical_notes(text) do
+    text
+    # Double parens first: "((anything))" -> ""
+    |> String.replace(~r/\(\((?:(?!\)\)).)*\)\)/, "")
+    # "(15 ounces each)" -> "(15-ounce)" to create a size token for container extraction
+    |> String.replace(~r/\(\s*(\d+(?:\.\d+)?)\s*(?:ounces?|oz)\s+each\s*\)/i, "(\\1-ounce)")
+    # Parens containing "store bought", "homemade", "or sub", "see note", "if needed"
+    |> String.replace(~r/\(\s*(?:store\s*bought|homemade|or\s+sub|see\s+note|if\s+needed|approximately|about\s+\d)[^)]*\)/i, "")
+    # Parens starting with "or" suggesting alternatives we don't parse: "(or other protein)"
+    |> String.replace(~r/\(\s*or\s+(?:other|sub|substitute|[\d])[^)]*\)/i, "")
+    # Parens containing recipe instructions: "(no curry powder // ...)"
+    |> String.replace(~r/\(\s*no\s+[^)]*\)/i, "")
+    # Parens with just descriptive text after main content: "(such as ...)" already handled by choices
+    |> String.replace(~r/\s+/, " ")
+    |> String.trim()
+  end
+
+  # Normalize "1/2 teaspoon each onion powder and garlic powder"
+  # Split into just "onion powder" (the "each X and Y" means X amount of each)
+  # We take the first ingredient since the parser handles one ingredient per line
+  defp normalize_each_and_pattern(text) do
+    # Pattern: "each X and Y" where X and Y are ingredient names after a unit
+    case Regex.run(~r/^(.+?\b(?:teaspoons?|tsp|tablespoons?|tbsp|cups?|oz|ounces?|pounds?|lb)\s+)each\s+(.+?)\s+and\s+(.+)$/i, text) do
+      [_, prefix, first_ingredient, _second_ingredient] ->
+        # Return just the first ingredient (both get the same amount)
+        String.trim(prefix <> first_ingredient)
+      _ ->
+        text
+    end
+  end
+
+  # Normalize dual measurements like "8 ounces (1 cup; 225g)" or "1 cup/8 ounces (226 grams)"
+  # Takes the first measurement and strips the rest
+  defp normalize_dual_measurements(text) do
+    text
+    # "8.5 fluid ounces/250 ml water" -> "8.5 fluid ounces water"
+    |> String.replace(~r/(\b\d+(?:\.\d+)?\s+(?:fluid\s+)?(?:ounces?|oz|cups?|tablespoons?|tbsp|teaspoons?|tsp))\s*\/\s*\d+(?:\.\d+)?\s*(?:ml|g|l|kg)\b/i, "\\1")
+    # "1 cup/8 ounces (226 grams) ricotta" -> "1 cup ricotta"
+    |> String.replace(~r/(\b\d+(?:[\/\.]\d+)?\s+(?:cups?|c)\s*)\/\s*\d+\s+(?:ounces?|oz)\b/i, "\\1")
+    # "8 ounces (1 cup; 225g) X" -> "8 ounces X" (strip parenthetical with cup;g alternative)
+    |> String.replace(~r/\(\s*\d+(?:[\/\.]\d+)?\s+(?:cups?|c)\s*;\s*\d+(?:\.\d+)?\s*(?:g|grams?)\s*\)/i, "")
+    # "7/8 cup to 1 cup (198g to 227g)" → "7/8 cup" (strip range and gram parens)
+    |> String.replace(~r/(\b\d+(?:\/\d+)?\s+(?:cups?|c))\s+to\s+\d+(?:\/\d+)?\s+(?:cups?|c)\s*\([^)]*\)/i, "\\1")
+    |> String.replace(~r/\s+/, " ")
+    |> String.trim()
+  end
+
+  # Strip everything after a semicolon (usually conversion notes)
+  # "1/2 tsp Diamond Crystal kosher salt; for table salt, use half as much" -> "1/2 tsp Diamond Crystal kosher salt"
+  defp normalize_semicolon_notes(text) do
+    case String.split(text, ";", parts: 2) do
+      [before, _after] -> String.trim(before)
+      _ -> text
+    end
+  end
+
+  # Normalize "X to Y" quantity ranges to dash notation
+  # "3 to 4 green onions" -> "3-4 green onions"
+  # "1 to 2 teaspoons sesame oil" -> "1-2 teaspoons sesame oil"
+  # Only matches when X and Y are numbers at the beginning of the string
+  defp normalize_to_range(text) do
+    text
+    |> String.replace(~r/^(\d+(?:\/\d+)?)\s+to\s+(\d+(?:\/\d+)?)\b/i, "\\1-\\2")
+  end
+
+  # Strip trailing "for X flavor" or "for X curry flavor!" noise
+  # "cayenne for spicy curry flavor!" -> "cayenne"
+  # Also strip "of choice" and "of your choice"
+  defp strip_trailing_flavor_notes(text) do
+    text
+    |> String.replace(~r/\s+for\s+(?:spicy|mild|extra|a)\s+.*$/i, "")
+    |> String.replace(~r/\s+of\s+(?:your\s+)?choice\b/i, "")
+  end
+
+  # Normalize "hard boiled eggs" -> "hard-boiled eggs" so tokenizer sees it as a prep
+  # Also handle "soft boiled"
+  defp normalize_hard_boiled(text) do
+    text
+    |> String.replace(~r/\bhard\s+boiled\b/i, "hard-boiled")
+    |> String.replace(~r/\bsoft\s+boiled\b/i, "soft-boiled")
+  end
+
+  # Normalize "handful" to a small quantity
+  # "handful chopped fresh parsley" -> "1/4 cup chopped fresh parsley"
+  defp normalize_handful(text) do
+    text
+    |> String.replace(~r/^\s*(?:a\s+)?handful(?:\s+of)?\s+/i, "1/4 cup ")
+  end
+
+  # Normalize "1 medium X or Y Z" patterns where color modifiers are before "or"
+  # "1 medium white or yellow onion" -> "1 medium onion"
+  # "1 medium red or orange bell pepper" -> "1 medium bell pepper"
+  # Strips the color modifiers entirely so the ingredient name (onion, bell pepper) matches
+  defp normalize_multi_or_adjective(text) do
+    case Regex.run(~r/^(.+?\s)(white|yellow|red|orange|green|purple|black|brown)\s+or\s+(white|yellow|red|orange|green|purple|black|brown)\s+(.+)$/i, text) do
+      [_, prefix, _first_adj, _second_adj, rest] ->
+        String.trim(prefix <> rest)
+      _ ->
+        # Also handle comma-separated lists ending in "chiles/peppers"
+        # "green Indian, Thai, or serrano chiles" -> "serrano chiles"
+        # Take the last alternative before the shared noun
+        case Regex.run(~r/^(\d\S*)\s+(?:\w+\s+)?(?:\w+,\s*)+(?:or\s+)?(\w+\s+(?:chiles?|peppers?|chilis?|chilies?))\b(.*)$/i, text) do
+          [_, qty, last_alternative, rest] ->
+            String.trim("#{qty} #{last_alternative}#{rest}")
+          _ ->
+            text
+        end
     end
   end
 
@@ -501,13 +650,15 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   end
 
   # Pattern 1: (qty unit) container - e.g., "(14 oz) can"
+  # Also handles: (size) container - e.g., "(15-ounce) cans"
   defp find_paren_sequence(tokens) do
     paren_start = Enum.find_index(tokens, &(&1.text == "("))
 
     if paren_start do
       rest = Enum.drop(tokens, paren_start + 1)
 
-      with [%{label: :qty, text: qty_text} | rest] <- rest,
+      # Try (qty unit) container first
+      result = with [%{label: :qty, text: qty_text} | rest] <- rest,
            [%{label: :unit, text: unit_text} | rest] <- rest,
            [%{text: ")"} | rest] <- rest,
            [%{label: :container, text: container_text} | _] <- rest do
@@ -516,6 +667,23 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
           size_unit: normalize_unit(unit_text),
           container_type: container_text
         }
+      else
+        _ -> nil
+      end
+
+      # Fallback: try (size) container - e.g., "(15-ounce) cans"
+      result || with [%{label: :size, text: size_text} | rest] <- rest,
+           [%{text: ")"} | rest] <- rest,
+           [%{label: :container, text: container_text} | _] <- rest do
+        case parse_size_string(size_text) do
+          {value, unit} ->
+            %{
+              size_value: value,
+              size_unit: unit,
+              container_type: container_text
+            }
+          nil -> nil
+        end
       else
         _ -> nil
       end

@@ -545,7 +545,9 @@ defmodule Controlcopypasta.Ingredients do
     |> Repo.all()
     |> Enum.flat_map(fn {id, name, aliases} ->
       # Map both the canonical name and all aliases to {canonical_name, id}
-      [{name, {name, id}} | Enum.map(aliases || [], &{&1, {name, id}})]
+      # Lowercase keys for case-insensitive matching (Matcher normalizes input to lowercase)
+      [{String.downcase(name), {name, id}} |
+       Enum.map(aliases || [], &{String.downcase(&1), {name, id}})]
     end)
     |> Map.new()
   end
@@ -594,11 +596,12 @@ defmodule Controlcopypasta.Ingredients do
       effective_rules = if MapSet.member?(top_ids, id), do: rules, else: nil
 
       # Map both the canonical name and all aliases to {canonical_name, id, rules}
-      entries = [{name, {name, id, effective_rules}}]
+      # Lowercase keys for case-insensitive matching
+      entries = [{String.downcase(name), {name, id, effective_rules}}]
 
       alias_entries =
         (aliases || [])
-        |> Enum.map(&{&1, {name, id, effective_rules}})
+        |> Enum.map(&{String.downcase(&1), {name, id, effective_rules}})
 
       entries ++ alias_entries
     end)
