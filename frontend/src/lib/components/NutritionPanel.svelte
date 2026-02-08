@@ -55,6 +55,41 @@
 		return getNutrientValue(value);
 	}
 
+	function formatQuantity(num: number): string {
+		const fractions: [number, string][] = [
+			[0.125, '⅛'],
+			[0.2, '⅕'],
+			[0.25, '¼'],
+			[0.333, '⅓'],
+			[0.375, '⅜'],
+			[0.4, '⅖'],
+			[0.5, '½'],
+			[0.6, '⅗'],
+			[0.625, '⅝'],
+			[0.667, '⅔'],
+			[0.75, '¾'],
+			[0.8, '⅘'],
+			[0.833, '⅚'],
+			[0.875, '⅞']
+		];
+
+		const whole = Math.floor(num);
+		const frac = num - whole;
+
+		for (const [val, str] of fractions) {
+			if (Math.abs(frac - val) < 0.03) {
+				return whole > 0 ? `${whole}${str}` : str;
+			}
+		}
+
+		if (frac < 0.03) {
+			return whole.toString();
+		}
+
+		const rounded = Math.round(num * 100) / 100;
+		return rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2).replace(/\.?0+$/, '');
+	}
+
 	function formatNumber(value: NutrientRange | number | null, decimals: number = 0): string {
 		const num = getValue(value);
 		if (num === null || num === undefined) return '-';
@@ -422,11 +457,11 @@
 								</td>
 								<td class="num qty-cell">
 									{#if ing.quantity}
-										{ing.quantity}
+										{formatQuantity(ing.quantity)}
 										{#if ing.quantity_min !== ing.quantity_max && ing.quantity_min && ing.quantity_max}
-											<span class="qty-range">({ing.quantity_min}-{ing.quantity_max})</span>
+											<span class="qty-range">({formatQuantity(ing.quantity_min)}-{formatQuantity(ing.quantity_max)})</span>
 										{/if}
-										{#if ing.unit}{ing.unit}{/if}
+										{#if ing.unit} {ing.unit}{/if}
 									{:else}
 										-
 									{/if}
