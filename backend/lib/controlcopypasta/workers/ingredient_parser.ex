@@ -41,7 +41,7 @@ defmodule Controlcopypasta.Workers.IngredientParser do
   alias Controlcopypasta.Ingredients.TokenParser
   alias Controlcopypasta.Ingredients
 
-  @batch_size 10
+  @batch_size 50
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"recipe_id" => recipe_id} = args}) do
@@ -180,7 +180,7 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     if count == @batch_size do
       Logger.info("Scheduling next batch for #{domain} at offset #{offset + @batch_size}")
       %{"domain" => domain, "offset" => offset + @batch_size, "force" => force}
-      |> __MODULE__.new(schedule_in: 5)
+      |> __MODULE__.new()
       |> Oban.insert()
     else
       Logger.info("No more batches to schedule for #{domain} (count #{count} < batch_size #{@batch_size})")
@@ -217,7 +217,7 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     if count == @batch_size do
       Logger.info("Scheduling next batch at offset #{offset + @batch_size}")
       %{"offset" => offset + @batch_size, "force" => force}
-      |> __MODULE__.new(schedule_in: 5)
+      |> __MODULE__.new()
       |> Oban.insert()
     else
       Logger.info("No more batches to schedule (count #{count} < batch_size #{@batch_size})")
