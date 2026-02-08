@@ -149,11 +149,40 @@ defmodule Controlcopypasta.Browser.Worker do
   @impl true
   def terminate(_reason, state) do
     if state.port do
+      # Try graceful shutdown first
       send_command(state.port, %{type: "shutdown"})
+
+      # Get the OS pid before closing the port
+      os_pid =
+        try do
+          {:os_pid, pid} = Port.info(state.port, :os_pid)
+          pid
+        rescue
+          _ -> nil
+        end
+
       Port.close(state.port)
+
+      # If we have the OS pid, ensure the process actually dies.
+      # Port.close only closes the pipe — the OS process may linger.
+      if os_pid do
+        Process.sleep(500)
+
+        if os_process_alive?(os_pid) do
+          Logger.warning("Browser worker OS process #{os_pid} still alive after port close, sending SIGKILL")
+          System.cmd("kill", ["-9", Integer.to_string(os_pid)])
+        end
+      end
     end
 
     :ok
+  end
+
+  defp os_process_alive?(os_pid) do
+    case System.cmd("kill", ["-0", Integer.to_string(os_pid)], stderr_to_stdout: true) do
+      {_, 0} -> true
+      _ -> false
+    end
   end
 
   # Private functions

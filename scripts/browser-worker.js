@@ -2,6 +2,7 @@ const { chromium } = require('playwright');
 const readline = require('readline');
 
 let browser = null;
+let shuttingDown = false;
 
 async function initBrowser() {
   if (!browser) {
@@ -83,40 +84,48 @@ async function handleCommand(command) {
       return { id, status: 'pong' };
 
     case 'shutdown':
-      await cleanup();
-      process.exit(0);
+      shutdown('shutdown command');
+      return { id, status: 'ok' };
 
     default:
       return { id, status: 'error', error: `Unknown command type: ${type}` };
   }
 }
 
-async function cleanup() {
-  if (browser) {
-    process.stderr.write('Shutting down browser\n');
-    await browser.close();
-    browser = null;
-  }
+// Shut down gracefully with a hard timeout to guarantee exit.
+// If browser.close() hangs (e.g. Chromium is stuck), we force-exit after 5 seconds.
+function shutdown(reason) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  process.stderr.write(`Shutting down: ${reason}\n`);
+
+  const forceExitTimer = setTimeout(() => {
+    process.stderr.write('Force exit: cleanup timed out\n');
+    process.exit(1);
+  }, 5000);
+  forceExitTimer.unref();
+
+  const closeBrowser = browser ? browser.close().catch(() => {}) : Promise.resolve();
+  closeBrowser.then(() => process.exit(0));
 }
 
 // Signal handlers
-process.on('SIGTERM', async () => {
-  await cleanup();
-  process.exit(0);
-});
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
-process.on('SIGINT', async () => {
-  await cleanup();
-  process.exit(0);
-});
+// If parent dies, stdin closes or errors — exit immediately
+process.stdin.on('end', () => shutdown('stdin end'));
+process.stdin.on('error', () => shutdown('stdin error'));
 
-// Handle uncaught errors gracefully
+// Uncaught errors should be fatal — lingering is worse than crashing
 process.on('uncaughtException', (err) => {
   process.stderr.write(`Uncaught exception: ${err.message}\n`);
+  shutdown('uncaughtException');
 });
 
 process.on('unhandledRejection', (err) => {
   process.stderr.write(`Unhandled rejection: ${err}\n`);
+  shutdown('unhandledRejection');
 });
 
 // Main loop - read JSON lines from stdin
@@ -126,6 +135,7 @@ const rl = readline.createInterface({
 });
 
 rl.on('line', async (line) => {
+  if (shuttingDown) return;
   try {
     const command = JSON.parse(line);
     const response = await handleCommand(command);
@@ -142,10 +152,7 @@ rl.on('line', async (line) => {
   }
 });
 
-rl.on('close', async () => {
-  await cleanup();
-  process.exit(0);
-});
+rl.on('close', () => shutdown('stdin closed'));
 
 // Signal ready
 process.stderr.write('Browser worker ready\n');
