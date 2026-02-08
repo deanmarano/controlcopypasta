@@ -19,7 +19,7 @@
 	let nutrition = $state<RecipeNutrition | null>(null);
 	let loadingNutrition = $state(false);
 	let nutritionError = $state('');
-	let showNutrition = $state(false);
+	let showNutrition = $state(true);
 	let nutritionSource = $state<NutritionSource>('composite');
 
 	const domain = $derived($page.params.domain);
@@ -38,6 +38,8 @@
 		try {
 			const result = await browse.getRecipe(token, domain, recipeId);
 			recipe = result.data;
+			// Load nutrition data since panel is open by default
+			loadNutrition();
 		} catch {
 			error = 'Recipe not found';
 		} finally {
