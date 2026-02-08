@@ -13,7 +13,7 @@ if config_env() in [:dev, :test] do
   # Note: fatsecret, density, and nutrition queues are always enabled for ingredient enrichment
   scraping_enabled = System.get_env("ENABLE_SCRAPING") == "true"
 
-  dev_queues = [scheduled: 1, fatsecret: 1, density: 1, nutrition: 1]
+  dev_queues = [scheduled: 1, parsing: 4, fatsecret: 1, density: 1, nutrition: 1]
   dev_queues = if scraping_enabled, do: [{:scraper, 1} | dev_queues], else: dev_queues
 
   config :controlcopypasta, Oban,
@@ -149,11 +149,13 @@ if config_env() == :prod do
   scraping_enabled = System.get_env("ENABLE_SCRAPING", "true") == "true"
   scraper_concurrency = String.to_integer(System.get_env("OBAN_SCRAPER_CONCURRENCY") || "1")
 
+  parsing_concurrency = String.to_integer(System.get_env("OBAN_PARSING_CONCURRENCY") || "10")
+
   scraper_queues =
     if scraping_enabled do
-      [scraper: scraper_concurrency, scheduled: 1, fatsecret: 1, density: 1, nutrition: 1]
+      [scraper: scraper_concurrency, scheduled: 1, parsing: parsing_concurrency, fatsecret: 1, density: 1, nutrition: 1]
     else
-      [scheduled: 1, fatsecret: 1, density: 1, nutrition: 1]
+      [scheduled: 1, parsing: parsing_concurrency, fatsecret: 1, density: 1, nutrition: 1]
     end
 
   scraper_cron =
@@ -161,14 +163,14 @@ if config_env() == :prod do
       [
         {"*/5 * * * *", Controlcopypasta.Workers.ScraperUnpauser},
         {"*/5 * * * *", Controlcopypasta.Workers.QueueHealthChecker},
-        {"0 */6 * * *", Controlcopypasta.Workers.IngredientParser},
+        {"0 */6 * * *", Controlcopypasta.Workers.IngredientParser, args: %{"fan_out" => true}},
         {"0 2 * * *", Controlcopypasta.Workers.ImageSeeder},
         {"0 3 * * 0", Controlcopypasta.Workers.UsageCountUpdater}
       ]
     else
       [
         {"*/5 * * * *", Controlcopypasta.Workers.QueueHealthChecker},
-        {"0 */6 * * *", Controlcopypasta.Workers.IngredientParser},
+        {"0 */6 * * *", Controlcopypasta.Workers.IngredientParser, args: %{"fan_out" => true}},
         {"0 2 * * *", Controlcopypasta.Workers.ImageSeeder},
         {"0 3 * * 0", Controlcopypasta.Workers.UsageCountUpdater}
       ]

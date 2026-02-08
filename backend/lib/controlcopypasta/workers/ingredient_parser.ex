@@ -17,19 +17,24 @@ defmodule Controlcopypasta.Workers.IngredientParser do
       |> Controlcopypasta.Workers.IngredientParser.new()
       |> Oban.insert()
 
-      # Parse all unparsed recipes (in batches)
-      %{}
+      # Parse all unparsed recipes (fan-out to parallel batch jobs)
+      %{"fan_out" => true}
       |> Controlcopypasta.Workers.IngredientParser.new()
       |> Oban.insert()
 
-      # Force reparse ALL recipes (regenerate pre_steps, alternatives, etc.)
-      %{"force" => true}
+      # Force reparse ALL recipes (fan-out to parallel batch jobs)
+      %{"fan_out" => true, "force" => true}
+      |> Controlcopypasta.Workers.IngredientParser.new()
+      |> Oban.insert()
+
+      # Force reparse a single domain
+      %{"fan_out" => true, "force" => true, "domain" => "cooking.nytimes.com"}
       |> Controlcopypasta.Workers.IngredientParser.new()
       |> Oban.insert()
   """
 
   use Oban.Worker,
-    queue: :scheduled,
+    queue: :parsing,
     max_attempts: 3
 
   require Logger
@@ -41,7 +46,7 @@ defmodule Controlcopypasta.Workers.IngredientParser do
   alias Controlcopypasta.Ingredients.TokenParser
   alias Controlcopypasta.Ingredients
 
-  @batch_size 50
+  @batch_size 500
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"recipe_id" => recipe_id} = args}) do
@@ -58,6 +63,29 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     end
   end
 
+  # Fan-out job: counts total recipes and enqueues all batch jobs at once
+  def perform(%Oban.Job{args: %{"fan_out" => true} = args}) do
+    force = Map.get(args, "force", false)
+    domain = Map.get(args, "domain")
+    if force, do: Ingredients.refresh_parser_cache!()
+
+    total = count_recipes(force, domain)
+    batch_count = ceil(total / @batch_size)
+
+    Logger.info("Fan-out: #{total} recipes, enqueuing #{batch_count} batch jobs (batch_size: #{@batch_size})")
+
+    for i <- 0..(batch_count - 1) do
+      args = %{"offset" => i * @batch_size, "force" => force}
+      args = if domain, do: Map.put(args, "domain", domain), else: args
+
+      args
+      |> __MODULE__.new()
+      |> Oban.insert()
+    end
+
+    :ok
+  end
+
   def perform(%Oban.Job{args: %{"domain" => domain} = args}) do
     offset = Map.get(args, "offset", 0)
     force = Map.get(args, "force", false)
@@ -67,7 +95,6 @@ defmodule Controlcopypasta.Workers.IngredientParser do
   def perform(%Oban.Job{args: args}) do
     offset = Map.get(args, "offset", 0)
     force = Map.get(args, "force", false)
-    if force and offset == 0, do: Ingredients.refresh_parser_cache!()
     parse_all_batch(offset, force)
   end
 
@@ -168,24 +195,11 @@ defmodule Controlcopypasta.Workers.IngredientParser do
 
     Logger.info("Parsing batch of #{count} recipes for #{domain} (offset: #{offset}, force: #{force})")
 
-    # Build lookup once for the entire batch to avoid repeated DB queries
     lookup = Ingredients.build_ingredient_lookup()
-    Logger.info("Built ingredient lookup with #{map_size(lookup)} entries")
 
     Enum.each(recipes, &parse_recipe_ingredients(&1, force, lookup))
 
     Logger.info("Batch complete for #{domain} (offset: #{offset}, processed: #{count})")
-
-    # Schedule next batch if there are more
-    if count == @batch_size do
-      Logger.info("Scheduling next batch for #{domain} at offset #{offset + @batch_size}")
-      %{"domain" => domain, "offset" => offset + @batch_size, "force" => force}
-      |> __MODULE__.new()
-      |> Oban.insert()
-    else
-      Logger.info("No more batches to schedule for #{domain} (count #{count} < batch_size #{@batch_size})")
-    end
-
     :ok
   end
 
@@ -200,29 +214,11 @@ defmodule Controlcopypasta.Workers.IngredientParser do
 
     Logger.info("Parsing batch of #{count} recipes (offset: #{offset}, force: #{force})")
 
-    # Build lookup once for the entire batch to avoid repeated DB queries
     lookup = Ingredients.build_ingredient_lookup()
-    Logger.info("Built ingredient lookup with #{map_size(lookup)} entries")
 
-    recipes
-    |> Enum.with_index(1)
-    |> Enum.each(fn {recipe, idx} ->
-      Logger.info("Processing recipe #{idx}/#{count}: #{recipe.id}")
-      parse_recipe_ingredients(recipe, force, lookup)
-    end)
+    Enum.each(recipes, &parse_recipe_ingredients(&1, force, lookup))
 
     Logger.info("Batch complete (offset: #{offset}, processed: #{count})")
-
-    # Schedule next batch if there are more
-    if count == @batch_size do
-      Logger.info("Scheduling next batch at offset #{offset + @batch_size}")
-      %{"offset" => offset + @batch_size, "force" => force}
-      |> __MODULE__.new()
-      |> Oban.insert()
-    else
-      Logger.info("No more batches to schedule (count #{count} < batch_size #{@batch_size})")
-    end
-
     :ok
   end
 
@@ -246,6 +242,28 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     |> offset(^offset)
     |> limit(@batch_size)
     |> Repo.all()
+  end
+
+  defp count_recipes(force, nil) do
+    query = if force, do: Recipe, else: unparsed_query()
+    Repo.aggregate(query, :count)
+  end
+
+  defp count_recipes(force, domain) do
+    base = Recipe |> where([r], r.source_domain == ^domain or r.source_domain == ^"www.#{domain}")
+    query = if force, do: base, else: base |> where([r], fragment("EXISTS (
+        SELECT 1 FROM jsonb_array_elements(?) AS elem
+        WHERE elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = ''
+      )", r.ingredients))
+    Repo.aggregate(query, :count)
+  end
+
+  defp unparsed_query do
+    Recipe
+    |> where([r], fragment("EXISTS (
+        SELECT 1 FROM jsonb_array_elements(?) AS elem
+        WHERE elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = ''
+      )", r.ingredients))
   end
 
   defp get_all_recipes(offset) do
