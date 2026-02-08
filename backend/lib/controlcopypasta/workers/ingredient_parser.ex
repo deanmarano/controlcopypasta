@@ -92,10 +92,14 @@ defmodule Controlcopypasta.Workers.IngredientParser do
     parse_domain_batch(domain, offset, force)
   end
 
-  def perform(%Oban.Job{args: args}) do
-    offset = Map.get(args, "offset", 0)
+  def perform(%Oban.Job{args: %{"offset" => offset} = args}) do
     force = Map.get(args, "force", false)
     parse_all_batch(offset, force)
+  end
+
+  # No offset and no fan_out — auto-fan-out to avoid silent single-batch runs
+  def perform(%Oban.Job{args: args} = job) do
+    perform(%{job | args: Map.put(args, "fan_out", true)})
   end
 
   defp parse_recipe_ingredients(recipe, force, lookup) do
