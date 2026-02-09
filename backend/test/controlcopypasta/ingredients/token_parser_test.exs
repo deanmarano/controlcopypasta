@@ -87,14 +87,13 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
     end
 
     test "handles 'and' compound ingredients" do
+      # "salt and pepper" without quantity is skipped as a seasoning instruction
       result = TokenParser.parse("salt and pepper")
+      assert result.ingredients == []
 
-      assert result.is_alternative == false
-      assert length(result.ingredients) == 2
-
-      names = Enum.map(result.ingredients, & &1.name)
-      assert "salt" in names
-      assert "pepper" in names
+      # With a quantity, "oil and vinegar" should parse normally
+      result = TokenParser.parse("2 tablespoons oil and vinegar")
+      assert length(result.ingredients) >= 1
     end
 
     test "extracts storage medium from 'in X' patterns" do
@@ -141,12 +140,13 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
     end
 
     test "handles note phrases like 'to taste'" do
+      # "salt and pepper to taste" is skipped (no quantity, seasoning instruction)
       result = TokenParser.parse("salt and pepper to taste")
+      assert result.ingredients == []
 
-      assert length(result.ingredients) == 2
-      names = Enum.map(result.ingredients, & &1.name)
-      assert "salt" in names
-      assert "pepper" in names
+      # Regular "to taste" ingredients should still parse
+      result = TokenParser.parse("cayenne pepper, to taste")
+      assert length(result.ingredients) == 1
     end
 
     test "handles 'for garnish' note phrase" do

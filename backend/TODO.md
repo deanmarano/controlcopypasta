@@ -5,8 +5,10 @@ Remaining unmatched: ~90k of 1.13M ingredients (92% match rate)
 ## Preprocessing Fixes
 
 - [x] Unicode fraction slash (U+2044) → regular slash — recovered ~10k
-- [ ] Dual metric/imperial: `200ml/7fl oz double cream` → `double cream`
-- [ ] Parenthetical weights: `2 cups (10 ounces/283 grams) all-purpose flour` → `2 cups all-purpose flour`
+- [x] Dual metric/imperial: `200ml/7fl oz double cream` → `double cream`
+- [x] Parenthetical weights: `2 cups (10 ounces/283 grams) all-purpose flour` → `2 cups all-purpose flour`
+- [x] Compact paren sizes: `(15oz)` → `(15-oz)` for container detection
+- [x] Prep-word retry: `hot sauce` matched when "hot" labeled as prep word
 - [ ] Section headers / advertising: `FILLING`, `TO SERVE`, `SHOP JAMIE'S SERVEWARE`
 - [ ] "for serving" / "to serve" suffix: `Hot sauce, for serving` → `Hot sauce`
 - [ ] British `chilli` → `chili` normalization

@@ -44,6 +44,8 @@ defmodule Controlcopypasta.Nutrition.RecipeNutritionCompletenessTest do
     ~r/freeze-dried strawberry powder/i,
     ~r/100ml Liquid/i,
     ~r/\bhealthy pinch\b/i,
+    # "Salt and pepper to taste" - parser skips these (no quantity)
+    ~r/\bsalt\s+and\s+(?:freshly\s+ground\s+)?(?:black\s+)?pepper\b/i,
   ]
 
   defp skip_ingredient?(text) do

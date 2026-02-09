@@ -175,10 +175,17 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       # Filter out kitchen equipment (using centralized detector)
       EquipmentDetector.is_equipment?(text) -> :skip
 
+      # Filter out section headers (FILLING, For the pastry:, etc.)
+      is_section_header?(text) -> :skip
+
+      # "Salt and pepper" / "Salt and pepper, to taste" - no quantity, skip
+      Regex.match?(~r/^\s*(?:kosher\s+)?salt\s+and\s+(?:freshly\s+ground\s+)?(?:black\s+)?pepper\b/i, text) -> :skip
+
       true ->
         text
         |> strip_leading_optional()
         |> normalize_smart_quotes()
+        |> normalize_british_spelling()
         |> normalize_to_range()
         |> normalize_slash_measurements()
         |> normalize_gram_measurements()
@@ -186,11 +193,13 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
         |> normalize_stick_butter()
         |> normalize_ginger_size()
         |> normalize_each_and_pattern()
+        |> normalize_british_x_format()
         |> normalize_dual_measurements()
         |> normalize_semicolon_notes()
         |> strip_trailing_flavor_notes()
         |> normalize_hard_boiled()
         |> normalize_handful()
+        |> strip_heaped_modifier()
         |> normalize_multi_or_adjective()
     end
   end
@@ -407,6 +416,57 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   defp normalize_handful(text) do
     text
     |> String.replace(~r/^\s*(?:a\s+)?handful(?:\s+of)?\s+/i, "1/4 cup ")
+  end
+
+  # Strip "heaped" modifier before measurement units
+  # "1 heaped tablespoon flour" -> "1 tablespoon flour"
+  defp strip_heaped_modifier(text) do
+    String.replace(text, ~r/\bheaped\s+/i, "")
+  end
+
+  # Normalize British spelling variants to American English
+  # "chilli" -> "chili", "chillies" -> "chilies", "coriander" stays (handled by aliases)
+  defp normalize_british_spelling(text) do
+    text
+    |> String.replace(~r/\bchillies\b/i, "chilies")
+    |> String.replace(~r/\bchilli\b/i, "chili")
+  end
+
+  # Detect section headers that aren't ingredients
+  # Returns true for: ALL CAPS single words, "For the X:", "Dry ingredients:", advertising, etc.
+  defp is_section_header?(text) do
+    trimmed = String.trim(text)
+    cond do
+      # Blank or whitespace-only
+      trimmed == "" -> true
+      # Ends with colon (section labels): "For the pastry:", "Dry ingredients:", "FILLING:"
+      String.ends_with?(trimmed, ":") -> true
+      # ALL CAPS single or two words with no digits: "FILLING", "TO SERVE", "GARNISH"
+      Regex.match?(~r/^[A-Z][A-Z\s]{0,30}$/, trimmed) and not Regex.match?(~r/\d/, trimmed) -> true
+      # Advertising / non-ingredient lines
+      Regex.match?(~r/^\s*(?:SHOP|BUY|ORDER|SPONSORED|ADVERTISEMENT|AD)\b/i, trimmed) -> true
+      true -> false
+    end
+  end
+
+  # Normalize British "X x Yg tin/can of Z" format
+  # "1 x 400g tin of chopped tomatoes" -> "1 (400-g) tin chopped tomatoes"
+  # "2 x 400g tins of chickpeas" -> "2 (400-g) tins chickpeas"
+  defp normalize_british_x_format(text) do
+    text
+    |> String.replace(
+      ~r/^(\d+)\s*x\s*(\d+(?:\.\d+)?)\s*(g|ml|l|kg)\s+(tins?|cans?|bottles?|sachets?|packets?|jars?|cartons?)\s+of\s+/i,
+      "\\1 (\\2-\\3) \\4 "
+    )
+    |> String.replace(
+      ~r/^(\d+)\s*x\s*(\d+(?:\.\d+)?)\s*(g|ml|l|kg)\s+(tins?|cans?|bottles?|sachets?|packets?|jars?|cartons?)\s+/i,
+      "\\1 (\\2-\\3) \\4 "
+    )
+    # Also handle "1 x 400g of chopped tomatoes" (no container word)
+    |> String.replace(
+      ~r/^(\d+)\s*x\s*(\d+(?:\.\d+)?)\s*(g|ml|l|kg)\s+of\s+/i,
+      "\\1 \\2 \\3 "
+    )
   end
 
   # Normalize "1 medium X or Y Z" patterns where color modifiers are before "or"
