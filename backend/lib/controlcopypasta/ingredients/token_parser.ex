@@ -314,6 +314,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     |> String.replace(~r/\(\((?:(?!\)\)).)*\)\)/, "")
     # "(15 ounces each)" -> "(15-ounce)" to create a size token for container extraction
     |> String.replace(~r/\(\s*(\d+(?:\.\d+)?)\s*(?:ounces?|oz)\s+each\s*\)/i, "(\\1-ounce)")
+    # "(15oz)" -> "(15-oz)" insert hyphen between digits and unit for tokenizer
+    |> String.replace(~r/\((\d+(?:\.\d+)?)(oz|ounces?|g|grams?|ml|l)\)/i, "(\\1-\\2)")
     # "(10 ounces/283 grams)" weight conversions after standard units (cups, tbsp, etc.)
     # Only strip when preceded by a standard measurement, NOT after "can/tin" (which need the size)
     |> String.replace(~r/((?:cups?|tablespoons?|tbsp|teaspoons?|tsp)\s+)\(\s*\d+(?:\.\d+)?(?:\s*(?:1\/2))?\s*(?:ounces?|oz)\s*\/\s*\d+\s*(?:grams?|g)\s*\)/i, "\\1")
