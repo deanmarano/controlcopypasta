@@ -9,13 +9,13 @@ Remaining unmatched: ~90k of 1.13M ingredients (92% match rate)
 - [x] Parenthetical weights: `2 cups (10 ounces/283 grams) all-purpose flour` → `2 cups all-purpose flour`
 - [x] Compact paren sizes: `(15oz)` → `(15-oz)` for container detection
 - [x] Prep-word retry: `hot sauce` matched when "hot" labeled as prep word
-- [ ] Section headers / advertising: `FILLING`, `TO SERVE`, `SHOP JAMIE'S SERVEWARE`
-- [ ] "for serving" / "to serve" suffix: `Hot sauce, for serving` → `Hot sauce`
-- [ ] British `chilli` → `chili` normalization
-- [ ] `salt and pepper` combo → split or handle as compound
-- [ ] "heaped" measurement modifier: `1 heaped tablespoon` → `1 tablespoon`
-- [ ] `Xcm piece of ginger`: `5cm piece of ginger` → `ginger`
-- [ ] `X x Yg sachet/tin/can of`: `1 x 400g tin of chopped tomatoes` → `chopped tomatoes`
+- [x] Section headers / advertising: `FILLING`, `TO SERVE`, `SHOP JAMIE'S SERVEWARE`
+- [x] "for serving" / "to serve" suffix: already handled by comma-separated note stripping
+- [x] British `chilli` → `chili` normalization
+- [x] `salt and pepper` combo → skipped (no quantity, seasoning instruction)
+- [x] "heaped" measurement modifier: `1 heaped tablespoon` → `1 tablespoon`
+- [x] `X x Yg sachet/tin/can of`: `1 x 400g tin of chopped tomatoes` → container detection
+- [x] `Xcm piece of ginger`: `5cm piece of ginger` → `ginger` (added cm + thumb-sized to ginger normalizer)
 
 ## Equipment Detector
 

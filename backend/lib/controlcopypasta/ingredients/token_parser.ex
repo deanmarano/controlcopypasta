@@ -251,7 +251,9 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     if String.contains?(String.downcase(text), "ginger") and
        (String.contains?(String.downcase(text), "inch") or
         String.contains?(text, "\"") or
-        String.contains?(String.downcase(text), "piece")) do
+        String.contains?(String.downcase(text), "piece") or
+        Regex.match?(~r/\d+\s*cm\b/i, text) or
+        String.contains?(String.downcase(text), "thumb")) do
 
       text
       # Pattern: X (size") piece -> X piece (with parenthesized inch notation)
@@ -264,6 +266,10 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       |> String.replace(~r/(\d+)\s*(?:-|\s)?inch(?:es)?\s*piece/i, "\\1 piece")
       # Pattern: X-inch piece without leading qty -> 1 piece
       |> String.replace(~r/^\s*\d+(?:\/\d+)?(?:-|\s)?inch(?:es)?\s*piece/i, "1 piece")
+      # Pattern: Xcm piece -> 1 piece (metric size notation)
+      |> String.replace(~r/^\s*\d+(?:\.\d+)?\s*cm\s+piece\s+(?:of\s+)?/i, "1 piece ")
+      # Pattern: thumb-sized piece -> 1 piece
+      |> String.replace(~r/^\s*(?:a\s+)?thumb[- ]?sized\s+piece\s+(?:of\s+)?/i, "1 piece ")
       |> String.replace(~r/\s+/, " ")
       |> String.trim()
     else
