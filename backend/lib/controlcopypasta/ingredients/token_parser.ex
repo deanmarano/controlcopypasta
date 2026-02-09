@@ -275,6 +275,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   defp normalize_smart_quotes(text) do
     text
     |> String.replace("\u00A0", " ")   # non-breaking space
+    |> String.replace("\u2044", "/")   # unicode fraction slash
     |> String.replace("\u201C", "\"")  # left double smart quote
     |> String.replace("\u201D", "\"")  # right double smart quote
     |> String.replace("\u2018", "'")   # left single smart quote
