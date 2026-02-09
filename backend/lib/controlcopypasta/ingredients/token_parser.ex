@@ -272,6 +272,14 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   # Normalize smart quotes and special whitespace to regular ASCII equivalents
   # "1 (1\u201D) piece" -> "1 (1\") piece"
   # Non-breaking spaces (\u00A0) -> regular spaces
+  @unicode_fractions %{
+    "½" => "1/2", "⅓" => "1/3", "⅔" => "2/3",
+    "¼" => "1/4", "¾" => "3/4",
+    "⅕" => "1/5", "⅖" => "2/5", "⅗" => "3/5", "⅘" => "4/5",
+    "⅙" => "1/6", "⅚" => "5/6",
+    "⅛" => "1/8", "⅜" => "3/8", "⅝" => "5/8", "⅞" => "7/8"
+  }
+
   defp normalize_smart_quotes(text) do
     text
     |> String.replace("\u00A0", " ")   # non-breaking space
@@ -281,6 +289,17 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     |> String.replace("\u2018", "'")   # left single smart quote
     |> String.replace("\u2019", "'")   # right single smart quote
     |> String.replace("\u2033", "\"")  # double prime
+    |> normalize_unicode_fraction_chars()
+  end
+
+  # Convert unicode fraction characters (½ ¼ ¾ etc.) to ASCII fractions early
+  # so downstream regexes can work with them. Adds space when preceded by digit: "3½" -> "3 1/2"
+  defp normalize_unicode_fraction_chars(text) do
+    Enum.reduce(@unicode_fractions, text, fn {char, replacement}, acc ->
+      acc
+      |> String.replace(~r/(\d)#{Regex.escape(char)}/, "\\1 #{replacement}")
+      |> String.replace(char, replacement)
+    end)
   end
 
   # Remove parenthetical notes that contain only descriptive text (not measurements)
@@ -295,6 +314,13 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     |> String.replace(~r/\(\((?:(?!\)\)).)*\)\)/, "")
     # "(15 ounces each)" -> "(15-ounce)" to create a size token for container extraction
     |> String.replace(~r/\(\s*(\d+(?:\.\d+)?)\s*(?:ounces?|oz)\s+each\s*\)/i, "(\\1-ounce)")
+    # "(10 ounces/283 grams)" weight conversions after standard units (cups, tbsp, etc.)
+    # Only strip when preceded by a standard measurement, NOT after "can/tin" (which need the size)
+    |> String.replace(~r/((?:cups?|tablespoons?|tbsp|teaspoons?|tsp)\s+)\(\s*\d+(?:\.\d+)?(?:\s*(?:1\/2))?\s*(?:ounces?|oz)\s*\/\s*\d+\s*(?:grams?|g)\s*\)/i, "\\1")
+    # Also handle at start of line for patterns like "2 cups (10 ounces/283 grams) flour"
+    |> String.replace(~r/(\d+(?:\s+\d+\/\d+)?\s+(?:cups?|tablespoons?|tbsp|teaspoons?|tsp))\s*\(\s*\d+(?:\.\d+)?(?:\s*(?:1\/2))?\s*(?:ounces?|oz)\s*\/\s*\d+\s*(?:grams?|g)\s*\)/i, "\\1")
+    # "(283 grams/10 ounces)" metric-first variant, same restriction
+    |> String.replace(~r/(\d+(?:\s+\d+\/\d+)?\s+(?:cups?|tablespoons?|tbsp|teaspoons?|tsp))\s*\(\s*\d+(?:\.\d+)?\s*(?:grams?|g)\s*\/\s*\d+(?:\.\d+)?\s*(?:ounces?|oz)\s*\)/i, "\\1")
     # Parens containing "store bought", "homemade", "or sub", "see note", "if needed"
     |> String.replace(~r/\(\s*(?:store\s*bought|homemade|or\s+sub|see\s+note|if\s+needed|approximately|about\s+\d)[^)]*\)/i, "")
     # Parens starting with "or" suggesting alternatives we don't parse: "(or other protein)"
@@ -324,6 +350,9 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   # Takes the first measurement and strips the rest
   defp normalize_dual_measurements(text) do
     text
+    # "200ml/7fl oz double cream" -> "7 fl oz double cream" (metric-first dual: keep imperial)
+    # Unicode fractions already normalized: "100ml/3½fl oz" -> "100ml/3 1/2fl oz"
+    |> String.replace(~r/^\s*\d+(?:\.\d+)?\s*(?:ml|g|kg|l)\s*\/\s*(\d+(?:\s+\d+\/\d+)?(?:\.\d+)?)\s*(fl\s*oz|fluid\s+ounces?|ounces?|oz|cups?|tablespoons?|tbsp|teaspoons?|tsp)\b/i, "\\1 \\2")
     # "8.5 fluid ounces/250 ml water" -> "8.5 fluid ounces water"
     |> String.replace(~r/(\b\d+(?:\.\d+)?\s+(?:fluid\s+)?(?:ounces?|oz|cups?|tablespoons?|tbsp|teaspoons?|tsp))\s*\/\s*\d+(?:\.\d+)?\s*(?:ml|g|l|kg)\b/i, "\\1")
     # "1 cup/8 ounces (226 grams) ricotta" -> "1 cup ricotta"
@@ -492,7 +521,15 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     # Get ingredient names, applying juice/zest transformations
     raw_ingredient_names = clean_ingredient_names(analysis.ingredients)
     ingredient_names = transform_juice_zest_patterns(raw_ingredient_names, analysis.preparations, tokens)
-    matched_ingredients = Enum.map(ingredient_names, &match_ingredient(&1, lookup))
+    matched_ingredients = Enum.map(ingredient_names, fn name ->
+      match = match_ingredient(name, lookup)
+      # If no match, retry with prep words prepended (e.g., "sauce" -> "hot sauce")
+      if is_nil(match.canonical_id) and length(analysis.preparations) > 0 do
+        retry_with_preps(name, analysis.preparations, lookup) || match
+      else
+        match
+      end
+    end)
 
     # Get primary ingredient (first one)
     primary = List.first(matched_ingredients)
@@ -997,6 +1034,16 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   @doc false
   # Delegate to centralized Matcher module
   def match_ingredient(name, lookup), do: Matcher.match(name, lookup)
+
+  # When the base ingredient name doesn't match, try prepending each prep word.
+  # E.g., "sauce" fails -> try "hot sauce" (since "hot" was labeled as :prep)
+  defp retry_with_preps(name, preparations, lookup) do
+    Enum.find_value(preparations, fn prep ->
+      candidate = "#{prep} #{name}"
+      match = Matcher.match(candidate, lookup)
+      if match.canonical_id, do: match
+    end)
+  end
 
   @doc """
   Attempts to singularize an English word.
