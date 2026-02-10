@@ -304,6 +304,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     |> String.replace("\u2018", "'")   # left single smart quote
     |> String.replace("\u2019", "'")   # right single smart quote
     |> String.replace("\u2033", "\"")  # double prime
+    |> String.replace("\u2013", "-")   # en-dash (used in ranges: "1–2")
+    |> String.replace("\u2014", "-")   # em-dash
     |> normalize_unicode_fraction_chars()
   end
 
@@ -449,6 +451,9 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     text
     |> String.replace(~r/\bchillies\b/i, "chilies")
     |> String.replace(~r/\bchilli\b/i, "chili")
+    |> String.replace(~r/\byoghurt\b/i, "yogurt")
+    # ".5 teaspoon" -> "0.5 teaspoon"
+    |> String.replace(~r/^\.(\d)/, "0.\\1")
   end
 
   # Detect section headers that aren't ingredients
