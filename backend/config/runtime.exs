@@ -22,7 +22,21 @@ if config_env() in [:dev, :test] do
     plugins: [
       {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)}
     ]
+
+  # Dev/test secret key base from env (or safe default for local dev only)
+  dev_secret = System.get_env("SECRET_KEY_BASE") || "dev_only_not_for_production_change_me_xxxxxxxxxxxxxxxxxxxxxxxxx"
+  config :controlcopypasta, ControlcopypastaWeb.Endpoint,
+    secret_key_base: dev_secret
 end
+
+# Admin emails (comma-separated list from ADMIN_EMAILS env var)
+admin_emails =
+  (System.get_env("ADMIN_EMAILS") || "")
+  |> String.split(",")
+  |> Enum.map(&String.trim/1)
+  |> Enum.reject(&(&1 == ""))
+
+config :controlcopypasta, :admin_emails, admin_emails
 
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
