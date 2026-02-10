@@ -178,8 +178,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       # Filter out section headers (FILLING, For the pastry:, etc.)
       is_section_header?(text) -> :skip
 
-      # "Salt and pepper" / "Salt and pepper, to taste" - no quantity, skip
-      Regex.match?(~r/^\s*(?:kosher\s+)?salt\s+and\s+(?:freshly\s+ground\s+)?(?:black\s+)?pepper\b/i, text) -> :skip
+      # "Salt and pepper" / "Kosher salt and freshly ground black pepper, to taste" - skip
+      Regex.match?(~r/^\s*(?:kosher\s+|sea\s+)?salt\s+and\s+(?:freshly\s+ground\s+)?(?:black\s+)?pepper\b/i, text) -> :skip
 
       true ->
         text
@@ -333,11 +333,11 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     |> String.replace(~r/\((\d+(?:\.\d+)?)(oz|ounces?|g|grams?|ml|l)\)/i, "(\\1-\\2)")
     # "(10 ounces/283 grams)" weight conversions after standard units (cups, tbsp, etc.)
     # Only strip when preceded by a standard measurement, NOT after "can/tin" (which need the size)
-    |> String.replace(~r/((?:cups?|tablespoons?|tbsp|teaspoons?|tsp)\s+)\(\s*\d+(?:\.\d+)?(?:\s*(?:1\/2))?\s*(?:ounces?|oz)\s*\/\s*\d+\s*(?:grams?|g)\s*\)/i, "\\1")
-    # Also handle at start of line for patterns like "2 cups (10 ounces/283 grams) flour"
-    |> String.replace(~r/(\d+(?:\s+\d+\/\d+)?\s+(?:cups?|tablespoons?|tbsp|teaspoons?|tsp))\s*\(\s*\d+(?:\.\d+)?(?:\s*(?:1\/2))?\s*(?:ounces?|oz)\s*\/\s*\d+\s*(?:grams?|g)\s*\)/i, "\\1")
+    # Number pattern allows fractions: "8 3/4", "1.5", "10"
+    # Allow modifiers like "packed" between unit and parens: "1 cup packed (7 oz/198g)"
+    |> String.replace(~r/(\d+(?:\s+\d+\/\d+)?\s+(?:cups?|tablespoons?|tbsp|teaspoons?|tsp)(?:\s+packed)?)\s*\(\s*\d+(?:\s+\d+\/\d+)?(?:\.\d+)?\s*(?:ounces?|oz)\s*\/\s*\d+\s*(?:grams?|g)\s*\)/i, "\\1")
     # "(283 grams/10 ounces)" metric-first variant, same restriction
-    |> String.replace(~r/(\d+(?:\s+\d+\/\d+)?\s+(?:cups?|tablespoons?|tbsp|teaspoons?|tsp))\s*\(\s*\d+(?:\.\d+)?\s*(?:grams?|g)\s*\/\s*\d+(?:\.\d+)?\s*(?:ounces?|oz)\s*\)/i, "\\1")
+    |> String.replace(~r/(\d+(?:\s+\d+\/\d+)?\s+(?:cups?|tablespoons?|tbsp|teaspoons?|tsp)(?:\s+packed)?)\s*\(\s*\d+(?:\s+\d+\/\d+)?(?:\.\d+)?\s*(?:grams?|g)\s*\/\s*\d+(?:\s+\d+\/\d+)?(?:\.\d+)?\s*(?:ounces?|oz)\s*\)/i, "\\1")
     # Parens containing "store bought", "homemade", "or sub", "see note", "if needed"
     |> String.replace(~r/\(\s*(?:store\s*bought|homemade|or\s+sub|see\s+note|if\s+needed|approximately|about\s+\d)[^)]*\)/i, "")
     # Parens starting with "or" suggesting alternatives we don't parse: "(or other protein)"
@@ -407,6 +407,12 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     text
     |> String.replace(~r/\s+for\s+(?:spicy|mild|extra|a)\s+.*$/i, "")
     |> String.replace(~r/\s+of\s+(?:your\s+)?choice\b/i, "")
+    # "crusty bread to serve" -> "crusty bread", "ice cream to serve (optional)" -> "ice cream"
+    |> String.replace(~r/,?\s+to\s+serve\b.*$/i, "")
+    # "icing sugar to dust" -> "icing sugar"
+    |> String.replace(~r/,?\s+to\s+dust\b.*$/i, "")
+    # "oil for deep-frying" -> "oil", "vegetable oil for frying" -> "vegetable oil"
+    |> String.replace(~r/,?\s+for\s+(?:deep[- ]?)?frying\b.*$/i, "")
   end
 
   # Normalize "hard boiled eggs" -> "hard-boiled eggs" so tokenizer sees it as a prep
@@ -422,6 +428,10 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   defp normalize_handful(text) do
     text
     |> String.replace(~r/^\s*(?:a\s+)?handful(?:\s+of)?\s+/i, "1/4 cup ")
+    # "a few sprigs of fresh thyme" -> "2 sprigs fresh thyme"
+    |> String.replace(~r/^\s*(?:a\s+)?few\s+sprigs?\s+(?:of\s+)?/i, "2 sprigs ")
+    # "a sprig of thyme" -> "1 sprig thyme"
+    |> String.replace(~r/^\s*a\s+sprig\s+(?:of\s+)?/i, "1 sprig ")
   end
 
   # Strip "heaped" modifier before measurement units
@@ -473,6 +483,14 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       ~r/^(\d+)\s*x\s*(\d+(?:\.\d+)?)\s*(g|ml|l|kg)\s+of\s+/i,
       "\\1 \\2 \\3 "
     )
+    # "7g sachet fast-action dried yeast" -> "1 (7-g) sachet dried yeast"
+    # No "X x" prefix, just "Yunit container [of] Z"
+    |> String.replace(
+      ~r/^(\d+(?:\.\d+)?)\s*(g|ml|l|kg)\s+(sachets?|packets?|tins?|cans?|bottles?|jars?|cartons?)\s+(?:of\s+)?/i,
+      "1 (\\1-\\2) \\3 "
+    )
+    # Strip yeast-specific modifiers: "fast-action", "easy-bake", "easy-blend", "fast-acting"
+    |> String.replace(~r/\b(?:fast-action|fast-acting|easy-bake|easy-blend)\s+/i, "")
   end
 
   # Normalize "1 medium X or Y Z" patterns where color modifiers are before "or"
@@ -647,6 +665,13 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       "preparations" => parsed.preparations,
       "modifiers" => parsed.modifiers
     }
+
+    # Mark skipped ingredients (equipment, section headers, salt-and-pepper, etc.)
+    base = if is_nil(parsed.primary_ingredient) and parsed.ingredients == [] do
+      Map.put(base, "skipped", true)
+    else
+      base
+    end
 
     # Add container if present
     base = if parsed.container do

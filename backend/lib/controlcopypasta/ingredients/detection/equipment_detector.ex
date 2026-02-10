@@ -84,7 +84,19 @@ defmodule Controlcopypasta.Ingredients.Detection.EquipmentDetector do
     "kitchen towels",
     "meat thermometer",
     "candy thermometer",
-    "instant-read thermometer"
+    "instant-read thermometer",
+    "deep-fry thermometer",
+    "deep fry thermometer",
+    "barbecue tongs",
+    "barbecue kit",
+    "baking spray",
+    "cooking spray",
+    "nonstick spray",
+    "spice mill",
+    "mortar and pestle",
+    "weber barbecue",
+    "weber chimney",
+    "pastry brush"
   ]
 
   @doc """
@@ -115,12 +127,15 @@ defmodule Controlcopypasta.Ingredients.Detection.EquipmentDetector do
   def is_equipment?(text) when is_binary(text) do
     normalized = String.downcase(text)
 
-    # Pattern 1: Starts with "a" or "an" followed by equipment word/phrase
-    if Regex.match?(~r/^an?\s+/i, text) do
-      contains_equipment_word?(normalized) or contains_equipment_phrase?(normalized)
-    else
-      # Pattern 2: Just an equipment phrase by itself
-      pure_equipment_phrase?(normalized)
+    cond do
+      # Pattern 1: Starts with "a" or "an" followed by equipment word/phrase
+      Regex.match?(~r/^an?\s+/i, text) ->
+        contains_equipment_word?(normalized) or contains_equipment_phrase?(normalized)
+      # Pattern 2: Contains a known equipment phrase
+      contains_equipment_phrase?(normalized) -> true
+      # Pattern 3: Just an equipment word by itself (no quantity)
+      not Regex.match?(~r/^\d/, text) and pure_equipment_word?(normalized) -> true
+      true -> false
     end
   end
 
@@ -148,11 +163,12 @@ defmodule Controlcopypasta.Ingredients.Detection.EquipmentDetector do
     end)
   end
 
-  # Check if text is purely an equipment phrase (no quantity prefix)
-  defp pure_equipment_phrase?(text) do
+  # Check if text is purely an equipment word (e.g., just "tongs", "skewers")
+  defp pure_equipment_word?(text) do
     trimmed = String.trim(text)
-    Enum.any?(@equipment_phrases, fn phrase ->
-      trimmed == phrase
-    end)
+    # Strip leading articles and brand names
+    stripped = Regex.replace(~r/^(?:an?\s+|the\s+|weber\s+)/i, trimmed, "")
+    words = String.split(stripped)
+    length(words) <= 2 and Enum.any?(words, fn w -> w in @equipment_words end)
   end
 end

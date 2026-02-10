@@ -56,7 +56,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   )
 
   # Container types
-  @containers ~w(can cans tin tins jar jars bottle bottles bag bags box boxes package packages pkg container containers carton cartons)
+  @containers ~w(can cans tin tins jar jars bottle bottles bag bags box boxes package packages pkg container containers carton cartons sachet sachets packet packets)
 
   alias Controlcopypasta.Ingredients.ParserCache
 
