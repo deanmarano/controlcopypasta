@@ -331,6 +331,9 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     |> String.replace(~r/\(\s*(\d+(?:\.\d+)?)\s*(?:ounces?|oz)\s+each\s*\)/i, "(\\1-ounce)")
     # "(15oz)" -> "(15-oz)" insert hyphen between digits and unit for tokenizer
     |> String.replace(~r/\((\d+(?:\.\d+)?)(oz|ounces?|g|grams?|ml|l)\)/i, "(\\1-\\2)")
+    # "1 can (28 oz crushed tomatoes)" -> "1 (28-oz) can crushed tomatoes"
+    # Rearrange: container (size unit ingredients) -> (size-unit) container ingredients
+    |> String.replace(~r/(\d+)\s+(cans?|tins?|jars?|bottles?|cartons?)\s+\(\s*(\d+(?:\.\d+)?)\s*(oz|ounces?|g|grams?|ml|l)\s+/i, "\\1 (\\3-\\4) \\2 ")
     # "(10 ounces/283 grams)" weight conversions after standard units (cups, tbsp, etc.)
     # Only strip when preceded by a standard measurement, NOT after "can/tin" (which need the size)
     # Number pattern allows fractions: "8 3/4", "1.5", "10"
