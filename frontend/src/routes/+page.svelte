@@ -15,7 +15,7 @@
 		<p class="tagline">Your self-hosted recipe manager</p>
 		<p class="description">
 			Import recipes from any website, plan your shopping, track nutrition, and manage dietary
-			needs. All on your own server, with no ads and no tracking.
+			needs.
 		</p>
 		<a href="/login" class="cta">Get Started</a>
 	</div>
@@ -26,9 +26,7 @@
 			<div class="feature">
 				<div class="icon">&#128214;</div>
 				<h3>Import Recipes</h3>
-				<p>
-					Paste a URL to auto-extract recipe details from any website. Import from Copy Me That.
-				</p>
+				<p>Paste a URL to auto-extract recipe details from any website.</p>
 			</div>
 			<div class="feature">
 				<div class="icon">&#128722;</div>
@@ -89,14 +87,6 @@
 			</div>
 		</div>
 	</section>
-
-	<div class="privacy-banner">
-		<h2>Your Data. Your Server.</h2>
-		<p>
-			Self-hosted with no ads and no tracking. Passwordless authentication with magic links and
-			passkeys. Print any recipe for offline use.
-		</p>
-	</div>
 
 	<section class="final-cta">
 		<h2>Ready to take control?</h2>
@@ -199,29 +189,6 @@
 		margin: 0;
 		color: var(--text-secondary);
 		line-height: var(--leading-relaxed);
-	}
-
-	.privacy-banner {
-		margin: var(--space-12) var(--space-4);
-		padding: var(--space-12) var(--space-8);
-		background: linear-gradient(135deg, var(--color-marinara-700), var(--color-marinara-900));
-		border-radius: var(--radius-lg);
-		color: var(--color-white);
-	}
-
-	.privacy-banner h2 {
-		font-family: var(--font-serif);
-		font-size: var(--text-3xl);
-		margin: 0 0 var(--space-4);
-		color: var(--color-white);
-	}
-
-	.privacy-banner p {
-		max-width: 600px;
-		margin: 0 auto;
-		font-size: var(--text-lg);
-		line-height: var(--leading-relaxed);
-		color: var(--color-marinara-100);
 	}
 
 	.final-cta {
