@@ -165,19 +165,46 @@ defmodule Controlcopypasta.Recipes do
 
   defp apply_search(query, _), do: query
 
-  # Filter out recipes that contain any of the avoided canonical ingredient IDs
-  defp apply_avoided_filter(query, %{"exclude_ingredient_ids" => ids})
+  # Filter out recipes that contain any of the avoided canonical ingredient IDs or names
+  defp apply_avoided_filter(query, %{"exclude_ingredient_ids" => ids} = params)
        when is_list(ids) and ids != [] do
     # Convert MapSet to list if needed
     id_list = if is_struct(ids, MapSet), do: MapSet.to_list(ids), else: ids
+    name_list = Map.get(params, "exclude_ingredient_names", [])
 
-    from r in query,
-      where:
-        fragment(
-          "NOT EXISTS (SELECT 1 FROM jsonb_array_elements(?) AS elem WHERE elem->>'canonical_id' = ANY(?))",
-          r.ingredients,
-          ^id_list
-        )
+    if name_list == [] do
+      # ID-only filter (original behavior)
+      from r in query,
+        where:
+          fragment(
+            "NOT EXISTS (SELECT 1 FROM jsonb_array_elements(?) AS elem WHERE elem->>'canonical_id' = ANY(?))",
+            r.ingredients,
+            ^id_list
+          )
+    else
+      # Combined filter: match by canonical_id OR by text content for unparsed ingredients
+      from r in query,
+        where:
+          fragment(
+            """
+            NOT EXISTS (
+              SELECT 1 FROM jsonb_array_elements(?) AS elem
+              WHERE
+                elem->>'canonical_id' = ANY(?)
+                OR (
+                  (elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = '')
+                  AND EXISTS (
+                    SELECT 1 FROM unnest(?::text[]) AS avoided_name
+                    WHERE lower(elem->>'text') LIKE '%' || avoided_name || '%'
+                  )
+                )
+            )
+            """,
+            r.ingredients,
+            ^id_list,
+            ^name_list
+          )
+    end
   end
 
   defp apply_avoided_filter(query, _), do: query

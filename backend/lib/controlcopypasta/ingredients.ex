@@ -658,6 +658,18 @@ defmodule Controlcopypasta.Ingredients do
   end
 
   @doc """
+  Returns a list of canonical ingredient names for the given set of IDs.
+  """
+  def list_canonical_names_by_ids(ids) when is_struct(ids, MapSet) do
+    list = MapSet.to_list(ids)
+
+    CanonicalIngredient
+    |> where([i], i.id in ^list)
+    |> select([i], i.name)
+    |> Repo.all()
+  end
+
+  @doc """
   Returns ingredient names that contain an allergen from the given groups.
   """
   def get_allergen_ingredients(allergen_groups) when is_list(allergen_groups) do

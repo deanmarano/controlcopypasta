@@ -3,6 +3,7 @@ defmodule ControlcopypastaWeb.BrowseController do
 
   alias Controlcopypasta.Recipes
   alias Controlcopypasta.Accounts
+  alias Controlcopypasta.Ingredients
   alias Controlcopypasta.Scraper
   alias Controlcopypasta.Nutrition.Calculator
 
@@ -87,7 +88,11 @@ defmodule ControlcopypastaWeb.BrowseController do
       avoided_ids = Accounts.get_avoided_canonical_ids(user.id)
 
       if MapSet.size(avoided_ids) > 0 do
-        Map.put(params, "exclude_ingredient_ids", MapSet.to_list(avoided_ids))
+        avoided_names = Ingredients.list_canonical_names_by_ids(avoided_ids)
+
+        params
+        |> Map.put("exclude_ingredient_ids", MapSet.to_list(avoided_ids))
+        |> Map.put("exclude_ingredient_names", avoided_names)
       else
         params
       end
