@@ -7,11 +7,12 @@ defmodule ControlcopypastaWeb.Router do
     plug :accepts, ["json"]
   end
 
-  # Health check endpoint (no auth required)
+  # Public endpoints (no auth required)
   scope "/api", ControlcopypastaWeb do
     pipe_through :api
 
     get "/health", HealthController, :index
+    get "/browse/domains/:domain/screenshot", BrowseController, :screenshot
   end
 
   pipeline :api_auth do
@@ -104,7 +105,6 @@ defmodule ControlcopypastaWeb.Router do
 
     # Browse recipes by domain
     get "/browse/domains", BrowseController, :domains
-    get "/browse/domains/:domain/screenshot", BrowseController, :screenshot
     get "/browse/domains/:domain", BrowseController, :recipes_by_domain
     get "/browse/domains/:domain/recipes/:id", BrowseController, :show_recipe
     get "/browse/domains/:domain/recipes/:id/nutrition", BrowseController, :nutrition
