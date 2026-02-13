@@ -58,12 +58,30 @@ defmodule Controlcopypasta.Recipes do
   end
 
   def list_domains do
+    alias Controlcopypasta.Recipes.Domain
+
     Recipe
     |> where([r], not is_nil(r.source_domain))
-    |> group_by([r], r.source_domain)
-    |> select([r], %{domain: r.source_domain, count: count(r.id)})
+    |> join(:left, [r], d in Domain, on: r.source_domain == d.domain)
+    |> group_by([r, d], [r.source_domain, d.favicon_url, d.screenshot_captured_at])
+    |> select([r, d], %{
+      domain: r.source_domain,
+      count: count(r.id),
+      has_screenshot: not is_nil(d.screenshot_captured_at),
+      favicon_url: d.favicon_url
+    })
     |> order_by([r], desc: count(r.id))
     |> Repo.all()
+  end
+
+  def get_domain_screenshot(domain_name) do
+    alias Controlcopypasta.Recipes.Domain
+
+    Domain
+    |> where([d], d.domain == ^domain_name)
+    |> where([d], not is_nil(d.screenshot))
+    |> select([d], d.screenshot)
+    |> Repo.one()
   end
 
   def list_recipes_by_domain(domain, params \\ %{}) do

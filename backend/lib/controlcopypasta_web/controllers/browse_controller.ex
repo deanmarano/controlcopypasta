@@ -13,6 +13,19 @@ defmodule ControlcopypastaWeb.BrowseController do
     render(conn, :domains, domains: domains)
   end
 
+  def screenshot(conn, %{"domain" => domain}) do
+    case Recipes.get_domain_screenshot(domain) do
+      nil ->
+        conn |> send_resp(404, "") |> halt()
+
+      screenshot_binary ->
+        conn
+        |> put_resp_content_type("image/png")
+        |> put_resp_header("cache-control", "public, max-age=86400")
+        |> send_resp(200, screenshot_binary)
+    end
+  end
+
   def recipes_by_domain(conn, %{"domain" => domain} = params) do
     user = conn.assigns.current_user
     params = maybe_add_avoided_filter(params, user)

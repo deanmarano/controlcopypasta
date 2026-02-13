@@ -104,6 +104,7 @@ defmodule ControlcopypastaWeb.Router do
 
     # Browse recipes by domain
     get "/browse/domains", BrowseController, :domains
+    get "/browse/domains/:domain/screenshot", BrowseController, :screenshot
     get "/browse/domains/:domain", BrowseController, :recipes_by_domain
     get "/browse/domains/:domain/recipes/:id", BrowseController, :show_recipe
     get "/browse/domains/:domain/recipes/:id/nutrition", BrowseController, :nutrition
