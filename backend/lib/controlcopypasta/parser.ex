@@ -11,7 +11,7 @@ defmodule Controlcopypasta.Parser do
   the Controlcopypasta.Parser.Scraper behaviour and register it.
   """
 
-  alias Controlcopypasta.Parser.{JsonLd, Scraper, BrowserFetch}
+  alias Controlcopypasta.Parser.{JsonLd, Scraper}
 
   @user_agent "ControlCopyPasta/1.0 (Recipe Parser)"
 
@@ -23,22 +23,6 @@ defmodule Controlcopypasta.Parser do
   end
 
   defp fetch_html(url) do
-    # Check if this domain requires browser fetching
-    if BrowserFetch.browser_required?(url) do
-      BrowserFetch.fetch(url)
-    else
-      case fetch_html_http(url) do
-        {:error, "HTTP 403"} ->
-          # Try browser fetch as fallback for 403 errors
-          BrowserFetch.fetch(url)
-
-        result ->
-          result
-      end
-    end
-  end
-
-  defp fetch_html_http(url) do
     case Req.get(url, headers: [{"user-agent", @user_agent}], max_redirects: 5) do
       {:ok, %Req.Response{status: 200, body: body}} when is_binary(body) ->
         {:ok, body}

@@ -53,37 +53,6 @@ config :controlcopypasta, :webauthn,
   rp_id: System.get_env("WEBAUTHN_RP_ID") || "localhost",
   rp_name: "ControlCopyPasta"
 
-# Browser pool configuration for scraping
-config :controlcopypasta, :browser_pool_size, 1
-
-# Scraping rate limits per domain (be a good citizen)
-# These limits apply independently to each domain
-config :controlcopypasta, :scraping,
-  # Minimum delay between requests (ms)
-  min_delay_ms: 3000,
-  # Random additional delay up to this amount (ms)
-  max_random_delay_ms: 5000,
-  # Maximum pages to scrape per hour per domain
-  max_per_hour: 150,
-  # Maximum pages to scrape per day per domain
-  max_per_day: 2500
-
-# Oban job queue configuration is set in runtime.exs based on environment
-# Dev: scraping disabled by default (set ENABLE_SCRAPING=true to enable)
-# Prod: scraping enabled by default (set ENABLE_SCRAPING=false to disable)
-
-# FatSecret API rate limiting (free tier: 5,000 calls/month)
-config :controlcopypasta, :fatsecret,
-  max_per_hour: 150,
-  max_per_day: 4000,
-  delay_ms: 3000
-
-# Density enrichment rate limiting (uses both FatSecret and USDA)
-config :controlcopypasta, :density,
-  max_per_hour: 150,
-  max_per_day: 4000,
-  delay_ms: 3000
-
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

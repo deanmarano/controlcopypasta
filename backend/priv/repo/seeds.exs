@@ -2,10 +2,20 @@
 #
 #     mix run priv/repo/seeds.exs
 #
-# Inside the script, you can read and write to any of your
-# repositories directly:
-#
-#     Controlcopypasta.Repo.insert!(%Controlcopypasta.SomeSchema{})
-#
-# We recommend using the bang functions (`insert!`, `update!`
-# and so on) as they will fail if something goes wrong.
+# All seed files use upsert logic (on_conflict: :nothing or upsert_density)
+# so they are safe to run multiple times.
+
+# 1. Canonical ingredients and preparations (base data, no dependencies)
+Code.eval_file("priv/repo/seeds/ingredients.exs")
+
+# 2. Additional ingredients for recipe nutrition completeness
+Code.eval_file("priv/repo/seeds/recipe_nutrition_completeness.exs")
+
+# 3. Ingredient densities (depends on canonical ingredients)
+Code.eval_file("priv/repo/seeds/ingredient_densities.exs")
+
+# 4. Expanded densities (depends on canonical ingredients)
+Code.eval_file("priv/repo/seeds/ingredient_densities_expanded.exs")
+
+# 5. Brand package sizes (depends on canonical ingredients)
+Code.eval_file("priv/repo/seeds/brand_package_sizes.exs")

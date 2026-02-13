@@ -1,19 +1,13 @@
 defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
   @moduledoc """
-  Oban worker that scans recipes for unmatched ingredients and queues them for review.
+  Scans recipes for unmatched ingredients and queues them for review.
 
-  This worker:
   1. Scans all recipes with ingredients
   2. Parses each ingredient using TokenParser
   3. Identifies ingredients that don't match any canonical
   4. Tracks frequency and sample texts
   5. Queues ingredients appearing 5+ times for admin review
-  6. Optionally looks up FatSecret data to pre-populate suggestions
   """
-
-  use Oban.Worker,
-    queue: :scheduled,
-    max_attempts: 3
 
   alias Controlcopypasta.Repo
   alias Controlcopypasta.Recipes.Recipe
@@ -104,8 +98,7 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
   @batch_size 5000
   @parse_chunk_size 5000
 
-  @impl Oban.Worker
-  def perform(%Oban.Job{}) do
+  def perform do
     Logger.info("Starting pending ingredient scan...")
 
     lookup = Ingredients.build_ingredient_lookup()
@@ -303,11 +296,9 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
   end
 
   @doc """
-  Enqueues a job to scan for pending ingredients.
+  Runs a scan for pending ingredients asynchronously.
   """
   def enqueue do
-    %{}
-    |> __MODULE__.new()
-    |> Oban.insert()
+    Task.start(fn -> perform() end)
   end
 end

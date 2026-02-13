@@ -175,10 +175,9 @@ defmodule ControlcopypastaWeb.Admin.PendingIngredientController do
     {:ok, cleared_count} = Ingredients.clear_pending_ingredients()
 
     case PendingIngredientWorker.enqueue() do
-      {:ok, job} ->
+      {:ok, _pid} ->
         json(conn, %{
-          message: "Cleared #{cleared_count} pending ingredients, scan job enqueued",
-          job_id: job.id,
+          message: "Cleared #{cleared_count} pending ingredients, scan started",
           cleared_count: cleared_count
         })
 

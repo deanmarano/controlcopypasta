@@ -76,5 +76,3 @@ config :controlcopypasta, Controlcopypasta.Mailer,
   relay: System.get_env("SMTP_HOST") || "localhost",
   port: String.to_integer(System.get_env("SMTP_PORT") || "1025")
 
-# Oban config for dev is set in runtime.exs after .env is loaded
-# This allows ENABLE_SCRAPING env var to work properly

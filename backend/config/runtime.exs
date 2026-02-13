@@ -8,21 +8,6 @@ if config_env() in [:dev, :test] do
     System.put_env(key, value)
   end)
 
-  # Oban config for dev - scraping disabled by default
-  # Set ENABLE_SCRAPING=true in .env to enable
-  # Note: fatsecret, density, and nutrition queues are always enabled for ingredient enrichment
-  scraping_enabled = System.get_env("ENABLE_SCRAPING") == "true"
-
-  dev_queues = [scheduled: 1, parsing: 4, fatsecret: 1, density: 1, nutrition: 1]
-  dev_queues = if scraping_enabled, do: [{:scraper, 1} | dev_queues], else: dev_queues
-
-  config :controlcopypasta, Oban,
-    repo: Controlcopypasta.Repo,
-    queues: dev_queues,
-    plugins: [
-      {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)}
-    ]
-
   # Dev/test secret key base from env (or safe default for local dev only)
   dev_secret = System.get_env("SECRET_KEY_BASE") || "dev_only_not_for_production_change_me_xxxxxxxxxxxxxxxxxxxxxxxxx"
   config :controlcopypasta, ControlcopypastaWeb.Endpoint,
@@ -154,49 +139,6 @@ if config_env() == :prod do
 
     config :controlcopypasta, Controlcopypasta.Mailer, smtp_config
   end
-
-  # Browser pool size - should match scraper concurrency for optimal throughput
-  browser_pool_size = String.to_integer(System.get_env("BROWSER_POOL_SIZE") || "1")
-  config :controlcopypasta, :browser_pool_size, browser_pool_size
-
-  # Oban configuration - scraper enabled by default in prod, set ENABLE_SCRAPING=false to disable
-  scraping_enabled = System.get_env("ENABLE_SCRAPING", "true") == "true"
-  scraper_concurrency = String.to_integer(System.get_env("OBAN_SCRAPER_CONCURRENCY") || "1")
-
-  parsing_concurrency = String.to_integer(System.get_env("OBAN_PARSING_CONCURRENCY") || "10")
-
-  scraper_queues =
-    if scraping_enabled do
-      [scraper: scraper_concurrency, scheduled: 1, parsing: parsing_concurrency, fatsecret: 1, density: 1, nutrition: 1]
-    else
-      [scheduled: 1, parsing: parsing_concurrency, fatsecret: 1, density: 1, nutrition: 1]
-    end
-
-  scraper_cron =
-    if scraping_enabled do
-      [
-        {"*/5 * * * *", Controlcopypasta.Workers.ScraperUnpauser},
-        {"*/5 * * * *", Controlcopypasta.Workers.QueueHealthChecker},
-        {"0 */6 * * *", Controlcopypasta.Workers.IngredientParser, args: %{"fan_out" => true}},
-        {"0 2 * * *", Controlcopypasta.Workers.ImageSeeder},
-        {"0 3 * * 0", Controlcopypasta.Workers.UsageCountUpdater}
-      ]
-    else
-      [
-        {"*/5 * * * *", Controlcopypasta.Workers.QueueHealthChecker},
-        {"0 */6 * * *", Controlcopypasta.Workers.IngredientParser, args: %{"fan_out" => true}},
-        {"0 2 * * *", Controlcopypasta.Workers.ImageSeeder},
-        {"0 3 * * 0", Controlcopypasta.Workers.UsageCountUpdater}
-      ]
-    end
-
-  config :controlcopypasta, Oban,
-    repo: Controlcopypasta.Repo,
-    queues: scraper_queues,
-    plugins: [
-      {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)},
-      {Oban.Plugins.Cron, crontab: scraper_cron}
-    ]
 
   # ## SSL Support
   #

@@ -327,44 +327,6 @@ defmodule Controlcopypasta.Release do
   end
 
   @doc """
-  Adds a new domain to the scraping queue with seed URLs.
-  """
-  def add_scrape_domain(domain, seed_urls) when is_list(seed_urls) do
-    load_app()
-
-    {:ok, _, _} =
-      Ecto.Migrator.with_repo(Controlcopypasta.Repo, fn _repo ->
-        {:ok, result} = Controlcopypasta.Scraper.enqueue_domain(domain, seed_urls)
-        IO.puts("Enqueued #{result.enqueued} URLs for domain: #{result.domain}")
-        result
-      end)
-  end
-
-  @doc """
-  Adds halfbakedharvest.com and minimalistbaker.com to the scraping queue.
-  """
-  def add_new_domains do
-    load_app()
-
-    {:ok, _, _} =
-      Ecto.Migrator.with_repo(Controlcopypasta.Repo, fn _repo ->
-        # Half Baked Harvest
-        {:ok, hbh} = Controlcopypasta.Scraper.enqueue_domain("halfbakedharvest.com", [
-          "https://www.halfbakedharvest.com/category/recipes/"
-        ])
-        IO.puts("Half Baked Harvest: enqueued #{hbh.enqueued} URLs")
-
-        # Minimalist Baker
-        {:ok, mb} = Controlcopypasta.Scraper.enqueue_domain("minimalistbaker.com", [
-          "https://minimalistbaker.com/recipes/"
-        ])
-        IO.puts("Minimalist Baker: enqueued #{mb.enqueued} URLs")
-
-        :ok
-      end)
-  end
-
-  @doc """
   Generates a JWT token for a user by email.
   Useful for testing admin endpoints.
 

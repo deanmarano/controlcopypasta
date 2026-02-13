@@ -16,11 +16,6 @@
 	<h1>Admin</h1>
 
 	<div class="admin-sections">
-		<a href="/admin/scraping" class="admin-card">
-			<h2>Scraping</h2>
-			<p>Manage web scraping queue, domains, rate limits, and browser pool status.</p>
-		</a>
-
 		<a href="/admin/ingredients" class="admin-card">
 			<h2>Ingredients</h2>
 			<p>Set animal types, categories, and allergen groups for canonical ingredients.</p>

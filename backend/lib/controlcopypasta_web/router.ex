@@ -65,14 +65,6 @@ defmodule ControlcopypastaWeb.Router do
     delete "/:id", PasskeyController, :delete
   end
 
-  # Public API endpoints (no auth required)
-  scope "/api", ControlcopypastaWeb do
-    pipe_through :api
-
-    # Domain screenshots (public for <img> tags)
-    get "/browse/domains/:domain/screenshot", BrowseController, :domain_screenshot
-  end
-
   # Protected API endpoints (require authentication)
   scope "/api", ControlcopypastaWeb do
     pipe_through :api_authenticated
@@ -159,31 +151,6 @@ defmodule ControlcopypastaWeb.Router do
     get "/admin/kitchen-tools/:id", Admin.KitchenToolController, :show
     put "/admin/kitchen-tools/:id", Admin.KitchenToolController, :update
     delete "/admin/kitchen-tools/:id", Admin.KitchenToolController, :delete
-
-    # Scraper management
-    get "/admin/scraper/domains", Admin.ScraperController, :domains
-    post "/admin/scraper/domains", Admin.ScraperController, :add_domain
-    get "/admin/scraper/queue", Admin.ScraperController, :queue_stats
-    get "/admin/scraper/rate-limits", Admin.ScraperController, :rate_limits
-    post "/admin/scraper/pause", Admin.ScraperController, :pause
-    post "/admin/scraper/resume", Admin.ScraperController, :resume
-    get "/admin/scraper/failed", Admin.ScraperController, :failed
-    post "/admin/scraper/retry-failed", Admin.ScraperController, :retry_failed
-    post "/admin/scraper/domains/:domain/screenshot", Admin.ScraperController, :capture_screenshot
-    get "/admin/scraper/browser-status", Admin.ScraperController, :browser_status
-    get "/admin/scraper/workers", Admin.ScraperController, :executing_workers
-    post "/admin/scraper/parse-ingredients", Admin.ScraperController, :parse_ingredients
-    get "/admin/scraper/parsing-stats", Admin.ScraperController, :parsing_stats
-    post "/admin/scraper/reset-stale", Admin.ScraperController, :reset_stale
-
-    # Ingredient enrichment
-    get "/admin/scraper/ingredient-enrichment", Admin.ScraperController, :ingredient_enrichment_stats
-    get "/admin/scraper/nutrition-quality", Admin.ScraperController, :nutrition_quality
-    post "/admin/scraper/enqueue-nutrition", Admin.ScraperController, :enqueue_nutrition_enrichment
-    post "/admin/scraper/enqueue-density", Admin.ScraperController, :enqueue_density_enrichment
-    post "/admin/scraper/fix-primary-nutrition", Admin.ScraperController, :fix_primary_nutrition
-    post "/admin/scraper/refetch-nutrition", Admin.ScraperController, :refetch_nutrition
-    post "/admin/scraper/refetch-nutrition/:id", Admin.ScraperController, :refetch_ingredient_nutrition
 
     # Pending ingredients review
     get "/admin/pending-ingredients", Admin.PendingIngredientController, :index

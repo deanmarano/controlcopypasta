@@ -37,9 +37,6 @@ config :phoenix,
 config :controlcopypasta, Controlcopypasta.Mailer,
   adapter: Swoosh.Adapters.Test
 
-# Oban testing mode - jobs are not processed automatically
-config :controlcopypasta, Oban, testing: :inline
-
 # WebAuthn/Passkey configuration for tests - override any .env values
 config :controlcopypasta, :webauthn,
   origin: "http://localhost:4002",

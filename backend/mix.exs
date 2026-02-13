@@ -59,10 +59,6 @@ defmodule Controlcopypasta.MixProject do
       {:gen_smtp, "~> 1.0"},
       # CORS
       {:cors_plug, "~> 3.0"},
-      # Browser pool for scraping
-      {:nimble_pool, "~> 1.0"},
-      # Job queue for background scraping
-      {:oban, "~> 2.17"},
       # WebAuthn/Passkey authentication
       {:wax_, "~> 0.6"},
       # Load .env files automatically
