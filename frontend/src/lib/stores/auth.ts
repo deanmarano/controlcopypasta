@@ -38,6 +38,29 @@ interface AuthState {
 }
 
 const TOKEN_KEY = 'controlcopypasta_token';
+const TOKEN_COOKIE = 'controlcopypasta_token';
+
+function setSharedCookie(token: string) {
+  if (!browser) return;
+  const hostname = window.location.hostname;
+  // Set cookie on parent domain so subdomains (e.g. admin.) can read it
+  const domainParts = hostname.split('.');
+  const domain = domainParts.length >= 2
+    ? '.' + domainParts.slice(-2).join('.')
+    : hostname;
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${TOKEN_COOKIE}=${token}; domain=${domain}; path=/; max-age=2592000; SameSite=Lax${secure}`;
+}
+
+function clearSharedCookie() {
+  if (!browser) return;
+  const hostname = window.location.hostname;
+  const domainParts = hostname.split('.');
+  const domain = domainParts.length >= 2
+    ? '.' + domainParts.slice(-2).join('.')
+    : hostname;
+  document.cookie = `${TOKEN_COOKIE}=; domain=${domain}; path=/; max-age=0`;
+}
 
 function createAuthStore() {
   const initialState: AuthState = {
@@ -60,10 +83,12 @@ function createAuthStore() {
 
       try {
         const { user } = await authApi.me(token);
+        setSharedCookie(token);
         update((s) => ({ ...s, token, user, loading: false }));
       } catch {
         // Token is invalid, clear it
         if (browser) localStorage.removeItem(TOKEN_KEY);
+        clearSharedCookie();
         update((s) => ({ ...s, token: null, user: null, loading: false }));
       }
     },
@@ -75,6 +100,7 @@ function createAuthStore() {
     async verifyMagicLink(token: string) {
       const result = await authApi.verifyMagicLink(token);
       if (browser) localStorage.setItem(TOKEN_KEY, result.token);
+      setSharedCookie(result.token);
       set({ token: result.token, user: result.user, loading: false });
       return result;
     },
@@ -91,6 +117,7 @@ function createAuthStore() {
       }
 
       if (browser) localStorage.removeItem(TOKEN_KEY);
+      clearSharedCookie();
       set({ token: null, user: null, loading: false });
     },
 
@@ -270,6 +297,7 @@ function createAuthStore() {
 
       // Save token and user
       if (browser) localStorage.setItem(TOKEN_KEY, result.token);
+      setSharedCookie(result.token);
       set({ token: result.token, user: result.user, loading: false });
 
       return result;
