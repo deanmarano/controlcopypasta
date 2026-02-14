@@ -1,0 +1,15 @@
+{
+  "healthchecks": {
+    "web": [
+      {
+        "type": "startup",
+        "name": "phoenix health check",
+        "path": "/api/health",
+        "attempts": 5,
+        "wait": 5,
+        "timeout": 10,
+        "port": 5000
+      }
+    ]
+  }
+}
