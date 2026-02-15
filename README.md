@@ -4,201 +4,164 @@
 
 ## Why ControlCopyPasta?
 
-### Own Your Recipes Forever
-No more worrying about subscription fees, service shutdowns, or corporate data harvesting. Your recipes live on your server, backed by your database, accessible only to you.
+- **Own your recipes forever** - No subscriptions, no shutdowns, no data harvesting. Your recipes live on your server.
+- **Save from any website** - Browser extension (Chrome & Firefox) clips recipes with one click, extracting ingredients, instructions, and images.
+- **Import from Copy Me That** - Migrate your entire collection in seconds.
+- **Smart scaling** - Cook for 2 instead of 8. Scale any recipe 0.25x-4x with intelligent fraction handling.
+- **Nutrition info** - Per-recipe nutrition breakdown with ingredient-level detail.
+- **Find similar recipes** - Discover connections in your collection based on shared ingredients.
+- **Compare side-by-side** - See what makes your three chocolate chip cookie recipes different.
+- **Browse by source** - Group recipes by origin website.
+- **Shopping lists** - Build shopping lists from recipes with automatic ingredient grouping.
+- **Print-ready** - Clean layouts for the kitchen, no ads or clutter.
 
-### Save Recipes From Any Website
-The browser extension (Chrome & Firefox) lets you clip recipes from any cooking site with one click. It intelligently extracts ingredients, instructions, prep times, and images - no more copying and pasting.
+## Quick Start (Docker)
 
-### Migrate From Copy Me That
-Switching from Copy Me That? Import your entire recipe collection in seconds. Just export your data and upload - all your recipes, tags, and notes come along.
+The fastest way to run ControlCopyPasta:
 
-### Smart Recipe Scaling
-Cooking for 2 instead of 8? Scale any recipe up or down (0.25x to 4x) with intelligent fraction handling. "1/2 cup" becomes "1/8 cup" - no calculator needed.
+```bash
+git clone https://github.com/deanmarano/controlcopypasta.git
+cd controlcopypasta
+cp .env.example .env
+```
 
-### Find Similar Recipes
-Discover connections in your collection. ControlCopyPasta analyzes ingredients to suggest similar recipes, helping you find variations or substitutes for dishes you love.
+Edit `.env` with your settings (see [Configuration](#configuration)), then:
 
-### Compare Recipes Side-by-Side
-Have 3 different chocolate chip cookie recipes? Compare them side-by-side to see ingredient overlaps, proportional differences, and what makes each unique.
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
 
-### Browse By Source
-See all recipes from your favorite cooking sites grouped together. Quickly find "all my Serious Eats recipes" or "everything from Bon Appetit."
-
-### Print-Ready
-Clean, ink-friendly print layouts that show just what you need in the kitchen - no ads, no navigation, no clutter.
-
----
-
-## Features
-
-- **Recipe Management** - Create, edit, organize, and archive recipes
-- **Browser Extension** - One-click save from any recipe website (Chrome & Firefox)
-- **Import/Export** - Migrate from Copy Me That with full data import
-- **Tags** - Organize recipes with custom tags
-- **Search** - Find recipes by title, ingredients, or tags
-- **Recipe Scaling** - Adjust serving sizes with smart fraction math
-- **Similar Recipes** - AI-powered recipe similarity matching
-- **Recipe Comparison** - Side-by-side ingredient analysis
-- **Source Browsing** - Group recipes by origin website
-- **Print View** - Kitchen-friendly recipe printouts
-- **Passwordless Auth** - Secure magic link login (no passwords to remember)
-- **Mobile Responsive** - Works on phone, tablet, or desktop
-- **Docker Deployment** - One-command setup with Docker Compose
-
----
-
-## Quick Start
-
-### Prerequisites
-- Docker and Docker Compose
-- SMTP server for magic link emails (or use a service like Mailgun, SendGrid, etc.)
-
-### Deploy with Docker Compose
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/deanmarano/controlcopypasta.git
-   cd controlcopypasta
-   ```
-
-2. Copy and configure environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your settings (see Configuration below)
-   ```
-
-3. Generate secrets:
-   ```bash
-   # Generate two unique secrets for these .env values:
-   docker run --rm elixir:1.16 mix phx.gen.secret
-   ```
-
-4. Start the application:
-   ```bash
-   docker compose -f docker-compose.prod.yml up -d
-   ```
-
-5. Access your instance at `http://localhost` (or your configured domain)
+Access your instance at `http://localhost`.
 
 ### Configuration
 
-Edit your `.env` file with the following:
+At minimum, generate two secrets and set a database password in `.env`:
 
 ```bash
-# Required
-POSTGRES_PASSWORD=your_secure_database_password
-SECRET_KEY_BASE=your_generated_secret_1
-GUARDIAN_SECRET_KEY=your_generated_secret_2
+# Generate secrets (run twice, one for each key)
+docker run --rm elixir:1.18 mix phx.gen.secret
 
-# Your domain (for links in emails)
-PHX_HOST=recipes.yourdomain.com
-VITE_API_URL=https://recipes.yourdomain.com/api
+# Required in .env:
+SECRET_KEY_BASE=<first generated secret>
+GUARDIAN_SECRET_KEY=<second generated secret>
+POSTGRES_PASSWORD=<a secure password>
 
-# Email (required for magic link login)
+# For magic link login to work, configure SMTP:
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
-SMTP_USERNAME=your_smtp_username
-SMTP_PASSWORD=your_smtp_password
+SMTP_USERNAME=your-username
+SMTP_PASSWORD=your-password
 ```
 
----
+See `.env.example` for all available options.
+
+## Development Setup
+
+### Prerequisites
+
+- [Elixir](https://elixir-lang.org/install.html) 1.18+ (with Erlang/OTP 27)
+- [Node.js](https://nodejs.org/) 22+
+- [Docker](https://www.docker.com/) (for PostgreSQL and Mailhog)
+- Optional: [overmind](https://github.com/DarthSim/overmind) or [foreman](https://github.com/ddollar/foreman) for process management
+
+### Option A: All-in-one with Overmind
+
+```bash
+# Start everything (Postgres, Mailhog, backend, frontend)
+overmind start -f Procfile.dev
+```
+
+Then run database setup once in another terminal:
+
+```bash
+cd backend && mix ecto.setup
+```
+
+### Option B: Start services individually
+
+```bash
+# 1. Start Postgres (dev on port 5434, test on 5433) and Mailhog
+docker compose up -d
+
+# 2. Backend (from backend/)
+cd backend
+mix deps.get
+mix ecto.setup    # Creates DB, runs migrations, seeds data
+mix phx.server    # Starts on localhost:4000
+
+# 3. Frontend (from frontend/, in another terminal)
+cd frontend
+npm install
+npm run dev       # Starts on localhost:5173
+```
+
+### Dev Services
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| Frontend | http://localhost:5173 | SvelteKit dev server |
+| Backend API | http://localhost:4000/api | Phoenix JSON API |
+| Mailhog | http://localhost:8025 | Catches all dev emails (magic links) |
+
+No `.env` file is needed for local development - all config has sensible defaults.
+
+### Running Tests
+
+```bash
+# Backend (from backend/)
+cd backend && mix test
+
+# Frontend (from frontend/)
+cd frontend && npm run test
+```
 
 ## Browser Extension
 
-Save recipes directly from any cooking website.
-
-### Installation
+Save recipes from any cooking website with one click.
 
 **Chrome:**
-1. Download the extension from `extension/`
-2. Go to `chrome://extensions/`
-3. Enable "Developer mode"
-4. Click "Load unpacked" and select the `extension/` folder
-5. Configure the extension with your server URL
+1. Go to `chrome://extensions/`, enable Developer Mode
+2. Click "Load unpacked", select the `extension/` folder
+3. Configure with your server URL
 
 **Firefox:**
 1. Go to `about:debugging#/runtime/this-firefox`
-2. Click "Load Temporary Add-on"
-3. Select `extension/manifest.firefox.json`
-4. Configure the extension with your server URL
-
-### Usage
-
-1. Navigate to any recipe page
-2. Click the ControlCopyPasta extension icon
-3. Review the extracted recipe
-4. Click "Save" to add it to your collection
-
-The extension uses Schema.org JSON-LD data when available, with fallback scrapers for popular recipe sites.
-
----
+2. Click "Load Temporary Add-on", select `extension/manifest.firefox.json`
+3. Configure with your server URL
 
 ## Importing From Copy Me That
 
 1. In Copy Me That, export your recipes (Settings > Export)
 2. In ControlCopyPasta, go to Settings > Import
 3. Upload your Copy Me That JSON export
-4. All recipes, including tags and notes, will be imported
 
----
+## Architecture
+
+```
+controlcopypasta/
+  backend/          Elixir/Phoenix JSON API
+    lib/            Business logic + web controllers
+    priv/           Migrations + seed data
+    test/           ExUnit tests
+  frontend/         SvelteKit SPA
+    src/lib/        API client, stores, utilities
+    src/routes/     Pages (recipes, browse, admin, auth)
+  extension/        Browser extension (Chrome + Firefox)
+  deploy/           Nginx config + startup script
+  Dockerfile        Production multi-stage build
+```
 
 ## Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| Backend | Elixir + Phoenix |
+| Backend | Elixir / Phoenix |
 | Frontend | SvelteKit |
 | Database | PostgreSQL |
-| Auth | Magic Link + JWT |
+| Auth | Magic Link + JWT (Guardian) |
 | Extension | WebExtension API |
-| Deployment | Docker Compose |
-
----
-
-## Development
-
-### Prerequisites
-- Elixir 1.16+
-- Node.js 20+
-- PostgreSQL 16+ (or use Docker)
-
-### Setup
-
-```bash
-# Start database
-docker compose up -d
-
-# Backend setup (from backend/)
-cd backend
-mix deps.get
-mix ecto.setup
-mix phx.server  # Runs on localhost:4000
-
-# Frontend setup (from frontend/)
-cd frontend
-npm install
-npm run dev  # Runs on localhost:5173
-```
-
-### Running Tests
-
-```bash
-# Backend tests
-cd backend && mix test
-
-# Frontend tests
-cd frontend && npm run test
-```
-
----
+| Deployment | Docker / Docker Compose |
 
 ## License
 
-MIT
-
----
-
-## Contributing
-
-Contributions are welcome! Please open an issue first to discuss what you'd like to change.
+[AGPL-3.0](LICENSE)

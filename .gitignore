@@ -23,5 +23,8 @@ deps/
 .DS_Store
 Thumbs.db
 
+# Planning files
+PLAN.md
+
 # Claude Code local config
 .claude/

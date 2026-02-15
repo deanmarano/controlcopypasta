@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:16-alpine
@@ -16,9 +14,9 @@ services:
       retries: 5
     restart: unless-stopped
 
-  backend:
+  app:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
     depends_on:
       db:
@@ -28,26 +26,16 @@ services:
       SECRET_KEY_BASE: ${SECRET_KEY_BASE:?Set SECRET_KEY_BASE in .env}
       GUARDIAN_SECRET_KEY: ${GUARDIAN_SECRET_KEY:?Set GUARDIAN_SECRET_KEY in .env}
       PHX_HOST: ${PHX_HOST:-localhost}
-      PORT: 4000
-      # Email configuration
+      PHX_SERVER: "true"
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      # Email (optional - magic link auth won't work without SMTP)
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
     ports:
-      - "4000:4000"
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:4000/api}
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
+      - "80:5000"
     restart: unless-stopped
 
 volumes:
