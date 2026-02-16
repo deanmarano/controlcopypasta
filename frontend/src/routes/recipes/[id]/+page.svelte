@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { recipes, ingredients as ingredientsApi, shoppingLists, type Recipe, type Ingredient, type SimilarRecipe, type ScaledIngredient, type ShoppingList, type RecipeNutrition, type IngredientDecision, type NutritionSource } from '$lib/api/client';
+	let savingCopy = $state(false);
 	import NutritionPanel from '$lib/components/NutritionPanel.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import IngredientDiagnostics from '$lib/components/IngredientDiagnostics.svelte';
@@ -235,6 +236,22 @@
 			recipe = result.data;
 		} catch {
 			alert('Failed to unarchive recipe');
+		}
+	}
+
+	async function handleSaveToMyRecipes() {
+		if (!recipe) return;
+		const token = authStore.getToken();
+		if (!token) return;
+
+		savingCopy = true;
+		try {
+			const result = await recipes.copy(token, recipe.id);
+			goto(`/recipes/${result.data.id}`);
+		} catch {
+			alert('Failed to save recipe');
+		} finally {
+			savingCopy = false;
 		}
 	}
 
@@ -577,15 +594,22 @@
 				{/if}
 			</div>
 			<div class="actions no-print">
-				<button onclick={openShoppingModal} class="btn btn-shopping">Add to List</button>
-				<button onclick={handlePrint} class="btn">Print</button>
-				<a href="/recipes/{recipe.id}/edit" class="btn">Edit</a>
-				{#if recipe.archived_at}
-					<button onclick={handleUnarchive} class="btn">Unarchive</button>
+				{#if recipe.is_owned === false}
+					<button onclick={handleSaveToMyRecipes} class="btn btn-save" disabled={savingCopy}>
+						{savingCopy ? 'Saving...' : 'Save to My Recipes'}
+					</button>
+					<button onclick={handlePrint} class="btn">Print</button>
 				{:else}
-					<button onclick={handleArchive} class="btn">Archive</button>
+					<button onclick={openShoppingModal} class="btn btn-shopping">Add to List</button>
+					<button onclick={handlePrint} class="btn">Print</button>
+					<a href="/recipes/{recipe.id}/edit" class="btn">Edit</a>
+					{#if recipe.archived_at}
+						<button onclick={handleUnarchive} class="btn">Unarchive</button>
+					{:else}
+						<button onclick={handleArchive} class="btn">Archive</button>
+					{/if}
+					<button onclick={handleDelete} class="btn btn-danger">Delete</button>
 				{/if}
-				<button onclick={handleDelete} class="btn btn-danger">Delete</button>
 			</div>
 		</header>
 
@@ -1542,6 +1566,23 @@
 	.compare-link:hover {
 		background: var(--color-marinara-50);
 		text-decoration: underline;
+	}
+
+	.btn-save {
+		background: var(--color-basil-500);
+		color: var(--color-white);
+		border-color: var(--color-basil-500);
+		font-weight: var(--font-medium);
+	}
+
+	.btn-save:hover:not(:disabled) {
+		background: var(--color-basil-600);
+		border-color: var(--color-basil-600);
+	}
+
+	.btn-save:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	/* Shopping list button */

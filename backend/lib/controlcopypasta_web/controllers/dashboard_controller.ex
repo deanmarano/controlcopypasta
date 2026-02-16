@@ -25,7 +25,8 @@ defmodule ControlcopypastaWeb.DashboardController do
       dinner_ideas: dinner_ideas,
       recently_added: recently_added,
       this_time_last_year: this_time_last_year,
-      avoided_set: avoided_set
+      avoided_set: avoided_set,
+      user_id: user.id
     )
   end
 

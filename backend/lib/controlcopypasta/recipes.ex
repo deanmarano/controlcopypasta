@@ -357,12 +357,12 @@ defmodule Controlcopypasta.Recipes do
   end
 
   def dinner_recipes_for_user(user_id, count, params \\ %{}) do
-    # First try recipes tagged "dinner"
+    # Query dinner-tagged recipes from ALL users (global discovery)
     dinner_tagged =
       Recipe
-      |> where([r], r.user_id == ^user_id)
       |> join(:inner, [r], t in assoc(r, :tags))
       |> where([r, t], t.name == "dinner")
+      |> where([r], not is_nil(r.image_url) and r.image_url != "")
       |> apply_archived_filter(%{})
       |> apply_avoided_filter(params)
       |> order_by(fragment("RANDOM()"))
@@ -370,7 +370,7 @@ defmodule Controlcopypasta.Recipes do
       |> preload(:tags)
       |> Repo.all()
 
-    # If we don't have enough, fill with random untagged recipes
+    # If we don't have enough, fill with the user's own recipes
     if length(dinner_tagged) < count do
       remaining = count - length(dinner_tagged)
       dinner_ids = Enum.map(dinner_tagged, & &1.id)
@@ -417,6 +417,34 @@ defmodule Controlcopypasta.Recipes do
     |> limit(^count)
     |> preload(:tags)
     |> Repo.all()
+  end
+
+  def copy_recipe(recipe_id, user_id) do
+    case Repo.get(Recipe, recipe_id) |> Repo.preload(:tags) do
+      nil ->
+        {:error, :not_found}
+
+      recipe ->
+        attrs = %{
+          "title" => recipe.title,
+          "description" => recipe.description,
+          "source_url" => recipe.source_url,
+          "source_domain" => recipe.source_domain,
+          "image_url" => recipe.image_url,
+          "ingredients" => recipe.ingredients,
+          "instructions" => recipe.instructions,
+          "prep_time_minutes" => recipe.prep_time_minutes,
+          "cook_time_minutes" => recipe.cook_time_minutes,
+          "total_time_minutes" => recipe.total_time_minutes,
+          "servings" => recipe.servings,
+          "notes" => recipe.notes,
+          "source_json_ld" => recipe.source_json_ld,
+          "user_id" => user_id,
+          "tag_ids" => Enum.map(recipe.tags, & &1.id)
+        }
+
+        create_recipe(attrs)
+    end
   end
 
   # Tags

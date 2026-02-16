@@ -28,13 +28,33 @@ defmodule ControlcopypastaWeb.RecipeController do
     end
   end
 
+  def copy(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+
+    case Recipes.copy_recipe(id, user.id) do
+      {:ok, %Recipe{} = recipe} ->
+        conn
+        |> put_status(:created)
+        |> render(:show, recipe: recipe)
+
+      {:error, :not_found} ->
+        {:error, :not_found}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
+
   def show(conn, %{"id" => id}) do
     user = conn.assigns.current_user
     avoided_set = Accounts.get_avoided_canonical_names(user.id)
 
-    case Recipes.get_recipe_for_user(user.id, id) do
+    # Try user's own recipes first, then fall back to any recipe (for discovered recipes)
+    recipe = Recipes.get_recipe_for_user(user.id, id) || Recipes.get_recipe(id)
+
+    case recipe do
       nil -> {:error, :not_found}
-      recipe -> render(conn, :show, recipe: recipe, avoided_set: avoided_set)
+      recipe -> render(conn, :show, recipe: recipe, avoided_set: avoided_set, user_id: user.id)
     end
   end
 

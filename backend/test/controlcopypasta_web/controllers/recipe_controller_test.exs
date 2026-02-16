@@ -67,12 +67,14 @@ defmodule ControlcopypastaWeb.RecipeControllerTest do
       assert response["data"]["title"] == recipe.title
     end
 
-    test "returns 404 for recipe owned by another user", %{conn: conn} do
+    test "returns recipe owned by another user with is_owned false", %{conn: conn} do
       other_user = user_fixture()
       recipe = recipe_fixture(%{user: other_user})
 
       conn = get(conn, ~p"/api/recipes/#{recipe.id}")
-      assert json_response(conn, 404)
+      response = json_response(conn, 200)
+      assert response["data"]["id"] == recipe.id
+      assert response["data"]["is_owned"] == false
     end
 
     test "returns 404 for non-existent recipe", %{conn: conn} do

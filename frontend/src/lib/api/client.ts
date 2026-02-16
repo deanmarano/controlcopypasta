@@ -267,6 +267,7 @@ export interface Recipe {
   archived_at: string | null;
   inserted_at: string;
   updated_at: string;
+  is_owned?: boolean;
   contains_avoided?: boolean;
   avoided_ingredients?: AvoidedIngredientMatch[];
 }
@@ -466,6 +467,12 @@ export const recipes = {
       method: 'POST',
       token,
       body: { url }
+    }),
+
+  copy: (token: string, id: string) =>
+    request<{ data: Recipe }>(`/recipes/${id}/copy`, {
+      method: 'POST',
+      token
     }),
 
   archive: (token: string, id: string) =>
@@ -710,6 +717,7 @@ export interface DashboardRecipe {
   servings: string | null;
   tags: Tag[];
   inserted_at: string;
+  is_owned: boolean;
   contains_avoided?: boolean;
   avoided_ingredients?: AvoidedIngredientMatch[];
 }

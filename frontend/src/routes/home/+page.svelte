@@ -1,13 +1,14 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { dashboard, type DashboardData, type DashboardRecipe } from '$lib/api/client';
+	import { dashboard, recipes as recipesApi, type DashboardData, type DashboardRecipe } from '$lib/api/client';
 
 	let data = $state<DashboardData | null>(null);
 	let loading = $state(true);
 	let error = $state('');
 	let addUrl = $state('');
 	let shuffling = $state(false);
+	let savingId = $state<string | null>(null);
 
 	$effect(() => {
 		if (!$isAuthenticated) {
@@ -48,6 +49,23 @@
 			// ignore shuffle errors
 		} finally {
 			shuffling = false;
+		}
+	}
+
+	async function saveRecipe(e: Event, recipeId: string) {
+		e.preventDefault();
+		e.stopPropagation();
+		const token = authStore.getToken();
+		if (!token) return;
+
+		savingId = recipeId;
+		try {
+			const result = await recipesApi.copy(token, recipeId);
+			goto(`/recipes/${result.data.id}`);
+		} catch {
+			alert('Failed to save recipe');
+		} finally {
+			savingId = null;
 		}
 	}
 
@@ -162,6 +180,15 @@
 					<span class="source">{recipe.source_domain}</span>
 				{/if}
 			</div>
+			{#if !recipe.is_owned}
+				<button
+					class="save-btn"
+					onclick={(e) => saveRecipe(e, recipe.id)}
+					disabled={savingId === recipe.id}
+				>
+					{savingId === recipe.id ? 'Saving...' : 'Save to My Recipes'}
+				</button>
+			{/if}
 			{#if recipe.contains_avoided && recipe.avoided_ingredients && recipe.avoided_ingredients.length > 0}
 				<div class="avoided-warning">
 					Contains: {recipe.avoided_ingredients.map((i) => i.name).join(', ')}
@@ -362,6 +389,30 @@
 		gap: var(--space-3);
 		font-size: var(--text-sm);
 		color: var(--text-muted);
+	}
+
+	.save-btn {
+		display: block;
+		width: 100%;
+		margin-top: var(--space-2);
+		padding: var(--space-1) var(--space-2);
+		background: var(--color-basil-500);
+		color: var(--color-white);
+		border: none;
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		font-size: var(--text-xs);
+		font-weight: var(--font-medium);
+		transition: all var(--transition-fast);
+	}
+
+	.save-btn:hover:not(:disabled) {
+		background: var(--color-basil-600);
+	}
+
+	.save-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	.avoided-warning {

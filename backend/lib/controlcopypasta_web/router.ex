@@ -74,6 +74,7 @@ defmodule ControlcopypastaWeb.Router do
 
     resources "/recipes", RecipeController, except: [:new, :edit]
     post "/recipes/parse", RecipeController, :parse
+    post "/recipes/:id/copy", RecipeController, :copy
     post "/recipes/:id/archive", RecipeController, :archive
     post "/recipes/:id/unarchive", RecipeController, :unarchive
     get "/recipes/:id/similar", RecipeController, :similar

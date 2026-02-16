@@ -10,6 +10,10 @@ defmodule ControlcopypastaWeb.RecipeJSON do
     %{data: for(recipe <- recipes, do: data(recipe))}
   end
 
+  def show(%{recipe: recipe, avoided_set: avoided_set, user_id: user_id}) do
+    %{data: data_with_avoided(recipe, avoided_set) |> Map.put(:is_owned, recipe.user_id == user_id)}
+  end
+
   def show(%{recipe: recipe, avoided_set: avoided_set}) do
     %{data: data_with_avoided(recipe, avoided_set)}
   end
