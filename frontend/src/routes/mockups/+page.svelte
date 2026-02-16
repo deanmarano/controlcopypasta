@@ -1,6 +1,6 @@
 <div class="mockups-index">
 	<h1>Design Mockups</h1>
-	<p class="subtitle">Three design directions for ControlCopyPasta. Each includes a public landing page, logged-in dashboard, and recipe detail view.</p>
+	<p class="subtitle">Four design directions for ControlCopyPasta. Each includes a public landing page, logged-in dashboard, and recipe detail view.</p>
 
 	<div class="directions">
 		<a href="/mockups/1" class="direction-card">
@@ -16,12 +16,12 @@
 
 		<a href="/mockups/2" class="direction-card">
 			<div class="direction-number">2</div>
-			<h2>Dark Kitchen</h2>
-			<p>Dark mode, moody food photography, high contrast. Copper accents on deep charcoal. Premium and modern — food looks stunning against dark backgrounds.</p>
+			<h2>Retro 50s Kitchen</h2>
+			<p>Cherry red and mint green, Georgia serif, diamond dividers. Feels like a vintage recipe card box from grandma's kitchen. Nostalgic but functional.</p>
 			<div class="tags">
-				<span class="tag">Dark mode</span>
-				<span class="tag">Copper accents</span>
-				<span class="tag">High contrast</span>
+				<span class="tag">Cherry red</span>
+				<span class="tag">Mint green</span>
+				<span class="tag">Diner vibes</span>
 			</div>
 		</a>
 
@@ -33,6 +33,16 @@
 				<span class="tag">Rounded UI</span>
 				<span class="tag">Soft gradients</span>
 				<span class="tag">Vibrant accents</span>
+			</div>
+		</a>
+		<a href="/mockups/4" class="direction-card">
+			<div class="direction-number">4</div>
+			<h2>90s Website</h2>
+			<p>Navy and yellow, beveled buttons, Courier mono, rainbow HRs. GeoCities energy with a visitor counter. Ironically charming or unironically delightful.</p>
+			<div class="tags">
+				<span class="tag">Navy &amp; yellow</span>
+				<span class="tag">Beveled buttons</span>
+				<span class="tag">Retro web</span>
 			</div>
 		</a>
 	</div>

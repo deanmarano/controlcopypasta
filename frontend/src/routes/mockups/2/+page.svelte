@@ -6,7 +6,7 @@
 
 <div class="mockup-nav">
 	<a href="/mockups" class="back">All Mockups</a>
-	<span class="label">Direction 2: Dark Kitchen</span>
+	<span class="label">Direction 2: Retro 50s Kitchen</span>
 	<div class="views">
 		<button class:active={view === 'landing'} onclick={() => (view = 'landing')}>Landing</button>
 		<button class:active={view === 'dashboard'} onclick={() => (view = 'dashboard')}>Dashboard</button>
@@ -16,167 +16,191 @@
 
 {#if view === 'landing'}
 <!-- LANDING PAGE -->
-<div class="dk">
-	<header class="dk-hero">
-		<div class="dk-hero-bg">
-			<img src={recipes[0].image_url} alt="" />
-			<div class="dk-hero-scrim"></div>
+<div class="rt">
+	<header class="rt-hero">
+		<div class="rt-hero-inner">
+			<div class="rt-badge">Self-Hosted &bull; Open Source</div>
+			<h1>Your Recipe Box,<br/>Darling!</h1>
+			<p class="rt-hero-sub">Save recipes from anywhere on the web. Scale, organize, and cook with confidence. No subscriptions, no ads, no data harvesting.</p>
+			<div class="rt-hero-btns">
+				<button class="rt-btn-primary">Get Started</button>
+				<a href="https://github.com/deanmarano/controlcopypasta" class="rt-btn-outline">View on GitHub</a>
+			</div>
 		</div>
-		<div class="dk-hero-content">
-			<p class="dk-eyebrow">Open source &middot; Self-hosted &middot; No tracking</p>
-			<h1>Save recipes.<br />Cook better.</h1>
-			<p class="dk-hero-sub">Clip recipes from any website. Scale ingredients, track nutrition, build shopping lists. Your data lives on your server.</p>
-			<div class="dk-hero-actions">
-				<button class="dk-btn-accent">Get Started</button>
-				<a href="https://github.com/deanmarano/controlcopypasta" class="dk-btn-ghost">View on GitHub</a>
+		<div class="rt-hero-img">
+			<div class="rt-hero-frame">
+				<img src={recipes[0].image_url} alt="Spaghetti Carbonara" />
 			</div>
 		</div>
 	</header>
 
-	<section class="dk-how">
-		<div class="dk-how-grid">
-			<div class="dk-how-step">
-				<div class="dk-how-num">01</div>
-				<h3>Clip</h3>
-				<p>Paste any recipe URL. We pull ingredients, instructions, images, and metadata automatically. Works with hundreds of sites.</p>
+	<div class="rt-divider">
+		<span class="rt-divider-diamond"></span>
+	</div>
+
+	<section class="rt-how">
+		<h2>Easy as Pie!</h2>
+		<div class="rt-how-grid">
+			<div class="rt-how-step">
+				<div class="rt-how-num">1</div>
+				<h3>Clip It</h3>
+				<p>Find a recipe you love anywhere on the web. Paste the link and we'll extract everything — ingredients, instructions, images, and nutrition data.</p>
 			</div>
-			<div class="dk-how-step">
-				<div class="dk-how-num">02</div>
-				<h3>Organize</h3>
-				<p>Tag by meal, cuisine, or mood. Browse by source domain. Search across your entire collection in milliseconds.</p>
+			<div class="rt-how-step">
+				<div class="rt-how-num">2</div>
+				<h3>File It</h3>
+				<p>Tag recipes by meal type, cuisine, or season. Browse by source. Build a collection that mirrors how you actually cook.</p>
 			</div>
-			<div class="dk-how-step">
-				<div class="dk-how-num">03</div>
-				<h3>Cook</h3>
-				<p>Scale for any crowd. Get per-serving nutrition. Print clean recipe cards. Generate combined shopping lists.</p>
+			<div class="rt-how-step">
+				<div class="rt-how-num">3</div>
+				<h3>Cook It</h3>
+				<p>Scale ingredients for any crowd. Check nutrition facts. Generate shopping lists. Print clean recipe cards for the kitchen counter.</p>
 			</div>
 		</div>
 	</section>
 
-	<section class="dk-showcase">
-		<div class="dk-showcase-text">
-			<h2>Built for people who actually cook.</h2>
-			<p>Not another bookmarking app. ControlCopyPasta understands ingredients — it can scale them, calculate nutrition, detect duplicates, and build smart shopping lists.</p>
+	<section class="rt-showcase">
+		<div class="rt-showcase-text">
+			<div class="rt-badge">Your Collection</div>
+			<h2>Every recipe from every corner of the web, in one place.</h2>
+			<p>Import from Bon Appetit, NYT Cooking, Serious Eats, food blogs — any site with a recipe. The browser extension makes it one click.</p>
 		</div>
-		<div class="dk-showcase-grid">
-			{#each recipes.slice(0, 4) as recipe}
-				<div class="dk-showcase-card">
+		<div class="rt-showcase-cards">
+			{#each recipes.slice(0, 3) as recipe}
+				<div class="rt-showcase-card">
 					<img src={recipe.image_url} alt={recipe.title} />
-					<div class="dk-showcase-card-info">
+					<div class="rt-showcase-info">
+						<span class="rt-showcase-source">{recipe.source_domain}</span>
 						<h4>{recipe.title}</h4>
-						<span>{recipe.total_time_minutes} min &middot; {recipe.source_domain}</span>
 					</div>
 				</div>
 			{/each}
 		</div>
 	</section>
 
-	<section class="dk-features">
-		<div class="dk-features-grid">
-			<div class="dk-feat">
-				<div class="dk-feat-icon">&#9889;</div>
-				<h3>Instant import</h3>
-				<p>Paste a URL or use the browser extension. JSON-LD parsing with custom scraper fallbacks.</p>
+	<div class="rt-divider">
+		<span class="rt-divider-diamond"></span>
+	</div>
+
+	<section class="rt-features">
+		<h2>What's Cookin'?</h2>
+		<div class="rt-feat-grid">
+			<div class="rt-feat">
+				<h3>Clip from any site</h3>
+				<p>Paste a URL or use the browser extension. We extract ingredients, steps, and images automatically.</p>
 			</div>
-			<div class="dk-feat">
-				<div class="dk-feat-icon">&#9878;</div>
-				<h3>Smart scaling</h3>
-				<p>0.25x to 4x with proper fraction handling. Never wonder about half of three-quarters again.</p>
+			<div class="rt-feat">
+				<h3>Scale with confidence</h3>
+				<p>Cooking for 2 or 12? Adjust quantities from 0.25x to 4x with smart fraction handling.</p>
 			</div>
-			<div class="dk-feat">
-				<div class="dk-feat-icon">&#9776;</div>
-				<h3>Nutrition data</h3>
-				<p>Calories, macros, and micronutrients per recipe and per serving. Multiple verified sources.</p>
+			<div class="rt-feat">
+				<h3>Know your nutrition</h3>
+				<p>Per-recipe and per-serving breakdowns. Calories, macros, and micronutrients from verified sources.</p>
 			</div>
-			<div class="dk-feat">
-				<div class="dk-feat-icon">&#10003;</div>
-				<h3>Shopping lists</h3>
-				<p>Generate lists from any recipe. Items auto-grouped by category, quantities intelligently combined.</p>
+			<div class="rt-feat">
+				<h3>Shop smarter</h3>
+				<p>Generate shopping lists from any recipe. Items grouped by category, quantities combined.</p>
 			</div>
-			<div class="dk-feat">
-				<div class="dk-feat-icon">&#128279;</div>
+			<div class="rt-feat">
 				<h3>Find connections</h3>
-				<p>See which recipes share ingredients. Browse by source. Discover patterns in your cooking.</p>
+				<p>Discover which recipes share ingredients. Compare side by side. Browse by source.</p>
 			</div>
-			<div class="dk-feat">
-				<div class="dk-feat-icon">&#128274;</div>
-				<h3>Own everything</h3>
-				<p>Self-host with Docker. Import from Copy Me That. Export anytime. AGPL licensed, forever open.</p>
+			<div class="rt-feat">
+				<h3>Own your data</h3>
+				<p>Self-host on your own server. Import from Copy Me That. Export anytime. AGPL licensed.</p>
 			</div>
 		</div>
 	</section>
 
-	<section class="dk-cta">
-		<h2>Your recipes deserve better than a bookmark folder.</h2>
-		<p>Deploy in minutes. Import your collection. Start cooking.</p>
-		<button class="dk-btn-accent">Get Started</button>
+	<section class="rt-stats">
+		<div class="rt-stat">
+			<span class="rt-stat-num">200+</span>
+			<span class="rt-stat-lbl">Supported Sites</span>
+		</div>
+		<div class="rt-stat">
+			<span class="rt-stat-num">30s</span>
+			<span class="rt-stat-lbl">Average Import</span>
+		</div>
+		<div class="rt-stat">
+			<span class="rt-stat-num">100%</span>
+			<span class="rt-stat-lbl">Open Source</span>
+		</div>
+		<div class="rt-stat">
+			<span class="rt-stat-num">0</span>
+			<span class="rt-stat-lbl">Tracking Scripts</span>
+		</div>
+	</section>
+
+	<section class="rt-cta">
+		<h2>Ready to organize your recipe collection?</h2>
+		<p>Deploy in minutes with Docker. Your recipes stay on your server, forever.</p>
+		<button class="rt-btn-primary">Get Started</button>
 	</section>
 </div>
 
 {:else if view === 'dashboard'}
 <!-- DASHBOARD -->
-<div class="dk">
-	<div class="dk-dash">
-		<header class="dk-dash-header">
+<div class="rt">
+	<div class="rt-dash">
+		<header class="rt-dash-header">
 			<div>
-				<h1>Good evening.</h1>
-				<p class="dk-dash-sub">What's for dinner?</p>
+				<h1>Good Evening, Sugar!</h1>
+				<p>What are we cooking tonight?</p>
 			</div>
-			<div class="dk-add-recipe">
+			<div class="rt-add-form">
 				<input type="text" placeholder="Paste a recipe URL..." />
-				<button class="dk-btn-accent dk-btn-sm">Save</button>
+				<button class="rt-btn-primary rt-btn-sm">Save</button>
 			</div>
 		</header>
 
-		<section class="dk-dash-section">
-			<div class="dk-section-header">
-				<h2>Tonight's inspiration</h2>
-				<button class="dk-btn-text">Shuffle</button>
+		<section class="rt-section">
+			<div class="rt-section-top">
+				<h2>Tonight's Inspiration</h2>
+				<button class="rt-link-btn">Shuffle</button>
 			</div>
-			<div class="dk-hero-banner">
+			<div class="rt-hero-card">
 				<img src={dinnerIdeas[0].image_url} alt={dinnerIdeas[0].title} />
-				<div class="dk-hero-banner-overlay">
-					<div class="dk-banner-meta">
-						<span class="dk-pill">{dinnerIdeas[0].total_time_minutes} min</span>
-						{#each dinnerIdeas[0].tags as tag}
-							<span class="dk-pill">{tag.name}</span>
-						{/each}
-					</div>
+				<div class="rt-hero-card-overlay">
+					<span class="rt-badge">{dinnerIdeas[0].total_time_minutes} min</span>
 					<h3>{dinnerIdeas[0].title}</h3>
 					<p>{dinnerIdeas[0].description}</p>
 				</div>
 			</div>
-			<div class="dk-card-grid">
+			<div class="rt-card-grid">
 				{#each dinnerIdeas.slice(1) as recipe}
-					<div class="dk-card">
-						<div class="dk-card-img">
+					<div class="rt-card">
+						<div class="rt-card-img">
 							<img src={recipe.image_url} alt={recipe.title} />
-							<span class="dk-card-time">{recipe.total_time_minutes} min</span>
 						</div>
-						<div class="dk-card-body">
+						<div class="rt-card-body">
 							<h3>{recipe.title}</h3>
-							<span class="dk-card-source">{recipe.source_domain}</span>
+							<div class="rt-card-meta">
+								{#if recipe.total_time_minutes}<span>{recipe.total_time_minutes} min</span>{/if}
+								<span>{recipe.source_domain}</span>
+							</div>
 						</div>
 					</div>
 				{/each}
 			</div>
 		</section>
 
-		<section class="dk-dash-section">
-			<div class="dk-section-header">
-				<h2>Recently added</h2>
-				<a href="/recipes" class="dk-btn-text">View all</a>
+		<section class="rt-section">
+			<div class="rt-section-top">
+				<h2>Recently Added</h2>
+				<a href="/recipes" class="rt-link-btn">View all</a>
 			</div>
-			<div class="dk-card-grid dk-card-grid-4">
+			<div class="rt-card-grid">
 				{#each recentlyAdded as recipe}
-					<div class="dk-card">
-						<div class="dk-card-img">
+					<div class="rt-card">
+						<div class="rt-card-img">
 							<img src={recipe.image_url} alt={recipe.title} />
-							<span class="dk-card-time">{recipe.total_time_minutes} min</span>
 						</div>
-						<div class="dk-card-body">
+						<div class="rt-card-body">
 							<h3>{recipe.title}</h3>
-							<span class="dk-card-source">{recipe.source_domain}</span>
+							<div class="rt-card-meta">
+								{#if recipe.total_time_minutes}<span>{recipe.total_time_minutes} min</span>{/if}
+								<span>{recipe.source_domain}</span>
+							</div>
 						</div>
 					</div>
 				{/each}
@@ -187,59 +211,56 @@
 
 {:else}
 <!-- RECIPE DETAIL -->
-<div class="dk">
-	<div class="dk-recipe">
-		<div class="dk-recipe-hero">
+<div class="rt">
+	<div class="rt-recipe">
+		<div class="rt-recipe-hero">
 			<img src={featuredRecipe.image_url} alt={featuredRecipe.title} />
-			<div class="dk-recipe-hero-overlay">
-				<div class="dk-recipe-pills">
+			<div class="rt-recipe-hero-overlay">
+				<div class="rt-recipe-tags">
 					{#each featuredRecipe.tags as tag}
-						<span class="dk-pill">{tag.name}</span>
+						<span class="rt-badge">{tag.name}</span>
 					{/each}
 				</div>
 				<h1>{featuredRecipe.title}</h1>
-				<p class="dk-recipe-source">{featuredRecipe.source_domain}</p>
+				<p class="rt-recipe-source">{featuredRecipe.source_domain}</p>
 			</div>
 		</div>
 
-		<div class="dk-recipe-content">
-			<div class="dk-recipe-meta">
-				<div class="dk-meta-item">
-					<span class="dk-meta-val">{featuredRecipe.prep_time_minutes}</span>
-					<span class="dk-meta-lbl">min prep</span>
+		<div class="rt-recipe-content">
+			<div class="rt-recipe-meta">
+				<div class="rt-meta-item">
+					<span class="rt-meta-lbl">Prep</span>
+					<span class="rt-meta-val">{featuredRecipe.prep_time_minutes} min</span>
 				</div>
-				<div class="dk-meta-divider"></div>
-				<div class="dk-meta-item">
-					<span class="dk-meta-val">{featuredRecipe.cook_time_minutes}</span>
-					<span class="dk-meta-lbl">min cook</span>
+				<div class="rt-meta-item">
+					<span class="rt-meta-lbl">Cook</span>
+					<span class="rt-meta-val">{featuredRecipe.cook_time_minutes} min</span>
 				</div>
-				<div class="dk-meta-divider"></div>
-				<div class="dk-meta-item">
-					<span class="dk-meta-val">{featuredRecipe.total_time_minutes}</span>
-					<span class="dk-meta-lbl">min total</span>
+				<div class="rt-meta-item">
+					<span class="rt-meta-lbl">Total</span>
+					<span class="rt-meta-val">{featuredRecipe.total_time_minutes} min</span>
 				</div>
-				<div class="dk-meta-divider"></div>
-				<div class="dk-meta-item">
-					<span class="dk-meta-val">{featuredRecipe.servings}</span>
-					<span class="dk-meta-lbl">&nbsp;</span>
+				<div class="rt-meta-item">
+					<span class="rt-meta-lbl">Serves</span>
+					<span class="rt-meta-val">{featuredRecipe.servings}</span>
 				</div>
 			</div>
 
-			<p class="dk-recipe-desc">{featuredRecipe.description}</p>
+			<p class="rt-recipe-desc">{featuredRecipe.description}</p>
 
-			<div class="dk-recipe-actions">
-				<button class="dk-btn-accent dk-btn-sm">Add to Shopping List</button>
-				<button class="dk-btn-outline dk-btn-sm">Print</button>
-				<button class="dk-btn-outline dk-btn-sm">Edit</button>
-				<div class="dk-scale">
-					<button class="dk-scale-btn">&minus;</button>
+			<div class="rt-recipe-actions">
+				<button class="rt-btn-primary rt-btn-sm">Add to Shopping List</button>
+				<button class="rt-btn-outline rt-btn-sm">Print</button>
+				<button class="rt-btn-outline rt-btn-sm">Edit</button>
+				<div class="rt-scale">
+					<button class="rt-scale-btn">&minus;</button>
 					<span>1x</span>
-					<button class="dk-scale-btn">+</button>
+					<button class="rt-scale-btn">+</button>
 				</div>
 			</div>
 
-			<div class="dk-recipe-body">
-				<aside class="dk-ingredients">
+			<div class="rt-recipe-body">
+				<aside class="rt-ingredients">
 					<h2>Ingredients</h2>
 					<ul>
 						{#each featuredRecipe.ingredients as ing}
@@ -247,12 +268,12 @@
 						{/each}
 					</ul>
 				</aside>
-				<div class="dk-instructions">
+				<div class="rt-instructions">
 					<h2>Instructions</h2>
 					<ol>
 						{#each featuredRecipe.instructions as step, i}
 							<li>
-								<span class="dk-step-num">{i + 1}</span>
+								<span class="rt-step-num">{i + 1}</span>
 								<p>{step.text}</p>
 							</li>
 						{/each}
@@ -274,624 +295,665 @@
 		align-items: center;
 		gap: var(--space-4);
 		padding: var(--space-2) var(--space-4);
-		background: #0a0a0a;
+		background: #b91c3a;
 		color: white;
 		font-size: var(--text-sm);
-		border-bottom: 1px solid #222;
+		border-bottom: 3px solid #8b1530;
 	}
-	.mockup-nav .back {
-		color: rgba(255, 255, 255, 0.5);
-		text-decoration: none;
-	}
+	.mockup-nav .back { color: rgba(255,255,255,0.7); text-decoration: none; }
 	.mockup-nav .back:hover { color: white; }
 	.mockup-nav .label { flex: 1; font-weight: var(--font-medium); }
 	.mockup-nav .views { display: flex; gap: 2px; }
 	.mockup-nav .views button {
 		padding: var(--space-1) var(--space-3);
-		background: rgba(255, 255, 255, 0.08);
-		color: rgba(255, 255, 255, 0.6);
+		background: rgba(255,255,255,0.15);
+		color: rgba(255,255,255,0.8);
 		border: none;
 		border-radius: var(--radius-sm);
 		cursor: pointer;
 		font-size: var(--text-xs);
 	}
-	.mockup-nav .views button.active {
-		background: #c47d4e;
-		color: white;
-	}
+	.mockup-nav .views button.active { background: #fef3c7; color: #8b1530; font-weight: 600; }
 
-	/* === DARK KITCHEN THEME === */
-	.dk {
+	/* === RETRO 50s THEME === */
+	.rt {
 		font-family: 'Inter', system-ui, sans-serif;
-		color: #e8e4e0;
-		background: #111;
+		color: #3d2b2b;
+		background: #fdf6ee;
 	}
 
-	/* LANDING - HERO */
-	.dk-hero {
-		position: relative;
-		min-height: 85vh;
-		display: flex;
-		align-items: center;
-		overflow: hidden;
-	}
-	.dk-hero-bg {
-		position: absolute;
-		inset: 0;
-	}
-	.dk-hero-bg img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-	}
-	.dk-hero-scrim {
-		position: absolute;
-		inset: 0;
-		background: linear-gradient(
-			135deg,
-			rgba(0, 0, 0, 0.85) 0%,
-			rgba(0, 0, 0, 0.6) 50%,
-			rgba(0, 0, 0, 0.4) 100%
-		);
-	}
-	.dk-hero-content {
-		position: relative;
-		max-width: 640px;
-		padding: 4rem 4rem 4rem 6rem;
-	}
-	.dk-eyebrow {
-		font-size: 0.8125rem;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		color: #c47d4e;
-		margin: 0 0 1.5rem;
-		font-weight: 500;
-	}
-	.dk-hero-content h1 {
-		font-size: 4rem;
-		font-weight: 700;
-		line-height: 1.05;
-		margin: 0 0 1.5rem;
+	/* Shared */
+	.rt-badge {
+		display: inline-block;
+		padding: 0.3rem 0.875rem;
+		background: #b91c3a;
 		color: white;
-		letter-spacing: -0.02em;
+		border-radius: 2px;
+		font-size: 0.6875rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
 	}
-	.dk-hero-sub {
-		font-size: 1.125rem;
-		line-height: 1.7;
-		color: rgba(255, 255, 255, 0.75);
-		margin: 0 0 2.5rem;
+
+	.rt-divider {
+		text-align: center;
+		padding: 2rem 0;
 	}
-	.dk-hero-actions { display: flex; gap: 1rem; }
+	.rt-divider-diamond {
+		display: inline-block;
+		width: 12px;
+		height: 12px;
+		background: #b91c3a;
+		transform: rotate(45deg);
+	}
 
 	/* BUTTONS */
-	.dk-btn-accent {
-		padding: 0.875rem 2.25rem;
-		background: #c47d4e;
+	.rt-btn-primary {
+		padding: 0.75rem 2rem;
+		background: #b91c3a;
 		color: white;
 		border: none;
-		border-radius: 4px;
+		border-radius: 3px;
 		font-size: 0.9375rem;
-		font-weight: 600;
+		font-weight: 700;
 		cursor: pointer;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
 		transition: all 200ms;
-		letter-spacing: 0.01em;
+		box-shadow: 0 3px 0 #8b1530;
 	}
-	.dk-btn-accent:hover { background: #d4925f; transform: translateY(-1px); }
-	.dk-btn-sm { padding: 0.5rem 1.25rem; font-size: 0.8125rem; }
+	.rt-btn-primary:hover { background: #d42248; transform: translateY(-1px); box-shadow: 0 4px 0 #8b1530; }
+	.rt-btn-primary:active { transform: translateY(1px); box-shadow: 0 1px 0 #8b1530; }
+	.rt-btn-sm { padding: 0.5rem 1.25rem; font-size: 0.75rem; }
 
-	.dk-btn-ghost {
-		padding: 0.875rem 2.25rem;
+	.rt-btn-outline {
+		padding: 0.75rem 2rem;
 		background: none;
-		color: rgba(255, 255, 255, 0.8);
-		border: 1.5px solid rgba(255, 255, 255, 0.25);
-		border-radius: 4px;
+		color: #b91c3a;
+		border: 2px solid #b91c3a;
+		border-radius: 3px;
 		font-size: 0.9375rem;
-		font-weight: 500;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		cursor: pointer;
 		text-decoration: none;
 		transition: all 200ms;
 	}
-	.dk-btn-ghost:hover { border-color: rgba(255, 255, 255, 0.6); color: white; }
+	.rt-btn-outline:hover { background: #b91c3a; color: white; }
 
-	.dk-btn-outline {
-		padding: 0.5rem 1.25rem;
-		background: none;
-		color: #a09890;
-		border: 1.5px solid #333;
-		border-radius: 4px;
-		font-size: 0.8125rem;
-		cursor: pointer;
-		transition: all 200ms;
-	}
-	.dk-btn-outline:hover { border-color: #c47d4e; color: #c47d4e; }
-
-	.dk-btn-text {
+	.rt-link-btn {
 		background: none;
 		border: none;
-		color: #c47d4e;
+		color: #b91c3a;
 		font-size: 0.875rem;
+		font-weight: 700;
 		cursor: pointer;
 		text-decoration: none;
-		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
 	}
-	.dk-btn-text:hover { color: #d4925f; }
+	.rt-link-btn:hover { text-decoration: underline; }
 
-	/* LANDING - HOW */
-	.dk-how {
-		padding: 5rem 3rem;
-		max-width: 1100px;
-		margin: 0 auto;
-		border-bottom: 1px solid #222;
-	}
-	.dk-how-grid {
+	/* LANDING - HERO */
+	.rt-hero {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 3rem;
-	}
-	.dk-how-num {
-		font-size: 0.75rem;
-		font-weight: 700;
-		color: #c47d4e;
-		letter-spacing: 0.1em;
-		margin-bottom: 1rem;
-		font-variant-numeric: tabular-nums;
-	}
-	.dk-how-step h3 {
-		font-size: 1.375rem;
-		font-weight: 600;
-		margin: 0 0 0.75rem;
-		color: white;
-	}
-	.dk-how-step p {
-		color: #8a8480;
-		line-height: 1.7;
-		margin: 0;
-		font-size: 0.9375rem;
-	}
-
-	/* LANDING - SHOWCASE */
-	.dk-showcase {
-		max-width: 1100px;
-		margin: 0 auto;
-		padding: 5rem 3rem;
-	}
-	.dk-showcase-text {
-		max-width: 560px;
-		margin-bottom: 3rem;
-	}
-	.dk-showcase-text h2 {
-		font-size: 2rem;
-		font-weight: 700;
-		margin: 0 0 1rem;
-		color: white;
-		letter-spacing: -0.01em;
-	}
-	.dk-showcase-text p {
-		color: #8a8480;
-		line-height: 1.7;
-		margin: 0;
-		font-size: 1rem;
-	}
-	.dk-showcase-grid {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 1.25rem;
-	}
-	.dk-showcase-card {
-		border-radius: 6px;
+		grid-template-columns: 1fr 1fr;
+		min-height: 75vh;
 		overflow: hidden;
-		background: #1a1a1a;
-		border: 1px solid #222;
-		transition: border-color 200ms, transform 200ms;
-		cursor: pointer;
 	}
-	.dk-showcase-card:hover {
-		border-color: #333;
-		transform: translateY(-2px);
+	.rt-hero-inner {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding: 4rem 3rem 4rem 5rem;
+		background: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 19px,
+			rgba(185, 28, 58, 0.06) 19px,
+			rgba(185, 28, 58, 0.06) 20px
+		);
 	}
-	.dk-showcase-card img {
+	.rt-hero-inner h1 {
+		font-family: 'Georgia', serif;
+		font-size: 3.25rem;
+		line-height: 1.1;
+		margin: 1rem 0 1.25rem;
+		color: #3d2b2b;
+		font-weight: 700;
+	}
+	.rt-hero-sub {
+		font-size: 1.0625rem;
+		line-height: 1.65;
+		color: #7a6565;
+		margin: 0 0 2rem;
+		max-width: 400px;
+	}
+	.rt-hero-btns { display: flex; gap: 1rem; }
+	.rt-hero-img {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 3rem;
+		background: #a8d8c8;
+	}
+	.rt-hero-frame {
+		border: 6px solid white;
+		border-radius: 4px;
+		box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+		overflow: hidden;
+		transform: rotate(2deg);
+	}
+	.rt-hero-frame img {
 		width: 100%;
-		aspect-ratio: 16/9;
-		object-fit: cover;
+		max-width: 440px;
 		display: block;
 	}
-	.dk-showcase-card-info {
-		padding: 1rem 1.25rem;
-	}
-	.dk-showcase-card-info h4 {
-		font-size: 0.9375rem;
-		font-weight: 500;
-		margin: 0 0 0.375rem;
-		color: #e8e4e0;
-		line-height: 1.4;
-	}
-	.dk-showcase-card-info span {
-		font-size: 0.75rem;
-		color: #666;
-	}
 
-	/* LANDING - FEATURES */
-	.dk-features {
-		padding: 5rem 3rem;
-		max-width: 1100px;
+	/* HOW IT WORKS */
+	.rt-how {
+		max-width: 1000px;
 		margin: 0 auto;
-		border-top: 1px solid #222;
+		padding: 3rem 2rem 4rem;
+		text-align: center;
 	}
-	.dk-features-grid {
+	.rt-how h2 {
+		font-family: 'Georgia', serif;
+		font-size: 2.25rem;
+		color: #3d2b2b;
+		margin: 0 0 2.5rem;
+		font-weight: 700;
+	}
+	.rt-how-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
 		gap: 2.5rem;
 	}
-	.dk-feat-icon {
-		font-size: 1.25rem;
-		margin-bottom: 0.75rem;
-		width: 40px;
-		height: 40px;
-		border-radius: 8px;
-		background: rgba(196, 125, 78, 0.12);
-		display: flex;
+	.rt-how-step { text-align: center; }
+	.rt-how-num {
+		width: 52px;
+		height: 52px;
+		background: #b91c3a;
+		color: white;
+		border-radius: 50%;
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+		font-family: 'Georgia', serif;
+		font-size: 1.5rem;
+		font-weight: 700;
+		margin-bottom: 1rem;
+		box-shadow: 0 3px 0 #8b1530;
 	}
-	.dk-feat h3 {
-		font-size: 1rem;
-		font-weight: 600;
-		margin: 0 0 0.5rem;
-		color: white;
+	.rt-how-step h3 {
+		font-family: 'Georgia', serif;
+		font-size: 1.25rem;
+		margin: 0 0 0.625rem;
+		color: #3d2b2b;
 	}
-	.dk-feat p {
-		color: #8a8480;
+	.rt-how-step p {
+		color: #7a6565;
 		line-height: 1.65;
+		margin: 0;
+		font-size: 0.9375rem;
+	}
+
+	/* SHOWCASE */
+	.rt-showcase {
+		max-width: 1100px;
+		margin: 0 auto;
+		padding: 3rem 2rem 4rem;
+		display: grid;
+		grid-template-columns: 1fr 1.2fr;
+		gap: 3rem;
+		align-items: center;
+	}
+	.rt-showcase-text h2 {
+		font-family: 'Georgia', serif;
+		font-size: 1.875rem;
+		line-height: 1.25;
+		margin: 0.75rem 0 1rem;
+		color: #3d2b2b;
+	}
+	.rt-showcase-text p {
+		color: #7a6565;
+		line-height: 1.65;
+		margin: 0;
+		font-size: 0.9375rem;
+	}
+	.rt-showcase-cards {
+		display: flex;
+		flex-direction: column;
+		gap: 0.875rem;
+	}
+	.rt-showcase-card {
+		display: flex;
+		gap: 1rem;
+		background: white;
+		border: 2px solid #e8d8cc;
+		border-radius: 4px;
+		overflow: hidden;
+		transition: transform 200ms, border-color 200ms;
+	}
+	.rt-showcase-card:hover {
+		transform: translateX(4px);
+		border-color: #b91c3a;
+	}
+	.rt-showcase-card img {
+		width: 110px;
+		height: 75px;
+		object-fit: cover;
+		flex-shrink: 0;
+	}
+	.rt-showcase-info {
+		padding: 0.625rem 1rem 0.625rem 0;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+	}
+	.rt-showcase-source {
+		font-size: 0.625rem;
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: #b91c3a;
+		font-weight: 700;
+		margin-bottom: 0.25rem;
+	}
+	.rt-showcase-info h4 {
+		font-family: 'Georgia', serif;
+		font-size: 0.9375rem;
+		margin: 0;
+		color: #3d2b2b;
+		line-height: 1.3;
+	}
+
+	/* FEATURES */
+	.rt-features {
+		max-width: 1000px;
+		margin: 0 auto;
+		padding: 3rem 2rem 4rem;
+		text-align: center;
+	}
+	.rt-features h2 {
+		font-family: 'Georgia', serif;
+		font-size: 2.25rem;
+		color: #3d2b2b;
+		margin: 0 0 2.5rem;
+	}
+	.rt-feat-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1.5rem;
+		text-align: left;
+	}
+	.rt-feat {
+		padding: 1.5rem;
+		background: white;
+		border: 2px solid #e8d8cc;
+		border-radius: 4px;
+		transition: border-color 200ms;
+	}
+	.rt-feat:hover { border-color: #b91c3a; }
+	.rt-feat h3 {
+		font-family: 'Georgia', serif;
+		font-size: 1.0625rem;
+		margin: 0 0 0.5rem;
+		color: #b91c3a;
+	}
+	.rt-feat p {
+		color: #7a6565;
+		line-height: 1.6;
 		margin: 0;
 		font-size: 0.875rem;
 	}
 
-	/* LANDING - CTA */
-	.dk-cta {
-		text-align: center;
-		padding: 5rem 2rem;
-		border-top: 1px solid #222;
+	/* STATS */
+	.rt-stats {
+		display: flex;
+		justify-content: center;
+		gap: 3rem;
+		padding: 3rem 2rem;
+		background: #a8d8c8;
 	}
-	.dk-cta h2 {
-		font-size: 2rem;
+	.rt-stat { text-align: center; }
+	.rt-stat-num {
+		display: block;
+		font-family: 'Georgia', serif;
+		font-size: 2.5rem;
 		font-weight: 700;
-		color: white;
-		margin: 0 0 0.75rem;
-		letter-spacing: -0.01em;
+		color: #3d2b2b;
+		line-height: 1;
+		margin-bottom: 0.375rem;
 	}
-	.dk-cta p {
-		color: #666;
+	.rt-stat-lbl {
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: #2b6e58;
+		font-weight: 700;
+	}
+
+	/* CTA */
+	.rt-cta {
+		text-align: center;
+		padding: 4rem 2rem;
+		background: #b91c3a;
+		color: white;
+	}
+	.rt-cta h2 {
+		font-family: 'Georgia', serif;
+		font-size: 2rem;
+		margin: 0 0 0.75rem;
+		font-weight: 700;
+	}
+	.rt-cta p {
+		color: rgba(255,255,255,0.8);
 		font-size: 1rem;
 		margin: 0 0 2rem;
 	}
+	.rt-cta .rt-btn-primary {
+		background: white;
+		color: #b91c3a;
+		box-shadow: 0 3px 0 rgba(0,0,0,0.15);
+	}
+	.rt-cta .rt-btn-primary:hover { background: #fef3c7; }
 
 	/* DASHBOARD */
-	.dk-dash {
+	.rt-dash {
 		max-width: 1100px;
 		margin: 0 auto;
 		padding: 2rem 1.5rem;
 	}
-	.dk-dash-header {
+	.rt-dash-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-end;
-		margin-bottom: 3rem;
-		padding-bottom: 2rem;
-		border-bottom: 1px solid #222;
+		margin-bottom: 2.5rem;
+		padding-bottom: 1.5rem;
+		border-bottom: 3px solid #e8d8cc;
 	}
-	.dk-dash-header h1 {
+	.rt-dash-header h1 {
+		font-family: 'Georgia', serif;
 		font-size: 2rem;
-		font-weight: 700;
-		color: white;
 		margin: 0;
-		letter-spacing: -0.01em;
+		color: #3d2b2b;
 	}
-	.dk-dash-sub {
-		color: #666;
-		font-size: 1rem;
+	.rt-dash-header p {
 		margin: 0.25rem 0 0;
+		color: #7a6565;
+		font-size: 1rem;
 	}
-	.dk-add-recipe { display: flex; gap: 0.5rem; }
-	.dk-add-recipe input {
+	.rt-add-form { display: flex; gap: 0.5rem; }
+	.rt-add-form input {
 		padding: 0.5rem 1rem;
-		border: 1.5px solid #333;
-		border-radius: 4px;
+		border: 2px solid #e8d8cc;
+		border-radius: 3px;
 		font-size: 0.875rem;
-		width: 320px;
-		background: #1a1a1a;
-		color: #e8e4e0;
+		width: 300px;
+		background: white;
+		color: #3d2b2b;
 	}
-	.dk-add-recipe input::placeholder { color: #555; }
-	.dk-add-recipe input:focus { outline: none; border-color: #c47d4e; }
+	.rt-add-form input::placeholder { color: #c4b0a0; }
+	.rt-add-form input:focus { outline: none; border-color: #b91c3a; }
 
-	.dk-dash-section { margin-bottom: 3rem; }
-	.dk-section-header {
+	.rt-section { margin-bottom: 3rem; }
+	.rt-section-top {
 		display: flex;
 		justify-content: space-between;
 		align-items: baseline;
 		margin-bottom: 1.25rem;
 	}
-	.dk-section-header h2 {
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: white;
+	.rt-section-top h2 {
+		font-family: 'Georgia', serif;
+		font-size: 1.375rem;
 		margin: 0;
+		color: #3d2b2b;
 	}
 
-	.dk-hero-banner {
+	.rt-hero-card {
 		position: relative;
-		border-radius: 8px;
+		border-radius: 4px;
 		overflow: hidden;
 		margin-bottom: 1.25rem;
 		aspect-ratio: 21/9;
+		border: 3px solid #e8d8cc;
 	}
-	.dk-hero-banner img {
+	.rt-hero-card img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
 	}
-	.dk-hero-banner-overlay {
+	.rt-hero-card-overlay {
 		position: absolute;
 		bottom: 0;
 		left: 0;
 		right: 0;
-		padding: 3rem 2rem 2rem;
-		background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
-	}
-	.dk-banner-meta {
-		display: flex;
-		gap: 0.5rem;
-		margin-bottom: 0.75rem;
-	}
-	.dk-pill {
-		padding: 0.25rem 0.75rem;
-		background: rgba(196, 125, 78, 0.3);
-		border: 1px solid rgba(196, 125, 78, 0.4);
-		border-radius: 100px;
-		font-size: 0.6875rem;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		font-weight: 500;
-		color: #ddb893;
-	}
-	.dk-hero-banner-overlay h3 {
-		font-size: 1.75rem;
-		font-weight: 600;
-		margin: 0 0 0.5rem;
+		padding: 3rem 2rem 1.5rem;
+		background: linear-gradient(transparent, rgba(61, 43, 43, 0.85));
 		color: white;
 	}
-	.dk-hero-banner-overlay p {
+	.rt-hero-card-overlay h3 {
+		font-family: 'Georgia', serif;
+		font-size: 1.625rem;
+		margin: 0.75rem 0 0.5rem;
+		font-weight: 700;
+	}
+	.rt-hero-card-overlay p {
 		margin: 0;
 		font-size: 0.875rem;
-		color: rgba(255, 255, 255, 0.65);
+		opacity: 0.85;
 		max-width: 500px;
-		line-height: 1.6;
 	}
 
-	.dk-card-grid {
+	.rt-card-grid {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 1rem;
+		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+		gap: 1.25rem;
 	}
-	.dk-card-grid-4 {
-		grid-template-columns: repeat(4, 1fr);
-	}
-	.dk-card {
-		background: #1a1a1a;
-		border-radius: 6px;
+	.rt-card {
+		background: white;
+		border: 2px solid #e8d8cc;
+		border-radius: 4px;
 		overflow: hidden;
-		border: 1px solid #222;
-		transition: border-color 200ms, transform 200ms;
+		transition: transform 200ms, border-color 200ms;
 		cursor: pointer;
 	}
-	.dk-card:hover {
-		border-color: #444;
+	.rt-card:hover {
 		transform: translateY(-2px);
+		border-color: #b91c3a;
 	}
-	.dk-card-img {
-		position: relative;
+	.rt-card-img {
 		aspect-ratio: 16/10;
 		overflow: hidden;
 	}
-	.dk-card-img img {
+	.rt-card-img img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
 		transition: transform 300ms;
 	}
-	.dk-card:hover .dk-card-img img {
-		transform: scale(1.04);
-	}
-	.dk-card-time {
-		position: absolute;
-		top: 0.5rem;
-		right: 0.5rem;
-		padding: 0.2rem 0.5rem;
-		background: rgba(0, 0, 0, 0.7);
-		backdrop-filter: blur(4px);
-		border-radius: 4px;
-		font-size: 0.6875rem;
-		font-weight: 500;
-		color: rgba(255, 255, 255, 0.9);
-	}
-	.dk-card-body {
-		padding: 0.875rem 1rem;
-	}
-	.dk-card-body h3 {
-		font-size: 0.875rem;
-		font-weight: 500;
+	.rt-card:hover .rt-card-img img { transform: scale(1.03); }
+	.rt-card-body { padding: 0.875rem 1rem; }
+	.rt-card-body h3 {
+		font-family: 'Georgia', serif;
+		font-size: 0.9375rem;
 		margin: 0 0 0.375rem;
-		color: #e8e4e0;
-		line-height: 1.4;
+		color: #3d2b2b;
+		line-height: 1.35;
 	}
-	.dk-card-source {
+	.rt-card-meta {
+		display: flex;
+		gap: 0.75rem;
 		font-size: 0.6875rem;
-		color: #555;
+		color: #b91c3a;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		font-weight: 600;
 	}
 
 	/* RECIPE */
-	.dk-recipe-hero {
+	.rt-recipe-hero {
 		position: relative;
 		height: 55vh;
 		min-height: 380px;
 		overflow: hidden;
 	}
-	.dk-recipe-hero img {
+	.rt-recipe-hero img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
 	}
-	.dk-recipe-hero-overlay {
+	.rt-recipe-hero-overlay {
 		position: absolute;
 		bottom: 0;
 		left: 0;
 		right: 0;
-		padding: 4rem 3rem 3rem;
-		background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
-	}
-	.dk-recipe-pills {
-		display: flex;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
-	}
-	.dk-recipe-hero-overlay h1 {
-		font-size: 2.5rem;
-		font-weight: 700;
-		margin: 0 0 0.5rem;
+		padding: 4rem 3rem 2.5rem;
+		background: linear-gradient(transparent, rgba(61, 43, 43, 0.8));
 		color: white;
-		line-height: 1.15;
-		letter-spacing: -0.01em;
 	}
-	.dk-recipe-source {
+	.rt-recipe-tags { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+	.rt-recipe-hero-overlay h1 {
+		font-family: 'Georgia', serif;
+		font-size: 2.5rem;
+		margin: 0 0 0.5rem;
+		font-weight: 700;
+		line-height: 1.15;
+	}
+	.rt-recipe-source {
 		font-size: 0.875rem;
-		color: rgba(255, 255, 255, 0.5);
+		opacity: 0.7;
 		margin: 0;
 	}
 
-	.dk-recipe-content {
+	.rt-recipe-content {
 		max-width: 900px;
 		margin: 0 auto;
 		padding: 2.5rem 1.5rem;
 	}
 
-	.dk-recipe-meta {
+	.rt-recipe-meta {
 		display: flex;
-		align-items: center;
-		gap: 1.5rem;
-		padding-bottom: 2rem;
-		border-bottom: 1px solid #222;
-		margin-bottom: 2rem;
+		gap: 2rem;
+		padding-bottom: 1.5rem;
+		border-bottom: 3px solid #e8d8cc;
+		margin-bottom: 1.5rem;
 	}
-	.dk-meta-item { text-align: center; }
-	.dk-meta-val {
+	.rt-meta-item { text-align: center; }
+	.rt-meta-lbl {
 		display: block;
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: white;
-	}
-	.dk-meta-lbl {
-		font-size: 0.6875rem;
+		font-size: 0.625rem;
 		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		color: #555;
+		letter-spacing: 0.12em;
+		color: #b91c3a;
+		font-weight: 700;
+		margin-bottom: 0.25rem;
 	}
-	.dk-meta-divider {
-		width: 1px;
-		height: 32px;
-		background: #333;
+	.rt-meta-val {
+		font-family: 'Georgia', serif;
+		font-size: 1.125rem;
+		color: #3d2b2b;
+		font-weight: 700;
 	}
 
-	.dk-recipe-desc {
+	.rt-recipe-desc {
 		font-size: 1rem;
 		line-height: 1.7;
-		color: #8a8480;
-		margin: 0 0 2rem;
+		color: #7a6565;
+		margin: 0 0 1.5rem;
 	}
 
-	.dk-recipe-actions {
+	.rt-recipe-actions {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
-		margin-bottom: 3rem;
-		padding-bottom: 2rem;
-		border-bottom: 1px solid #222;
+		margin-bottom: 2.5rem;
+		padding-bottom: 1.5rem;
+		border-bottom: 3px solid #e8d8cc;
 	}
-	.dk-scale {
+	.rt-scale {
 		margin-left: auto;
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.375rem;
 		font-size: 0.875rem;
-		color: #666;
+		color: #7a6565;
+		font-weight: 600;
 	}
-	.dk-scale-btn {
-		width: 28px;
-		height: 28px;
-		border: 1.5px solid #333;
-		border-radius: 4px;
-		background: none;
+	.rt-scale-btn {
+		width: 30px;
+		height: 30px;
+		border: 2px solid #e8d8cc;
+		border-radius: 3px;
+		background: white;
 		cursor: pointer;
 		font-size: 1rem;
-		color: #888;
+		color: #3d2b2b;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transition: border-color 200ms;
 	}
-	.dk-scale-btn:hover { border-color: #c47d4e; color: #c47d4e; }
+	.rt-scale-btn:hover { border-color: #b91c3a; color: #b91c3a; }
 
-	.dk-recipe-body {
+	.rt-recipe-body {
 		display: grid;
 		grid-template-columns: 300px 1fr;
 		gap: 3rem;
 	}
-	.dk-ingredients h2,
-	.dk-instructions h2 {
-		font-size: 1.125rem;
-		font-weight: 600;
+	.rt-ingredients h2,
+	.rt-instructions h2 {
+		font-family: 'Georgia', serif;
+		font-size: 1.25rem;
 		margin: 0 0 1.25rem;
-		color: white;
+		color: #b91c3a;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		font-size: 1rem;
 	}
-	.dk-ingredients ul {
+	.rt-ingredients ul {
 		list-style: none;
 		padding: 0;
 		margin: 0;
 	}
-	.dk-ingredients li {
-		padding: 0.75rem 0;
-		border-bottom: 1px solid #1f1f1f;
+	.rt-ingredients li {
+		padding: 0.625rem 0;
+		border-bottom: 2px dashed #e8d8cc;
 		font-size: 0.9375rem;
-		color: #a09890;
+		color: #5a4545;
 		line-height: 1.5;
 	}
-	.dk-instructions ol {
+	.rt-instructions ol {
 		list-style: none;
 		padding: 0;
 		margin: 0;
 	}
-	.dk-instructions li {
+	.rt-instructions li {
 		display: flex;
 		gap: 1.25rem;
 		margin-bottom: 1.75rem;
 		align-items: flex-start;
 	}
-	.dk-step-num {
+	.rt-step-num {
 		flex-shrink: 0;
 		width: 32px;
 		height: 32px;
 		border-radius: 50%;
-		background: rgba(196, 125, 78, 0.15);
+		background: #b91c3a;
+		color: white;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		font-family: 'Georgia', serif;
 		font-size: 0.8125rem;
-		color: #c47d4e;
-		font-weight: 600;
+		font-weight: 700;
 		margin-top: 2px;
+		box-shadow: 0 2px 0 #8b1530;
 	}
-	.dk-instructions p {
+	.rt-instructions p {
 		margin: 0;
 		font-size: 0.9375rem;
 		line-height: 1.7;
-		color: #a09890;
+		color: #5a4545;
 	}
 </style>
