@@ -36,7 +36,9 @@
 	<title>ControlCopyPasta</title>
 </svelte:head>
 
-{#if $isLoading}
+{#if $page.url.pathname.startsWith('/mockups')}
+	{@render children()}
+{:else if $isLoading}
 	<div class="loading">Loading...</div>
 {:else}
 	<div class="app">
