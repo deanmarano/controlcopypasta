@@ -1,6 +1,6 @@
 <div class="mockups-index">
 	<h1>Design Mockups</h1>
-	<p class="subtitle">Four design directions for ControlCopyPasta. Each includes a public landing page, logged-in dashboard, and recipe detail view.</p>
+	<p class="subtitle">Six design directions for ControlCopyPasta. Each includes a public landing page, logged-in dashboard, and recipe detail view.</p>
 
 	<div class="directions">
 		<a href="/mockups/1" class="direction-card">
@@ -43,6 +43,26 @@
 				<span class="tag">Glossy buttons</span>
 				<span class="tag">Blue &amp; orange</span>
 				<span class="tag">Beta badge</span>
+			</div>
+		</a>
+		<a href="/mockups/5" class="direction-card">
+			<div class="direction-number">5</div>
+			<h2>Scrapbook</h2>
+			<p>Handwriting fonts, taped-in photos, lined paper backgrounds. Feels like a personal recipe binder from someone who actually cooks. Cozy and tactile.</p>
+			<div class="tags">
+				<span class="tag">Handwritten</span>
+				<span class="tag">Taped photos</span>
+				<span class="tag">Paper texture</span>
+			</div>
+		</a>
+		<a href="/mockups/6" class="direction-card">
+			<div class="direction-number">6</div>
+			<h2>Frutiger Aero</h2>
+			<p>Glossy glass panels, nature-gradient backgrounds, sky-blue orb buttons. The optimistic tech-utopia aesthetic of 2006-2013. Fresh, clean, and luminous.</p>
+			<div class="tags">
+				<span class="tag">Glass panels</span>
+				<span class="tag">Nature gradients</span>
+				<span class="tag">Sky blue</span>
 			</div>
 		</a>
 	</div>
