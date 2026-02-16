@@ -38,6 +38,47 @@
 		</div>
 	</header>
 
+	<section class="wp-how">
+		<h2>How it works</h2>
+		<div class="wp-how-grid">
+			<div class="wp-how-step">
+				<div class="wp-how-bubble">1</div>
+				<h3>Paste a URL</h3>
+				<p>Find a recipe you love anywhere on the web. Paste the link and we'll extract everything — ingredients, instructions, images, and nutrition data.</p>
+			</div>
+			<div class="wp-how-step">
+				<div class="wp-how-bubble">2</div>
+				<h3>Organize your way</h3>
+				<p>Tag recipes by meal type, cuisine, or season. Browse by source. Build a collection that mirrors how you actually cook.</p>
+			</div>
+			<div class="wp-how-step">
+				<div class="wp-how-bubble">3</div>
+				<h3>Cook with confidence</h3>
+				<p>Scale ingredients for any crowd. Check nutrition facts. Generate shopping lists. Print clean recipe cards for the kitchen counter.</p>
+			</div>
+		</div>
+	</section>
+
+	<section class="wp-showcase">
+		<div class="wp-showcase-text">
+			<div class="wp-pill">Your collection</div>
+			<h2>Every recipe from every corner of the web, in one place.</h2>
+			<p>Import from Bon Appetit, NYT Cooking, Serious Eats, food blogs — any site with a recipe. The browser extension makes it one click.</p>
+		</div>
+		<div class="wp-showcase-cards">
+			{#each recipes.slice(0, 4) as recipe}
+				<div class="wp-showcase-card">
+					<img src={recipe.image_url} alt={recipe.title} />
+					<div class="wp-showcase-info">
+						<span class="wp-showcase-source">{recipe.source_domain}</span>
+						<h4>{recipe.title}</h4>
+						<span class="wp-showcase-time">{recipe.total_time_minutes} min</span>
+					</div>
+				</div>
+			{/each}
+		</div>
+	</section>
+
 	<section class="wp-features">
 		<h2>Everything you need to cook smarter</h2>
 		<div class="wp-feat-grid">
@@ -74,9 +115,29 @@
 		</div>
 	</section>
 
+	<section class="wp-stats">
+		<div class="wp-stat">
+			<span class="wp-stat-num">200+</span>
+			<span class="wp-stat-label">Supported sites</span>
+		</div>
+		<div class="wp-stat">
+			<span class="wp-stat-num">30s</span>
+			<span class="wp-stat-label">Average import</span>
+		</div>
+		<div class="wp-stat">
+			<span class="wp-stat-num">100%</span>
+			<span class="wp-stat-label">Open source</span>
+		</div>
+		<div class="wp-stat">
+			<span class="wp-stat-num">0</span>
+			<span class="wp-stat-label">Tracking scripts</span>
+		</div>
+	</section>
+
 	<section class="wp-cta-bottom">
 		<div class="wp-cta-inner">
 			<h2>Ready to organize your recipes?</h2>
+			<p class="wp-cta-sub">Deploy in minutes with Docker. Your recipes stay on your server, forever.</p>
 			<button class="wp-btn-primary wp-btn-lg">Get Started Free</button>
 		</div>
 	</section>
@@ -385,6 +446,122 @@
 		color: #2d2a26;
 	}
 
+	/* How it works */
+	.wp-how {
+		max-width: 1000px;
+		margin: 0 auto;
+		padding: 4rem 2rem;
+	}
+	.wp-how h2 {
+		font-size: 1.75rem;
+		font-weight: 700;
+		text-align: center;
+		margin: 0 0 2.5rem;
+		color: #2d2a26;
+	}
+	.wp-how-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 2rem;
+	}
+	.wp-how-step { text-align: center; }
+	.wp-how-bubble {
+		width: 48px;
+		height: 48px;
+		border-radius: 14px;
+		background: linear-gradient(135deg, #fef3c7, #fde68a);
+		color: #92400e;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.125rem;
+		font-weight: 700;
+		margin-bottom: 1rem;
+	}
+	.wp-how-step h3 {
+		font-size: 1.0625rem;
+		font-weight: 600;
+		margin: 0 0 0.5rem;
+		color: #2d2a26;
+	}
+	.wp-how-step p {
+		color: #6b6560;
+		line-height: 1.65;
+		margin: 0;
+		font-size: 0.9375rem;
+	}
+
+	/* Showcase */
+	.wp-showcase {
+		max-width: 1100px;
+		margin: 0 auto;
+		padding: 3rem 2rem 4rem;
+		display: grid;
+		grid-template-columns: 1fr 1.3fr;
+		gap: 3rem;
+		align-items: center;
+	}
+	.wp-showcase-text h2 {
+		font-size: 1.75rem;
+		font-weight: 700;
+		line-height: 1.25;
+		margin: 0 0 1rem;
+		color: #2d2a26;
+	}
+	.wp-showcase-text p {
+		color: #6b6560;
+		line-height: 1.65;
+		margin: 0;
+		font-size: 0.9375rem;
+	}
+	.wp-showcase-text .wp-pill { margin-bottom: 1rem; }
+	.wp-showcase-cards {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.875rem;
+	}
+	.wp-showcase-card {
+		background: white;
+		border-radius: 16px;
+		overflow: hidden;
+		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+		transition: transform 200ms, box-shadow 200ms;
+		cursor: pointer;
+	}
+	.wp-showcase-card:hover {
+		transform: translateY(-3px);
+		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+	}
+	.wp-showcase-card img {
+		width: 100%;
+		aspect-ratio: 16/10;
+		object-fit: cover;
+		display: block;
+	}
+	.wp-showcase-info {
+		padding: 0.75rem 1rem;
+	}
+	.wp-showcase-source {
+		font-size: 0.625rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #9a928a;
+		display: block;
+		margin-bottom: 0.25rem;
+	}
+	.wp-showcase-info h4 {
+		font-size: 0.8125rem;
+		font-weight: 600;
+		margin: 0 0 0.25rem;
+		color: #2d2a26;
+		line-height: 1.35;
+	}
+	.wp-showcase-time {
+		font-size: 0.6875rem;
+		color: #d97706;
+		font-weight: 500;
+	}
+
 	/* Features */
 	.wp-features {
 		padding: 4rem 2rem;
@@ -428,6 +605,32 @@
 		margin: 0;
 	}
 
+	/* Stats */
+	.wp-stats {
+		display: flex;
+		justify-content: center;
+		gap: 3rem;
+		padding: 2.5rem 2rem;
+		max-width: 800px;
+		margin: 0 auto;
+	}
+	.wp-stat { text-align: center; }
+	.wp-stat-num {
+		display: block;
+		font-size: 2.25rem;
+		font-weight: 700;
+		color: #d97706;
+		line-height: 1;
+		margin-bottom: 0.375rem;
+	}
+	.wp-stat-label {
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: #9a928a;
+		font-weight: 500;
+	}
+
 	.wp-cta-bottom { padding: 3rem 2rem 5rem; }
 	.wp-cta-inner {
 		max-width: 600px;
@@ -440,8 +643,13 @@
 	.wp-cta-inner h2 {
 		font-size: 1.5rem;
 		font-weight: 700;
-		margin: 0 0 1.5rem;
+		margin: 0 0 0.75rem;
 		color: #2d2a26;
+	}
+	.wp-cta-sub {
+		color: #6b6560;
+		font-size: 0.9375rem;
+		margin: 0 0 1.5rem;
 	}
 
 	/* DASHBOARD */
