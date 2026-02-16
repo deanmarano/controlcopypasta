@@ -6,7 +6,7 @@
 
 <div class="mockup-nav">
 	<a href="/mockups" class="back">All Mockups</a>
-	<span class="label">Direction 4: 90s Website</span>
+	<span class="label">Direction 4: Web 2.0</span>
 	<div class="views">
 		<button class:active={view === 'landing'} onclick={() => (view = 'landing')}>Landing</button>
 		<button class:active={view === 'dashboard'} onclick={() => (view = 'dashboard')}>Dashboard</button>
@@ -16,70 +16,65 @@
 
 {#if view === 'landing'}
 <!-- LANDING PAGE -->
-<div class="nn">
-	<header class="nn-hero">
-		<div class="nn-hero-inner">
-			<div class="nn-marquee">*** Welcome to ControlCopyPasta! *** Your #1 Recipe Manager on the World Wide Web! ***</div>
-			<h1>ControlCopy<span class="nn-accent">Pasta</span></h1>
-			<p class="nn-hero-sub">Save recipes from anywhere on the web. Scale, organize, and cook with confidence. No subscriptions, no ads, no data harvesting.</p>
-			<div class="nn-hero-btns">
-				<button class="nn-btn">&#9658; Get Started</button>
-				<a href="https://github.com/deanmarano/controlcopypasta" class="nn-btn nn-btn-alt">&#128279; View Source Code</a>
+<div class="w2">
+	<header class="w2-hero">
+		<div class="w2-hero-inner">
+			<div class="w2-logo-row">
+				<h1>Control<span class="w2-logo-accent">Copy</span>Pasta</h1>
+				<span class="w2-beta">BETA</span>
 			</div>
-			<div class="nn-badges">
-				<span class="nn-badge-item">OPEN SOURCE</span>
-				<span class="nn-badge-item">SELF-HOSTED</span>
-				<span class="nn-badge-item">NO TRACKING</span>
+			<p class="w2-tagline">The open source recipe manager that doesn't suck.</p>
+			<p class="w2-hero-sub">Save recipes from anywhere on the web. Scale, organize, and cook with confidence. No subscriptions, no ads, no data harvesting.</p>
+			<div class="w2-hero-btns">
+				<button class="w2-btn-glossy">Sign Up Free &raquo;</button>
+				<a href="https://github.com/deanmarano/controlcopypasta" class="w2-btn-white">View on GitHub</a>
 			</div>
 		</div>
-		<div class="nn-hero-side">
-			<div class="nn-hero-img-frame">
-				<img src={recipes[0].image_url} alt="Spaghetti Carbonara" />
+		<div class="w2-hero-side">
+			<div class="w2-screenshot">
+				<div class="w2-screenshot-bar">
+					<span class="w2-dot w2-dot-r"></span>
+					<span class="w2-dot w2-dot-y"></span>
+					<span class="w2-dot w2-dot-g"></span>
+				</div>
+				<img src={recipes[0].image_url} alt="Recipe screenshot" />
 			</div>
-			<p class="nn-img-caption">~ Featured Recipe of the Day ~</p>
 		</div>
 	</header>
 
-	<div class="nn-separator">
-		<hr />
-	</div>
-
-	<section class="nn-how">
-		<h2>// How It Works //</h2>
-		<div class="nn-how-grid">
-			<div class="nn-how-step">
-				<div class="nn-how-num">Step 1</div>
+	<section class="w2-how">
+		<h2>How It Works</h2>
+		<p class="w2-section-sub">Getting started is ridiculously easy.</p>
+		<div class="w2-how-grid">
+			<div class="w2-how-step">
+				<div class="w2-how-icon">1</div>
 				<h3>Paste a URL</h3>
-				<p>Find a recipe you love anywhere on the web. Paste the link and we'll extract everything &mdash; ingredients, instructions, images, and nutrition data.</p>
+				<p>Find a recipe you love anywhere on the web. Paste the link and we'll extract everything — ingredients, instructions, images, and nutrition data.</p>
 			</div>
-			<div class="nn-how-step">
-				<div class="nn-how-num">Step 2</div>
+			<div class="w2-how-step">
+				<div class="w2-how-icon">2</div>
 				<h3>Organize Your Way</h3>
 				<p>Tag recipes by meal type, cuisine, or season. Browse by source. Build a collection that mirrors how you actually cook.</p>
 			</div>
-			<div class="nn-how-step">
-				<div class="nn-how-num">Step 3</div>
+			<div class="w2-how-step">
+				<div class="w2-how-icon">3</div>
 				<h3>Cook With Confidence</h3>
 				<p>Scale ingredients for any crowd. Check nutrition facts. Generate shopping lists. Print clean recipe cards for the kitchen counter.</p>
 			</div>
 		</div>
 	</section>
 
-	<div class="nn-separator">
-		<hr />
-	</div>
-
-	<section class="nn-showcase">
-		<div class="nn-showcase-text">
-			<h2>// Recipe Collection //</h2>
-			<p>Every recipe from every corner of the web, in one place. Import from Bon Appetit, NYT Cooking, Serious Eats, food blogs &mdash; any site with a recipe. The browser extension makes it one click.</p>
+	<section class="w2-showcase">
+		<div class="w2-showcase-text">
+			<h2>Your collection, beautifully organized.</h2>
+			<p>Import from Bon Appetit, NYT Cooking, Serious Eats, food blogs — any site with a recipe. The browser extension makes it one click.</p>
 		</div>
-		<div class="nn-showcase-cards">
+		<div class="w2-showcase-cards">
 			{#each recipes.slice(0, 3) as recipe}
-				<div class="nn-showcase-card">
+				<div class="w2-showcase-card">
 					<img src={recipe.image_url} alt={recipe.title} />
-					<div class="nn-showcase-info">
-						<span class="nn-showcase-source">[{recipe.source_domain}]</span>
+					<div class="w2-showcase-info">
+						<span class="w2-showcase-source">{recipe.source_domain}</span>
 						<h4>{recipe.title}</h4>
 					</div>
 				</div>
@@ -87,103 +82,108 @@
 		</div>
 	</section>
 
-	<div class="nn-separator">
-		<hr />
-	</div>
-
-	<section class="nn-features">
-		<h2>// Features //</h2>
-		<div class="nn-feat-grid">
-			<div class="nn-feat">
-				<h3>&#9658; Clip from any site</h3>
+	<section class="w2-features">
+		<h2>Features</h2>
+		<p class="w2-section-sub">Everything you need. Nothing you don't.</p>
+		<div class="w2-feat-grid">
+			<div class="w2-feat">
+				<div class="w2-feat-icon">&#9889;</div>
+				<h3>Clip from any site</h3>
 				<p>Paste a URL or use the browser extension. We extract ingredients, steps, and images automatically.</p>
 			</div>
-			<div class="nn-feat">
-				<h3>&#9658; Scale with confidence</h3>
+			<div class="w2-feat">
+				<div class="w2-feat-icon">&#9878;</div>
+				<h3>Scale with confidence</h3>
 				<p>Cooking for 2 or 12? Adjust quantities from 0.25x to 4x with smart fraction handling.</p>
 			</div>
-			<div class="nn-feat">
-				<h3>&#9658; Know your nutrition</h3>
+			<div class="w2-feat">
+				<div class="w2-feat-icon">&#9776;</div>
+				<h3>Know your nutrition</h3>
 				<p>Per-recipe and per-serving breakdowns. Calories, macros, and micronutrients from verified sources.</p>
 			</div>
-			<div class="nn-feat">
-				<h3>&#9658; Shop smarter</h3>
+			<div class="w2-feat">
+				<div class="w2-feat-icon">&#10003;</div>
+				<h3>Shop smarter</h3>
 				<p>Generate shopping lists from any recipe. Items grouped by category, quantities combined.</p>
 			</div>
-			<div class="nn-feat">
-				<h3>&#9658; Find connections</h3>
+			<div class="w2-feat">
+				<div class="w2-feat-icon">&#128279;</div>
+				<h3>Find connections</h3>
 				<p>Discover which recipes share ingredients. Compare side by side. Browse by source.</p>
 			</div>
-			<div class="nn-feat">
-				<h3>&#9658; Own your data</h3>
+			<div class="w2-feat">
+				<div class="w2-feat-icon">&#128274;</div>
+				<h3>Own your data</h3>
 				<p>Self-host on your own server. Import from Copy Me That. Export anytime. AGPL licensed.</p>
 			</div>
 		</div>
 	</section>
 
-	<section class="nn-stats">
-		<div class="nn-stat">
-			<span class="nn-stat-num">200+</span>
-			<span class="nn-stat-lbl">Supported Sites</span>
+	<section class="w2-stats">
+		<div class="w2-stat">
+			<span class="w2-stat-num">200+</span>
+			<span class="w2-stat-lbl">Supported Sites</span>
 		</div>
-		<div class="nn-stat">
-			<span class="nn-stat-num">30s</span>
-			<span class="nn-stat-lbl">Average Import</span>
+		<div class="w2-stat">
+			<span class="w2-stat-num">30s</span>
+			<span class="w2-stat-lbl">Average Import</span>
 		</div>
-		<div class="nn-stat">
-			<span class="nn-stat-num">100%</span>
-			<span class="nn-stat-lbl">Open Source</span>
+		<div class="w2-stat">
+			<span class="w2-stat-num">100%</span>
+			<span class="w2-stat-lbl">Open Source</span>
 		</div>
-		<div class="nn-stat">
-			<span class="nn-stat-num">0</span>
-			<span class="nn-stat-lbl">Tracking Scripts</span>
+		<div class="w2-stat">
+			<span class="w2-stat-num">0</span>
+			<span class="w2-stat-lbl">Tracking Scripts</span>
 		</div>
 	</section>
 
-	<section class="nn-cta">
-		<h2>Ready to organize your recipe collection?</h2>
+	<section class="w2-cta">
+		<h2>Ready to take control of your recipes?</h2>
 		<p>Deploy in minutes with Docker. Your recipes stay on your server, forever.</p>
-		<button class="nn-btn">&#9658; Get Started Now!</button>
-		<p class="nn-counter">You are visitor #00{Math.floor(Math.random() * 9000 + 1000)}</p>
+		<button class="w2-btn-glossy w2-btn-lg">Get Started Free &raquo;</button>
 	</section>
 </div>
 
 {:else if view === 'dashboard'}
 <!-- DASHBOARD -->
-<div class="nn">
-	<div class="nn-dash">
-		<header class="nn-dash-header">
+<div class="w2">
+	<div class="w2-dash">
+		<header class="w2-dash-header">
 			<div>
 				<h1>Welcome back!</h1>
 				<p>What are we cooking tonight?</p>
 			</div>
-			<div class="nn-add-form">
+			<div class="w2-add-form">
 				<input type="text" placeholder="Paste a recipe URL..." />
-				<button class="nn-btn nn-btn-sm">Save</button>
+				<button class="w2-btn-glossy w2-btn-sm">Save</button>
 			</div>
 		</header>
 
-		<section class="nn-section">
-			<h2>// Tonight's Inspiration //</h2>
-			<div class="nn-hero-card">
+		<section class="w2-section">
+			<div class="w2-section-top">
+				<h2>Tonight's Inspiration</h2>
+				<button class="w2-text-link">Shuffle &raquo;</button>
+			</div>
+			<div class="w2-hero-card">
 				<img src={dinnerIdeas[0].image_url} alt={dinnerIdeas[0].title} />
-				<div class="nn-hero-card-overlay">
-					<span class="nn-time-badge">{dinnerIdeas[0].total_time_minutes} min</span>
+				<div class="w2-hero-card-overlay">
+					<span class="w2-time-pill">{dinnerIdeas[0].total_time_minutes} min</span>
 					<h3>{dinnerIdeas[0].title}</h3>
 					<p>{dinnerIdeas[0].description}</p>
 				</div>
 			</div>
-			<div class="nn-card-grid">
+			<div class="w2-card-grid">
 				{#each dinnerIdeas.slice(1) as recipe}
-					<div class="nn-card">
-						<div class="nn-card-img">
+					<div class="w2-card">
+						<div class="w2-card-img">
 							<img src={recipe.image_url} alt={recipe.title} />
 						</div>
-						<div class="nn-card-body">
+						<div class="w2-card-body">
 							<h3>{recipe.title}</h3>
-							<div class="nn-card-meta">
+							<div class="w2-card-meta">
 								{#if recipe.total_time_minutes}<span>{recipe.total_time_minutes} min</span>{/if}
-								<span>[{recipe.source_domain}]</span>
+								<span>{recipe.source_domain}</span>
 							</div>
 						</div>
 					</div>
@@ -191,19 +191,22 @@
 			</div>
 		</section>
 
-		<section class="nn-section">
-			<h2>// Recently Added //</h2>
-			<div class="nn-card-grid">
+		<section class="w2-section">
+			<div class="w2-section-top">
+				<h2>Recently Added</h2>
+				<a href="/recipes" class="w2-text-link">View all &raquo;</a>
+			</div>
+			<div class="w2-card-grid">
 				{#each recentlyAdded as recipe}
-					<div class="nn-card">
-						<div class="nn-card-img">
+					<div class="w2-card">
+						<div class="w2-card-img">
 							<img src={recipe.image_url} alt={recipe.title} />
 						</div>
-						<div class="nn-card-body">
+						<div class="w2-card-body">
 							<h3>{recipe.title}</h3>
-							<div class="nn-card-meta">
+							<div class="w2-card-meta">
 								{#if recipe.total_time_minutes}<span>{recipe.total_time_minutes} min</span>{/if}
-								<span>[{recipe.source_domain}]</span>
+								<span>{recipe.source_domain}</span>
 							</div>
 						</div>
 					</div>
@@ -215,69 +218,69 @@
 
 {:else}
 <!-- RECIPE DETAIL -->
-<div class="nn">
-	<div class="nn-recipe">
-		<div class="nn-recipe-hero">
+<div class="w2">
+	<div class="w2-recipe">
+		<div class="w2-recipe-hero">
 			<img src={featuredRecipe.image_url} alt={featuredRecipe.title} />
-			<div class="nn-recipe-hero-overlay">
-				<div class="nn-recipe-tags">
+			<div class="w2-recipe-hero-overlay">
+				<div class="w2-recipe-tags">
 					{#each featuredRecipe.tags as tag}
-						<span class="nn-tag">{tag.name}</span>
+						<span class="w2-tag">{tag.name}</span>
 					{/each}
 				</div>
 				<h1>{featuredRecipe.title}</h1>
-				<p class="nn-recipe-source">{featuredRecipe.source_domain}</p>
+				<p class="w2-recipe-source">{featuredRecipe.source_domain}</p>
 			</div>
 		</div>
 
-		<div class="nn-recipe-content">
-			<div class="nn-recipe-meta">
-				<div class="nn-meta-item">
-					<span class="nn-meta-lbl">PREP</span>
-					<span class="nn-meta-val">{featuredRecipe.prep_time_minutes} min</span>
+		<div class="w2-recipe-content">
+			<div class="w2-recipe-meta">
+				<div class="w2-meta-item">
+					<span class="w2-meta-lbl">Prep</span>
+					<span class="w2-meta-val">{featuredRecipe.prep_time_minutes} min</span>
 				</div>
-				<div class="nn-meta-item">
-					<span class="nn-meta-lbl">COOK</span>
-					<span class="nn-meta-val">{featuredRecipe.cook_time_minutes} min</span>
+				<div class="w2-meta-item">
+					<span class="w2-meta-lbl">Cook</span>
+					<span class="w2-meta-val">{featuredRecipe.cook_time_minutes} min</span>
 				</div>
-				<div class="nn-meta-item">
-					<span class="nn-meta-lbl">TOTAL</span>
-					<span class="nn-meta-val">{featuredRecipe.total_time_minutes} min</span>
+				<div class="w2-meta-item">
+					<span class="w2-meta-lbl">Total</span>
+					<span class="w2-meta-val">{featuredRecipe.total_time_minutes} min</span>
 				</div>
-				<div class="nn-meta-item">
-					<span class="nn-meta-lbl">SERVES</span>
-					<span class="nn-meta-val">{featuredRecipe.servings}</span>
+				<div class="w2-meta-item">
+					<span class="w2-meta-lbl">Serves</span>
+					<span class="w2-meta-val">{featuredRecipe.servings}</span>
 				</div>
 			</div>
 
-			<p class="nn-recipe-desc">{featuredRecipe.description}</p>
+			<p class="w2-recipe-desc">{featuredRecipe.description}</p>
 
-			<div class="nn-recipe-actions">
-				<button class="nn-btn nn-btn-sm">&#128722; Add to Shopping List</button>
-				<button class="nn-btn nn-btn-sm nn-btn-alt">&#128424; Print</button>
-				<button class="nn-btn nn-btn-sm nn-btn-alt">&#9998; Edit</button>
-				<div class="nn-scale">
-					<button class="nn-scale-btn">&minus;</button>
+			<div class="w2-recipe-actions">
+				<button class="w2-btn-glossy w2-btn-sm">Add to Shopping List</button>
+				<button class="w2-btn-white w2-btn-sm">Print</button>
+				<button class="w2-btn-white w2-btn-sm">Edit</button>
+				<div class="w2-scale">
+					<button class="w2-scale-btn">&minus;</button>
 					<span>1x</span>
-					<button class="nn-scale-btn">+</button>
+					<button class="w2-scale-btn">+</button>
 				</div>
 			</div>
 
-			<div class="nn-recipe-body">
-				<aside class="nn-ingredients">
-					<h2>// Ingredients //</h2>
+			<div class="w2-recipe-body">
+				<aside class="w2-ingredients">
+					<h2>Ingredients</h2>
 					<ul>
 						{#each featuredRecipe.ingredients as ing}
-							<li>&#9632; {ing.text}</li>
+							<li>{ing.text}</li>
 						{/each}
 					</ul>
 				</aside>
-				<div class="nn-instructions">
-					<h2>// Instructions //</h2>
+				<div class="w2-instructions">
+					<h2>Instructions</h2>
 					<ol>
 						{#each featuredRecipe.instructions as step, i}
 							<li>
-								<span class="nn-step-num">Step {i + 1}.</span>
+								<span class="w2-step-num">{i + 1}</span>
 								<p>{step.text}</p>
 							</li>
 						{/each}
@@ -299,635 +302,692 @@
 		align-items: center;
 		gap: var(--space-4);
 		padding: var(--space-2) var(--space-4);
-		background: #000080;
-		color: #ffff00;
+		background: linear-gradient(180deg, #4a90d9, #2a6ab8);
+		color: white;
 		font-size: var(--text-sm);
-		font-family: 'Courier New', monospace;
-		border-bottom: 3px solid #c0c0c0;
+		border-bottom: 1px solid #1e5a9e;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 	}
-	.mockup-nav .back { color: #00ffff; text-decoration: underline; }
-	.mockup-nav .back:hover { color: #ff00ff; }
-	.mockup-nav .label { flex: 1; font-weight: bold; }
-	.mockup-nav .views { display: flex; gap: 4px; }
+	.mockup-nav .back { color: rgba(255,255,255,0.7); text-decoration: none; }
+	.mockup-nav .back:hover { color: white; text-decoration: underline; }
+	.mockup-nav .label { flex: 1; font-weight: bold; text-shadow: 0 1px 1px rgba(0,0,0,0.3); }
+	.mockup-nav .views { display: flex; gap: 2px; }
 	.mockup-nav .views button {
-		padding: 4px 12px;
-		background: #c0c0c0;
-		color: #000;
-		border: 2px outset #fff;
+		padding: var(--space-1) var(--space-3);
+		background: rgba(255,255,255,0.15);
+		color: rgba(255,255,255,0.85);
+		border: 1px solid rgba(255,255,255,0.2);
+		border-radius: 3px;
 		cursor: pointer;
-		font-size: 11px;
-		font-family: 'Courier New', monospace;
-		font-weight: bold;
+		font-size: var(--text-xs);
 	}
 	.mockup-nav .views button.active {
-		background: #ffff00;
-		color: #000080;
-		border-style: inset;
+		background: white;
+		color: #2a6ab8;
+		font-weight: bold;
+		border-color: #ccc;
 	}
 
-	/* === 90s THEME === */
-	.nn {
-		font-family: 'Verdana', 'Geneva', sans-serif;
-		color: #000;
-		background: #fff;
-		background-image:
-			linear-gradient(90deg, rgba(0,0,128,0.03) 1px, transparent 1px),
-			linear-gradient(rgba(0,0,128,0.03) 1px, transparent 1px);
-		background-size: 20px 20px;
+	/* === WEB 2.0 THEME === */
+	.w2 {
+		font-family: 'Lucida Grande', 'Segoe UI', 'Helvetica Neue', sans-serif;
+		color: #333;
+		background: #f0f4f8;
 	}
 
 	/* BUTTONS */
-	.nn-btn {
-		padding: 8px 20px;
-		background: #000080;
-		color: #ffff00;
-		border: 3px outset #9999cc;
-		font-family: 'Verdana', sans-serif;
+	.w2-btn-glossy {
+		padding: 10px 24px;
+		background: linear-gradient(180deg, #6db3f8 0%, #3b82d1 50%, #2a6ab8 51%, #1e5a9e 100%);
+		color: white;
+		border: 1px solid #1a5090;
+		border-radius: 5px;
+		font-size: 0.9375rem;
+		font-weight: bold;
+		cursor: pointer;
+		text-shadow: 0 -1px 1px rgba(0,0,0,0.3);
+		box-shadow: 0 1px 2px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3);
+		text-decoration: none;
+		display: inline-block;
+	}
+	.w2-btn-glossy:hover {
+		background: linear-gradient(180deg, #7ec0ff 0%, #4a90d9 50%, #3578c6 51%, #2568ac 100%);
+	}
+	.w2-btn-sm { padding: 6px 16px; font-size: 0.8125rem; }
+	.w2-btn-lg { padding: 14px 36px; font-size: 1.0625rem; border-radius: 6px; }
+
+	.w2-btn-white {
+		padding: 10px 24px;
+		background: linear-gradient(180deg, #fff 0%, #f0f0f0 50%, #e8e8e8 51%, #ddd 100%);
+		color: #444;
+		border: 1px solid #bbb;
+		border-radius: 5px;
+		font-size: 0.9375rem;
+		font-weight: bold;
+		cursor: pointer;
+		box-shadow: 0 1px 2px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8);
+		text-decoration: none;
+		display: inline-block;
+	}
+	.w2-btn-white:hover { background: linear-gradient(180deg, #fff, #f5f5f5 50%, #eee 51%, #e5e5e5 100%); }
+
+	.w2-text-link {
+		background: none;
+		border: none;
+		color: #2a6ab8;
 		font-size: 0.875rem;
 		font-weight: bold;
 		cursor: pointer;
 		text-decoration: none;
-		display: inline-block;
-		transition: none;
 	}
-	.nn-btn:hover { background: #0000aa; }
-	.nn-btn:active { border-style: inset; }
-	.nn-btn-alt {
-		background: #c0c0c0;
-		color: #000;
-		border-color: #fff;
-	}
-	.nn-btn-alt:hover { background: #d0d0d0; }
-	.nn-btn-sm { padding: 4px 14px; font-size: 0.75rem; }
+	.w2-text-link:hover { text-decoration: underline; }
 
 	/* LANDING - HERO */
-	.nn-hero {
+	.w2-hero {
 		display: grid;
-		grid-template-columns: 1.2fr 1fr;
-		min-height: 70vh;
-		padding: 2rem;
-		gap: 2rem;
+		grid-template-columns: 1fr 1fr;
+		gap: 3rem;
 		max-width: 1100px;
 		margin: 0 auto;
+		padding: 4rem 3rem;
 	}
-	.nn-hero-inner {
+	.w2-hero-inner {
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
 	}
-	.nn-marquee {
-		padding: 6px 12px;
-		background: #000080;
-		color: #ffff00;
-		font-family: 'Courier New', monospace;
-		font-size: 0.75rem;
-		font-weight: bold;
-		margin-bottom: 1.5rem;
-		overflow: hidden;
-		white-space: nowrap;
-		letter-spacing: 0.05em;
+	.w2-logo-row {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 0.5rem;
 	}
-	.nn-hero-inner h1 {
-		font-size: 3rem;
-		line-height: 1.1;
+	.w2-logo-row h1 {
+		font-size: 2.5rem;
+		color: #2a6ab8;
+		margin: 0;
+		font-weight: bold;
+	}
+	.w2-logo-accent { color: #ff6b35; }
+	.w2-beta {
+		padding: 2px 8px;
+		background: linear-gradient(180deg, #ff9955, #ff6b35);
+		color: white;
+		border-radius: 3px;
+		font-size: 0.5625rem;
+		font-weight: bold;
+		letter-spacing: 0.1em;
+		text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
+		vertical-align: super;
+	}
+	.w2-tagline {
+		font-size: 1.375rem;
+		color: #555;
 		margin: 0 0 1rem;
-		color: #000080;
-		font-weight: bold;
+		font-weight: normal;
 	}
-	.nn-accent { color: #ff0000; }
-	.nn-hero-sub {
-		font-size: 1rem;
+	.w2-hero-sub {
+		font-size: 0.9375rem;
 		line-height: 1.65;
-		color: #333;
-		margin: 0 0 1.5rem;
+		color: #777;
+		margin: 0 0 2rem;
 		max-width: 440px;
 	}
-	.nn-hero-btns { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; }
-	.nn-badges { display: flex; gap: 0.5rem; }
-	.nn-badge-item {
-		padding: 3px 10px;
-		background: #ffff00;
-		color: #000080;
-		border: 2px solid #000080;
-		font-size: 0.625rem;
-		font-weight: bold;
-		font-family: 'Courier New', monospace;
-		letter-spacing: 0.08em;
-	}
+	.w2-hero-btns { display: flex; gap: 0.75rem; }
 
-	.nn-hero-side {
+	.w2-hero-side {
 		display: flex;
-		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 	}
-	.nn-hero-img-frame {
-		border: 4px solid #000080;
-		padding: 4px;
-		background: white;
-		box-shadow: 4px 4px 0 #c0c0c0;
+	.w2-screenshot {
+		background: #e8e8e8;
+		border-radius: 8px 8px 4px 4px;
+		overflow: hidden;
+		box-shadow: 0 4px 20px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.08);
 	}
-	.nn-hero-img-frame img {
+	.w2-screenshot-bar {
+		display: flex;
+		gap: 6px;
+		padding: 8px 12px;
+		background: linear-gradient(180deg, #e8e8e8, #d0d0d0);
+		border-bottom: 1px solid #bbb;
+	}
+	.w2-dot { width: 10px; height: 10px; border-radius: 50%; }
+	.w2-dot-r { background: #ff5f57; }
+	.w2-dot-y { background: #ffbd2e; }
+	.w2-dot-g { background: #28ca42; }
+	.w2-screenshot img {
 		width: 100%;
-		max-width: 380px;
+		max-width: 420px;
 		display: block;
-	}
-	.nn-img-caption {
-		font-family: 'Courier New', monospace;
-		font-size: 0.75rem;
-		color: #666;
-		margin: 0.75rem 0 0;
-		font-style: italic;
-	}
-
-	/* SEPARATOR */
-	.nn-separator {
-		max-width: 1100px;
-		margin: 0 auto;
-		padding: 0 2rem;
-	}
-	.nn-separator hr {
-		border: none;
-		height: 3px;
-		background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
 	}
 
 	/* HOW IT WORKS */
-	.nn-how {
+	.w2-how {
 		max-width: 1000px;
 		margin: 0 auto;
-		padding: 2.5rem 2rem;
-	}
-	.nn-how h2, .nn-features h2, .nn-showcase-text h2 {
-		font-size: 1.5rem;
-		color: #000080;
-		margin: 0 0 2rem;
+		padding: 3.5rem 2rem;
 		text-align: center;
-		font-weight: bold;
 	}
-	.nn-how-grid {
+	.w2-how h2, .w2-features h2 {
+		font-size: 1.75rem;
+		color: #333;
+		margin: 0 0 0.375rem;
+	}
+	.w2-section-sub {
+		color: #888;
+		font-size: 0.9375rem;
+		margin: 0 0 2.5rem;
+	}
+	.w2-how-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 1.5rem;
+		gap: 2rem;
 	}
-	.nn-how-step {
-		background: #fffff0;
-		border: 2px solid #000080;
-		padding: 1.5rem;
+	.w2-how-step {
+		background: white;
+		border-radius: 8px;
+		padding: 2rem 1.5rem;
+		box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+		border: 1px solid #e0e0e0;
 		text-align: center;
 	}
-	.nn-how-num {
-		display: inline-block;
-		padding: 2px 12px;
-		background: #000080;
-		color: #ffff00;
-		font-family: 'Courier New', monospace;
-		font-size: 0.75rem;
+	.w2-how-icon {
+		width: 44px;
+		height: 44px;
+		background: linear-gradient(180deg, #6db3f8, #2a6ab8);
+		color: white;
+		border-radius: 50%;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.125rem;
 		font-weight: bold;
-		margin-bottom: 0.75rem;
-		letter-spacing: 0.08em;
+		margin-bottom: 1rem;
+		text-shadow: 0 -1px 1px rgba(0,0,0,0.2);
+		box-shadow: 0 2px 4px rgba(42,106,184,0.3);
 	}
-	.nn-how-step h3 {
+	.w2-how-step h3 {
 		font-size: 1.0625rem;
 		margin: 0 0 0.5rem;
-		color: #000080;
-	}
-	.nn-how-step p {
 		color: #333;
+	}
+	.w2-how-step p {
+		color: #777;
 		line-height: 1.6;
 		margin: 0;
 		font-size: 0.875rem;
 	}
 
 	/* SHOWCASE */
-	.nn-showcase {
+	.w2-showcase {
 		max-width: 1100px;
 		margin: 0 auto;
-		padding: 2.5rem 2rem;
+		padding: 3rem 2rem;
 		display: grid;
 		grid-template-columns: 1fr 1.2fr;
-		gap: 2.5rem;
+		gap: 3rem;
 		align-items: center;
 	}
-	.nn-showcase-text h2 { text-align: left; }
-	.nn-showcase-text p {
+	.w2-showcase-text h2 {
+		font-size: 1.75rem;
+		line-height: 1.25;
+		margin: 0 0 1rem;
 		color: #333;
+	}
+	.w2-showcase-text p {
+		color: #777;
 		line-height: 1.65;
 		margin: 0;
 		font-size: 0.9375rem;
 	}
-	.nn-showcase-cards {
+	.w2-showcase-cards {
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
 	}
-	.nn-showcase-card {
+	.w2-showcase-card {
 		display: flex;
-		gap: 0.75rem;
-		background: #fffff0;
-		border: 2px solid #000080;
+		gap: 0.875rem;
+		background: white;
+		border-radius: 6px;
 		overflow: hidden;
-		transition: background 150ms;
+		border: 1px solid #ddd;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+		transition: box-shadow 200ms;
 		cursor: pointer;
 	}
-	.nn-showcase-card:hover { background: #ffffcc; }
-	.nn-showcase-card img {
-		width: 100px;
-		height: 70px;
+	.w2-showcase-card:hover {
+		box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+	}
+	.w2-showcase-card img {
+		width: 110px;
+		height: 75px;
 		object-fit: cover;
 		flex-shrink: 0;
-		border-right: 2px solid #000080;
 	}
-	.nn-showcase-info {
-		padding: 0.5rem 0.75rem;
+	.w2-showcase-info {
+		padding: 0.625rem 0.875rem;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
 	}
-	.nn-showcase-source {
-		font-family: 'Courier New', monospace;
+	.w2-showcase-source {
 		font-size: 0.625rem;
-		color: #0000ff;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #2a6ab8;
 		font-weight: bold;
 		margin-bottom: 0.25rem;
 	}
-	.nn-showcase-info h4 {
+	.w2-showcase-info h4 {
 		font-size: 0.875rem;
 		margin: 0;
-		color: #000080;
-		line-height: 1.3;
+		color: #333;
+		line-height: 1.35;
 	}
 
 	/* FEATURES */
-	.nn-features {
+	.w2-features {
 		max-width: 1000px;
 		margin: 0 auto;
-		padding: 2.5rem 2rem;
+		padding: 3.5rem 2rem;
+		text-align: center;
 	}
-	.nn-feat-grid {
+	.w2-feat-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 1rem;
+		gap: 1.25rem;
+		text-align: left;
 	}
-	.nn-feat {
-		padding: 1.25rem;
-		background: #fffff0;
-		border: 2px solid #c0c0c0;
-		border-left: 4px solid #000080;
+	.w2-feat {
+		background: white;
+		border-radius: 8px;
+		padding: 1.5rem;
+		border: 1px solid #e0e0e0;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+		transition: box-shadow 200ms;
 	}
-	.nn-feat:hover { border-color: #000080; }
-	.nn-feat h3 {
+	.w2-feat:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+	.w2-feat-icon {
+		width: 36px;
+		height: 36px;
+		background: linear-gradient(180deg, #6db3f8, #2a6ab8);
+		border-radius: 8px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1rem;
+		margin-bottom: 0.75rem;
+		box-shadow: 0 1px 3px rgba(42,106,184,0.25);
+	}
+	.w2-feat h3 {
 		font-size: 0.9375rem;
 		margin: 0 0 0.375rem;
-		color: #000080;
-	}
-	.nn-feat p {
 		color: #333;
+	}
+	.w2-feat p {
+		color: #777;
 		line-height: 1.55;
 		margin: 0;
 		font-size: 0.8125rem;
 	}
 
 	/* STATS */
-	.nn-stats {
+	.w2-stats {
 		display: flex;
 		justify-content: center;
 		gap: 2rem;
-		padding: 2rem;
-		background: #000080;
-		color: white;
+		padding: 2.5rem 2rem;
+		background: linear-gradient(180deg, #4a90d9, #2a6ab8);
 	}
-	.nn-stat {
+	.w2-stat {
 		text-align: center;
-		padding: 1rem 2rem;
-		border: 2px solid #ffff00;
+		padding: 1rem 2.5rem;
 	}
-	.nn-stat-num {
+	.w2-stat-num {
 		display: block;
-		font-size: 2rem;
+		font-size: 2.25rem;
 		font-weight: bold;
-		color: #ffff00;
-		font-family: 'Courier New', monospace;
+		color: white;
+		text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 		line-height: 1;
-		margin-bottom: 0.25rem;
+		margin-bottom: 0.375rem;
 	}
-	.nn-stat-lbl {
+	.w2-stat-lbl {
 		font-size: 0.6875rem;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
-		color: #c0c0ff;
+		color: rgba(255,255,255,0.75);
 	}
 
 	/* CTA */
-	.nn-cta {
+	.w2-cta {
 		text-align: center;
-		padding: 3rem 2rem;
-		background: #fffff0;
-		border-top: 3px solid #000080;
-		border-bottom: 3px solid #000080;
+		padding: 4rem 2rem;
+		background: white;
+		border-top: 1px solid #e0e0e0;
 	}
-	.nn-cta h2 {
-		font-size: 1.5rem;
-		color: #000080;
+	.w2-cta h2 {
+		font-size: 1.75rem;
+		color: #333;
 		margin: 0 0 0.5rem;
 	}
-	.nn-cta p {
-		color: #666;
+	.w2-cta p {
+		color: #888;
 		font-size: 0.9375rem;
-		margin: 0 0 1.5rem;
-	}
-	.nn-counter {
-		font-family: 'Courier New', monospace;
-		font-size: 0.75rem;
-		color: #999;
-		margin-top: 1.5rem !important;
-		letter-spacing: 0.05em;
+		margin: 0 0 2rem;
 	}
 
 	/* DASHBOARD */
-	.nn-dash {
+	.w2-dash {
 		max-width: 1100px;
 		margin: 0 auto;
 		padding: 2rem 1.5rem;
 	}
-	.nn-dash-header {
+	.w2-dash-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-end;
 		margin-bottom: 2rem;
-		padding-bottom: 1rem;
-		border-bottom: 3px solid #000080;
+		padding-bottom: 1.25rem;
+		border-bottom: 2px solid #dde5ed;
 	}
-	.nn-dash-header h1 {
+	.w2-dash-header h1 {
 		font-size: 1.75rem;
 		margin: 0;
-		color: #000080;
+		color: #333;
 	}
-	.nn-dash-header p {
+	.w2-dash-header p {
 		margin: 0.25rem 0 0;
-		color: #666;
+		color: #888;
 		font-size: 0.9375rem;
 	}
-	.nn-add-form { display: flex; gap: 4px; }
-	.nn-add-form input {
-		padding: 4px 10px;
-		border: 2px inset #c0c0c0;
+	.w2-add-form { display: flex; gap: 4px; }
+	.w2-add-form input {
+		padding: 6px 12px;
+		border: 1px solid #ccc;
+		border-radius: 4px;
 		font-size: 0.875rem;
-		width: 280px;
+		width: 300px;
 		background: white;
-		font-family: 'Verdana', sans-serif;
+		box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
 	}
-	.nn-add-form input:focus { outline: 2px solid #000080; }
+	.w2-add-form input:focus { outline: none; border-color: #4a90d9; box-shadow: inset 0 1px 3px rgba(0,0,0,0.08), 0 0 4px rgba(74,144,217,0.3); }
 
-	.nn-section { margin-bottom: 2.5rem; }
-	.nn-section h2 {
-		font-size: 1.125rem;
-		color: #000080;
-		margin: 0 0 1rem;
-		font-weight: bold;
+	.w2-section { margin-bottom: 2.5rem; }
+	.w2-section-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		margin-bottom: 1rem;
+	}
+	.w2-section-top h2 {
+		font-size: 1.25rem;
+		margin: 0;
+		color: #333;
 	}
 
-	.nn-hero-card {
+	.w2-hero-card {
 		position: relative;
+		border-radius: 8px;
 		overflow: hidden;
 		margin-bottom: 1rem;
 		aspect-ratio: 21/9;
-		border: 3px solid #000080;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 	}
-	.nn-hero-card img {
+	.w2-hero-card img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
 	}
-	.nn-hero-card-overlay {
+	.w2-hero-card-overlay {
 		position: absolute;
 		bottom: 0;
 		left: 0;
 		right: 0;
-		padding: 2.5rem 1.5rem 1.5rem;
-		background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+		padding: 3rem 1.5rem 1.5rem;
+		background: linear-gradient(transparent, rgba(0,0,0,0.75));
 		color: white;
 	}
-	.nn-time-badge {
+	.w2-time-pill {
 		display: inline-block;
-		padding: 2px 8px;
-		background: #ffff00;
-		color: #000080;
-		font-family: 'Courier New', monospace;
+		padding: 3px 10px;
+		background: linear-gradient(180deg, #6db3f8, #2a6ab8);
+		border-radius: 3px;
 		font-size: 0.6875rem;
 		font-weight: bold;
 		margin-bottom: 0.5rem;
+		text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
 	}
-	.nn-hero-card-overlay h3 {
+	.w2-hero-card-overlay h3 {
 		font-size: 1.5rem;
 		margin: 0 0 0.375rem;
 		font-weight: bold;
 	}
-	.nn-hero-card-overlay p {
+	.w2-hero-card-overlay p {
 		margin: 0;
 		font-size: 0.8125rem;
 		opacity: 0.85;
 		max-width: 480px;
 	}
 
-	.nn-card-grid {
+	.w2-card-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 		gap: 1rem;
 	}
-	.nn-card {
+	.w2-card {
 		background: white;
-		border: 2px solid #c0c0c0;
+		border-radius: 6px;
 		overflow: hidden;
+		border: 1px solid #ddd;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 		cursor: pointer;
-		transition: border-color 150ms;
+		transition: box-shadow 200ms, transform 200ms;
 	}
-	.nn-card:hover { border-color: #000080; }
-	.nn-card-img {
+	.w2-card:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+	}
+	.w2-card-img {
 		aspect-ratio: 16/10;
 		overflow: hidden;
-		border-bottom: 2px solid #c0c0c0;
 	}
-	.nn-card-img img {
+	.w2-card-img img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
+		transition: transform 300ms;
 	}
-	.nn-card-body { padding: 0.75rem; }
-	.nn-card-body h3 {
+	.w2-card:hover .w2-card-img img { transform: scale(1.03); }
+	.w2-card-body { padding: 0.75rem 1rem; }
+	.w2-card-body h3 {
 		font-size: 0.875rem;
 		margin: 0 0 0.25rem;
-		color: #000080;
+		color: #333;
 		line-height: 1.35;
 	}
-	.nn-card-meta {
+	.w2-card-meta {
 		display: flex;
-		gap: 0.75rem;
+		gap: 0.5rem;
 		font-size: 0.6875rem;
-		color: #0000ff;
-		font-family: 'Courier New', monospace;
+		color: #2a6ab8;
 	}
 
 	/* RECIPE */
-	.nn-recipe-hero {
+	.w2-recipe-hero {
 		position: relative;
-		height: 50vh;
-		min-height: 350px;
+		height: 55vh;
+		min-height: 380px;
 		overflow: hidden;
-		border-bottom: 3px solid #000080;
 	}
-	.nn-recipe-hero img {
+	.w2-recipe-hero img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
 	}
-	.nn-recipe-hero-overlay {
+	.w2-recipe-hero-overlay {
 		position: absolute;
 		bottom: 0;
 		left: 0;
 		right: 0;
-		padding: 3rem 2rem 2rem;
-		background: linear-gradient(transparent, rgba(0, 0, 128, 0.85));
+		padding: 4rem 3rem 2.5rem;
+		background: linear-gradient(transparent, rgba(42, 106, 184, 0.85));
 		color: white;
 	}
-	.nn-recipe-tags { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
-	.nn-tag {
-		padding: 2px 10px;
-		background: #ffff00;
-		color: #000080;
+	.w2-recipe-tags { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+	.w2-tag {
+		padding: 3px 10px;
+		background: linear-gradient(180deg, #ff9955, #ff6b35);
+		border-radius: 3px;
 		font-size: 0.625rem;
 		font-weight: bold;
 		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		font-family: 'Courier New', monospace;
+		letter-spacing: 0.06em;
+		text-shadow: 0 -1px 0 rgba(0,0,0,0.15);
 	}
-	.nn-recipe-hero-overlay h1 {
+	.w2-recipe-hero-overlay h1 {
 		font-size: 2.25rem;
 		margin: 0 0 0.5rem;
 		font-weight: bold;
 		line-height: 1.15;
+		text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 	}
-	.nn-recipe-source {
+	.w2-recipe-source {
 		font-size: 0.8125rem;
-		opacity: 0.7;
+		opacity: 0.75;
 		margin: 0;
-		font-family: 'Courier New', monospace;
 	}
 
-	.nn-recipe-content {
+	.w2-recipe-content {
 		max-width: 900px;
 		margin: 0 auto;
 		padding: 2rem 1.5rem;
 	}
 
-	.nn-recipe-meta {
+	.w2-recipe-meta {
 		display: flex;
-		gap: 1.5rem;
-		padding: 1rem;
-		background: #fffff0;
-		border: 2px solid #000080;
+		gap: 1.25rem;
+		padding: 1rem 1.25rem;
+		background: white;
+		border-radius: 8px;
+		border: 1px solid #ddd;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 		margin-bottom: 1.5rem;
 	}
-	.nn-meta-item { text-align: center; flex: 1; }
-	.nn-meta-lbl {
+	.w2-meta-item { text-align: center; flex: 1; }
+	.w2-meta-lbl {
 		display: block;
 		font-size: 0.5625rem;
-		letter-spacing: 0.12em;
-		color: #000080;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: #2a6ab8;
 		font-weight: bold;
 		margin-bottom: 0.25rem;
-		font-family: 'Courier New', monospace;
 	}
-	.nn-meta-val {
+	.w2-meta-val {
 		font-size: 1rem;
-		color: #000;
+		color: #333;
 		font-weight: bold;
 	}
 
-	.nn-recipe-desc {
+	.w2-recipe-desc {
 		font-size: 0.9375rem;
 		line-height: 1.65;
-		color: #333;
+		color: #666;
 		margin: 0 0 1.5rem;
 	}
 
-	.nn-recipe-actions {
+	.w2-recipe-actions {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 		margin-bottom: 2rem;
 		padding-bottom: 1.5rem;
-		border-bottom: 3px solid #c0c0c0;
+		border-bottom: 2px solid #dde5ed;
 	}
-	.nn-scale {
+	.w2-scale {
 		margin-left: auto;
 		display: flex;
 		align-items: center;
 		gap: 4px;
 		font-size: 0.875rem;
-		color: #333;
+		color: #555;
 		font-weight: bold;
-		font-family: 'Courier New', monospace;
 	}
-	.nn-scale-btn {
+	.w2-scale-btn {
 		width: 28px;
 		height: 28px;
-		border: 2px outset #c0c0c0;
-		background: #c0c0c0;
+		background: linear-gradient(180deg, #fff, #e8e8e8);
+		border: 1px solid #bbb;
+		border-radius: 4px;
 		cursor: pointer;
 		font-size: 1rem;
-		color: #000;
+		color: #555;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-weight: bold;
+		box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 	}
-	.nn-scale-btn:active { border-style: inset; }
+	.w2-scale-btn:hover { border-color: #4a90d9; }
 
-	.nn-recipe-body {
+	.w2-recipe-body {
 		display: grid;
 		grid-template-columns: 300px 1fr;
 		gap: 2rem;
 	}
-	.nn-ingredients h2,
-	.nn-instructions h2 {
+	.w2-ingredients h2,
+	.w2-instructions h2 {
 		font-size: 1rem;
-		color: #000080;
 		margin: 0 0 1rem;
+		color: #2a6ab8;
 		font-weight: bold;
 	}
-	.nn-ingredients ul {
+	.w2-ingredients ul {
 		list-style: none;
 		padding: 0;
 		margin: 0;
 	}
-	.nn-ingredients li {
+	.w2-ingredients li {
 		padding: 0.5rem 0;
-		border-bottom: 1px dashed #c0c0c0;
+		border-bottom: 1px solid #eee;
 		font-size: 0.875rem;
-		color: #333;
+		color: #555;
 		line-height: 1.5;
 	}
-	.nn-instructions ol {
+	.w2-instructions ol {
 		list-style: none;
 		padding: 0;
 		margin: 0;
 	}
-	.nn-instructions li {
+	.w2-instructions li {
+		display: flex;
+		gap: 1rem;
 		margin-bottom: 1.5rem;
+		align-items: flex-start;
 	}
-	.nn-step-num {
-		display: block;
-		font-family: 'Courier New', monospace;
+	.w2-step-num {
+		flex-shrink: 0;
+		width: 30px;
+		height: 30px;
+		border-radius: 50%;
+		background: linear-gradient(180deg, #6db3f8, #2a6ab8);
+		color: white;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		font-size: 0.75rem;
 		font-weight: bold;
-		color: #000080;
-		margin-bottom: 0.375rem;
+		text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
+		box-shadow: 0 1px 3px rgba(42,106,184,0.3);
+		margin-top: 2px;
 	}
-	.nn-instructions p {
+	.w2-instructions p {
 		margin: 0;
 		font-size: 0.9375rem;
 		line-height: 1.65;
-		color: #333;
+		color: #555;
 	}
 </style>

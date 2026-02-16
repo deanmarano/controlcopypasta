@@ -37,12 +37,12 @@
 		</a>
 		<a href="/mockups/4" class="direction-card">
 			<div class="direction-number">4</div>
-			<h2>90s Website</h2>
-			<p>Navy and yellow, beveled buttons, Courier mono, rainbow HRs. GeoCities energy with a visitor counter. Ironically charming or unironically delightful.</p>
+			<h2>Web 2.0</h2>
+			<p>Glossy gradients, Lucida Grande, blue-and-orange accents. Browser chrome frames, beta badges, and "Sign Up Free" buttons. Peak mid-2000s startup energy.</p>
 			<div class="tags">
-				<span class="tag">Navy &amp; yellow</span>
-				<span class="tag">Beveled buttons</span>
-				<span class="tag">Retro web</span>
+				<span class="tag">Glossy buttons</span>
+				<span class="tag">Blue &amp; orange</span>
+				<span class="tag">Beta badge</span>
 			</div>
 		</a>
 	</div>
