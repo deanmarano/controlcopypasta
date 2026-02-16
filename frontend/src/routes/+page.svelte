@@ -18,6 +18,9 @@
 			needs.
 		</p>
 		<a href="/login" class="cta">Get Started</a>
+		<p class="github-link">
+			<a href="https://github.com/deanmarano/controlcopypasta">View on GitHub</a>
+		</p>
 	</div>
 
 	<section class="feature-section">
@@ -142,6 +145,21 @@
 		background: var(--color-basil-600);
 		box-shadow: var(--shadow-basil);
 		transform: translateY(-2px);
+	}
+
+	.github-link {
+		margin-top: var(--space-4);
+	}
+
+	.github-link a {
+		color: var(--text-muted);
+		font-size: var(--text-sm);
+		text-decoration: none;
+	}
+
+	.github-link a:hover {
+		color: var(--text-secondary);
+		text-decoration: underline;
 	}
 
 	.feature-section {
