@@ -354,6 +354,194 @@ defmodule Controlcopypasta.Release do
     end
   end
 
+  @doc """
+  Backfills meal type tags on existing recipes from stored JSON-LD metadata.
+
+  Example:
+    ./bin/controlcopypasta eval "Controlcopypasta.Release.backfill_meal_tags(\"user@example.com\")"
+    ./bin/controlcopypasta eval "Controlcopypasta.Release.backfill_meal_tags(\"user@example.com\", dry_run: true)"
+    ./bin/controlcopypasta eval "Controlcopypasta.Release.backfill_meal_tags(\"user@example.com\", limit: 10)"
+  """
+  def backfill_meal_tags(email, opts \\ []) do
+    load_app()
+    Application.ensure_all_started(@app)
+
+    import Ecto.Query
+
+    alias Controlcopypasta.Repo
+    alias Controlcopypasta.Recipes
+    alias Controlcopypasta.Recipes.Recipe
+    alias Controlcopypasta.Parser.{JsonLd, MealTypeMapper}
+
+    dry_run = Keyword.get(opts, :dry_run, false)
+    limit = Keyword.get(opts, :limit, nil)
+
+    user =
+      case Controlcopypasta.Accounts.get_user_by_email(email) do
+        nil ->
+          IO.puts("Error: User not found: #{email}")
+          System.halt(1)
+
+        user ->
+          user
+      end
+
+    IO.puts("Backfilling meal tags for user: #{user.email}")
+
+    query =
+      Recipe
+      |> where([r], r.user_id == ^user.id)
+      |> where([r], is_nil(r.archived_at))
+      |> order_by([r], asc: r.inserted_at)
+      |> preload(:tags)
+
+    query = if limit, do: limit(query, ^limit), else: query
+    all_recipes = Repo.all(query)
+
+    IO.puts("Found #{length(all_recipes)} recipes to process\n")
+    if dry_run, do: IO.puts("DRY RUN - No tags will be applied\n")
+
+    {tagged, skipped, failed} =
+      all_recipes
+      |> Enum.with_index(1)
+      |> Enum.reduce({0, 0, 0}, fn {recipe, idx}, {tagged, skipped, failed} ->
+        IO.puts("[#{idx}/#{length(all_recipes)}] #{recipe.title}")
+
+        case do_backfill_recipe(recipe, dry_run) do
+          :tagged -> {tagged + 1, skipped, failed}
+          :dry_run -> {tagged + 1, skipped, failed}
+          :skipped -> {tagged, skipped + 1, failed}
+          :failed -> {tagged, skipped, failed + 1}
+        end
+      end)
+
+    IO.puts("\n" <> String.duplicate("=", 50))
+    IO.puts("Backfill Summary")
+    IO.puts(String.duplicate("=", 50))
+
+    if dry_run do
+      IO.puts("Would tag: #{tagged}")
+    else
+      IO.puts("Tagged:    #{tagged}")
+    end
+
+    IO.puts("Skipped:   #{skipped}")
+    IO.puts("Failed:    #{failed}")
+  end
+
+  defp do_backfill_recipe(recipe, dry_run) do
+    alias Controlcopypasta.Recipes
+    alias Controlcopypasta.Parser.{JsonLd, MealTypeMapper}
+
+    {categories, keywords, source} =
+      cond do
+        recipe.source_json_ld && map_size(recipe.source_json_ld) > 0 ->
+          cats = get_string_or_list(recipe.source_json_ld, "recipeCategory")
+          kws = get_string_or_list(recipe.source_json_ld, "keywords")
+          {cats, kws, :stored}
+
+        recipe.source_url && recipe.source_url != "" ->
+          case refetch_json_ld(recipe.source_url) do
+            {:ok, json_ld} ->
+              cats = get_string_or_list(json_ld, "recipeCategory")
+              kws = get_string_or_list(json_ld, "keywords")
+              {cats, kws, :refetched}
+
+            {:error, reason} ->
+              IO.puts("  x Failed: #{inspect(reason)}")
+              {[], [], :error}
+          end
+
+        true ->
+          {[], [], :none}
+      end
+
+    if source == :error do
+      :failed
+    else
+      suggested = MealTypeMapper.suggest_meal_tags(categories, keywords)
+
+      if suggested == [] do
+        IO.puts("  ~ No meal type tags found")
+        :skipped
+      else
+        existing_tag_names = Enum.map(recipe.tags, & &1.name) |> MapSet.new()
+        new_tags = Enum.reject(suggested, &MapSet.member?(existing_tag_names, &1))
+
+        if new_tags == [] do
+          IO.puts("  ~ Already tagged: #{Enum.join(suggested, ", ")}")
+          :skipped
+        else
+          if dry_run do
+            IO.puts("  ? Would add: #{Enum.join(new_tags, ", ")} (from #{source})")
+            :dry_run
+          else
+            new_tag_records =
+              Enum.reduce(new_tags, [], fn name, acc ->
+                case Recipes.get_or_create_tag(name) do
+                  {:ok, tag} -> [tag | acc]
+                  _ -> acc
+                end
+              end)
+
+            all_tags = Enum.uniq_by(recipe.tags ++ new_tag_records, & &1.id)
+
+            case recipe
+                 |> Ecto.Changeset.change()
+                 |> Ecto.Changeset.put_assoc(:tags, all_tags)
+                 |> Controlcopypasta.Repo.update() do
+              {:ok, _} ->
+                IO.puts("  + Added: #{Enum.join(new_tags, ", ")} (from #{source})")
+                :tagged
+
+              {:error, changeset} ->
+                IO.puts("  x Failed: #{inspect(changeset.errors)}")
+                :failed
+            end
+          end
+        end
+      end
+    end
+  end
+
+  defp refetch_json_ld(url) do
+    alias Controlcopypasta.Parser.JsonLd
+
+    Process.sleep(1_000)
+
+    case Req.get(url,
+           headers: [{"user-agent", "ControlCopyPasta/1.0 (Recipe Parser)"}],
+           max_redirects: 5
+         ) do
+      {:ok, %Req.Response{status: 200, body: body}} when is_binary(body) ->
+        case JsonLd.extract(body) do
+          {:ok, _normalized, raw_json_ld} -> {:ok, raw_json_ld}
+          {:error, reason} -> {:error, reason}
+        end
+
+      {:ok, %Req.Response{status: status}} ->
+        {:error, "HTTP #{status}"}
+
+      {:error, exception} ->
+        {:error, "Fetch failed: #{inspect(exception)}"}
+    end
+  end
+
+  defp get_string_or_list(map, key) do
+    case Map.get(map, key) do
+      nil -> []
+      value when is_binary(value) ->
+        value |> String.split(",") |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
+      values when is_list(values) ->
+        Enum.flat_map(values, fn
+          v when is_binary(v) ->
+            v |> String.split(",") |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
+          _ -> []
+        end)
+      _ -> []
+    end
+  end
+
   defp repos do
     Application.fetch_env!(@app, :ecto_repos)
   end
