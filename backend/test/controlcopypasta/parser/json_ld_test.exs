@@ -92,58 +92,58 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
 
   describe "extract/1" do
     test "extracts recipe from simple JSON-LD" do
-      assert {:ok, recipe} = JsonLd.extract(@simple_recipe_html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(@simple_recipe_html)
       assert recipe.title == "Chocolate Chip Cookies"
       assert recipe.description == "Delicious homemade cookies"
       assert recipe.image_url == "https://example.com/cookie.jpg"
     end
 
     test "extracts ingredients" do
-      assert {:ok, recipe} = JsonLd.extract(@simple_recipe_html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(@simple_recipe_html)
       assert length(recipe.ingredients) == 3
       assert hd(recipe.ingredients)["text"] == "2 cups flour"
     end
 
     test "extracts instructions" do
-      assert {:ok, recipe} = JsonLd.extract(@simple_recipe_html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(@simple_recipe_html)
       assert length(recipe.instructions) == 3
       assert hd(recipe.instructions)["text"] == "Mix dry ingredients"
       assert hd(recipe.instructions)["step"] == 1
     end
 
     test "parses prep time from ISO 8601 duration" do
-      assert {:ok, recipe} = JsonLd.extract(@simple_recipe_html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(@simple_recipe_html)
       assert recipe.prep_time_minutes == 15
     end
 
     test "parses cook time from ISO 8601 duration" do
-      assert {:ok, recipe} = JsonLd.extract(@simple_recipe_html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(@simple_recipe_html)
       assert recipe.cook_time_minutes == 12
     end
 
     test "parses total time from ISO 8601 duration" do
-      assert {:ok, recipe} = JsonLd.extract(@simple_recipe_html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(@simple_recipe_html)
       assert recipe.total_time_minutes == 27
     end
 
     test "extracts servings/yield" do
-      assert {:ok, recipe} = JsonLd.extract(@simple_recipe_html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(@simple_recipe_html)
       assert recipe.servings == "24 cookies"
     end
 
     test "extracts recipe from @graph structure" do
-      assert {:ok, recipe} = JsonLd.extract(@graph_recipe_html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(@graph_recipe_html)
       assert recipe.title == "Pasta Carbonara"
       assert recipe.description == "Classic Italian pasta"
     end
 
     test "extracts recipe from array structure" do
-      assert {:ok, recipe} = JsonLd.extract(@array_recipe_html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(@array_recipe_html)
       assert recipe.title == "Simple Salad"
     end
 
     test "handles multi-type recipes" do
-      assert {:ok, recipe} = JsonLd.extract(@multi_type_recipe_html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(@multi_type_recipe_html)
       assert recipe.title == "Multi-type Recipe"
     end
 
@@ -179,7 +179,7 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
       </html>
       """
 
-      assert {:ok, recipe} = JsonLd.extract(html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(html)
       assert recipe.prep_time_minutes == 120
     end
 
@@ -194,7 +194,7 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
       </html>
       """
 
-      assert {:ok, recipe} = JsonLd.extract(html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(html)
       assert recipe.prep_time_minutes == 90
     end
 
@@ -209,7 +209,7 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
       </html>
       """
 
-      assert {:ok, recipe} = JsonLd.extract(html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(html)
       assert recipe.prep_time_minutes == nil
       assert recipe.cook_time_minutes == nil
       assert recipe.total_time_minutes == nil
@@ -228,7 +228,7 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
       </html>
       """
 
-      assert {:ok, recipe} = JsonLd.extract(html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(html)
       assert recipe.image_url == "https://example.com/img.jpg"
     end
 
@@ -243,7 +243,7 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
       </html>
       """
 
-      assert {:ok, recipe} = JsonLd.extract(html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(html)
       assert recipe.image_url == "https://example.com/img.jpg"
     end
 
@@ -258,7 +258,7 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
       </html>
       """
 
-      assert {:ok, recipe} = JsonLd.extract(html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(html)
       assert recipe.image_url == "https://example.com/1.jpg"
     end
 
@@ -273,7 +273,7 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
       </html>
       """
 
-      assert {:ok, recipe} = JsonLd.extract(html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(html)
       assert recipe.image_url == "https://example.com/1.jpg"
     end
   end
@@ -290,7 +290,7 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
       </html>
       """
 
-      assert {:ok, recipe} = JsonLd.extract(html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(html)
       assert recipe.servings == "4 servings"
     end
 
@@ -305,7 +305,7 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
       </html>
       """
 
-      assert {:ok, recipe} = JsonLd.extract(html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(html)
       assert recipe.servings == "8 pieces"
     end
 
@@ -320,7 +320,7 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
       </html>
       """
 
-      assert {:ok, recipe} = JsonLd.extract(html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(html)
       assert recipe.servings == "4"
     end
   end
@@ -337,7 +337,7 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
       </html>
       """
 
-      assert {:ok, recipe} = JsonLd.extract(html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(html)
       assert length(recipe.instructions) == 2
       assert hd(recipe.instructions)["text"] == "Step 1"
     end
@@ -353,7 +353,7 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
       </html>
       """
 
-      assert {:ok, recipe} = JsonLd.extract(html)
+      assert {:ok, recipe, _raw} = JsonLd.extract(html)
       assert hd(recipe.instructions)["text"] == "Mix well"
     end
   end

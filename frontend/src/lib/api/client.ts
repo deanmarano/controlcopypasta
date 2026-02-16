@@ -422,6 +422,7 @@ export interface RecipeInput {
   servings?: string;
   notes?: string;
   tag_ids?: string[];
+  tag_names?: string[];
 }
 
 // Recipes API

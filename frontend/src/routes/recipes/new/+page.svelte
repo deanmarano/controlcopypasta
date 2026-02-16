@@ -18,6 +18,7 @@
 	let selectedTags = $state<string[]>([]);
 
 	let availableTags = $state<Tag[]>([]);
+	let suggestedTagNames = $state<string[]>([]);
 	let loading = $state(false);
 	let parsing = $state(false);
 	let error = $state('');
@@ -29,13 +30,13 @@
 		if (!$isAuthenticated) {
 			goto('/login');
 		} else {
-			loadTags();
-
 			const urlParam = $page.url.searchParams.get('url');
 			if (urlParam && !autoParseTriggered) {
 				autoParseTriggered = true;
 				parseUrl = urlParam;
-				handleParse();
+				loadTags().then(() => handleParse());
+			} else {
+				loadTags();
 			}
 		}
 	});
@@ -63,18 +64,28 @@
 
 		try {
 			const result = await recipes.parse(token, parseUrl);
-			const data = result.data;
+			const data = result.data as Record<string, unknown>;
 
-			title = data.title || '';
-			description = data.description || '';
-			sourceUrl = data.source_url || parseUrl;
-			imageUrl = data.image_url || '';
-			ingredientsText = (data.ingredients || []).map((i) => i.text).join('\n');
-			instructionsText = (data.instructions || []).map((i) => i.text).join('\n\n');
-			prepTime = data.prep_time_minutes || undefined;
-			cookTime = data.cook_time_minutes || undefined;
-			totalTime = data.total_time_minutes || undefined;
-			servings = data.servings || '';
+			title = (data.title as string) || '';
+			description = (data.description as string) || '';
+			sourceUrl = (data.source_url as string) || parseUrl;
+			imageUrl = (data.image_url as string) || '';
+			ingredientsText = ((data.ingredients as Array<{ text: string }>) || []).map((i) => i.text).join('\n');
+			instructionsText = ((data.instructions as Array<{ text: string }>) || []).map((i) => i.text).join('\n\n');
+			prepTime = (data.prep_time_minutes as number) || undefined;
+			cookTime = (data.cook_time_minutes as number) || undefined;
+			totalTime = (data.total_time_minutes as number) || undefined;
+			servings = (data.servings as string) || '';
+
+			// Auto-select suggested meal type tags
+			const suggested = (data.suggested_tag_names as string[]) || [];
+			suggestedTagNames = suggested;
+			if (suggested.length > 0 && availableTags.length > 0) {
+				const matchingIds = availableTags
+					.filter((t) => suggested.includes(t.name))
+					.map((t) => t.id);
+				selectedTags = [...new Set([...selectedTags, ...matchingIds])];
+			}
 		} catch (err: unknown) {
 			if (err && typeof err === 'object' && 'data' in err) {
 				const apiErr = err as { data: { error?: { message?: string } } };
@@ -115,7 +126,8 @@
 				total_time_minutes: totalTime,
 				servings: servings || undefined,
 				notes: notes || undefined,
-				tag_ids: selectedTags.length > 0 ? selectedTags : undefined
+				tag_ids: selectedTags.length > 0 ? selectedTags : undefined,
+				tag_names: suggestedTagNames.length > 0 ? suggestedTagNames : undefined
 			};
 
 			const result = await recipes.create(token, recipe);

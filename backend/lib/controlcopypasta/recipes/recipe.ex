@@ -20,6 +20,7 @@ defmodule Controlcopypasta.Recipes.Recipe do
     field :notes, :string
     field :archived_at, :utc_datetime
     field :ingredients_parsed_at, :utc_datetime
+    field :source_json_ld, :map
 
     # Per-serving nutrition from Schema.org JSON-LD
     field :nutrition_serving_size, :string
@@ -55,6 +56,7 @@ defmodule Controlcopypasta.Recipes.Recipe do
     :notes,
     :user_id,
     :ingredients_parsed_at,
+    :source_json_ld,
     :nutrition_serving_size,
     :nutrition_calories,
     :nutrition_protein_g,

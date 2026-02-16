@@ -34,8 +34,8 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
 
       {:ok, butter} =
         Ingredients.create_canonical_ingredient(%{
-          name: "butter",
-          display_name: "Butter",
+          name: "test butter",
+          display_name: "Test Butter",
           category: "dairy"
         })
 
@@ -120,7 +120,7 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
           ingredients: [
             %{"text" => "2 cups all-purpose flour"},
             %{"text" => "1 cup granulated sugar"},
-            %{"text" => "4 tbsp butter"}
+            %{"text" => "4 tbsp test butter"}
           ]
         })
 
@@ -182,8 +182,8 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
       # Create an ingredient with nutrition but no density and no category (so no fallback)
       {:ok, salt} =
         Ingredients.create_canonical_ingredient(%{
-          name: "sea salt",
-          display_name: "Sea Salt"
+          name: "test nodensity mineral",
+          display_name: "Test Nodensity Mineral"
           # No category means no category-based density fallback
         })
 
@@ -200,19 +200,19 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
 
       {:ok, recipe} =
         Recipes.create_recipe(%{
-          title: "Recipe with Salt",
+          title: "Recipe with Nodensity",
           user_id: user.id,
           servings: "4",
           ingredients: [
-            %{"text" => "1 tsp sea salt"}
+            %{"text" => "1 tsp test nodensity mineral"}
           ]
         })
 
       result = Calculator.calculate_recipe_nutrition(recipe)
 
       # Should have warning about missing density
-      salt_result = Enum.find(result.ingredients, &String.contains?(&1.original, "salt"))
-      assert salt_result.status == :no_density
+      nodensity_result = Enum.find(result.ingredients, &String.contains?(&1.original, "nodensity"))
+      assert nodensity_result.status == :no_density
     end
 
     test "handles weight units without needing density", %{user: user} do
@@ -222,7 +222,7 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
           user_id: user.id,
           servings: "4",
           ingredients: [
-            %{"text" => "100 g butter"}
+            %{"text" => "100 g test butter"}
           ]
         })
 
@@ -286,8 +286,8 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
     setup do
       {:ok, flour} =
         Ingredients.create_canonical_ingredient(%{
-          name: "all-purpose flour",
-          display_name: "All-Purpose Flour",
+          name: "test calc flour",
+          display_name: "Test Calc Flour",
           category: "grain"
         })
 
@@ -314,7 +314,7 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
     end
 
     test "calculates nutrition for a single ingredient text" do
-      result = Calculator.calculate_ingredient_nutrition("2 cups all-purpose flour")
+      result = Calculator.calculate_ingredient_nutrition("2 cups test calc flour")
 
       assert result.status == :calculated
       # grams is now a Range struct

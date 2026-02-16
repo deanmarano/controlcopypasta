@@ -106,7 +106,7 @@ defmodule Controlcopypasta.Import.ParserComparisonTest do
         "yield" => "4 servings"
       }
 
-      {:ok, parsed} = Controlcopypasta.Parser.JsonLd.extract(html)
+      {:ok, parsed, _raw} = Controlcopypasta.Parser.JsonLd.extract(html)
       comparison = Comparison.compare(parsed, cmt)
       summary = Comparison.summary(comparison)
 
@@ -154,7 +154,7 @@ defmodule Controlcopypasta.Import.ParserComparisonTest do
         "cookTime" => "20 mins"
       }
 
-      {:ok, parsed} = Controlcopypasta.Parser.JsonLd.extract(html)
+      {:ok, parsed, _raw} = Controlcopypasta.Parser.JsonLd.extract(html)
       comparison = Comparison.compare(parsed, cmt)
       summary = Comparison.summary(comparison)
 
@@ -184,7 +184,7 @@ defmodule Controlcopypasta.Import.ParserComparisonTest do
         "instructions" => "Step one\nStep two\nStep three"
       }
 
-      {:ok, parsed} = Controlcopypasta.Parser.JsonLd.extract(html)
+      {:ok, parsed, _raw} = Controlcopypasta.Parser.JsonLd.extract(html)
       comparison = Comparison.compare(parsed, cmt)
 
       assert comparison.instructions == :match

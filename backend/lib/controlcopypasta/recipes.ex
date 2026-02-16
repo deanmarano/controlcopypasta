@@ -247,17 +247,50 @@ defmodule Controlcopypasta.Recipes do
   defp parse_int(val, _default) when is_integer(val), do: val
   defp parse_int(_, default), do: default
 
-  defp maybe_put_tags(changeset, %{"tag_ids" => tag_ids}) when is_list(tag_ids) do
-    tags = Repo.all(from t in Tag, where: t.id in ^tag_ids)
-    Ecto.Changeset.put_assoc(changeset, :tags, tags)
+  defp maybe_put_tags(changeset, attrs) do
+    tags_by_id = resolve_tag_ids(attrs)
+    tags_by_name = resolve_tag_names(attrs)
+
+    all_tags =
+      (tags_by_id ++ tags_by_name)
+      |> Enum.uniq_by(& &1.id)
+
+    if all_tags == [] do
+      changeset
+    else
+      Ecto.Changeset.put_assoc(changeset, :tags, all_tags)
+    end
   end
 
-  defp maybe_put_tags(changeset, %{tag_ids: tag_ids}) when is_list(tag_ids) do
-    tags = Repo.all(from t in Tag, where: t.id in ^tag_ids)
-    Ecto.Changeset.put_assoc(changeset, :tags, tags)
+  defp resolve_tag_ids(%{"tag_ids" => tag_ids}) when is_list(tag_ids) and tag_ids != [] do
+    Repo.all(from t in Tag, where: t.id in ^tag_ids)
   end
 
-  defp maybe_put_tags(changeset, _), do: changeset
+  defp resolve_tag_ids(%{tag_ids: tag_ids}) when is_list(tag_ids) and tag_ids != [] do
+    Repo.all(from t in Tag, where: t.id in ^tag_ids)
+  end
+
+  defp resolve_tag_ids(_), do: []
+
+  defp resolve_tag_names(%{"tag_names" => names}) when is_list(names) and names != [] do
+    Enum.reduce(names, [], fn name, acc ->
+      case get_or_create_tag(name) do
+        {:ok, tag} -> [tag | acc]
+        _ -> acc
+      end
+    end)
+  end
+
+  defp resolve_tag_names(%{tag_names: names}) when is_list(names) and names != [] do
+    Enum.reduce(names, [], fn name, acc ->
+      case get_or_create_tag(name) do
+        {:ok, tag} -> [tag | acc]
+        _ -> acc
+      end
+    end)
+  end
+
+  defp resolve_tag_names(_), do: []
 
   # Avoided Ingredients Checking
 
@@ -321,6 +354,42 @@ defmodule Controlcopypasta.Recipes do
     |> limit(^count)
     |> preload(:tags)
     |> Repo.all()
+  end
+
+  def dinner_recipes_for_user(user_id, count, params \\ %{}) do
+    # First try recipes tagged "dinner"
+    dinner_tagged =
+      Recipe
+      |> where([r], r.user_id == ^user_id)
+      |> join(:inner, [r], t in assoc(r, :tags))
+      |> where([r, t], t.name == "dinner")
+      |> apply_archived_filter(%{})
+      |> apply_avoided_filter(params)
+      |> order_by(fragment("RANDOM()"))
+      |> limit(^count)
+      |> preload(:tags)
+      |> Repo.all()
+
+    # If we don't have enough, fill with random untagged recipes
+    if length(dinner_tagged) < count do
+      remaining = count - length(dinner_tagged)
+      dinner_ids = Enum.map(dinner_tagged, & &1.id)
+
+      fillers =
+        Recipe
+        |> where([r], r.user_id == ^user_id)
+        |> where([r], r.id not in ^dinner_ids)
+        |> apply_archived_filter(%{})
+        |> apply_avoided_filter(params)
+        |> order_by(fragment("RANDOM()"))
+        |> limit(^remaining)
+        |> preload(:tags)
+        |> Repo.all()
+
+      dinner_tagged ++ fillers
+    else
+      dinner_tagged
+    end
   end
 
   def recent_recipes_for_user(user_id, count) do

@@ -7,7 +7,7 @@ defmodule Controlcopypasta.Parser.JsonLd do
     with {:ok, document} <- Floki.parse_document(html),
          json_ld_scripts <- Floki.find(document, "script[type='application/ld+json']"),
          {:ok, recipe} <- find_recipe(json_ld_scripts) do
-      {:ok, normalize_recipe(recipe)}
+      {:ok, normalize_recipe(recipe), recipe}
     end
   end
 
@@ -83,7 +83,10 @@ defmodule Controlcopypasta.Parser.JsonLd do
       prep_time_minutes: parse_duration(recipe["prepTime"]),
       cook_time_minutes: parse_duration(recipe["cookTime"]),
       total_time_minutes: parse_duration(recipe["totalTime"]),
-      servings: get_servings(recipe)
+      servings: get_servings(recipe),
+      recipe_category: get_string_or_list(recipe, "recipeCategory"),
+      keywords: get_string_or_list(recipe, "keywords"),
+      recipe_cuisine: get_string_or_list(recipe, "recipeCuisine")
     }
 
     # Add nutrition if present
@@ -95,6 +98,32 @@ defmodule Controlcopypasta.Parser.JsonLd do
       nil -> nil
       value when is_binary(value) -> sanitize_text(value)
       _ -> nil
+    end
+  end
+
+  defp get_string_or_list(map, key) do
+    case Map.get(map, key) do
+      nil ->
+        []
+
+      value when is_binary(value) ->
+        value
+        |> String.split(",")
+        |> Enum.map(&String.trim/1)
+        |> Enum.reject(&(&1 == ""))
+
+      values when is_list(values) ->
+        values
+        |> Enum.flat_map(fn
+          v when is_binary(v) ->
+            v |> String.split(",") |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
+
+          _ ->
+            []
+        end)
+
+      _ ->
+        []
     end
   end
 

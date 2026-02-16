@@ -11,7 +11,7 @@ defmodule Controlcopypasta.Parser do
   the Controlcopypasta.Parser.Scraper behaviour and register it.
   """
 
-  alias Controlcopypasta.Parser.{JsonLd, Scraper}
+  alias Controlcopypasta.Parser.{JsonLd, MealTypeMapper, Scraper}
 
   @user_agent "ControlCopyPasta/1.0 (Recipe Parser)"
 
@@ -38,8 +38,14 @@ defmodule Controlcopypasta.Parser do
   defp extract_recipe(html, url) do
     # Try JSON-LD first (preferred method)
     case JsonLd.extract(html) do
-      {:ok, recipe_data} ->
-        {:ok, add_source_info(recipe_data, url)}
+      {:ok, recipe_data, raw_json_ld} ->
+        recipe_data =
+          recipe_data
+          |> add_source_info(url)
+          |> Map.put(:source_json_ld, raw_json_ld)
+          |> add_suggested_tags()
+
+        {:ok, recipe_data}
 
       {:error, _} ->
         # Fall back to custom scrapers
@@ -59,5 +65,13 @@ defmodule Controlcopypasta.Parser do
     recipe_data
     |> Map.put(:source_url, url)
     |> Map.put(:source_domain, uri.host)
+  end
+
+  defp add_suggested_tags(recipe_data) do
+    categories = Map.get(recipe_data, :recipe_category, [])
+    keywords = Map.get(recipe_data, :keywords, [])
+
+    suggested = MealTypeMapper.suggest_meal_tags(categories, keywords)
+    Map.put(recipe_data, :suggested_tag_names, suggested)
   end
 end
