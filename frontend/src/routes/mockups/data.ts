@@ -74,7 +74,7 @@ export const recipes = [
 			'This pasta and peas recipe is all about the broth: A creamy, rich, Parmesan-fortified chicken broth brings together all of the flavors.',
 		source_domain: 'bonappetit.com',
 		image_url:
-			'https://assets.bonappetit.com/photos/6969889e09bb7d32880e3e888/16:9/w_5456,h_3069,c_limit/Ditalini_and_Peas_In_Parm_Broth_2798.jpeg',
+			'https://assets.bonappetit.com/photos/6969889e09bb7d32880e3e88/16:9/w_5456,h_3069,c_limit/Ditalini_and_Peas_In_Parm_Broth_2798.jpeg',
 		total_time_minutes: 45,
 		servings: '4-6 servings',
 		tags: [{ id: '1', name: 'dinner' }, { id: '2', name: 'pasta' }],
