@@ -1,6 +1,6 @@
 <div class="mockups-index">
 	<h1>Design Mockups</h1>
-	<p class="subtitle">Six design directions for ControlCopyPasta. Each includes a public landing page, logged-in dashboard, and recipe detail view.</p>
+	<p class="subtitle">Five design directions for ControlCopyPasta. Each includes a public landing page, logged-in dashboard, and recipe detail view.</p>
 
 	<div class="directions">
 		<a href="/mockups/1" class="direction-card">
@@ -35,18 +35,8 @@
 				<span class="tag">Vibrant accents</span>
 			</div>
 		</a>
-		<a href="/mockups/4" class="direction-card">
-			<div class="direction-number">4</div>
-			<h2>Web 2.0</h2>
-			<p>Glossy gradients, Lucida Grande, blue-and-orange accents. Browser chrome frames, beta badges, and "Sign Up Free" buttons. Peak mid-2000s startup energy.</p>
-			<div class="tags">
-				<span class="tag">Glossy buttons</span>
-				<span class="tag">Blue &amp; orange</span>
-				<span class="tag">Beta badge</span>
-			</div>
-		</a>
 		<a href="/mockups/5" class="direction-card">
-			<div class="direction-number">5</div>
+			<div class="direction-number">4</div>
 			<h2>Scrapbook</h2>
 			<p>Handwriting fonts, taped-in photos, lined paper backgrounds. Feels like a personal recipe binder from someone who actually cooks. Cozy and tactile.</p>
 			<div class="tags">
@@ -56,7 +46,7 @@
 			</div>
 		</a>
 		<a href="/mockups/6" class="direction-card">
-			<div class="direction-number">6</div>
+			<div class="direction-number">5</div>
 			<h2>Frutiger Aero</h2>
 			<p>Glossy glass panels, nature-gradient backgrounds, sky-blue orb buttons. The optimistic tech-utopia aesthetic of 2006-2013. Fresh, clean, and luminous.</p>
 			<div class="tags">
