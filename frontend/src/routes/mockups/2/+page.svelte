@@ -6,7 +6,7 @@
 
 <div class="mockup-nav">
 	<a href="/mockups" class="back">All Mockups</a>
-	<span class="label">Direction 2: Minimal Utility</span>
+	<span class="label">Direction 2: Dark Kitchen</span>
 	<div class="views">
 		<button class:active={view === 'landing'} onclick={() => (view = 'landing')}>Landing</button>
 		<button class:active={view === 'dashboard'} onclick={() => (view = 'dashboard')}>Dashboard</button>
@@ -15,228 +15,248 @@
 </div>
 
 {#if view === 'landing'}
-<!-- LANDING -->
-<div class="mu">
-	<header class="mu-hero">
-		<div class="mu-hero-content">
-			<div class="mu-badge">open source</div>
-			<h1>ControlCopyPasta</h1>
-			<p class="mu-hero-desc">Self-hosted recipe management. Save from any URL, scale ingredients, calculate nutrition, build shopping lists.</p>
-			<div class="mu-hero-actions">
-				<button class="mu-btn-primary">Get Started</button>
-				<a href="https://github.com/deanmarano/controlcopypasta" class="mu-btn-secondary">GitHub</a>
-			</div>
-			<div class="mu-stats">
-				<div class="mu-stat">
-					<span class="mu-stat-val">3</span>
-					<span class="mu-stat-label">components</span>
-				</div>
-				<div class="mu-stat">
-					<span class="mu-stat-val">AGPL</span>
-					<span class="mu-stat-label">license</span>
-				</div>
-				<div class="mu-stat">
-					<span class="mu-stat-val">Docker</span>
-					<span class="mu-stat-label">deploy</span>
-				</div>
+<!-- LANDING PAGE -->
+<div class="dk">
+	<header class="dk-hero">
+		<div class="dk-hero-bg">
+			<img src={recipes[0].image_url} alt="" />
+			<div class="dk-hero-scrim"></div>
+		</div>
+		<div class="dk-hero-content">
+			<p class="dk-eyebrow">Open source &middot; Self-hosted &middot; No tracking</p>
+			<h1>Save recipes.<br />Cook better.</h1>
+			<p class="dk-hero-sub">Clip recipes from any website. Scale ingredients, track nutrition, build shopping lists. Your data lives on your server.</p>
+			<div class="dk-hero-actions">
+				<button class="dk-btn-accent">Get Started</button>
+				<a href="https://github.com/deanmarano/controlcopypasta" class="dk-btn-ghost">View on GitHub</a>
 			</div>
 		</div>
 	</header>
 
-	<section class="mu-features-section">
-		<div class="mu-features-grid">
-			<div class="mu-feat">
-				<div class="mu-feat-icon">URL</div>
-				<div>
-					<h3>Clip recipes</h3>
-					<p>Paste a URL or use the browser extension. JSON-LD extraction with custom scraper fallback.</p>
-				</div>
+	<section class="dk-how">
+		<div class="dk-how-grid">
+			<div class="dk-how-step">
+				<div class="dk-how-num">01</div>
+				<h3>Clip</h3>
+				<p>Paste any recipe URL. We pull ingredients, instructions, images, and metadata automatically. Works with hundreds of sites.</p>
 			</div>
-			<div class="mu-feat">
-				<div class="mu-feat-icon">0.5x</div>
-				<div>
-					<h3>Scale ingredients</h3>
-					<p>Adjust any recipe 0.25x to 4x. Smart fractions and unit conversion built in.</p>
-				</div>
+			<div class="dk-how-step">
+				<div class="dk-how-num">02</div>
+				<h3>Organize</h3>
+				<p>Tag by meal, cuisine, or mood. Browse by source domain. Search across your entire collection in milliseconds.</p>
 			</div>
-			<div class="mu-feat">
-				<div class="mu-feat-icon">kcal</div>
-				<div>
-					<h3>Track nutrition</h3>
-					<p>Per-recipe breakdowns with ingredient-level detail. Multiple data sources.</p>
-				</div>
-			</div>
-			<div class="mu-feat">
-				<div class="mu-feat-icon">[ ]</div>
-				<div>
-					<h3>Shopping lists</h3>
-					<p>Generate lists from recipes. Auto-grouped by category, quantities combined.</p>
-				</div>
-			</div>
-			<div class="mu-feat">
-				<div class="mu-feat-icon">&lt;/&gt;</div>
-				<div>
-					<h3>Self-hosted</h3>
-					<p>Docker deploy. Own your data. Import from Copy Me That. Export anytime.</p>
-				</div>
-			</div>
-			<div class="mu-feat">
-				<div class="mu-feat-icon">ext</div>
-				<div>
-					<h3>Browser extension</h3>
-					<p>Chrome and Firefox. One click to save any recipe you're viewing.</p>
-				</div>
+			<div class="dk-how-step">
+				<div class="dk-how-num">03</div>
+				<h3>Cook</h3>
+				<p>Scale for any crowd. Get per-serving nutrition. Print clean recipe cards. Generate combined shopping lists.</p>
 			</div>
 		</div>
 	</section>
 
-	<section class="mu-cta-bottom">
-		<p>Ready to own your recipes?</p>
-		<button class="mu-btn-primary">Get Started</button>
+	<section class="dk-showcase">
+		<div class="dk-showcase-text">
+			<h2>Built for people who actually cook.</h2>
+			<p>Not another bookmarking app. ControlCopyPasta understands ingredients — it can scale them, calculate nutrition, detect duplicates, and build smart shopping lists.</p>
+		</div>
+		<div class="dk-showcase-grid">
+			{#each recipes.slice(0, 4) as recipe}
+				<div class="dk-showcase-card">
+					<img src={recipe.image_url} alt={recipe.title} />
+					<div class="dk-showcase-card-info">
+						<h4>{recipe.title}</h4>
+						<span>{recipe.total_time_minutes} min &middot; {recipe.source_domain}</span>
+					</div>
+				</div>
+			{/each}
+		</div>
+	</section>
+
+	<section class="dk-features">
+		<div class="dk-features-grid">
+			<div class="dk-feat">
+				<div class="dk-feat-icon">&#9889;</div>
+				<h3>Instant import</h3>
+				<p>Paste a URL or use the browser extension. JSON-LD parsing with custom scraper fallbacks.</p>
+			</div>
+			<div class="dk-feat">
+				<div class="dk-feat-icon">&#9878;</div>
+				<h3>Smart scaling</h3>
+				<p>0.25x to 4x with proper fraction handling. Never wonder about half of three-quarters again.</p>
+			</div>
+			<div class="dk-feat">
+				<div class="dk-feat-icon">&#9776;</div>
+				<h3>Nutrition data</h3>
+				<p>Calories, macros, and micronutrients per recipe and per serving. Multiple verified sources.</p>
+			</div>
+			<div class="dk-feat">
+				<div class="dk-feat-icon">&#10003;</div>
+				<h3>Shopping lists</h3>
+				<p>Generate lists from any recipe. Items auto-grouped by category, quantities intelligently combined.</p>
+			</div>
+			<div class="dk-feat">
+				<div class="dk-feat-icon">&#128279;</div>
+				<h3>Find connections</h3>
+				<p>See which recipes share ingredients. Browse by source. Discover patterns in your cooking.</p>
+			</div>
+			<div class="dk-feat">
+				<div class="dk-feat-icon">&#128274;</div>
+				<h3>Own everything</h3>
+				<p>Self-host with Docker. Import from Copy Me That. Export anytime. AGPL licensed, forever open.</p>
+			</div>
+		</div>
+	</section>
+
+	<section class="dk-cta">
+		<h2>Your recipes deserve better than a bookmark folder.</h2>
+		<p>Deploy in minutes. Import your collection. Start cooking.</p>
+		<button class="dk-btn-accent">Get Started</button>
 	</section>
 </div>
 
 {:else if view === 'dashboard'}
 <!-- DASHBOARD -->
-<div class="mu">
-	<div class="mu-dash">
-		<div class="mu-dash-top">
-			<div class="mu-dash-left">
-				<h1>Dashboard</h1>
+<div class="dk">
+	<div class="dk-dash">
+		<header class="dk-dash-header">
+			<div>
+				<h1>Good evening.</h1>
+				<p class="dk-dash-sub">What's for dinner?</p>
 			</div>
-			<div class="mu-add-bar">
-				<input type="text" placeholder="paste url to save recipe" />
-				<button class="mu-btn-primary mu-btn-xs">save</button>
+			<div class="dk-add-recipe">
+				<input type="text" placeholder="Paste a recipe URL..." />
+				<button class="dk-btn-accent dk-btn-sm">Save</button>
 			</div>
-		</div>
+		</header>
 
-		<section class="mu-section">
-			<div class="mu-section-head">
-				<h2>dinner ideas</h2>
-				<button class="mu-link-btn">shuffle</button>
+		<section class="dk-dash-section">
+			<div class="dk-section-header">
+				<h2>Tonight's inspiration</h2>
+				<button class="dk-btn-text">Shuffle</button>
 			</div>
-			<div class="mu-grid-dense">
-				{#each dinnerIdeas as recipe}
-					<div class="mu-item">
-						<div class="mu-item-img">
+			<div class="dk-hero-banner">
+				<img src={dinnerIdeas[0].image_url} alt={dinnerIdeas[0].title} />
+				<div class="dk-hero-banner-overlay">
+					<div class="dk-banner-meta">
+						<span class="dk-pill">{dinnerIdeas[0].total_time_minutes} min</span>
+						{#each dinnerIdeas[0].tags as tag}
+							<span class="dk-pill">{tag.name}</span>
+						{/each}
+					</div>
+					<h3>{dinnerIdeas[0].title}</h3>
+					<p>{dinnerIdeas[0].description}</p>
+				</div>
+			</div>
+			<div class="dk-card-grid">
+				{#each dinnerIdeas.slice(1) as recipe}
+					<div class="dk-card">
+						<div class="dk-card-img">
 							<img src={recipe.image_url} alt={recipe.title} />
+							<span class="dk-card-time">{recipe.total_time_minutes} min</span>
 						</div>
-						<div class="mu-item-info">
-							<span class="mu-item-title">{recipe.title}</span>
-							<span class="mu-item-meta">
-								{#if recipe.total_time_minutes}{recipe.total_time_minutes}m{/if}
-								{#if recipe.total_time_minutes && recipe.source_domain} / {/if}
-								{recipe.source_domain}
-							</span>
+						<div class="dk-card-body">
+							<h3>{recipe.title}</h3>
+							<span class="dk-card-source">{recipe.source_domain}</span>
 						</div>
 					</div>
 				{/each}
 			</div>
 		</section>
 
-		<section class="mu-section">
-			<div class="mu-section-head">
-				<h2>recently added</h2>
-				<button class="mu-link-btn">all recipes</button>
+		<section class="dk-dash-section">
+			<div class="dk-section-header">
+				<h2>Recently added</h2>
+				<a href="/recipes" class="dk-btn-text">View all</a>
 			</div>
-			<table class="mu-table">
-				<thead>
-					<tr>
-						<th>Recipe</th>
-						<th>Source</th>
-						<th>Time</th>
-						<th>Servings</th>
-						<th>Tags</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each recentlyAdded as recipe}
-						<tr>
-							<td class="mu-table-title">{recipe.title}</td>
-							<td class="mu-table-muted">{recipe.source_domain}</td>
-							<td class="mu-table-muted">{recipe.total_time_minutes ? recipe.total_time_minutes + 'm' : '-'}</td>
-							<td class="mu-table-muted">{recipe.servings || '-'}</td>
-							<td>
-								{#each recipe.tags as tag}
-									<span class="mu-tag">{tag.name}</span>
-								{/each}
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
+			<div class="dk-card-grid dk-card-grid-4">
+				{#each recentlyAdded as recipe}
+					<div class="dk-card">
+						<div class="dk-card-img">
+							<img src={recipe.image_url} alt={recipe.title} />
+							<span class="dk-card-time">{recipe.total_time_minutes} min</span>
+						</div>
+						<div class="dk-card-body">
+							<h3>{recipe.title}</h3>
+							<span class="dk-card-source">{recipe.source_domain}</span>
+						</div>
+					</div>
+				{/each}
+			</div>
 		</section>
 	</div>
 </div>
 
 {:else}
-<!-- RECIPE -->
-<div class="mu">
-	<div class="mu-recipe">
-		<div class="mu-recipe-top">
-			<div class="mu-recipe-header">
-				<div class="mu-breadcrumb">recipes / pasta</div>
-				<h1>{featuredRecipe.title}</h1>
-				<div class="mu-recipe-meta-row">
-					<span>{featuredRecipe.source_domain}</span>
-					<span class="mu-sep">/</span>
-					<span>{featuredRecipe.total_time_minutes} min total</span>
-					<span class="mu-sep">/</span>
-					<span>{featuredRecipe.servings}</span>
+<!-- RECIPE DETAIL -->
+<div class="dk">
+	<div class="dk-recipe">
+		<div class="dk-recipe-hero">
+			<img src={featuredRecipe.image_url} alt={featuredRecipe.title} />
+			<div class="dk-recipe-hero-overlay">
+				<div class="dk-recipe-pills">
 					{#each featuredRecipe.tags as tag}
-						<span class="mu-tag">{tag.name}</span>
+						<span class="dk-pill">{tag.name}</span>
 					{/each}
 				</div>
-				<p class="mu-recipe-desc">{featuredRecipe.description}</p>
-				<div class="mu-recipe-actions">
-					<button class="mu-btn-primary mu-btn-xs">add to list</button>
-					<button class="mu-btn-secondary mu-btn-xs">print</button>
-					<button class="mu-btn-secondary mu-btn-xs">edit</button>
-					<div class="mu-scale-control">
-						<button class="mu-scale-btn">-</button>
-						<span class="mu-scale-val">1x</span>
-						<button class="mu-scale-btn">+</button>
-					</div>
-				</div>
-			</div>
-			<div class="mu-recipe-img">
-				<img src={featuredRecipe.image_url} alt={featuredRecipe.title} />
+				<h1>{featuredRecipe.title}</h1>
+				<p class="dk-recipe-source">{featuredRecipe.source_domain}</p>
 			</div>
 		</div>
 
-		<div class="mu-recipe-body">
-			<div class="mu-recipe-col-left">
-				<h2>ingredients</h2>
-				<ul class="mu-ing-list">
-					{#each featuredRecipe.ingredients as ing}
-						<li>{ing.text}</li>
-					{/each}
-				</ul>
-
-				<div class="mu-recipe-times">
-					<div class="mu-time-item">
-						<span class="mu-time-label">prep</span>
-						<span class="mu-time-val">{featuredRecipe.prep_time_minutes}m</span>
-					</div>
-					<div class="mu-time-item">
-						<span class="mu-time-label">cook</span>
-						<span class="mu-time-val">{featuredRecipe.cook_time_minutes}m</span>
-					</div>
-					<div class="mu-time-item">
-						<span class="mu-time-label">total</span>
-						<span class="mu-time-val">{featuredRecipe.total_time_minutes}m</span>
-					</div>
+		<div class="dk-recipe-content">
+			<div class="dk-recipe-meta">
+				<div class="dk-meta-item">
+					<span class="dk-meta-val">{featuredRecipe.prep_time_minutes}</span>
+					<span class="dk-meta-lbl">min prep</span>
+				</div>
+				<div class="dk-meta-divider"></div>
+				<div class="dk-meta-item">
+					<span class="dk-meta-val">{featuredRecipe.cook_time_minutes}</span>
+					<span class="dk-meta-lbl">min cook</span>
+				</div>
+				<div class="dk-meta-divider"></div>
+				<div class="dk-meta-item">
+					<span class="dk-meta-val">{featuredRecipe.total_time_minutes}</span>
+					<span class="dk-meta-lbl">min total</span>
+				</div>
+				<div class="dk-meta-divider"></div>
+				<div class="dk-meta-item">
+					<span class="dk-meta-val">{featuredRecipe.servings}</span>
+					<span class="dk-meta-lbl">&nbsp;</span>
 				</div>
 			</div>
-			<div class="mu-recipe-col-right">
-				<h2>steps</h2>
-				<div class="mu-steps">
-					{#each featuredRecipe.instructions as step, i}
-						<div class="mu-step">
-							<span class="mu-step-n">{String(i + 1).padStart(2, '0')}</span>
-							<p>{step.text}</p>
-						</div>
-					{/each}
+
+			<p class="dk-recipe-desc">{featuredRecipe.description}</p>
+
+			<div class="dk-recipe-actions">
+				<button class="dk-btn-accent dk-btn-sm">Add to Shopping List</button>
+				<button class="dk-btn-outline dk-btn-sm">Print</button>
+				<button class="dk-btn-outline dk-btn-sm">Edit</button>
+				<div class="dk-scale">
+					<button class="dk-scale-btn">&minus;</button>
+					<span>1x</span>
+					<button class="dk-scale-btn">+</button>
+				</div>
+			</div>
+
+			<div class="dk-recipe-body">
+				<aside class="dk-ingredients">
+					<h2>Ingredients</h2>
+					<ul>
+						{#each featuredRecipe.ingredients as ing}
+							<li>{ing.text}</li>
+						{/each}
+					</ul>
+				</aside>
+				<div class="dk-instructions">
+					<h2>Instructions</h2>
+					<ol>
+						{#each featuredRecipe.instructions as step, i}
+							<li>
+								<span class="dk-step-num">{i + 1}</span>
+								<p>{step.text}</p>
+							</li>
+						{/each}
+					</ol>
 				</div>
 			</div>
 		</div>
@@ -254,443 +274,624 @@
 		align-items: center;
 		gap: var(--space-4);
 		padding: var(--space-2) var(--space-4);
-		background: #1a1a1a;
+		background: #0a0a0a;
 		color: white;
 		font-size: var(--text-sm);
+		border-bottom: 1px solid #222;
 	}
-	.mockup-nav .back { color: rgba(255,255,255,0.6); text-decoration: none; }
+	.mockup-nav .back {
+		color: rgba(255, 255, 255, 0.5);
+		text-decoration: none;
+	}
 	.mockup-nav .back:hover { color: white; }
 	.mockup-nav .label { flex: 1; font-weight: var(--font-medium); }
 	.mockup-nav .views { display: flex; gap: 2px; }
 	.mockup-nav .views button {
 		padding: var(--space-1) var(--space-3);
-		background: rgba(255,255,255,0.1);
-		color: rgba(255,255,255,0.7);
+		background: rgba(255, 255, 255, 0.08);
+		color: rgba(255, 255, 255, 0.6);
 		border: none;
 		border-radius: var(--radius-sm);
 		cursor: pointer;
 		font-size: var(--text-xs);
 	}
-	.mockup-nav .views button.active { background: white; color: #1a1a1a; }
+	.mockup-nav .views button.active {
+		background: #c47d4e;
+		color: white;
+	}
 
-	/* === MINIMAL UTILITY === */
-	.mu {
+	/* === DARK KITCHEN THEME === */
+	.dk {
 		font-family: 'Inter', system-ui, sans-serif;
-		color: #1a1a1a;
-		background: #ffffff;
+		color: #e8e4e0;
+		background: #111;
 	}
 
-	/* LANDING */
-	.mu-hero {
-		padding: 5rem 2rem 3rem;
+	/* LANDING - HERO */
+	.dk-hero {
+		position: relative;
+		min-height: 85vh;
+		display: flex;
+		align-items: center;
+		overflow: hidden;
+	}
+	.dk-hero-bg {
+		position: absolute;
+		inset: 0;
+	}
+	.dk-hero-bg img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	.dk-hero-scrim {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			135deg,
+			rgba(0, 0, 0, 0.85) 0%,
+			rgba(0, 0, 0, 0.6) 50%,
+			rgba(0, 0, 0, 0.4) 100%
+		);
+	}
+	.dk-hero-content {
+		position: relative;
 		max-width: 640px;
-		margin: 0 auto;
+		padding: 4rem 4rem 4rem 6rem;
 	}
-	.mu-hero-content { display: flex; flex-direction: column; }
-	.mu-badge {
-		display: inline-block;
-		padding: 0.25rem 0.5rem;
-		background: #f0f0f0;
-		font-family: 'Fira Code', monospace;
-		font-size: 0.6875rem;
-		color: #666;
-		border-radius: 3px;
-		margin-bottom: 1.5rem;
-		width: fit-content;
-		letter-spacing: 0.02em;
+	.dk-eyebrow {
+		font-size: 0.8125rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: #c47d4e;
+		margin: 0 0 1.5rem;
+		font-weight: 500;
 	}
-	.mu h1 {
-		font-size: 2rem;
-		font-weight: 600;
-		margin: 0 0 1rem;
-		letter-spacing: -0.03em;
-		line-height: 1.15;
+	.dk-hero-content h1 {
+		font-size: 4rem;
+		font-weight: 700;
+		line-height: 1.05;
+		margin: 0 0 1.5rem;
+		color: white;
+		letter-spacing: -0.02em;
 	}
-	.mu-hero-desc {
-		font-size: 1rem;
-		line-height: 1.65;
-		color: #555;
-		margin: 0 0 2rem;
+	.dk-hero-sub {
+		font-size: 1.125rem;
+		line-height: 1.7;
+		color: rgba(255, 255, 255, 0.75);
+		margin: 0 0 2.5rem;
 	}
-	.mu-hero-actions { display: flex; gap: 0.75rem; margin-bottom: 3rem; }
+	.dk-hero-actions { display: flex; gap: 1rem; }
 
-	.mu-btn-primary {
-		padding: 0.625rem 1.5rem;
-		background: #1a1a1a;
+	/* BUTTONS */
+	.dk-btn-accent {
+		padding: 0.875rem 2.25rem;
+		background: #c47d4e;
 		color: white;
 		border: none;
-		border-radius: 6px;
-		font-size: 0.8125rem;
-		font-weight: 500;
+		border-radius: 4px;
+		font-size: 0.9375rem;
+		font-weight: 600;
 		cursor: pointer;
-		transition: background 150ms;
+		transition: all 200ms;
+		letter-spacing: 0.01em;
 	}
-	.mu-btn-primary:hover { background: #333; }
-	.mu-btn-xs { padding: 0.375rem 0.875rem; font-size: 0.75rem; }
+	.dk-btn-accent:hover { background: #d4925f; transform: translateY(-1px); }
+	.dk-btn-sm { padding: 0.5rem 1.25rem; font-size: 0.8125rem; }
 
-	.mu-btn-secondary {
-		padding: 0.625rem 1.5rem;
+	.dk-btn-ghost {
+		padding: 0.875rem 2.25rem;
 		background: none;
-		color: #1a1a1a;
-		border: 1px solid #ddd;
-		border-radius: 6px;
-		font-size: 0.8125rem;
+		color: rgba(255, 255, 255, 0.8);
+		border: 1.5px solid rgba(255, 255, 255, 0.25);
+		border-radius: 4px;
+		font-size: 0.9375rem;
 		font-weight: 500;
+		text-decoration: none;
+		transition: all 200ms;
+	}
+	.dk-btn-ghost:hover { border-color: rgba(255, 255, 255, 0.6); color: white; }
+
+	.dk-btn-outline {
+		padding: 0.5rem 1.25rem;
+		background: none;
+		color: #a09890;
+		border: 1.5px solid #333;
+		border-radius: 4px;
+		font-size: 0.8125rem;
+		cursor: pointer;
+		transition: all 200ms;
+	}
+	.dk-btn-outline:hover { border-color: #c47d4e; color: #c47d4e; }
+
+	.dk-btn-text {
+		background: none;
+		border: none;
+		color: #c47d4e;
+		font-size: 0.875rem;
 		cursor: pointer;
 		text-decoration: none;
-		transition: border-color 150ms;
+		font-weight: 500;
 	}
-	.mu-btn-secondary:hover { border-color: #999; }
+	.dk-btn-text:hover { color: #d4925f; }
 
-	.mu-stats {
-		display: flex;
-		gap: 2.5rem;
-		padding-top: 2rem;
-		border-top: 1px solid #eee;
-	}
-	.mu-stat { display: flex; flex-direction: column; }
-	.mu-stat-val {
-		font-family: 'Fira Code', monospace;
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: #1a1a1a;
-	}
-	.mu-stat-label {
-		font-size: 0.6875rem;
-		color: #999;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-	}
-
-	.mu-features-section {
-		max-width: 800px;
+	/* LANDING - HOW */
+	.dk-how {
+		padding: 5rem 3rem;
+		max-width: 1100px;
 		margin: 0 auto;
-		padding: 2rem 2rem 4rem;
+		border-bottom: 1px solid #222;
 	}
-	.mu-features-grid {
+	.dk-how-grid {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1.5rem;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 3rem;
 	}
-	.mu-feat {
-		display: flex;
-		gap: 1rem;
-		padding: 1.25rem;
-		border: 1px solid #eee;
-		border-radius: 8px;
+	.dk-how-num {
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: #c47d4e;
+		letter-spacing: 0.1em;
+		margin-bottom: 1rem;
+		font-variant-numeric: tabular-nums;
 	}
-	.mu-feat-icon {
-		flex-shrink: 0;
+	.dk-how-step h3 {
+		font-size: 1.375rem;
+		font-weight: 600;
+		margin: 0 0 0.75rem;
+		color: white;
+	}
+	.dk-how-step p {
+		color: #8a8480;
+		line-height: 1.7;
+		margin: 0;
+		font-size: 0.9375rem;
+	}
+
+	/* LANDING - SHOWCASE */
+	.dk-showcase {
+		max-width: 1100px;
+		margin: 0 auto;
+		padding: 5rem 3rem;
+	}
+	.dk-showcase-text {
+		max-width: 560px;
+		margin-bottom: 3rem;
+	}
+	.dk-showcase-text h2 {
+		font-size: 2rem;
+		font-weight: 700;
+		margin: 0 0 1rem;
+		color: white;
+		letter-spacing: -0.01em;
+	}
+	.dk-showcase-text p {
+		color: #8a8480;
+		line-height: 1.7;
+		margin: 0;
+		font-size: 1rem;
+	}
+	.dk-showcase-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1.25rem;
+	}
+	.dk-showcase-card {
+		border-radius: 6px;
+		overflow: hidden;
+		background: #1a1a1a;
+		border: 1px solid #222;
+		transition: border-color 200ms, transform 200ms;
+		cursor: pointer;
+	}
+	.dk-showcase-card:hover {
+		border-color: #333;
+		transform: translateY(-2px);
+	}
+	.dk-showcase-card img {
+		width: 100%;
+		aspect-ratio: 16/9;
+		object-fit: cover;
+		display: block;
+	}
+	.dk-showcase-card-info {
+		padding: 1rem 1.25rem;
+	}
+	.dk-showcase-card-info h4 {
+		font-size: 0.9375rem;
+		font-weight: 500;
+		margin: 0 0 0.375rem;
+		color: #e8e4e0;
+		line-height: 1.4;
+	}
+	.dk-showcase-card-info span {
+		font-size: 0.75rem;
+		color: #666;
+	}
+
+	/* LANDING - FEATURES */
+	.dk-features {
+		padding: 5rem 3rem;
+		max-width: 1100px;
+		margin: 0 auto;
+		border-top: 1px solid #222;
+	}
+	.dk-features-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 2.5rem;
+	}
+	.dk-feat-icon {
+		font-size: 1.25rem;
+		margin-bottom: 0.75rem;
 		width: 40px;
 		height: 40px;
-		background: #f5f5f5;
-		border-radius: 6px;
+		border-radius: 8px;
+		background: rgba(196, 125, 78, 0.12);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-family: 'Fira Code', monospace;
-		font-size: 0.6875rem;
-		color: #666;
-		font-weight: 600;
 	}
-	.mu-feat h3 {
-		font-size: 0.875rem;
+	.dk-feat h3 {
+		font-size: 1rem;
 		font-weight: 600;
-		margin: 0 0 0.375rem;
+		margin: 0 0 0.5rem;
+		color: white;
 	}
-	.mu-feat p {
-		font-size: 0.8125rem;
-		color: #666;
-		line-height: 1.5;
+	.dk-feat p {
+		color: #8a8480;
+		line-height: 1.65;
 		margin: 0;
+		font-size: 0.875rem;
 	}
 
-	.mu-cta-bottom {
+	/* LANDING - CTA */
+	.dk-cta {
 		text-align: center;
-		padding: 3rem 2rem;
-		background: #fafafa;
-		border-top: 1px solid #eee;
+		padding: 5rem 2rem;
+		border-top: 1px solid #222;
 	}
-	.mu-cta-bottom p {
-		font-size: 0.9375rem;
+	.dk-cta h2 {
+		font-size: 2rem;
+		font-weight: 700;
+		color: white;
+		margin: 0 0 0.75rem;
+		letter-spacing: -0.01em;
+	}
+	.dk-cta p {
 		color: #666;
-		margin: 0 0 1rem;
+		font-size: 1rem;
+		margin: 0 0 2rem;
 	}
 
 	/* DASHBOARD */
-	.mu-dash {
-		max-width: 960px;
+	.dk-dash {
+		max-width: 1100px;
 		margin: 0 auto;
-		padding: 1.5rem;
+		padding: 2rem 1.5rem;
 	}
-	.mu-dash-top {
+	.dk-dash-header {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 2rem;
-		padding-bottom: 1rem;
-		border-bottom: 1px solid #eee;
+		align-items: flex-end;
+		margin-bottom: 3rem;
+		padding-bottom: 2rem;
+		border-bottom: 1px solid #222;
 	}
-	.mu-dash-left h1 {
-		font-size: 1.25rem;
-		font-weight: 600;
+	.dk-dash-header h1 {
+		font-size: 2rem;
+		font-weight: 700;
+		color: white;
 		margin: 0;
-		letter-spacing: -0.02em;
+		letter-spacing: -0.01em;
 	}
-	.mu-add-bar { display: flex; gap: 0.375rem; }
-	.mu-add-bar input {
-		padding: 0.375rem 0.75rem;
-		border: 1px solid #ddd;
-		border-radius: 6px;
-		font-size: 0.75rem;
-		width: 280px;
-		font-family: 'Fira Code', monospace;
+	.dk-dash-sub {
+		color: #666;
+		font-size: 1rem;
+		margin: 0.25rem 0 0;
 	}
-	.mu-add-bar input::placeholder { color: #bbb; }
-	.mu-add-bar input:focus { outline: none; border-color: #1a1a1a; }
+	.dk-add-recipe { display: flex; gap: 0.5rem; }
+	.dk-add-recipe input {
+		padding: 0.5rem 1rem;
+		border: 1.5px solid #333;
+		border-radius: 4px;
+		font-size: 0.875rem;
+		width: 320px;
+		background: #1a1a1a;
+		color: #e8e4e0;
+	}
+	.dk-add-recipe input::placeholder { color: #555; }
+	.dk-add-recipe input:focus { outline: none; border-color: #c47d4e; }
 
-	.mu-section { margin-bottom: 2.5rem; }
-	.mu-section-head {
+	.dk-dash-section { margin-bottom: 3rem; }
+	.dk-section-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: baseline;
-		margin-bottom: 1rem;
+		margin-bottom: 1.25rem;
 	}
-	.mu-section-head h2 {
-		font-size: 0.8125rem;
+	.dk-section-header h2 {
+		font-size: 1.25rem;
 		font-weight: 600;
+		color: white;
 		margin: 0;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		color: #999;
 	}
-	.mu-link-btn {
-		background: none;
-		border: none;
-		font-size: 0.75rem;
-		color: #999;
-		cursor: pointer;
-		text-decoration: none;
-	}
-	.mu-link-btn:hover { color: #1a1a1a; }
 
-	.mu-grid-dense {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 0.75rem;
-	}
-	.mu-item {
-		border: 1px solid #eee;
+	.dk-hero-banner {
+		position: relative;
 		border-radius: 8px;
 		overflow: hidden;
-		transition: border-color 150ms;
+		margin-bottom: 1.25rem;
+		aspect-ratio: 21/9;
+	}
+	.dk-hero-banner img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	.dk-hero-banner-overlay {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: 3rem 2rem 2rem;
+		background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+	}
+	.dk-banner-meta {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 0.75rem;
+	}
+	.dk-pill {
+		padding: 0.25rem 0.75rem;
+		background: rgba(196, 125, 78, 0.3);
+		border: 1px solid rgba(196, 125, 78, 0.4);
+		border-radius: 100px;
+		font-size: 0.6875rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		font-weight: 500;
+		color: #ddb893;
+	}
+	.dk-hero-banner-overlay h3 {
+		font-size: 1.75rem;
+		font-weight: 600;
+		margin: 0 0 0.5rem;
+		color: white;
+	}
+	.dk-hero-banner-overlay p {
+		margin: 0;
+		font-size: 0.875rem;
+		color: rgba(255, 255, 255, 0.65);
+		max-width: 500px;
+		line-height: 1.6;
+	}
+
+	.dk-card-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1rem;
+	}
+	.dk-card-grid-4 {
+		grid-template-columns: repeat(4, 1fr);
+	}
+	.dk-card {
+		background: #1a1a1a;
+		border-radius: 6px;
+		overflow: hidden;
+		border: 1px solid #222;
+		transition: border-color 200ms, transform 200ms;
 		cursor: pointer;
 	}
-	.mu-item:hover { border-color: #ccc; }
-	.mu-item-img {
+	.dk-card:hover {
+		border-color: #444;
+		transform: translateY(-2px);
+	}
+	.dk-card-img {
+		position: relative;
 		aspect-ratio: 16/10;
 		overflow: hidden;
 	}
-	.mu-item-img img {
+	.dk-card-img img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
+		transition: transform 300ms;
 	}
-	.mu-item-info { padding: 0.625rem 0.75rem; }
-	.mu-item-title {
-		display: block;
-		font-size: 0.8125rem;
-		font-weight: 500;
-		line-height: 1.3;
-		margin-bottom: 0.25rem;
-		color: #1a1a1a;
+	.dk-card:hover .dk-card-img img {
+		transform: scale(1.04);
 	}
-	.mu-item-meta {
-		font-size: 0.6875rem;
-		color: #999;
-		font-family: 'Fira Code', monospace;
-	}
-
-	.mu-table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 0.8125rem;
-	}
-	.mu-table th {
-		text-align: left;
+	.dk-card-time {
+		position: absolute;
+		top: 0.5rem;
+		right: 0.5rem;
+		padding: 0.2rem 0.5rem;
+		background: rgba(0, 0, 0, 0.7);
+		backdrop-filter: blur(4px);
+		border-radius: 4px;
 		font-size: 0.6875rem;
 		font-weight: 500;
-		color: #999;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		padding: 0.5rem 0.75rem;
-		border-bottom: 1px solid #eee;
+		color: rgba(255, 255, 255, 0.9);
 	}
-	.mu-table td {
-		padding: 0.625rem 0.75rem;
-		border-bottom: 1px solid #f5f5f5;
+	.dk-card-body {
+		padding: 0.875rem 1rem;
 	}
-	.mu-table tbody tr:hover { background: #fafafa; }
-	.mu-table-title { font-weight: 500; color: #1a1a1a; }
-	.mu-table-muted { color: #999; }
-	.mu-tag {
-		display: inline-block;
-		padding: 0.125rem 0.5rem;
-		background: #f0f0f0;
-		border-radius: 3px;
+	.dk-card-body h3 {
+		font-size: 0.875rem;
+		font-weight: 500;
+		margin: 0 0 0.375rem;
+		color: #e8e4e0;
+		line-height: 1.4;
+	}
+	.dk-card-source {
 		font-size: 0.6875rem;
-		color: #666;
-		margin-right: 0.25rem;
-		font-family: 'Fira Code', monospace;
+		color: #555;
 	}
 
 	/* RECIPE */
-	.mu-recipe {
-		max-width: 960px;
-		margin: 0 auto;
-		padding: 1.5rem;
-	}
-	.mu-recipe-top {
-		display: grid;
-		grid-template-columns: 1fr 400px;
-		gap: 2rem;
-		margin-bottom: 2.5rem;
-		padding-bottom: 2rem;
-		border-bottom: 1px solid #eee;
-	}
-	.mu-breadcrumb {
-		font-size: 0.6875rem;
-		color: #999;
-		margin-bottom: 0.75rem;
-		font-family: 'Fira Code', monospace;
-	}
-	.mu-recipe-header h1 {
-		font-size: 1.75rem;
-		font-weight: 600;
-		letter-spacing: -0.03em;
-		margin: 0 0 0.75rem;
-		line-height: 1.2;
-	}
-	.mu-recipe-meta-row {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.75rem;
-		color: #999;
-		margin-bottom: 1rem;
-		flex-wrap: wrap;
-	}
-	.mu-sep { color: #ddd; }
-	.mu-recipe-desc {
-		font-size: 0.9375rem;
-		line-height: 1.6;
-		color: #555;
-		margin: 0 0 1.5rem;
-	}
-	.mu-recipe-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-	.mu-scale-control {
-		margin-left: auto;
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-	}
-	.mu-scale-btn {
-		width: 24px;
-		height: 24px;
-		border: 1px solid #ddd;
-		border-radius: 4px;
-		background: none;
-		cursor: pointer;
-		font-size: 0.875rem;
-		color: #666;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	.mu-scale-val {
-		font-family: 'Fira Code', monospace;
-		font-size: 0.75rem;
-		color: #666;
-		min-width: 24px;
-		text-align: center;
-	}
-	.mu-recipe-img {
-		border-radius: 8px;
+	.dk-recipe-hero {
+		position: relative;
+		height: 55vh;
+		min-height: 380px;
 		overflow: hidden;
 	}
-	.mu-recipe-img img {
+	.dk-recipe-hero img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		aspect-ratio: 4/3;
+	}
+	.dk-recipe-hero-overlay {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: 4rem 3rem 3rem;
+		background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+	}
+	.dk-recipe-pills {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+	}
+	.dk-recipe-hero-overlay h1 {
+		font-size: 2.5rem;
+		font-weight: 700;
+		margin: 0 0 0.5rem;
+		color: white;
+		line-height: 1.15;
+		letter-spacing: -0.01em;
+	}
+	.dk-recipe-source {
+		font-size: 0.875rem;
+		color: rgba(255, 255, 255, 0.5);
+		margin: 0;
 	}
 
-	.mu-recipe-body {
-		display: grid;
-		grid-template-columns: 280px 1fr;
-		gap: 3rem;
+	.dk-recipe-content {
+		max-width: 900px;
+		margin: 0 auto;
+		padding: 2.5rem 1.5rem;
 	}
-	.mu-recipe-body h2 {
-		font-size: 0.75rem;
+
+	.dk-recipe-meta {
+		display: flex;
+		align-items: center;
+		gap: 1.5rem;
+		padding-bottom: 2rem;
+		border-bottom: 1px solid #222;
+		margin-bottom: 2rem;
+	}
+	.dk-meta-item { text-align: center; }
+	.dk-meta-val {
+		display: block;
+		font-size: 1.25rem;
 		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		color: #999;
-		margin: 0 0 1rem;
+		color: white;
 	}
-	.mu-ing-list {
-		list-style: none;
-		padding: 0;
+	.dk-meta-lbl {
+		font-size: 0.6875rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: #555;
+	}
+	.dk-meta-divider {
+		width: 1px;
+		height: 32px;
+		background: #333;
+	}
+
+	.dk-recipe-desc {
+		font-size: 1rem;
+		line-height: 1.7;
+		color: #8a8480;
 		margin: 0 0 2rem;
 	}
-	.mu-ing-list li {
-		padding: 0.5rem 0;
-		border-bottom: 1px solid #f5f5f5;
-		font-size: 0.8125rem;
-		color: #333;
-		line-height: 1.4;
-	}
-	.mu-recipe-times {
-		display: flex;
-		gap: 1.5rem;
-		padding-top: 1rem;
-		border-top: 1px solid #eee;
-	}
-	.mu-time-item { display: flex; flex-direction: column; }
-	.mu-time-label {
-		font-size: 0.625rem;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: #bbb;
-	}
-	.mu-time-val {
-		font-family: 'Fira Code', monospace;
-		font-size: 0.9375rem;
-		font-weight: 600;
-	}
 
-	.mu-steps { display: flex; flex-direction: column; gap: 1.25rem; }
-	.mu-step {
+	.dk-recipe-actions {
 		display: flex;
-		gap: 1rem;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 3rem;
+		padding-bottom: 2rem;
+		border-bottom: 1px solid #222;
+	}
+	.dk-scale {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		color: #666;
+	}
+	.dk-scale-btn {
+		width: 28px;
+		height: 28px;
+		border: 1.5px solid #333;
+		border-radius: 4px;
+		background: none;
+		cursor: pointer;
+		font-size: 1rem;
+		color: #888;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: border-color 200ms;
+	}
+	.dk-scale-btn:hover { border-color: #c47d4e; color: #c47d4e; }
+
+	.dk-recipe-body {
+		display: grid;
+		grid-template-columns: 300px 1fr;
+		gap: 3rem;
+	}
+	.dk-ingredients h2,
+	.dk-instructions h2 {
+		font-size: 1.125rem;
+		font-weight: 600;
+		margin: 0 0 1.25rem;
+		color: white;
+	}
+	.dk-ingredients ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+	.dk-ingredients li {
+		padding: 0.75rem 0;
+		border-bottom: 1px solid #1f1f1f;
+		font-size: 0.9375rem;
+		color: #a09890;
+		line-height: 1.5;
+	}
+	.dk-instructions ol {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+	.dk-instructions li {
+		display: flex;
+		gap: 1.25rem;
+		margin-bottom: 1.75rem;
 		align-items: flex-start;
 	}
-	.mu-step-n {
+	.dk-step-num {
 		flex-shrink: 0;
-		font-family: 'Fira Code', monospace;
-		font-size: 0.75rem;
-		color: #bbb;
-		padding-top: 0.25rem;
-		min-width: 24px;
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		background: rgba(196, 125, 78, 0.15);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.8125rem;
+		color: #c47d4e;
+		font-weight: 600;
+		margin-top: 2px;
 	}
-	.mu-step p {
+	.dk-instructions p {
 		margin: 0;
-		font-size: 0.875rem;
-		line-height: 1.65;
-		color: #333;
+		font-size: 0.9375rem;
+		line-height: 1.7;
+		color: #a09890;
 	}
 </style>

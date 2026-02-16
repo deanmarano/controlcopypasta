@@ -16,12 +16,12 @@
 
 		<a href="/mockups/2" class="direction-card">
 			<div class="direction-number">2</div>
-			<h2>Minimal Utility</h2>
-			<p>Clean, dense, functional. Tight grid, small type, monospace accents. Designed for people with 200+ recipes who want to find things fast. Information-dense without clutter.</p>
+			<h2>Dark Kitchen</h2>
+			<p>Dark mode, moody food photography, high contrast. Copper accents on deep charcoal. Premium and modern — food looks stunning against dark backgrounds.</p>
 			<div class="tags">
-				<span class="tag">Compact grid</span>
-				<span class="tag">Monospace accents</span>
-				<span class="tag">Neutral palette</span>
+				<span class="tag">Dark mode</span>
+				<span class="tag">Copper accents</span>
+				<span class="tag">High contrast</span>
 			</div>
 		</a>
 

@@ -32,7 +32,49 @@
 		</div>
 	</header>
 
+	<section class="ed-how-it-works">
+		<h2>How it works</h2>
+		<div class="ed-steps">
+			<div class="ed-step">
+				<div class="ed-step-number">1</div>
+				<h3>Paste a URL</h3>
+				<p>Find a recipe you love anywhere on the web. Paste the link and we'll extract everything — ingredients, instructions, images, and nutrition data.</p>
+			</div>
+			<div class="ed-step">
+				<div class="ed-step-number">2</div>
+				<h3>Organize your way</h3>
+				<p>Tag recipes by meal type, cuisine, or season. Browse by source. Build a collection that mirrors how you actually cook.</p>
+			</div>
+			<div class="ed-step">
+				<div class="ed-step-number">3</div>
+				<h3>Cook with confidence</h3>
+				<p>Scale ingredients for any crowd. Check nutrition facts. Generate shopping lists. Print clean recipe cards for the kitchen counter.</p>
+			</div>
+		</div>
+	</section>
+
+	<section class="ed-preview">
+		<div class="ed-preview-text">
+			<p class="ed-eyebrow">Your collection, beautifully organized</p>
+			<h2>Every recipe from every corner of the web, in one place.</h2>
+			<p>Import from Bon Appetit, NYT Cooking, Serious Eats, food blogs — any site with a recipe. The browser extension makes it one click.</p>
+		</div>
+		<div class="ed-preview-cards">
+			{#each recipes.slice(0, 3) as recipe}
+				<div class="ed-preview-card">
+					<img src={recipe.image_url} alt={recipe.title} />
+					<div class="ed-preview-card-info">
+						<span class="ed-preview-card-source">{recipe.source_domain}</span>
+						<h4>{recipe.title}</h4>
+					</div>
+				</div>
+			{/each}
+		</div>
+	</section>
+
 	<section class="ed-features">
+		<p class="ed-eyebrow" style="text-align: center; margin-bottom: 0.5rem;">What you get</p>
+		<h2 class="ed-features-title">Tools for the home cook who takes food seriously</h2>
 		<div class="ed-feature-grid">
 			<div class="ed-feature">
 				<h3>Clip from any site</h3>
@@ -61,8 +103,28 @@
 		</div>
 	</section>
 
+	<section class="ed-stats-bar">
+		<div class="ed-stat">
+			<span class="ed-stat-number">200+</span>
+			<span class="ed-stat-label">Supported sites</span>
+		</div>
+		<div class="ed-stat">
+			<span class="ed-stat-number">30s</span>
+			<span class="ed-stat-label">Average import time</span>
+		</div>
+		<div class="ed-stat">
+			<span class="ed-stat-number">100%</span>
+			<span class="ed-stat-label">Open source</span>
+		</div>
+		<div class="ed-stat">
+			<span class="ed-stat-number">0</span>
+			<span class="ed-stat-label">Tracking scripts</span>
+		</div>
+	</section>
+
 	<section class="ed-cta-section">
 		<h2>Ready to take control of your recipe collection?</h2>
+		<p class="ed-cta-sub">Deploy in minutes with Docker. Your recipes stay on your server, forever.</p>
 		<button class="ed-btn-primary">Get Started</button>
 	</section>
 </div>
@@ -202,7 +264,7 @@
 					<ol>
 						{#each featuredRecipe.instructions as step, i}
 							<li>
-								<span class="ed-step-num">{i + 1}</span>
+								<span class="ed-step-circle">{i + 1}</span>
 								<p>{step.text}</p>
 							</li>
 						{/each}
@@ -256,7 +318,7 @@
 		background: #faf8f5;
 	}
 
-	/* LANDING */
+	/* LANDING - HERO */
 	.ed-hero {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -300,6 +362,7 @@
 		object-fit: cover;
 	}
 
+	/* BUTTONS */
 	.ed-btn-primary {
 		padding: 0.875rem 2rem;
 		background: #2c2420;
@@ -352,11 +415,137 @@
 	}
 	.ed-btn-text:hover { color: #2c2420; }
 
-	/* Features */
+	/* LANDING - HOW IT WORKS */
+	.ed-how-it-works {
+		max-width: 1100px;
+		margin: 0 auto;
+		padding: 5rem 3rem;
+		border-bottom: 1px solid #e8e2da;
+	}
+	.ed-how-it-works h2 {
+		font-family: 'Playfair Display', Georgia, serif;
+		font-size: 2rem;
+		text-align: center;
+		margin: 0 0 3rem;
+		color: #2c2420;
+		font-weight: 400;
+	}
+	.ed-steps {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 3rem;
+	}
+	.ed-step { text-align: center; }
+	.ed-step-number {
+		width: 48px;
+		height: 48px;
+		border-radius: 50%;
+		border: 2px solid #2c2420;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-family: 'Playfair Display', Georgia, serif;
+		font-size: 1.25rem;
+		color: #2c2420;
+		margin-bottom: 1.25rem;
+	}
+	.ed-step h3 {
+		font-family: 'Playfair Display', Georgia, serif;
+		font-size: 1.25rem;
+		margin: 0 0 0.75rem;
+		color: #2c2420;
+		font-weight: 400;
+	}
+	.ed-step p {
+		color: #6b5c52;
+		line-height: 1.7;
+		margin: 0;
+		font-size: 0.9375rem;
+	}
+
+	/* LANDING - PREVIEW */
+	.ed-preview {
+		max-width: 1100px;
+		margin: 0 auto;
+		padding: 5rem 3rem;
+		display: grid;
+		grid-template-columns: 1fr 1.2fr;
+		gap: 4rem;
+		align-items: center;
+	}
+	.ed-preview-text h2 {
+		font-family: 'Playfair Display', Georgia, serif;
+		font-size: 2rem;
+		line-height: 1.25;
+		margin: 0 0 1.25rem;
+		color: #2c2420;
+		font-weight: 400;
+	}
+	.ed-preview-text p {
+		color: #6b5c52;
+		line-height: 1.7;
+		margin: 0;
+		font-size: 0.9375rem;
+	}
+	.ed-preview-cards {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.ed-preview-card {
+		display: flex;
+		gap: 1rem;
+		background: white;
+		border-radius: 4px;
+		overflow: hidden;
+		box-shadow: 0 2px 8px rgba(44, 36, 32, 0.06);
+		transition: transform 200ms, box-shadow 200ms;
+	}
+	.ed-preview-card:hover {
+		transform: translateX(4px);
+		box-shadow: 0 4px 16px rgba(44, 36, 32, 0.1);
+	}
+	.ed-preview-card img {
+		width: 120px;
+		height: 80px;
+		object-fit: cover;
+		flex-shrink: 0;
+	}
+	.ed-preview-card-info {
+		padding: 0.75rem 1rem 0.75rem 0;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+	}
+	.ed-preview-card-source {
+		font-size: 0.6875rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: #96705a;
+		margin-bottom: 0.25rem;
+	}
+	.ed-preview-card-info h4 {
+		font-family: 'Playfair Display', Georgia, serif;
+		font-size: 0.9375rem;
+		margin: 0;
+		color: #2c2420;
+		font-weight: 400;
+		line-height: 1.35;
+	}
+
+	/* LANDING - FEATURES */
 	.ed-features {
 		padding: 5rem 3rem;
 		max-width: 1100px;
 		margin: 0 auto;
+	}
+	.ed-features-title {
+		font-family: 'Playfair Display', Georgia, serif;
+		font-size: 2rem;
+		text-align: center;
+		margin: 0 0 3rem;
+		color: #2c2420;
+		font-weight: 400;
 	}
 	.ed-feature-grid {
 		display: grid;
@@ -376,6 +565,33 @@
 		font-size: 0.9375rem;
 	}
 
+	/* LANDING - STATS */
+	.ed-stats-bar {
+		display: flex;
+		justify-content: center;
+		gap: 4rem;
+		padding: 3rem 2rem;
+		border-top: 1px solid #e8e2da;
+		border-bottom: 1px solid #e8e2da;
+	}
+	.ed-stat { text-align: center; }
+	.ed-stat-number {
+		display: block;
+		font-family: 'Playfair Display', Georgia, serif;
+		font-size: 2.5rem;
+		color: #2c2420;
+		font-weight: 700;
+		line-height: 1;
+		margin-bottom: 0.5rem;
+	}
+	.ed-stat-label {
+		font-size: 0.8125rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: #96705a;
+	}
+
+	/* LANDING - CTA */
 	.ed-cta-section {
 		text-align: center;
 		padding: 5rem 2rem;
@@ -385,8 +601,13 @@
 	.ed-cta-section h2 {
 		font-family: 'Playfair Display', Georgia, serif;
 		font-size: 2rem;
-		margin: 0 0 2rem;
+		margin: 0 0 1rem;
 		font-weight: 400;
+	}
+	.ed-cta-sub {
+		color: rgba(250, 248, 245, 0.7);
+		font-size: 1rem;
+		margin: 0 0 2rem;
 	}
 	.ed-cta-section .ed-btn-primary {
 		background: #faf8f5;
@@ -691,7 +912,7 @@
 		margin-bottom: 1.75rem;
 		align-items: flex-start;
 	}
-	.ed-step-num {
+	.ed-step-circle {
 		flex-shrink: 0;
 		width: 32px;
 		height: 32px;
