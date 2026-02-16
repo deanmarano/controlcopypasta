@@ -310,6 +310,46 @@ defmodule Controlcopypasta.Recipes do
     end
   end
 
+  # Dashboard queries
+
+  def random_recipes_for_user(user_id, count, params \\ %{}) do
+    Recipe
+    |> where([r], r.user_id == ^user_id)
+    |> apply_archived_filter(%{})
+    |> apply_avoided_filter(params)
+    |> order_by(fragment("RANDOM()"))
+    |> limit(^count)
+    |> preload(:tags)
+    |> Repo.all()
+  end
+
+  def recent_recipes_for_user(user_id, count) do
+    Recipe
+    |> where([r], r.user_id == ^user_id)
+    |> apply_archived_filter(%{})
+    |> order_by([r], desc: r.inserted_at)
+    |> limit(^count)
+    |> preload(:tags)
+    |> Repo.all()
+  end
+
+  def this_time_last_year_for_user(user_id, count) do
+    now = Date.utc_today()
+    last_year = Date.add(now, -365)
+    window_start = Date.add(last_year, -14)
+    window_end = Date.add(last_year, 14)
+
+    Recipe
+    |> where([r], r.user_id == ^user_id)
+    |> apply_archived_filter(%{})
+    |> where([r], fragment("?::date", r.inserted_at) >= ^window_start)
+    |> where([r], fragment("?::date", r.inserted_at) <= ^window_end)
+    |> order_by(fragment("RANDOM()"))
+    |> limit(^count)
+    |> preload(:tags)
+    |> Repo.all()
+  end
+
   # Tags
 
   def list_tags do

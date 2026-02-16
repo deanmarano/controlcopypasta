@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { recipes, tags as tagsApi, type RecipeInput, type Tag } from '$lib/api/client';
 
@@ -22,11 +23,20 @@
 	let error = $state('');
 	let parseUrl = $state('');
 
+	let autoParseTriggered = false;
+
 	$effect(() => {
 		if (!$isAuthenticated) {
 			goto('/login');
 		} else {
 			loadTags();
+
+			const urlParam = $page.url.searchParams.get('url');
+			if (urlParam && !autoParseTriggered) {
+				autoParseTriggered = true;
+				parseUrl = urlParam;
+				handleParse();
+			}
 		}
 	});
 

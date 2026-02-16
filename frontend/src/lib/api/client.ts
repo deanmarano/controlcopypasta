@@ -697,6 +697,33 @@ export const settings = {
     })
 };
 
+// Dashboard API
+export interface DashboardRecipe {
+  id: string;
+  title: string;
+  description: string | null;
+  source_url: string | null;
+  source_domain: string | null;
+  image_url: string | null;
+  total_time_minutes: number | null;
+  servings: string | null;
+  tags: Tag[];
+  inserted_at: string;
+  contains_avoided?: boolean;
+  avoided_ingredients?: AvoidedIngredientMatch[];
+}
+
+export interface DashboardData {
+  dinner_ideas: DashboardRecipe[];
+  recently_added: DashboardRecipe[];
+  this_time_last_year: DashboardRecipe[];
+}
+
+export const dashboard = {
+  get: (token: string) =>
+    request<{ data: DashboardData }>('/dashboard', { token })
+};
+
 // Browse API
 export interface DomainInfo {
   domain: string;

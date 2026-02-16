@@ -70,6 +70,8 @@ defmodule ControlcopypastaWeb.Router do
   scope "/api", ControlcopypastaWeb do
     pipe_through :api_authenticated
 
+    get "/dashboard", DashboardController, :index
+
     resources "/recipes", RecipeController, except: [:new, :edit]
     post "/recipes/parse", RecipeController, :parse
     post "/recipes/:id/archive", RecipeController, :archive

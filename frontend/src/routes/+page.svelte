@@ -4,7 +4,7 @@
 
 	$effect(() => {
 		if ($isAuthenticated) {
-			goto('/recipes');
+			goto('/home');
 		}
 	});
 </script>
