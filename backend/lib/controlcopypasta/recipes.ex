@@ -184,11 +184,10 @@ defmodule Controlcopypasta.Recipes do
   defp apply_search(query, _), do: query
 
   # Filter out recipes that contain any of the avoided canonical ingredient IDs or names
-  defp apply_avoided_filter(query, %{"exclude_ingredient_ids" => ids} = params)
+  defp apply_avoided_filter(query, %{"exclude_ingredient_ids" => ids})
        when is_list(ids) and ids != [] do
     # Convert MapSet to list if needed
     id_list = if is_struct(ids, MapSet), do: MapSet.to_list(ids), else: ids
-    name_list = Map.get(params, "exclude_ingredient_names", [])
 
     # Exclude recipes that have any unparsed ingredients (no canonical_id),
     # since we can't verify they don't contain avoided ingredients.
