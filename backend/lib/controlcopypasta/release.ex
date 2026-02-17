@@ -542,6 +542,86 @@ defmodule Controlcopypasta.Release do
     end
   end
 
+  @doc """
+  Parses all unparsed recipe ingredients using TokenParser.
+
+  Example:
+    ./bin/controlcopypasta eval "Controlcopypasta.Release.parse_ingredients()"
+    ./bin/controlcopypasta eval "Controlcopypasta.Release.parse_ingredients(limit: 100)"
+  """
+  def parse_ingredients(opts \\ []) do
+    load_app()
+    Application.ensure_all_started(@app)
+
+    import Ecto.Query
+
+    alias Controlcopypasta.Repo
+    alias Controlcopypasta.Recipes.Recipe
+    alias Controlcopypasta.Ingredients
+    alias Controlcopypasta.Ingredients.TokenParser
+
+    limit = Keyword.get(opts, :limit)
+
+    IO.puts("Building ingredient lookup...")
+    lookup = Ingredients.build_ingredient_lookup()
+
+    query =
+      from r in Recipe,
+        where:
+          fragment(
+            "jsonb_array_length(?) > 0 AND EXISTS (SELECT 1 FROM jsonb_array_elements(?) AS elem WHERE elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = '')",
+            r.ingredients,
+            r.ingredients
+          ),
+        select: [:id, :ingredients, :ingredients_parsed_at]
+
+    query = if limit, do: Ecto.Query.limit(query, ^limit), else: query
+
+    recipes = Repo.all(query)
+    total = length(recipes)
+    IO.puts("Found #{total} recipes with unparsed ingredients")
+
+    {success, failed} =
+      recipes
+      |> Enum.with_index(1)
+      |> Enum.reduce({0, 0}, fn {recipe, index}, {s, f} ->
+        if rem(index, 500) == 0 or index == total do
+          IO.puts("Progress: #{index}/#{total} (#{s} ok, #{f} failed)")
+        end
+
+        try do
+          parsed_ingredients =
+            Enum.map(recipe.ingredients, fn ingredient ->
+              text = ingredient["text"]
+
+              if is_nil(text) or text == "" do
+                ingredient
+              else
+                parsed = TokenParser.parse(text, lookup: lookup)
+                jsonb = TokenParser.to_jsonb_map(parsed)
+                group = ingredient["group"]
+                if group, do: Map.put(jsonb, "group", group), else: jsonb
+              end
+            end)
+
+          recipe
+          |> Ecto.Changeset.change(%{
+            ingredients: parsed_ingredients,
+            ingredients_parsed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+          })
+          |> Repo.update!()
+
+          {s + 1, f}
+        rescue
+          e ->
+            IO.puts("  Error parsing recipe #{recipe.id}: #{inspect(e)}")
+            {s, f + 1}
+        end
+      end)
+
+    IO.puts("\nDone! #{success} parsed, #{failed} failed")
+  end
+
   defp repos do
     Application.fetch_env!(@app, :ecto_repos)
   end
