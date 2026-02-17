@@ -651,6 +651,56 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
     end
   end
 
+  describe "section header filtering" do
+    test "filters 'For the Toast' as section header" do
+      result = TokenParser.parse("For the Toast")
+
+      assert result.primary_ingredient == nil
+      assert result.ingredients == []
+    end
+
+    test "filters 'For the Dough' as section header" do
+      result = TokenParser.parse("For the Dough")
+
+      assert result.primary_ingredient == nil
+      assert result.ingredients == []
+    end
+
+    test "filters 'For the Poolish' as section header" do
+      result = TokenParser.parse("For the Poolish")
+
+      assert result.primary_ingredient == nil
+      assert result.ingredients == []
+    end
+
+    test "filters 'For the Pain de Mie' as section header" do
+      result = TokenParser.parse("For the Pain de Mie")
+
+      assert result.primary_ingredient == nil
+      assert result.ingredients == []
+    end
+
+    test "filters colon-ending headers like 'Dry ingredients:'" do
+      result = TokenParser.parse("Dry ingredients:")
+
+      assert result.primary_ingredient == nil
+      assert result.ingredients == []
+    end
+
+    test "filters ALL CAPS headers like 'FILLING'" do
+      result = TokenParser.parse("FILLING")
+
+      assert result.primary_ingredient == nil
+      assert result.ingredients == []
+    end
+
+    test "does not filter regular ingredients containing 'for'" do
+      result = TokenParser.parse("1 cup cream, for whipping")
+
+      assert result.primary_ingredient != nil
+    end
+  end
+
   describe "preprocessing - equipment filtering" do
     test "filters 'A deep-fry thermometer' as equipment" do
       result = TokenParser.parse("A deep-fry thermometer")

@@ -496,6 +496,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       trimmed == "" -> true
       # Ends with colon (section labels): "For the pastry:", "Dry ingredients:", "FILLING:"
       String.ends_with?(trimmed, ":") -> true
+      # "For the X" section headers: "For the Toast", "For the Poolish", "For the Dough"
+      Regex.match?(~r/^for\s+the\s+\w/i, trimmed) -> true
       # ALL CAPS single or two words with no digits: "FILLING", "TO SERVE", "GARNISH"
       Regex.match?(~r/^[A-Z][A-Z\s]{0,30}$/, trimmed) and not Regex.match?(~r/\d/, trimmed) -> true
       # Advertising / non-ingredient lines
