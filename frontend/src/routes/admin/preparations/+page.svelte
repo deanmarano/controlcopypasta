@@ -403,7 +403,7 @@
 
 	.error {
 		color: var(--color-error);
-		background: rgba(220, 74, 61, 0.1);
+		background: rgba(27, 58, 45, 0.1);
 		padding: var(--space-3);
 		border-radius: var(--radius-md);
 		margin-bottom: var(--space-4);
@@ -522,17 +522,17 @@
 	}
 
 	.delete-btn {
-		background: var(--color-marinara-100);
-		color: var(--color-marinara-700);
+		background: #fee2e2;
+		color: #a32828;
 	}
 
 	.delete-btn:hover {
-		background: var(--color-marinara-200);
+		background: #fecaca;
 	}
 
 	/* Button styles */
 	.btn-primary {
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: white;
 		border: none;
 		padding: var(--space-2) var(--space-4);
@@ -542,7 +542,7 @@
 	}
 
 	.btn-primary:hover {
-		background: var(--color-basil-600);
+		background: var(--color-marinara-700);
 	}
 
 	.btn-primary:disabled {
@@ -662,7 +662,7 @@
 	.form-group select:focus,
 	.form-group textarea:focus {
 		outline: none;
-		border-color: var(--color-basil-500);
+		border-color: var(--color-marinara-600);
 		box-shadow: 0 0 0 2px var(--color-basil-100);
 	}
 

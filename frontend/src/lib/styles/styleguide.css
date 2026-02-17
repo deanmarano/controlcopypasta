@@ -1,51 +1,51 @@
 /* ============================================
    ControlCopyPasta Design System
-   A spaghetti-inspired color palette
+   Editorial Botanical palette
    ============================================ */
 
 :root {
   /* ==========================================
-     COLOR PALETTE - Spaghetti Inspired
+     COLOR PALETTE - Editorial Botanical
      ========================================== */
 
-  /* --- Pasta (Egg Yolk Yellow Tones) ---
+  /* --- Pasta (Linen / Terracotta Tones) ---
      Used for: backgrounds, neutral surfaces, subtle accents */
-  --color-pasta-50: #fffef5;
-  --color-pasta-100: #fefce8;
-  --color-pasta-200: #fef8c3;
-  --color-pasta-300: #fef08a;
-  --color-pasta-400: #fadb5f;
-  --color-pasta-500: #eab308;  /* Primary pasta - egg yolk */
-  --color-pasta-600: #ca8a04;
-  --color-pasta-700: #a16207;
-  --color-pasta-800: #854d0e;
-  --color-pasta-900: #713f12;
+  --color-pasta-50: #fdfcf8;
+  --color-pasta-100: #f7f5f0;
+  --color-pasta-200: #ede9e0;
+  --color-pasta-300: #e8c4ab;
+  --color-pasta-400: #d4a07a;
+  --color-pasta-500: #c17c5a;  /* Primary terracotta */
+  --color-pasta-600: #a6664a;
+  --color-pasta-700: #8a5038;
+  --color-pasta-800: #6e3e2c;
+  --color-pasta-900: #542e1e;
 
-  /* --- Marinara (Rich Red Tones) ---
+  /* --- Marinara (Forest Green Tones) ---
      Used for: primary actions, CTA buttons, important accents */
-  --color-marinara-50: #fef2f2;
-  --color-marinara-100: #fee2e2;
-  --color-marinara-200: #fecaca;
-  --color-marinara-300: #fca5a5;
-  --color-marinara-400: #f87171;
-  --color-marinara-500: #dc4a3d;  /* Primary marinara */
-  --color-marinara-600: #c53030;
-  --color-marinara-700: #a32828;
-  --color-marinara-800: #862020;
-  --color-marinara-900: #6b1a1a;
+  --color-marinara-50: #f0f5f2;
+  --color-marinara-100: #ddeae4;
+  --color-marinara-200: #c2d1c8;
+  --color-marinara-300: #a8bfb0;
+  --color-marinara-400: #7fa898;
+  --color-marinara-500: #2d5a47;  /* Primary forest green */
+  --color-marinara-600: #1b3a2d;
+  --color-marinara-700: #162f24;
+  --color-marinara-800: #11261c;
+  --color-marinara-900: #0c1e14;
 
-  /* --- Basil (Fresh Green Tones) ---
+  /* --- Basil (Sage Green Tones) ---
      Used for: success states, secondary actions, fresh accents */
-  --color-basil-50: #f0fdf4;
-  --color-basil-100: #dcfce7;
-  --color-basil-200: #bbf7d0;
-  --color-basil-300: #86efac;
-  --color-basil-400: #4ade80;
-  --color-basil-500: #2d8c4e;  /* Primary basil */
-  --color-basil-600: #228b22;  /* Forest green */
-  --color-basil-700: #1a6b1a;
-  --color-basil-800: #155815;
-  --color-basil-900: #104510;
+  --color-basil-50: #f0f5f2;
+  --color-basil-100: #ddeae4;
+  --color-basil-200: #bcd3c8;
+  --color-basil-300: #96b9a8;
+  --color-basil-400: #729f8a;
+  --color-basil-500: #5a7264;  /* Primary sage */
+  --color-basil-600: #4a5e53;
+  --color-basil-700: #3b4c42;
+  --color-basil-800: #2c3a32;
+  --color-basil-900: #1d2820;
 
   /* --- Neutral/Utility Colors --- */
   --color-black: #1a1814;
@@ -66,7 +66,7 @@
      ========================================== */
 
   /* Background colors */
-  --bg-primary: var(--color-gray-100);
+  --bg-primary: var(--color-pasta-100);
   --bg-secondary: var(--color-gray-200);
   --bg-surface: var(--color-gray-50);
   --bg-card: var(--color-white);
@@ -93,8 +93,8 @@
   --color-success-bg: var(--color-basil-100);
   --color-warning: #d97706;
   --color-warning-bg: #fef3c7;
-  --color-error: var(--color-marinara-600);
-  --color-error-bg: var(--color-marinara-100);
+  --color-error: #c53030;
+  --color-error-bg: #fee2e2;
   --color-info: #0284c7;
   --color-info-bg: #e0f2fe;
 
@@ -104,7 +104,7 @@
 
   /* Font families */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
   --font-mono: 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', monospace;
 
   /* Font sizes */
@@ -184,9 +184,9 @@
   --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
 
   /* Colored shadows for depth */
-  --shadow-marinara: 0 4px 14px 0 rgba(220, 74, 61, 0.25);
-  --shadow-basil: 0 4px 14px 0 rgba(45, 140, 78, 0.25);
-  --shadow-pasta: 0 4px 14px 0 rgba(201, 173, 133, 0.35);
+  --shadow-marinara: 0 4px 14px 0 rgba(27, 58, 45, 0.25);
+  --shadow-basil: 0 4px 14px 0 rgba(90, 114, 100, 0.25);
+  --shadow-pasta: 0 4px 14px 0 rgba(193, 124, 90, 0.35);
 
   /* ==========================================
      TRANSITIONS
@@ -336,7 +336,7 @@ body {
 
 .btn:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(220, 74, 61, 0.3);
+  box-shadow: 0 0 0 3px rgba(27, 58, 45, 0.3);
 }
 
 .btn:disabled {
@@ -401,15 +401,15 @@ body {
   background-color: var(--color-pasta-200);
 }
 
-/* Danger Button */
+/* Danger Button - uses real red, not palette */
 .btn-danger {
-  background-color: var(--color-marinara-600);
+  background-color: #c53030;
   color: var(--color-white);
-  border-color: var(--color-marinara-600);
+  border-color: #c53030;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background-color: var(--color-marinara-700);
+  background-color: #a32828;
 }
 
 /* Button Sizes */
@@ -530,7 +530,7 @@ body {
 .form-input:focus {
   outline: none;
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(220, 74, 61, 0.15);
+  box-shadow: 0 0 0 3px rgba(27, 58, 45, 0.15);
 }
 
 .form-input::placeholder {
@@ -567,7 +567,7 @@ body {
 }
 
 .form-input-error:focus {
-  box-shadow: 0 0 0 3px rgba(197, 48, 48, 0.15);
+  box-shadow: 0 0 0 3px rgba(197, 48, 48, 0.15);  /* Keep real red for error state */
 }
 
 /* ============================================
@@ -643,7 +643,7 @@ body {
 .alert-error {
   background-color: var(--color-error-bg);
   border-left-color: var(--color-error);
-  color: var(--color-marinara-800);
+  color: #862020;
 }
 
 .alert-info {

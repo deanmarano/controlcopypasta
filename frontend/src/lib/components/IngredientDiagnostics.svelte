@@ -14,9 +14,9 @@
 
 	function getConfidenceColor(confidence: number | undefined): string {
 		if (confidence === undefined) return 'var(--color-gray-400)';
-		if (confidence >= 0.95) return 'var(--color-basil-500)';
-		if (confidence >= 0.8) return 'var(--color-pasta-500)';
-		return 'var(--color-marinara-500)';
+		if (confidence >= 0.95) return '#5a7264';
+		if (confidence >= 0.8) return '#d97706';
+		return '#c53030';
 	}
 
 	function formatParseTime(us: number): string {

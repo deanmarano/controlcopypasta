@@ -151,12 +151,12 @@
 		font-family: var(--font-serif);
 		font-size: var(--text-2xl);
 		font-weight: var(--font-bold);
-		color: var(--color-pasta-300);
+		color: var(--color-pasta-100);
 		text-decoration: none;
 	}
 
 	.brand:hover {
-		color: var(--color-pasta-200);
+		color: var(--color-pasta-50);
 	}
 
 	.nav-links {
@@ -182,6 +182,7 @@
 
 	.nav-links .admin-link {
 		color: var(--color-pasta-300);
+		font-style: italic;
 	}
 
 	.nav-links .admin-link:hover {
@@ -190,6 +191,7 @@
 
 	.mobile-nav .admin-link {
 		color: var(--color-pasta-300);
+		font-style: italic;
 	}
 
 	.mobile-nav .admin-link:hover {

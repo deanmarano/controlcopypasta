@@ -554,7 +554,7 @@
 	.primary-badge {
 		font-size: var(--text-xs);
 		padding: 2px 6px;
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: white;
 		border-radius: var(--radius-sm);
 	}
@@ -717,7 +717,7 @@
 	.default-badge {
 		font-size: var(--text-xs);
 		padding: var(--space-1) var(--space-2);
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: var(--color-white);
 		border-radius: var(--radius-sm);
 	}

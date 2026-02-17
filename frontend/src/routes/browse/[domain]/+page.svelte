@@ -274,7 +274,7 @@
 	.search-form input:focus {
 		outline: none;
 		border-color: var(--border-focus);
-		box-shadow: 0 0 0 3px rgba(220, 74, 61, 0.15);
+		box-shadow: 0 0 0 3px rgba(27, 58, 45, 0.15);
 	}
 
 	.search-form button {

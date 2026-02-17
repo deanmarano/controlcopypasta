@@ -1040,12 +1040,12 @@
 	}
 
 	.btn-danger {
-		color: var(--color-marinara-600);
-		border-color: var(--color-marinara-600);
+		color: #c53030;
+		border-color: #c53030;
 	}
 
 	.btn-danger:hover {
-		background: var(--color-marinara-600);
+		background: #c53030;
 		color: var(--color-white);
 	}
 
@@ -1530,7 +1530,7 @@
 
 	.score {
 		display: inline-block;
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: var(--color-white);
 		padding: var(--space-1) var(--space-2);
 		border-radius: var(--radius-full);
@@ -1569,15 +1569,15 @@
 	}
 
 	.btn-save {
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: var(--color-white);
-		border-color: var(--color-basil-500);
+		border-color: var(--color-marinara-600);
 		font-weight: var(--font-medium);
 	}
 
 	.btn-save:hover:not(:disabled) {
-		background: var(--color-basil-600);
-		border-color: var(--color-basil-600);
+		background: var(--color-marinara-700);
+		border-color: var(--color-marinara-700);
 	}
 
 	.btn-save:disabled {
@@ -1587,14 +1587,14 @@
 
 	/* Shopping list button */
 	.btn-shopping {
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: var(--color-white);
-		border-color: var(--color-basil-500);
+		border-color: var(--color-marinara-600);
 	}
 
 	.btn-shopping:hover {
-		background: var(--color-basil-600);
-		border-color: var(--color-basil-600);
+		background: var(--color-marinara-700);
+		border-color: var(--color-marinara-700);
 	}
 
 	/* Modal content styles */
@@ -1661,7 +1661,7 @@
 
 	.create-new button {
 		padding: var(--space-2) var(--space-4);
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: var(--color-white);
 		border: none;
 		border-radius: var(--radius-md);

@@ -184,7 +184,7 @@
 	input:focus {
 		outline: none;
 		border-color: var(--border-focus);
-		box-shadow: 0 0 0 3px rgba(220, 74, 61, 0.15);
+		box-shadow: 0 0 0 3px rgba(27, 58, 45, 0.15);
 	}
 
 	.button-group {
@@ -234,11 +234,11 @@
 	}
 
 	.passkey-button {
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 	}
 
 	.passkey-button:hover:not(:disabled) {
-		background: var(--color-basil-600);
+		background: var(--color-marinara-700);
 		box-shadow: var(--shadow-basil);
 	}
 

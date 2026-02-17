@@ -10,7 +10,7 @@
   <title>Styleguide | ControlCopyPasta</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </svelte:head>
 
 <div class="styleguide">
@@ -22,10 +22,10 @@
   <!-- Color Palette Section -->
   <section class="section">
     <h2>Color Palette</h2>
-    <p class="section-description">A warm, appetizing palette inspired by the ingredients of a perfect plate of spaghetti.</p>
+    <p class="section-description">An editorial botanical palette of forest green, terracotta, and sage.</p>
 
-    <h3>Pasta</h3>
-    <p class="color-description">Rich egg yolk yellows for backgrounds, accents, and highlights.</p>
+    <h3>Pasta (Linen / Terracotta)</h3>
+    <p class="color-description">Warm linen and terracotta tones for backgrounds, accents, and highlights.</p>
     <div class="color-grid">
       <div class="color-swatch pasta-50"><span>50</span></div>
       <div class="color-swatch pasta-100"><span>100</span></div>
@@ -39,8 +39,8 @@
       <div class="color-swatch pasta-900"><span>900</span></div>
     </div>
 
-    <h3>Marinara</h3>
-    <p class="color-description">Rich, vibrant reds for primary actions and important accents.</p>
+    <h3>Marinara (Forest Green)</h3>
+    <p class="color-description">Deep forest greens for primary actions and important accents.</p>
     <div class="color-grid">
       <div class="color-swatch marinara-50"><span>50</span></div>
       <div class="color-swatch marinara-100"><span>100</span></div>
@@ -54,8 +54,8 @@
       <div class="color-swatch marinara-900"><span>900</span></div>
     </div>
 
-    <h3>Basil</h3>
-    <p class="color-description">Fresh greens for success states and secondary actions.</p>
+    <h3>Basil (Sage)</h3>
+    <p class="color-description">Muted sage greens for success states and secondary elements.</p>
     <div class="color-grid">
       <div class="color-swatch basil-50"><span>50</span></div>
       <div class="color-swatch basil-100"><span>100</span></div>
@@ -73,7 +73,7 @@
   <!-- Typography Section -->
   <section class="section">
     <h2>Typography</h2>
-    <p class="section-description">A combination of Playfair Display for headings and Inter for body text creates a warm yet modern feel.</p>
+    <p class="section-description">A combination of Cormorant Garamond for headings and Inter for body text creates an editorial, botanical feel.</p>
 
     <div class="typography-samples">
       <div class="type-sample">
@@ -410,7 +410,7 @@
     font-size: var(--text-5xl);
     font-weight: var(--font-bold);
     margin: 0 0 var(--space-2) 0;
-    color: var(--color-pasta-300);
+    color: var(--color-pasta-100);
   }
 
   .styleguide-header p {
@@ -481,41 +481,41 @@
     font-weight: var(--font-medium);
   }
 
-  /* Pasta swatches - Egg Yolk Yellow */
-  .pasta-50 { background: #fffef5; color: #333; }
-  .pasta-100 { background: #fefce8; color: #333; }
-  .pasta-200 { background: #fef8c3; color: #333; }
-  .pasta-300 { background: #fef08a; color: #333; }
-  .pasta-400 { background: #fadb5f; color: #333; }
-  .pasta-500 { background: #eab308; color: #333; }
-  .pasta-600 { background: #ca8a04; color: #fff; }
-  .pasta-700 { background: #a16207; color: #fff; }
-  .pasta-800 { background: #854d0e; color: #fff; }
-  .pasta-900 { background: #713f12; color: #fff; }
+  /* Pasta swatches - Linen / Terracotta */
+  .pasta-50 { background: #fdfcf8; color: #333; }
+  .pasta-100 { background: #f7f5f0; color: #333; }
+  .pasta-200 { background: #ede9e0; color: #333; }
+  .pasta-300 { background: #e8c4ab; color: #333; }
+  .pasta-400 { background: #d4a07a; color: #333; }
+  .pasta-500 { background: #c17c5a; color: #fff; }
+  .pasta-600 { background: #a6664a; color: #fff; }
+  .pasta-700 { background: #8a5038; color: #fff; }
+  .pasta-800 { background: #6e3e2c; color: #fff; }
+  .pasta-900 { background: #542e1e; color: #fff; }
 
-  /* Marinara swatches */
-  .marinara-50 { background: #fef2f2; color: #333; }
-  .marinara-100 { background: #fee2e2; color: #333; }
-  .marinara-200 { background: #fecaca; color: #333; }
-  .marinara-300 { background: #fca5a5; color: #333; }
-  .marinara-400 { background: #f87171; color: #333; }
-  .marinara-500 { background: #dc4a3d; color: #fff; }
-  .marinara-600 { background: #c53030; color: #fff; }
-  .marinara-700 { background: #a32828; color: #fff; }
-  .marinara-800 { background: #862020; color: #fff; }
-  .marinara-900 { background: #6b1a1a; color: #fff; }
+  /* Marinara swatches - Forest Green */
+  .marinara-50 { background: #f0f5f2; color: #333; }
+  .marinara-100 { background: #ddeae4; color: #333; }
+  .marinara-200 { background: #c2d1c8; color: #333; }
+  .marinara-300 { background: #a8bfb0; color: #333; }
+  .marinara-400 { background: #7fa898; color: #333; }
+  .marinara-500 { background: #2d5a47; color: #fff; }
+  .marinara-600 { background: #1b3a2d; color: #fff; }
+  .marinara-700 { background: #162f24; color: #fff; }
+  .marinara-800 { background: #11261c; color: #fff; }
+  .marinara-900 { background: #0c1e14; color: #fff; }
 
-  /* Basil swatches */
-  .basil-50 { background: #f0fdf4; color: #333; }
-  .basil-100 { background: #dcfce7; color: #333; }
-  .basil-200 { background: #bbf7d0; color: #333; }
-  .basil-300 { background: #86efac; color: #333; }
-  .basil-400 { background: #4ade80; color: #333; }
-  .basil-500 { background: #2d8c4e; color: #fff; }
-  .basil-600 { background: #228b22; color: #fff; }
-  .basil-700 { background: #1a6b1a; color: #fff; }
-  .basil-800 { background: #155815; color: #fff; }
-  .basil-900 { background: #104510; color: #fff; }
+  /* Basil swatches - Sage */
+  .basil-50 { background: #f0f5f2; color: #333; }
+  .basil-100 { background: #ddeae4; color: #333; }
+  .basil-200 { background: #bcd3c8; color: #333; }
+  .basil-300 { background: #96b9a8; color: #333; }
+  .basil-400 { background: #729f8a; color: #333; }
+  .basil-500 { background: #5a7264; color: #fff; }
+  .basil-600 { background: #4a5e53; color: #fff; }
+  .basil-700 { background: #3b4c42; color: #fff; }
+  .basil-800 { background: #2c3a32; color: #fff; }
+  .basil-900 { background: #1d2820; color: #fff; }
 
   /* Typography samples */
   .typography-samples {
@@ -701,9 +701,9 @@
   .shadow-md { box-shadow: var(--shadow-md); }
   .shadow-lg { box-shadow: var(--shadow-lg); }
   .shadow-xl { box-shadow: var(--shadow-xl); }
-  .shadow-marinara-demo { box-shadow: 0 4px 14px 0 rgba(220, 74, 61, 0.25); }
-  .shadow-basil-demo { box-shadow: 0 4px 14px 0 rgba(45, 140, 78, 0.25); }
-  .shadow-pasta-demo { box-shadow: 0 4px 14px 0 rgba(201, 173, 133, 0.35); }
+  .shadow-marinara-demo { box-shadow: 0 4px 14px 0 rgba(27, 58, 45, 0.25); }
+  .shadow-basil-demo { box-shadow: 0 4px 14px 0 rgba(90, 114, 100, 0.25); }
+  .shadow-pasta-demo { box-shadow: 0 4px 14px 0 rgba(193, 124, 90, 0.35); }
 
   @media (max-width: 768px) {
     .styleguide-header h1 {

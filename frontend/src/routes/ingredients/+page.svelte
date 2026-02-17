@@ -234,7 +234,7 @@
 	.search-input:focus {
 		outline: none;
 		border-color: var(--border-focus);
-		box-shadow: 0 0 0 3px rgba(220, 74, 61, 0.15);
+		box-shadow: 0 0 0 3px rgba(27, 58, 45, 0.15);
 	}
 
 	.category-select,
@@ -280,7 +280,7 @@
 
 	.ingredient-card:hover {
 		border-color: var(--color-marinara-500);
-		box-shadow: 0 2px 8px rgba(220, 74, 61, 0.15);
+		box-shadow: 0 2px 8px rgba(27, 58, 45, 0.15);
 	}
 
 	.ingredient-image {

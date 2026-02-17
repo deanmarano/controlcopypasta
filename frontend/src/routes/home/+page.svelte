@@ -263,12 +263,12 @@
 	.add-recipe-form input:focus {
 		outline: none;
 		border-color: var(--border-focus);
-		box-shadow: 0 0 0 3px rgba(220, 74, 61, 0.15);
+		box-shadow: 0 0 0 3px rgba(27, 58, 45, 0.15);
 	}
 
 	.add-recipe-form button {
 		padding: var(--space-4) var(--space-8);
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: var(--color-white);
 		border: none;
 		border-radius: var(--radius-md);
@@ -280,7 +280,7 @@
 	}
 
 	.add-recipe-form button:hover:not(:disabled) {
-		background: var(--color-basil-600);
+		background: var(--color-marinara-700);
 		box-shadow: var(--shadow-basil);
 	}
 
@@ -396,7 +396,7 @@
 		width: 100%;
 		margin-top: var(--space-2);
 		padding: var(--space-1) var(--space-2);
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: var(--color-white);
 		border: none;
 		border-radius: var(--radius-sm);
@@ -407,7 +407,7 @@
 	}
 
 	.save-btn:hover:not(:disabled) {
-		background: var(--color-basil-600);
+		background: var(--color-marinara-700);
 	}
 
 	.save-btn:disabled {

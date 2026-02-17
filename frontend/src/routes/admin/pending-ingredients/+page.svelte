@@ -511,7 +511,7 @@
 
 	.scan-btn {
 		padding: var(--space-2) var(--space-4);
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: white;
 		border: none;
 		border-radius: var(--radius-md);
@@ -520,7 +520,7 @@
 	}
 
 	.scan-btn:hover:not(:disabled) {
-		background: var(--color-basil-600);
+		background: var(--color-marinara-700);
 	}
 
 	.scan-btn:disabled {
@@ -591,7 +591,7 @@
 
 	.error {
 		color: var(--color-error);
-		background: rgba(220, 74, 61, 0.1);
+		background: rgba(27, 58, 45, 0.1);
 		padding: var(--space-3);
 		border-radius: var(--radius-md);
 		margin-bottom: var(--space-4);
@@ -771,12 +771,12 @@
 	}
 
 	.approve-btn {
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: white;
 	}
 
 	.approve-btn:hover:not(:disabled) {
-		background: var(--color-basil-600);
+		background: var(--color-marinara-700);
 	}
 
 	.merge-btn {

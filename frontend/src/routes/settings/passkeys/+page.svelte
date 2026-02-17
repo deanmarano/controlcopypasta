@@ -225,12 +225,12 @@
 	.add-form input:focus {
 		outline: none;
 		border-color: var(--border-focus);
-		box-shadow: 0 0 0 3px rgba(220, 74, 61, 0.15);
+		box-shadow: 0 0 0 3px rgba(27, 58, 45, 0.15);
 	}
 
 	.add-form button {
 		padding: var(--space-3) var(--space-6);
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: var(--color-white);
 		border: none;
 		border-radius: var(--radius-md);
@@ -241,7 +241,7 @@
 	}
 
 	.add-form button:hover:not(:disabled) {
-		background: var(--color-basil-600);
+		background: var(--color-marinara-700);
 	}
 
 	.add-form button.cancel {
@@ -259,7 +259,7 @@
 
 	.add-button {
 		padding: var(--space-3) var(--space-6);
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: var(--color-white);
 		border: none;
 		border-radius: var(--radius-md);
@@ -271,7 +271,7 @@
 	}
 
 	.add-button:hover:not(:disabled) {
-		background: var(--color-basil-600);
+		background: var(--color-marinara-700);
 	}
 
 	.add-button:disabled {

@@ -134,13 +134,13 @@
 	function getStatusColor(status: string): string {
 		switch (status) {
 			case 'calculated':
-				return 'var(--color-basil-500)';
+				return '#5a7264';
 			case 'no_match':
 			case 'no_quantity':
-				return 'var(--color-marinara-500)';
+				return '#c53030';
 			case 'no_density':
 			case 'no_nutrition':
-				return 'var(--color-pasta-600)';
+				return '#d97706';
 			default:
 				return 'var(--color-gray-500)';
 		}

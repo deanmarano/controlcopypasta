@@ -131,7 +131,7 @@
 	.cta {
 		display: inline-block;
 		padding: var(--space-4) var(--space-10);
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: var(--color-white);
 		text-decoration: none;
 		border-radius: var(--radius-md);
@@ -142,7 +142,7 @@
 	}
 
 	.cta:hover {
-		background: var(--color-basil-600);
+		background: var(--color-marinara-700);
 		box-shadow: var(--shadow-basil);
 		transform: translateY(-2px);
 	}

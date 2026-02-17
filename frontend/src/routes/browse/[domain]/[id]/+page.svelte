@@ -450,13 +450,13 @@
 	}
 
 	.btn-primary {
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: var(--color-white);
-		border-color: var(--color-basil-500);
+		border-color: var(--color-marinara-600);
 	}
 
 	.btn-primary:hover:not(:disabled) {
-		background: var(--color-basil-600);
+		background: var(--color-marinara-700);
 	}
 
 	.added-badge {

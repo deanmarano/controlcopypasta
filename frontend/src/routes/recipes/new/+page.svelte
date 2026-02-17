@@ -314,7 +314,7 @@
 	.parse-form input:focus {
 		outline: none;
 		border-color: var(--border-focus);
-		box-shadow: 0 0 0 3px rgba(220, 74, 61, 0.15);
+		box-shadow: 0 0 0 3px rgba(27, 58, 45, 0.15);
 	}
 
 	.parse-form button {
@@ -390,7 +390,7 @@
 	textarea:focus {
 		outline: none;
 		border-color: var(--border-focus);
-		box-shadow: 0 0 0 3px rgba(220, 74, 61, 0.15);
+		box-shadow: 0 0 0 3px rgba(27, 58, 45, 0.15);
 	}
 
 	textarea {
@@ -430,7 +430,7 @@
 
 	.form-actions button {
 		padding: var(--space-3) var(--space-8);
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: var(--color-white);
 		border: none;
 		border-radius: var(--radius-md);
@@ -441,7 +441,7 @@
 	}
 
 	.form-actions button:hover:not(:disabled) {
-		background: var(--color-basil-600);
+		background: var(--color-marinara-700);
 		box-shadow: var(--shadow-basil);
 	}
 

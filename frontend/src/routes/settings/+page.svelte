@@ -680,7 +680,7 @@
 	.search-wrapper input:focus {
 		outline: none;
 		border-color: var(--border-focus);
-		box-shadow: 0 0 0 3px rgba(220, 74, 61, 0.15);
+		box-shadow: 0 0 0 3px rgba(27, 58, 45, 0.15);
 	}
 
 	.search-spinner {
@@ -756,7 +756,7 @@
 	.select-wrapper button,
 	.add-form button {
 		padding: var(--space-3) var(--space-4);
-		background: var(--color-basil-500);
+		background: var(--color-marinara-600);
 		color: var(--color-white);
 		border: none;
 		border-radius: var(--radius-md);
@@ -769,7 +769,7 @@
 
 	.select-wrapper button:hover:not(:disabled),
 	.add-form button:hover:not(:disabled) {
-		background: var(--color-basil-600);
+		background: var(--color-marinara-700);
 	}
 
 	.select-wrapper button:disabled,
@@ -794,7 +794,7 @@
 	.add-form input:focus {
 		outline: none;
 		border-color: var(--border-focus);
-		box-shadow: 0 0 0 3px rgba(220, 74, 61, 0.15);
+		box-shadow: 0 0 0 3px rgba(27, 58, 45, 0.15);
 	}
 
 	.error {
@@ -802,7 +802,7 @@
 		font-size: var(--text-sm);
 		margin: 0 0 var(--space-4);
 		padding: var(--space-3);
-		background: rgba(220, 74, 61, 0.1);
+		background: rgba(27, 58, 45, 0.1);
 		border-radius: var(--radius-md);
 	}
 
