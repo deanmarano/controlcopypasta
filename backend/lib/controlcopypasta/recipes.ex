@@ -189,9 +189,10 @@ defmodule Controlcopypasta.Recipes do
     # Convert MapSet to list if needed
     id_list = if is_struct(ids, MapSet), do: MapSet.to_list(ids), else: ids
 
-    # Exclude recipes that have any unparsed ingredients (no canonical_id),
-    # since we can't verify they don't contain avoided ingredients.
-    # Also exclude recipes that contain a known avoided ingredient.
+    # Exclude recipes that have any unparsed ingredients (no canonical_id
+    # and not marked as skipped), since we can't verify they don't contain
+    # avoided ingredients. Skipped ingredients (salt & pepper, equipment, etc.)
+    # are considered parsed. Also exclude recipes containing an avoided ingredient.
     from r in query,
       where:
         fragment(
@@ -199,7 +200,8 @@ defmodule Controlcopypasta.Recipes do
           jsonb_array_length(?) > 0
           AND NOT EXISTS (
             SELECT 1 FROM jsonb_array_elements(?) AS elem
-            WHERE elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = ''
+            WHERE (elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = '')
+              AND (elem->>'skipped')::boolean IS NOT TRUE
           )
           AND NOT EXISTS (
             SELECT 1 FROM jsonb_array_elements(?) AS elem
