@@ -35,8 +35,8 @@
 	// Allergen selection
 	let selectedAllergen = $state('');
 
-	// Animal type selection
-	let selectedAnimal = $state('');
+	// Animal type grouped selection
+	let animalToggles = $state<Record<string, boolean>>({});
 
 	// Preference toggle
 	let savingPreferences = $state(false);
@@ -187,19 +187,138 @@
 		}
 	}
 
-	// Add avoided animal type
-	async function addAnimal() {
-		if (!selectedAnimal) return;
+	// Animal type grouping
+	const landAnimals = ['beef', 'bison', 'chicken', 'duck', 'goat', 'lamb', 'pork', 'turkey'];
+	const seaAnimals = [
+		'anchovy',
+		'clam',
+		'cod',
+		'crab',
+		'fish',
+		'halibut',
+		'lobster',
+		'mussel',
+		'octopus',
+		'salmon',
+		'sardine',
+		'scallop',
+		'seafood',
+		'shrimp',
+		'snail',
+		'tilapia',
+		'trout',
+		'tuna'
+	];
+
+	function getAvoidedAnimalTypes(): Set<string> {
+		return new Set(
+			items.filter((i) => i.avoidance_type === 'animal' && i.animal_type).map((i) => i.animal_type!)
+		);
+	}
+
+	function isAllLandAvoided(): boolean {
+		const avoided = getAvoidedAnimalTypes();
+		const available = options?.animal_types ?? [];
+		return landAnimals.filter((a) => available.includes(a)).every((a) => avoided.has(a));
+	}
+
+	function isAllSeaAvoided(): boolean {
+		const avoided = getAvoidedAnimalTypes();
+		const available = options?.animal_types ?? [];
+		return seaAnimals.filter((a) => available.includes(a)).every((a) => avoided.has(a));
+	}
+
+	async function toggleAnimal(animalType: string) {
 		const token = authStore.getToken();
 		if (!token) return;
-
 		error = '';
+
+		const existing = items.find(
+			(i) => i.avoidance_type === 'animal' && i.animal_type === animalType
+		);
+
 		try {
-			const result = await avoidedIngredients.createByAnimal(token, selectedAnimal);
-			items = [...items, result.data].sort((a, b) => a.display_name.localeCompare(b.display_name));
-			selectedAnimal = '';
+			if (existing) {
+				await avoidedIngredients.delete(token, existing.id);
+				items = items.filter((i) => i.id !== existing.id);
+			} else {
+				const result = await avoidedIngredients.createByAnimal(token, animalType);
+				items = [...items, result.data].sort((a, b) =>
+					a.display_name.localeCompare(b.display_name)
+				);
+			}
 		} catch {
-			error = 'Failed to add animal type (may already exist in your list)';
+			error = 'Failed to update animal avoidance';
+		}
+	}
+
+	async function toggleAllLand() {
+		const token = authStore.getToken();
+		if (!token) return;
+		error = '';
+
+		const avoided = getAvoidedAnimalTypes();
+		const available = options?.animal_types ?? [];
+		const allAvoided = isAllLandAvoided();
+
+		try {
+			if (allAvoided) {
+				// Remove all land animals
+				for (const animal of landAnimals.filter((a) => available.includes(a))) {
+					const existing = items.find(
+						(i) => i.avoidance_type === 'animal' && i.animal_type === animal
+					);
+					if (existing) {
+						await avoidedIngredients.delete(token, existing.id);
+						items = items.filter((i) => i.id !== existing.id);
+					}
+				}
+			} else {
+				// Add missing land animals
+				for (const animal of landAnimals.filter((a) => available.includes(a))) {
+					if (!avoided.has(animal)) {
+						const result = await avoidedIngredients.createByAnimal(token, animal);
+						items = [...items, result.data];
+					}
+				}
+				items = items.sort((a, b) => a.display_name.localeCompare(b.display_name));
+			}
+		} catch {
+			error = 'Failed to update animal avoidances';
+		}
+	}
+
+	async function toggleAllSea() {
+		const token = authStore.getToken();
+		if (!token) return;
+		error = '';
+
+		const avoided = getAvoidedAnimalTypes();
+		const available = options?.animal_types ?? [];
+		const allAvoided = isAllSeaAvoided();
+
+		try {
+			if (allAvoided) {
+				for (const animal of seaAnimals.filter((a) => available.includes(a))) {
+					const existing = items.find(
+						(i) => i.avoidance_type === 'animal' && i.animal_type === animal
+					);
+					if (existing) {
+						await avoidedIngredients.delete(token, existing.id);
+						items = items.filter((i) => i.id !== existing.id);
+					}
+				}
+			} else {
+				for (const animal of seaAnimals.filter((a) => available.includes(a))) {
+					if (!avoided.has(animal)) {
+						const result = await avoidedIngredients.createByAnimal(token, animal);
+						items = [...items, result.data];
+					}
+				}
+				items = items.sort((a, b) => a.display_name.localeCompare(b.display_name));
+			}
+		} catch {
+			error = 'Failed to update animal avoidances';
 		}
 	}
 
@@ -443,15 +562,54 @@
 			<!-- Animal Type Selection -->
 			{#if options?.animal_types}
 				<div class="add-method">
-					<h3>Avoid Animal Type</h3>
-					<div class="select-wrapper">
-						<select bind:value={selectedAnimal}>
-							<option value="">Select an animal...</option>
-							{#each options.animal_types as animal}
-								<option value={animal}>{formatLabel(animal)}</option>
+					<h3>Avoid Animal Types</h3>
+
+					<!-- Land Animals -->
+					<div class="animal-group">
+						<label class="group-toggle">
+							<input
+								type="checkbox"
+								checked={isAllLandAvoided()}
+								onchange={toggleAllLand}
+							/>
+							<strong>All Land Meat</strong>
+						</label>
+						<div class="animal-checkboxes">
+							{#each landAnimals.filter((a) => options.animal_types.includes(a)) as animal}
+								<label class="animal-toggle">
+									<input
+										type="checkbox"
+										checked={getAvoidedAnimalTypes().has(animal)}
+										onchange={() => toggleAnimal(animal)}
+									/>
+									{formatLabel(animal)}
+								</label>
 							{/each}
-						</select>
-						<button onclick={addAnimal} disabled={!selectedAnimal}>Add Animal</button>
+						</div>
+					</div>
+
+					<!-- Seafood -->
+					<div class="animal-group">
+						<label class="group-toggle">
+							<input
+								type="checkbox"
+								checked={isAllSeaAvoided()}
+								onchange={toggleAllSea}
+							/>
+							<strong>All Seafood</strong>
+						</label>
+						<div class="animal-checkboxes">
+							{#each seaAnimals.filter((a) => options.animal_types.includes(a)) as animal}
+								<label class="animal-toggle">
+									<input
+										type="checkbox"
+										checked={getAvoidedAnimalTypes().has(animal)}
+										onchange={() => toggleAnimal(animal)}
+									/>
+									{formatLabel(animal)}
+								</label>
+							{/each}
+						</div>
 					</div>
 				</div>
 			{/if}
@@ -663,6 +821,52 @@
 		font-size: var(--text-sm);
 		font-weight: var(--font-medium);
 		color: var(--text-secondary);
+	}
+
+	.animal-group {
+		margin-bottom: var(--space-4);
+	}
+
+	.animal-group:last-child {
+		margin-bottom: 0;
+	}
+
+	.group-toggle {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		cursor: pointer;
+		padding: var(--space-2) 0;
+		border-bottom: var(--border-width-thin) solid var(--border-light);
+		margin-bottom: var(--space-2);
+	}
+
+	.group-toggle input[type='checkbox'] {
+		width: 18px;
+		height: 18px;
+		accent-color: var(--color-marinara-600);
+	}
+
+	.animal-checkboxes {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+		gap: var(--space-1) var(--space-3);
+		padding-left: var(--space-2);
+	}
+
+	.animal-toggle {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		cursor: pointer;
+		padding: var(--space-1) 0;
+		font-size: var(--text-sm);
+	}
+
+	.animal-toggle input[type='checkbox'] {
+		width: 16px;
+		height: 16px;
+		accent-color: var(--color-basil-500);
 	}
 
 	.search-wrapper {
