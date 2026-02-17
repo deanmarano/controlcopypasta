@@ -136,7 +136,7 @@ defmodule ControlcopypastaWeb.RecipeController do
     user = conn.assigns.current_user
     limit = Map.get(params, "limit", "5") |> parse_int(5) |> min(20)
 
-    case Recipes.get_recipe_for_user(user.id, id) do
+    case Recipes.get_recipe_for_user(user.id, id) || Recipes.get_recipe(id) do
       nil ->
         {:error, :not_found}
 
@@ -163,7 +163,7 @@ defmodule ControlcopypastaWeb.RecipeController do
   def list_decisions(conn, %{"id" => id}) do
     user = conn.assigns.current_user
 
-    case Recipes.get_recipe_for_user(user.id, id) do
+    case Recipes.get_recipe_for_user(user.id, id) || Recipes.get_recipe(id) do
       nil ->
         {:error, :not_found}
 
@@ -233,7 +233,7 @@ defmodule ControlcopypastaWeb.RecipeController do
     decisions_params = Map.get(params, "decisions", %{})
     source = parse_source_param(Map.get(params, "source"))
 
-    case Recipes.get_recipe_for_user(user.id, id) do
+    case Recipes.get_recipe_for_user(user.id, id) || Recipes.get_recipe(id) do
       nil ->
         {:error, :not_found}
 
