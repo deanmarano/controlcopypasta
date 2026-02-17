@@ -584,84 +584,92 @@
 			</div>
 		{/if}
 
-		<header>
-			<div class="header-content">
+		<!-- Hero image with overlay -->
+		<div class="recipe-hero" class:no-image={!recipe.image_url}>
+			{#if recipe.image_url}
+				<img src={recipe.image_url} alt={recipe.title} class="recipe-hero-img" />
+			{/if}
+			<div class="recipe-hero-overlay" class:static-overlay={!recipe.image_url}>
+				{#if recipe.tags.length > 0}
+					<div class="hero-tags no-print">
+						{#each recipe.tags as tag}
+							<span class="hero-tag">{tag.name}</span>
+						{/each}
+					</div>
+				{/if}
 				<h1>{recipe.title}</h1>
 				{#if recipe.source_url}
-					<a href={recipe.source_url} target="_blank" rel="noopener noreferrer" class="source-link">
-						View original at {recipe.source_domain}
+					<a href={recipe.source_url} target="_blank" rel="noopener noreferrer" class="hero-source">
+						{recipe.source_domain}
 					</a>
 				{/if}
 			</div>
-			<div class="actions no-print">
+		</div>
+
+		<div class="recipe-content">
+			<!-- Meta bar -->
+			<div class="meta-bar">
+				{#if recipe.prep_time_minutes}
+					<div class="meta-item">
+						<span class="meta-label">Prep</span>
+						<span class="meta-value">{formatTime(recipe.prep_time_minutes)}</span>
+					</div>
+				{/if}
+				{#if recipe.cook_time_minutes}
+					<div class="meta-item">
+						<span class="meta-label">Cook</span>
+						<span class="meta-value">{formatTime(recipe.cook_time_minutes)}</span>
+					</div>
+				{/if}
+				{#if recipe.total_time_minutes}
+					<div class="meta-item">
+						<span class="meta-label">Total</span>
+						<span class="meta-value">{formatTime(recipe.total_time_minutes)}</span>
+					</div>
+				{/if}
+				{#if recipe.servings}
+					<div class="meta-item">
+						<span class="meta-label">Serves</span>
+						<span class="meta-value">{recipe.servings}</span>
+					</div>
+				{/if}
+			</div>
+
+			{#if recipe.description}
+				<p class="description">{recipe.description}</p>
+			{/if}
+
+			<!-- Action bar -->
+			<div class="action-bar no-print">
 				{#if recipe.is_owned === false}
-					<button onclick={handleSaveToMyRecipes} class="btn btn-save" disabled={savingCopy}>
+					<button onclick={handleSaveToMyRecipes} class="btn btn-primary" disabled={savingCopy}>
 						{savingCopy ? 'Saving...' : 'Save to My Recipes'}
 					</button>
-					<button onclick={handlePrint} class="btn">Print</button>
+					<button onclick={handlePrint} class="btn btn-outline">Print</button>
 				{:else}
-					<button onclick={openShoppingModal} class="btn btn-shopping">Add to List</button>
-					<button onclick={handlePrint} class="btn">Print</button>
-					<a href="/recipes/{recipe.id}/edit" class="btn">Edit</a>
+					<button onclick={openShoppingModal} class="btn btn-primary">Add to List</button>
+					<button onclick={handlePrint} class="btn btn-outline">Print</button>
+					<a href="/recipes/{recipe.id}/edit" class="btn btn-outline">Edit</a>
 					{#if recipe.archived_at}
-						<button onclick={handleUnarchive} class="btn">Unarchive</button>
+						<button onclick={handleUnarchive} class="btn btn-outline">Unarchive</button>
 					{:else}
-						<button onclick={handleArchive} class="btn">Archive</button>
+						<button onclick={handleArchive} class="btn btn-outline">Archive</button>
 					{/if}
 					<button onclick={handleDelete} class="btn btn-danger">Delete</button>
 				{/if}
+				<div class="scale-controls">
+					<button onclick={() => setScale(scale - 0.25)} class="scale-btn" disabled={scale <= 0.25}>-</button>
+					<span class="scale-value">{scale}x</span>
+					<button onclick={() => setScale(scale + 0.25)} class="scale-btn" disabled={scale >= 4}>+</button>
+				</div>
 			</div>
-		</header>
 
-		{#if recipe.image_url}
-			<img src={recipe.image_url} alt={recipe.title} class="recipe-image" />
-		{/if}
-
-		{#if recipe.description}
-			<p class="description">{recipe.description}</p>
-		{/if}
-
-		<div class="meta-grid">
-			{#if recipe.prep_time_minutes}
-				<div class="meta-item">
-					<span class="label">Prep Time</span>
-					<span class="value">{formatTime(recipe.prep_time_minutes)}</span>
-				</div>
-			{/if}
-			{#if recipe.cook_time_minutes}
-				<div class="meta-item">
-					<span class="label">Cook Time</span>
-					<span class="value">{formatTime(recipe.cook_time_minutes)}</span>
-				</div>
-			{/if}
-			{#if recipe.total_time_minutes}
-				<div class="meta-item">
-					<span class="label">Total Time</span>
-					<span class="value">{formatTime(recipe.total_time_minutes)}</span>
-				</div>
-			{/if}
-			{#if recipe.servings}
-				<div class="meta-item">
-					<span class="label">Servings</span>
-					<span class="value">{recipe.servings}</span>
-				</div>
-			{/if}
-		</div>
-
-		{#if recipe.tags.length > 0}
-			<div class="tags no-print">
-				{#each recipe.tags as tag}
-					<span class="tag">{tag.name}</span>
-				{/each}
-			</div>
-		{/if}
-
-		<div class="recipe-sections">
-			<section class="ingredients">
-				<div class="section-header">
-					<h2>Ingredients & Prep</h2>
-					<div class="view-controls no-print">
-						<div class="view-toggle">
+			<!-- Ingredients & Instructions two-column layout -->
+			<div class="recipe-body">
+				<aside class="ingredients">
+					<div class="section-header">
+						<h2>Ingredients</h2>
+						<div class="view-toggle no-print">
 							<button
 								class="view-btn"
 								class:active={ingredientView === 'unified'}
@@ -677,210 +685,206 @@
 								Split
 							</button>
 						</div>
-						<div class="scale-controls">
-							<button onclick={() => setScale(scale - 0.25)} class="scale-btn" disabled={scale <= 0.25}>-</button>
-							<span class="scale-value">{scale}x</span>
-							<button onclick={() => setScale(scale + 0.25)} class="scale-btn" disabled={scale >= 4}>+</button>
-						</div>
 					</div>
-				</div>
 
-				{#if ingredientView === 'unified'}
-					<!-- Unified view: Original ingredient text with scaling -->
-					<ul>
-						{#each recipe.ingredients as ingredient, i}
-							<li>
-								<div class="ingredient-line">
-									<span class="ingredient-text">{scaleIngredient(ingredient.text)}</span>
-									{#if scale !== 1 && getPackageSuggestion(ingredient.text)}
-										<span class="package-hint" title={getPackageSuggestion(ingredient.text)}>
-											<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-										</span>
-									{/if}
-								</div>
-							</li>
-						{/each}
-					</ul>
+					{#if ingredientView === 'unified'}
+						<ul class="ingredient-list">
+							{#each recipe.ingredients as ingredient, i}
+								<li>
+									<div class="ingredient-line">
+										<span class="ingredient-text">{scaleIngredient(ingredient.text)}</span>
+										{#if scale !== 1 && getPackageSuggestion(ingredient.text)}
+											<span class="package-hint" title={getPackageSuggestion(ingredient.text)}>
+												<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+											</span>
+										{/if}
+									</div>
+								</li>
+							{/each}
+						</ul>
 
-					{#if scale !== 1 && getShoppingTips().length > 0}
-						<div class="shopping-tips no-print">
-							<button class="tips-toggle" onclick={() => showShoppingTips = !showShoppingTips}>
-								<span class="tips-icon">🛒</span>
-								<span>Shopping Tips ({getShoppingTips().length})</span>
-								<span class="toggle-arrow">{showShoppingTips ? '▲' : '▼'}</span>
-							</button>
-							{#if showShoppingTips}
-								<ul class="tips-list">
-									{#each getShoppingTips() as tip}
-										<li>
-											<strong>{tip.ingredient}</strong>: {tip.suggestion}
-											{#if tip.brand}
-												<span class="brand-info">({tip.brand})</span>
-											{/if}
-										</li>
-									{/each}
-								</ul>
-							{/if}
+						{#if scale !== 1 && getShoppingTips().length > 0}
+							<div class="shopping-tips no-print">
+								<button class="tips-toggle" onclick={() => showShoppingTips = !showShoppingTips}>
+									<span class="tips-icon">🛒</span>
+									<span>Shopping Tips ({getShoppingTips().length})</span>
+									<span class="toggle-arrow">{showShoppingTips ? '▲' : '▼'}</span>
+								</button>
+								{#if showShoppingTips}
+									<ul class="tips-list">
+										{#each getShoppingTips() as tip}
+											<li>
+												<strong>{tip.ingredient}</strong>: {tip.suggestion}
+												{#if tip.brand}
+													<span class="brand-info">({tip.brand})</span>
+												{/if}
+											</li>
+										{/each}
+									</ul>
+								{/if}
+							</div>
+						{/if}
+
+						<PrepList ingredients={recipe.ingredients} />
+					{:else}
+						<div class="split-view">
+							<div class="parsed-ingredients">
+								<h3>Shopping List</h3>
+								<table class="ingredient-table">
+									<thead>
+										<tr>
+											<th>Amount</th>
+											<th>Ingredient</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each recipe.ingredients as ingredient, i}
+											{@const qtyObj = ingredient.quantity}
+											{@const rawQty = typeof qtyObj === 'object' && qtyObj !== null ? qtyObj.value : qtyObj}
+											{@const qty = rawQty ? (rawQty * scale) : null}
+											{@const unit = typeof qtyObj === 'object' && qtyObj !== null ? qtyObj.unit : ingredient.unit}
+											{@const displayName = ingredient.canonical_name || ingredient.text.replace(/^[\d\s\/\.\-½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]+\s*(cup|cups|tbsp|tsp|tablespoon|tablespoons|teaspoon|teaspoons|oz|ounce|ounces|lb|lbs|pound|pounds|g|gram|grams|kg|ml|l|liter|liters|clove|cloves|head|heads|bunch|bunches|sprig|sprigs|can|cans|package|packages|stick|sticks|slice|slices|piece|pieces)s?\s*/i, '').trim()}
+											<tr>
+												<td class="amount-cell">
+													{#if qty}
+														<span class="quantity">{formatQuantity(qty)}</span>
+														{#if unit}
+															<span class="unit">{unit}</span>
+														{/if}
+													{:else}
+														<span class="quantity-na">—</span>
+													{/if}
+												</td>
+												<td class="ingredient-cell">
+													<span class="ingredient-name">{displayName}</span>
+													{#if ingredient.canonical_name && ingredient.canonical_name !== displayName}
+														<span class="canonical-hint">({ingredient.canonical_name})</span>
+													{/if}
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+
+							<div class="prep-section">
+								<h3>Prep Steps</h3>
+								<PrepList ingredients={recipe.ingredients} expanded={true} />
+							</div>
 						</div>
 					{/if}
+				</aside>
 
-					<PrepList ingredients={recipe.ingredients} />
-				{:else}
-					<!-- Split view: Parsed ingredients and prep steps shown separately -->
-					<div class="split-view">
-						<div class="parsed-ingredients">
-							<h3>Shopping List</h3>
-							<table class="ingredient-table">
-								<thead>
-									<tr>
-										<th>Amount</th>
-										<th>Ingredient</th>
-									</tr>
-								</thead>
-								<tbody>
-									{#each recipe.ingredients as ingredient, i}
-										{@const qtyObj = ingredient.quantity}
-										{@const rawQty = typeof qtyObj === 'object' && qtyObj !== null ? qtyObj.value : qtyObj}
-										{@const qty = rawQty ? (rawQty * scale) : null}
-										{@const unit = typeof qtyObj === 'object' && qtyObj !== null ? qtyObj.unit : ingredient.unit}
-										{@const displayName = ingredient.canonical_name || ingredient.text.replace(/^[\d\s\/\.\-½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]+\s*(cup|cups|tbsp|tsp|tablespoon|tablespoons|teaspoon|teaspoons|oz|ounce|ounces|lb|lbs|pound|pounds|g|gram|grams|kg|ml|l|liter|liters|clove|cloves|head|heads|bunch|bunches|sprig|sprigs|can|cans|package|packages|stick|sticks|slice|slices|piece|pieces)s?\s*/i, '').trim()}
-										<tr>
-											<td class="amount-cell">
-												{#if qty}
-													<span class="quantity">{formatQuantity(qty)}</span>
-													{#if unit}
-														<span class="unit">{unit}</span>
-													{/if}
-												{:else}
-													<span class="quantity-na">—</span>
-												{/if}
-											</td>
-											<td class="ingredient-cell">
-												<span class="ingredient-name">{displayName}</span>
-												{#if ingredient.canonical_name && ingredient.canonical_name !== displayName}
-													<span class="canonical-hint">({ingredient.canonical_name})</span>
-												{/if}
-											</td>
-										</tr>
-									{/each}
-								</tbody>
-							</table>
-						</div>
+				<div class="instructions">
+					<h2>Instructions</h2>
+					<ol class="step-list">
+						{#each recipe.instructions as instruction, i}
+							<li>
+								<span class="step-circle">{i + 1}</span>
+								<p>{instruction.text}</p>
+							</li>
+						{/each}
+					</ol>
+				</div>
+			</div>
 
-						<div class="prep-section">
-							<h3>Prep Steps</h3>
-							<PrepList ingredients={recipe.ingredients} expanded={true} />
-						</div>
+			{#if recipe.notes}
+				<section class="notes">
+					<h2>Notes</h2>
+					<p>{recipe.notes}</p>
+				</section>
+			{/if}
+
+			<section class="nutrition-section no-print">
+				<button class="nutrition-toggle" onclick={toggleNutrition}>
+					<span class="toggle-icon">{showNutrition ? '▼' : '▶'}</span>
+					<h2>Nutrition Information</h2>
+				</button>
+				{#if showNutrition}
+					<div class="nutrition-content">
+						<NutritionPanel
+							nutrition={nutrition}
+							loading={loadingNutrition}
+							error={nutritionError}
+							selectedSource={nutritionSource}
+							on:sourceChange={handleSourceChange}
+						/>
 					</div>
 				{/if}
 			</section>
 
-			<section class="instructions">
-				<h2>Instructions</h2>
-				<ol>
-					{#each recipe.instructions as instruction}
-						<li>{instruction.text}</li>
-					{/each}
-				</ol>
-			</section>
-		</div>
-
-		{#if recipe.notes}
-			<section class="notes">
-				<h2>Notes</h2>
-				<p>{recipe.notes}</p>
-			</section>
-		{/if}
-
-		<section class="nutrition-section no-print">
-			<button class="nutrition-toggle" onclick={toggleNutrition}>
-				<span class="toggle-icon">{showNutrition ? '▼' : '▶'}</span>
-				<h2>Nutrition Information</h2>
-			</button>
-			{#if showNutrition}
-				<div class="nutrition-content">
-					<NutritionPanel
-						nutrition={nutrition}
-						loading={loadingNutrition}
-						error={nutritionError}
-						selectedSource={nutritionSource}
-						on:sourceChange={handleSourceChange}
-					/>
-				</div>
+			{#if hasAlternatives}
+				<section class="decisions-section no-print">
+					<button class="section-toggle" onclick={() => showDecisions = !showDecisions}>
+						<span class="toggle-icon">{showDecisions ? '▼' : '▶'}</span>
+						<h2>Ingredient Choices ({ingredientsWithAlternatives.length})</h2>
+					</button>
+					{#if showDecisions}
+						<div class="decisions-content">
+							<p class="decisions-hint">Some ingredients have multiple possible matches. Choose the correct one for accurate nutrition calculations.</p>
+							{#each ingredientsWithAlternatives as { ingredient, index }}
+								<div class="decision-item">
+									<div class="decision-ingredient-text">{ingredient.text}</div>
+									<IngredientDecisionComponent
+										{ingredient}
+										{index}
+										currentDecision={decisions.get(index)}
+										ondecide={handleDecision}
+									/>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</section>
 			{/if}
-		</section>
 
-		{#if hasAlternatives}
-			<section class="decisions-section no-print">
-				<button class="section-toggle" onclick={() => showDecisions = !showDecisions}>
-					<span class="toggle-icon">{showDecisions ? '▼' : '▶'}</span>
-					<h2>Ingredient Choices ({ingredientsWithAlternatives.length})</h2>
-				</button>
-				{#if showDecisions}
-					<div class="decisions-content">
-						<p class="decisions-hint">Some ingredients have multiple possible matches. Choose the correct one for accurate nutrition calculations.</p>
-						{#each ingredientsWithAlternatives as { ingredient, index }}
-							<div class="decision-item">
-								<div class="decision-ingredient-text">{ingredient.text}</div>
-								<IngredientDecisionComponent
-									{ingredient}
-									{index}
-									currentDecision={decisions.get(index)}
-									ondecide={handleDecision}
-								/>
+			{#if recipe.ingredients.some(i => i._diagnostics)}
+				<section class="diagnostics-section no-print">
+					<IngredientDiagnostics ingredients={recipe.ingredients} />
+				</section>
+			{/if}
+
+			<section class="similar-recipes no-print">
+				<h2>Similar Recipes</h2>
+				{#if loadingSimilar}
+					<p class="loading-similar">Finding similar recipes...</p>
+				{:else if similarRecipes.length === 0}
+					<p class="no-similar">No similar recipes found.</p>
+				{:else}
+					<div class="similar-grid">
+						{#each similarRecipes as similar}
+							<div class="similar-card">
+								<a href="/recipes/{similar.recipe.id}" class="similar-card-link">
+									{#if similar.recipe.image_url}
+										<img src={similar.recipe.image_url} alt={similar.recipe.title} class="similar-image" />
+									{:else}
+										<div class="similar-image placeholder">No image</div>
+									{/if}
+									<div class="similar-content">
+										<h3>{similar.recipe.title}</h3>
+										<div class="similarity-score">
+											<span class="score">{Math.round(similar.score * 100)}% similar</span>
+										</div>
+										{#if similar.shared_ingredients.length > 0}
+											<div class="shared-ingredients">
+												<span class="shared-label">Shared:</span>
+												{similar.shared_ingredients.slice(0, 3).join(', ')}
+												{#if similar.shared_ingredients.length > 3}
+													<span class="more">+{similar.shared_ingredients.length - 3} more</span>
+												{/if}
+											</div>
+										{/if}
+									</div>
+								</a>
+								<a href="/recipes/compare?id1={recipe.id}&id2={similar.recipe.id}" class="compare-link">
+									Compare side by side
+								</a>
 							</div>
 						{/each}
 					</div>
 				{/if}
 			</section>
-		{/if}
-
-		{#if recipe.ingredients.some(i => i._diagnostics)}
-			<section class="diagnostics-section no-print">
-				<IngredientDiagnostics ingredients={recipe.ingredients} />
-			</section>
-		{/if}
-
-		<section class="similar-recipes no-print">
-			<h2>Similar Recipes</h2>
-			{#if loadingSimilar}
-				<p class="loading-similar">Finding similar recipes...</p>
-			{:else if similarRecipes.length === 0}
-				<p class="no-similar">No similar recipes found.</p>
-			{:else}
-				<div class="similar-grid">
-					{#each similarRecipes as similar}
-						<div class="similar-card">
-							<a href="/recipes/{similar.recipe.id}" class="similar-card-link">
-								{#if similar.recipe.image_url}
-									<img src={similar.recipe.image_url} alt={similar.recipe.title} class="similar-image" />
-								{:else}
-									<div class="similar-image placeholder">No image</div>
-								{/if}
-								<div class="similar-content">
-									<h3>{similar.recipe.title}</h3>
-									<div class="similarity-score">
-										<span class="score">{Math.round(similar.score * 100)}% similar</span>
-									</div>
-									{#if similar.shared_ingredients.length > 0}
-										<div class="shared-ingredients">
-											<span class="shared-label">Shared:</span>
-											{similar.shared_ingredients.slice(0, 3).join(', ')}
-											{#if similar.shared_ingredients.length > 3}
-												<span class="more">+{similar.shared_ingredients.length - 3} more</span>
-											{/if}
-										</div>
-									{/if}
-								</div>
-							</a>
-							<a href="/recipes/compare?id1={recipe.id}&id2={similar.recipe.id}" class="compare-link">
-								Compare side by side
-							</a>
-						</div>
-					{/each}
-				</div>
-			{/if}
-		</section>
+		</div>
 	</article>
 
 	<Modal bind:open={showShoppingModal} title="Add to Shopping List" onclose={closeShoppingModal}>
@@ -935,7 +939,7 @@
 	.recipe-detail {
 		background: var(--bg-card);
 		border-radius: var(--radius-lg);
-		padding: var(--space-8);
+		overflow: hidden;
 		box-shadow: var(--shadow-lg);
 	}
 
@@ -943,8 +947,6 @@
 		background: var(--color-pasta-200);
 		color: var(--color-pasta-800);
 		padding: var(--space-3) var(--space-4);
-		border-radius: var(--radius-md);
-		margin-bottom: var(--space-6);
 		display: flex;
 		align-items: center;
 		gap: var(--space-2);
@@ -964,84 +966,176 @@
 		color: var(--color-pasta-900);
 	}
 
-	header {
+	/* Hero image with overlay */
+	.recipe-hero {
+		position: relative;
+		min-height: 300px;
+		max-height: 60vh;
+		overflow: hidden;
+	}
+
+	.recipe-hero.no-image {
+		min-height: auto;
+		max-height: none;
+		background: var(--color-marinara-800);
+	}
+
+	.recipe-hero-img {
+		width: 100%;
+		height: 100%;
+		min-height: 300px;
+		max-height: 60vh;
+		object-fit: cover;
+		display: block;
+	}
+
+	.recipe-hero-overlay {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: var(--space-12) var(--space-8) var(--space-8);
+		background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+		color: white;
+	}
+
+	.recipe-hero-overlay.static-overlay {
+		position: relative;
+		background: var(--color-marinara-800);
+		padding: var(--space-10) var(--space-8);
+	}
+
+	.hero-tags {
 		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: var(--space-4);
-		margin-bottom: var(--space-6);
-		padding-bottom: var(--space-6);
-		border-bottom: var(--border-width-thin) solid var(--border-light);
+		flex-wrap: wrap;
+		gap: var(--space-2);
+		margin-bottom: var(--space-3);
+	}
+
+	.hero-tag {
+		padding: var(--space-1) var(--space-3);
+		background: rgba(255, 255, 255, 0.2);
+		backdrop-filter: blur(4px);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		font-weight: var(--font-medium);
 	}
 
 	h1 {
 		margin: 0 0 var(--space-2);
-		font-size: var(--text-3xl);
+		font-size: var(--text-4xl);
 		font-family: var(--font-serif);
-		color: var(--color-marinara-800);
+		color: white;
+		line-height: var(--leading-tight);
 	}
 
-	.source-link {
-		color: var(--color-marinara-600);
+	.hero-source {
 		font-size: var(--text-sm);
+		color: rgba(255, 255, 255, 0.7);
+		text-decoration: none;
 	}
 
-	.actions {
+	.hero-source:hover {
+		color: white;
+		text-decoration: underline;
+	}
+
+	/* Recipe content area */
+	.recipe-content {
+		max-width: 960px;
+		margin: 0 auto;
+		padding: var(--space-8);
+	}
+
+	/* Meta bar */
+	.meta-bar {
 		display: flex;
-		gap: var(--space-2);
-		flex-wrap: wrap;
-		justify-content: flex-end;
+		gap: var(--space-8);
+		padding-bottom: var(--space-6);
+		border-bottom: var(--border-width-thin) solid var(--border-light);
+		margin-bottom: var(--space-6);
 	}
 
-	@media (max-width: 768px) {
-		header {
-			flex-direction: column;
-		}
+	.meta-item {
+		text-align: center;
+	}
 
-		h1 {
-			font-size: var(--text-2xl);
-		}
+	.meta-label {
+		display: block;
+		font-size: var(--text-xs);
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: var(--color-marinara-500);
+		margin-bottom: var(--space-1);
+	}
 
-		.actions {
-			width: 100%;
-			display: grid;
-			grid-template-columns: repeat(2, 1fr);
-			gap: var(--space-2);
-		}
+	.meta-value {
+		font-size: var(--text-lg);
+		color: var(--text-primary);
+		font-weight: var(--font-medium);
+	}
 
-		.actions .btn {
-			text-align: center;
-			padding: var(--space-3) var(--space-2);
-		}
+	.description {
+		font-size: var(--text-lg);
+		color: var(--text-secondary);
+		line-height: var(--leading-relaxed);
+		margin: 0 0 var(--space-6);
+	}
 
-		.actions .btn-shopping {
-			grid-column: span 2;
-		}
-
-		.recipe-detail {
-			padding: var(--space-4);
-		}
+	/* Action bar */
+	.action-bar {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		margin-bottom: var(--space-8);
+		padding-bottom: var(--space-6);
+		border-bottom: var(--border-width-thin) solid var(--border-light);
+		flex-wrap: wrap;
 	}
 
 	.btn {
 		padding: var(--space-2) var(--space-4);
-		border: var(--border-width-thin) solid var(--border-default);
-		background: var(--bg-card);
 		border-radius: var(--radius-md);
 		text-decoration: none;
-		color: var(--text-primary);
 		cursor: pointer;
 		font-size: var(--text-sm);
+		font-weight: var(--font-medium);
 		transition: all var(--transition-fast);
+		white-space: nowrap;
 	}
 
-	.btn:hover {
-		background: var(--bg-surface);
+	.btn-primary {
+		background: var(--color-marinara-600);
+		color: var(--color-white);
+		border: none;
+	}
+
+	.btn-primary:hover:not(:disabled) {
+		background: var(--color-marinara-700);
+	}
+
+	.btn-primary:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.btn-outline {
+		background: none;
+		color: var(--text-secondary);
+		border: var(--border-width-thin) solid var(--border-default);
+	}
+
+	.btn-outline:hover {
+		border-color: var(--color-marinara-600);
+		color: var(--color-marinara-700);
 	}
 
 	.btn-danger {
+		background: none;
 		color: #c53030;
-		border-color: #c53030;
+		border: var(--border-width-thin) solid #c53030;
 	}
 
 	.btn-danger:hover {
@@ -1049,149 +1143,8 @@
 		color: var(--color-white);
 	}
 
-	.recipe-image {
-		width: 100%;
-		max-height: 400px;
-		object-fit: cover;
-		border-radius: var(--radius-lg);
-		margin-bottom: var(--space-6);
-	}
-
-	.description {
-		font-size: var(--text-lg);
-		color: var(--text-secondary);
-		line-height: var(--leading-relaxed);
-		margin-bottom: var(--space-6);
-	}
-
-	.meta-grid {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-8);
-		margin-bottom: var(--space-6);
-		padding: var(--space-4);
-		background: var(--color-pasta-100);
-		border-radius: var(--radius-lg);
-	}
-
-	.meta-item {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.label {
-		font-size: var(--text-xs);
-		color: var(--text-muted);
-		text-transform: uppercase;
-		letter-spacing: var(--tracking-wider);
-	}
-
-	.value {
-		font-size: var(--text-lg);
-		font-weight: var(--font-medium);
-		color: var(--text-primary);
-	}
-
-	.tags {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-2);
-		margin-bottom: var(--space-6);
-	}
-
-	.tag {
-		background: var(--color-marinara-500);
-		color: var(--color-white);
-		padding: var(--space-1) var(--space-3);
-		border-radius: var(--radius-full);
-		font-size: var(--text-sm);
-	}
-
-	.recipe-sections {
-		display: grid;
-		grid-template-columns: 1fr 2fr;
-		gap: var(--space-8);
-		margin-bottom: var(--space-6);
-	}
-
-	@media (max-width: 768px) {
-		.recipe-sections {
-			grid-template-columns: 1fr;
-		}
-
-		.meta-grid {
-			gap: var(--space-4);
-		}
-
-		.section-header {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: var(--space-3);
-		}
-
-		.view-controls {
-			width: 100%;
-			flex-direction: column;
-			gap: var(--space-2);
-		}
-
-		.view-toggle {
-			width: 100%;
-			justify-content: center;
-		}
-
-		.view-btn {
-			flex: 1;
-			text-align: center;
-		}
-
-		.scale-controls {
-			width: 100%;
-			justify-content: center;
-			background: var(--color-pasta-100);
-			padding: var(--space-2);
-			border-radius: var(--radius-md);
-		}
-
-		.scale-btn {
-			width: 44px;
-			height: 44px;
-			font-size: var(--text-lg);
-		}
-
-		/* Split view mobile adjustments */
-		.ingredient-table th:first-child,
-		.ingredient-table td:first-child {
-			width: 80px;
-		}
-
-		.similar-grid {
-			grid-template-columns: repeat(2, 1fr);
-		}
-	}
-
-	.section-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: var(--space-4);
-	}
-
-	.section-header h2 {
-		margin: 0;
-		padding-bottom: var(--space-2);
-		border-bottom: var(--border-width-default) solid var(--color-marinara-500);
-	}
-
-	h2 {
-		font-size: var(--text-xl);
-		margin: 0 0 var(--space-4);
-		padding-bottom: var(--space-2);
-		border-bottom: var(--border-width-default) solid var(--color-marinara-500);
-		color: var(--color-marinara-700);
-	}
-
 	.scale-controls {
+		margin-left: auto;
 		display: flex;
 		align-items: center;
 		gap: var(--space-2);
@@ -1207,6 +1160,9 @@
 		font-size: var(--text-base);
 		line-height: 1;
 		transition: all var(--transition-fast);
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.scale-btn:hover:not(:disabled) {
@@ -1223,12 +1179,36 @@
 		min-width: 40px;
 		text-align: center;
 		font-weight: var(--font-medium);
+		font-size: var(--text-sm);
 	}
 
-	.view-controls {
+	/* Two-column body layout */
+	.recipe-body {
+		display: grid;
+		grid-template-columns: 300px 1fr;
+		gap: var(--space-8);
+		margin-bottom: var(--space-6);
+	}
+
+	/* Section header */
+	.section-header {
 		display: flex;
+		justify-content: space-between;
 		align-items: center;
-		gap: var(--space-4);
+		margin-bottom: var(--space-4);
+	}
+
+	.section-header h2 {
+		margin: 0;
+		padding-bottom: 0;
+		border-bottom: none;
+	}
+
+	h2 {
+		font-family: var(--font-serif);
+		font-size: var(--text-xl);
+		margin: 0 0 var(--space-4);
+		color: var(--color-marinara-700);
 	}
 
 	.view-toggle {
@@ -1259,6 +1239,106 @@
 		color: var(--text-primary);
 		font-weight: var(--font-medium);
 		box-shadow: var(--shadow-sm);
+	}
+
+	/* Ingredient list */
+	.ingredient-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.ingredient-list li {
+		padding: var(--space-2) 0;
+		border-bottom: var(--border-width-thin) solid var(--border-subtle);
+		line-height: var(--leading-relaxed);
+	}
+
+	.ingredient-list li:last-child {
+		border-bottom: none;
+	}
+
+	.ingredient-line {
+		display: flex;
+		align-items: flex-start;
+		gap: var(--space-2);
+	}
+
+	.ingredient-text {
+		flex: 1;
+	}
+
+	.package-hint {
+		color: var(--color-marinara-500);
+		cursor: help;
+		flex-shrink: 0;
+		display: inline-flex;
+		align-items: center;
+	}
+
+	.package-hint:hover {
+		color: var(--color-marinara-600);
+	}
+
+	/* Shopping tips */
+	.shopping-tips {
+		margin-top: var(--space-6);
+		border: var(--border-width-thin) solid var(--color-basil-200);
+		border-radius: var(--radius-lg);
+		background: var(--color-basil-50);
+	}
+
+	.tips-toggle {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-3) var(--space-4);
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-size: var(--text-sm);
+		color: var(--color-basil-600);
+		font-weight: var(--font-medium);
+	}
+
+	.tips-toggle:hover {
+		background: var(--color-basil-100);
+	}
+
+	.tips-icon {
+		font-size: var(--text-lg);
+	}
+
+	.toggle-arrow {
+		margin-left: auto;
+		font-size: var(--text-xs);
+	}
+
+	.tips-list {
+		list-style: none;
+		padding: 0 var(--space-4) var(--space-4);
+		margin: 0;
+	}
+
+	.tips-list li {
+		padding: var(--space-2) 0;
+		border-top: var(--border-width-thin) solid var(--color-basil-200);
+		font-size: var(--text-sm);
+		display: block;
+	}
+
+	.tips-list li:first-child {
+		border-top: none;
+	}
+
+	.tips-list strong {
+		color: var(--color-marinara-800);
+	}
+
+	.brand-info {
+		color: var(--text-muted);
+		font-size: var(--text-sm);
 	}
 
 	/* Split view styles */
@@ -1338,116 +1418,52 @@
 		border-radius: var(--radius-md);
 	}
 
-	.ingredients ul {
-		list-style: disc;
-		padding-left: var(--space-6);
+	/* Instructions with step circles */
+	.instructions h2 {
+		margin-bottom: var(--space-6);
 	}
 
-	.ingredients li {
-		margin-bottom: var(--space-2);
-		line-height: var(--leading-relaxed);
-	}
-
-	.ingredient-line {
-		display: flex;
-		align-items: flex-start;
-		gap: var(--space-2);
-	}
-
-	.ingredient-text {
-		flex: 1;
-	}
-
-	.package-hint {
-		color: var(--color-marinara-500);
-		cursor: help;
-		flex-shrink: 0;
-		display: inline-flex;
-		align-items: center;
-	}
-
-	.package-hint:hover {
-		color: var(--color-marinara-600);
-	}
-
-	.shopping-tips {
-		margin-top: var(--space-6);
-		border: var(--border-width-thin) solid var(--color-basil-200);
-		border-radius: var(--radius-lg);
-		background: var(--color-basil-50);
-	}
-
-	.tips-toggle {
-		width: 100%;
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		padding: var(--space-3) var(--space-4);
-		background: none;
-		border: none;
-		cursor: pointer;
-		font-size: var(--text-sm);
-		color: var(--color-basil-600);
-		font-weight: var(--font-medium);
-	}
-
-	.tips-toggle:hover {
-		background: var(--color-basil-100);
-	}
-
-	.tips-icon {
-		font-size: var(--text-lg);
-	}
-
-	.toggle-arrow {
-		margin-left: auto;
-		font-size: var(--text-xs);
-	}
-
-	.tips-list {
+	.step-list {
 		list-style: none;
-		padding: 0 var(--space-4) var(--space-4);
+		padding: 0;
 		margin: 0;
 	}
 
-	.tips-list li {
-		padding: var(--space-2) 0;
-		border-top: var(--border-width-thin) solid var(--color-basil-200);
+	.step-list li {
+		display: flex;
+		gap: var(--space-4);
+		margin-bottom: var(--space-6);
+		align-items: flex-start;
+	}
+
+	.step-circle {
+		flex-shrink: 0;
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		border: var(--border-width-thin) solid var(--border-default);
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		font-size: var(--text-sm);
-		display: block;
+		color: var(--color-marinara-500);
+		font-weight: var(--font-medium);
+		margin-top: 2px;
 	}
 
-	.tips-list li:first-child {
-		border-top: none;
-	}
-
-	.tips-list strong {
-		color: var(--color-marinara-800);
-	}
-
-	.brand-info {
-		color: var(--text-muted);
-		font-size: var(--text-sm);
-	}
-
-	.instructions ol {
-		padding-left: var(--space-6);
-	}
-
-	.instructions li {
-		margin-bottom: var(--space-4);
+	.step-list p {
+		margin: 0;
 		line-height: var(--leading-relaxed);
+		color: var(--text-secondary);
 	}
 
+	/* Notes */
 	.notes {
 		background: var(--color-pasta-100);
 		padding: var(--space-4);
 		border-radius: var(--radius-lg);
 		border-left: var(--border-width-thick) solid var(--color-pasta-500);
-	}
-
-	.notes h2 {
-		border-bottom-color: var(--color-pasta-500);
+		margin-bottom: var(--space-6);
 	}
 
 	.notes p {
@@ -1460,10 +1476,6 @@
 		margin-top: var(--space-8);
 		padding-top: var(--space-6);
 		border-top: var(--border-width-thin) solid var(--border-light);
-	}
-
-	.similar-recipes h2 {
-		border-bottom-color: var(--color-basil-500);
 	}
 
 	.loading-similar,
@@ -1568,35 +1580,6 @@
 		text-decoration: underline;
 	}
 
-	.btn-save {
-		background: var(--color-marinara-600);
-		color: var(--color-white);
-		border-color: var(--color-marinara-600);
-		font-weight: var(--font-medium);
-	}
-
-	.btn-save:hover:not(:disabled) {
-		background: var(--color-marinara-700);
-		border-color: var(--color-marinara-700);
-	}
-
-	.btn-save:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	/* Shopping list button */
-	.btn-shopping {
-		background: var(--color-marinara-600);
-		color: var(--color-white);
-		border-color: var(--color-marinara-600);
-	}
-
-	.btn-shopping:hover {
-		background: var(--color-marinara-700);
-		border-color: var(--color-marinara-700);
-	}
-
 	/* Modal content styles */
 	.scale-note {
 		background: var(--color-basil-100);
@@ -1699,8 +1682,6 @@
 
 	.nutrition-toggle h2 {
 		margin: 0;
-		padding-bottom: 0;
-		border-bottom: none;
 	}
 
 	.toggle-icon {
@@ -1738,8 +1719,6 @@
 
 	.section-toggle h2 {
 		margin: 0;
-		padding-bottom: 0;
-		border-bottom: none;
 	}
 
 	.decisions-content {
@@ -1765,6 +1744,55 @@
 		margin-bottom: var(--space-2);
 	}
 
+	/* Responsive */
+	@media (max-width: 768px) {
+		.recipe-hero {
+			min-height: 200px;
+		}
+
+		.recipe-hero-img {
+			min-height: 200px;
+		}
+
+		h1 {
+			font-size: var(--text-2xl);
+		}
+
+		.recipe-content {
+			padding: var(--space-4);
+		}
+
+		.meta-bar {
+			gap: var(--space-4);
+			flex-wrap: wrap;
+		}
+
+		.action-bar {
+			gap: var(--space-2);
+		}
+
+		.scale-controls {
+			margin-left: 0;
+			width: 100%;
+			justify-content: center;
+			margin-top: var(--space-2);
+		}
+
+		.recipe-body {
+			grid-template-columns: 1fr;
+		}
+
+		.section-header {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: var(--space-3);
+		}
+
+		.similar-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
 	/* Print styles */
 	@media print {
 		.no-print {
@@ -1773,35 +1801,28 @@
 
 		.recipe-detail {
 			box-shadow: none;
-			padding: 0;
 		}
 
-		header {
-			border-bottom: 2px solid #000;
-		}
-
-		.recipe-image {
+		.recipe-hero {
 			max-height: 300px;
-			page-break-inside: avoid;
 		}
 
-		.recipe-sections {
-			grid-template-columns: 1fr 2fr;
+		.recipe-hero-img {
+			max-height: 300px;
+		}
+
+		.recipe-content {
+			padding: var(--space-4) 0;
+		}
+
+		.recipe-body {
+			grid-template-columns: 300px 1fr;
 		}
 
 		.ingredients,
 		.instructions,
 		.notes {
 			page-break-inside: avoid;
-		}
-
-		h2 {
-			border-bottom-color: #000;
-		}
-
-		.notes {
-			border-left-color: #000;
-			background: #f5f5f5;
 		}
 	}
 </style>

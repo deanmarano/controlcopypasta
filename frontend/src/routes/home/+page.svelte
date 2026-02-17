@@ -10,6 +10,13 @@
 	let shuffling = $state(false);
 	let savingId = $state<string | null>(null);
 
+	function getGreeting(): string {
+		const hour = new Date().getHours();
+		if (hour < 12) return 'Good morning.';
+		if (hour < 17) return 'Good afternoon.';
+		return 'Good evening.';
+	}
+
 	$effect(() => {
 		if (!$isAuthenticated) {
 			goto('/login');
@@ -108,20 +115,24 @@
 			<p class="alt-action">or <a href="/recipes/new">create one manually</a></p>
 		</div>
 	{:else if data}
-		<section class="add-recipe-section">
+		<header class="dash-header">
+			<div class="greeting">
+				<h1>{getGreeting()}</h1>
+				<p>What are we cooking tonight?</p>
+			</div>
 			<form class="add-recipe-form" onsubmit={handleAddRecipe}>
 				<input
 					type="url"
 					bind:value={addUrl}
-					placeholder="Paste a recipe URL to add..."
+					placeholder="Paste a recipe URL..."
 				/>
-				<button type="submit" disabled={!addUrl}>Add Recipe</button>
+				<button type="submit" disabled={!addUrl}>Save</button>
 			</form>
-		</section>
+		</header>
 
 		<section class="section">
 			<div class="section-header">
-				<h2>Dinner Ideas</h2>
+				<h2>Tonight's inspiration</h2>
 				<button class="shuffle-btn" onclick={shuffle} disabled={shuffling}>
 					{shuffling ? 'Shuffling...' : 'Shuffle'}
 				</button>
@@ -129,16 +140,52 @@
 			{#if data.dinner_ideas.length === 0}
 				<p class="section-empty">No recipes to suggest yet.</p>
 			{:else}
-				<div class="card-grid">
-					{#each data.dinner_ideas as recipe}
-						{@render recipeCard(recipe)}
-					{/each}
-				</div>
+				{@const heroRecipe = data.dinner_ideas[0]}
+				<a href="/recipes/{heroRecipe.id}" class="hero-card">
+					{#if heroRecipe.image_url}
+						<img src={heroRecipe.image_url} alt={heroRecipe.title} class="hero-card-img" />
+					{:else}
+						<div class="hero-card-img placeholder">No image</div>
+					{/if}
+					<div class="hero-card-overlay">
+						{#if heroRecipe.total_time_minutes}
+							<span class="hero-card-tag">{formatTime(heroRecipe.total_time_minutes)}</span>
+						{/if}
+						<h3>{heroRecipe.title}</h3>
+						{#if heroRecipe.description}
+							<p>{heroRecipe.description}</p>
+						{/if}
+						{#if !heroRecipe.is_owned}
+							<button
+								class="save-btn save-btn-hero"
+								onclick={(e) => saveRecipe(e, heroRecipe.id)}
+								disabled={savingId === heroRecipe.id}
+							>
+								{savingId === heroRecipe.id ? 'Saving...' : 'Save to My Recipes'}
+							</button>
+						{/if}
+					</div>
+					{#if heroRecipe.contains_avoided && heroRecipe.avoided_ingredients && heroRecipe.avoided_ingredients.length > 0}
+						<div class="avoided-warning hero-avoided">
+							Contains: {heroRecipe.avoided_ingredients.map((i) => i.name).join(', ')}
+						</div>
+					{/if}
+				</a>
+				{#if data.dinner_ideas.length > 1}
+					<div class="card-grid">
+						{#each data.dinner_ideas.slice(1) as recipe}
+							{@render recipeCard(recipe)}
+						{/each}
+					</div>
+				{/if}
 			{/if}
 		</section>
 
 		<section class="section">
-			<h2>Recently Added</h2>
+			<div class="section-header">
+				<h2>Recently added</h2>
+				<a href="/recipes" class="view-all">View all</a>
+			</div>
 			{#if data.recently_added.length === 0}
 				<p class="section-empty">No recent recipes.</p>
 			{:else}
@@ -240,24 +287,43 @@
 		color: var(--color-marinara-600);
 	}
 
-	.add-recipe-section {
+	/* Dashboard header with greeting */
+	.dash-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
 		margin-bottom: var(--space-10);
+		padding-bottom: var(--space-6);
+		border-bottom: var(--border-width-thin) solid var(--border-default);
+	}
+
+	.greeting h1 {
+		font-family: var(--font-serif);
+		font-size: var(--text-4xl);
+		margin: 0;
+		color: var(--color-marinara-800);
+	}
+
+	.greeting p {
+		margin: var(--space-1) 0 0;
+		color: var(--color-marinara-500);
+		font-size: var(--text-base);
 	}
 
 	.add-recipe-form {
 		display: flex;
 		gap: var(--space-2);
 		max-width: 600px;
-		margin: 0 auto;
 	}
 
 	.add-recipe-form input {
 		flex: 1;
-		padding: var(--space-4);
+		padding: var(--space-3) var(--space-4);
 		border: var(--border-width-default) solid var(--border-default);
 		border-radius: var(--radius-md);
 		font-size: var(--text-base);
 		transition: all var(--transition-fast);
+		min-width: 280px;
 	}
 
 	.add-recipe-form input:focus {
@@ -267,7 +333,7 @@
 	}
 
 	.add-recipe-form button {
-		padding: var(--space-4) var(--space-8);
+		padding: var(--space-3) var(--space-6);
 		background: var(--color-marinara-600);
 		color: var(--color-white);
 		border: none;
@@ -295,7 +361,7 @@
 	.section-header {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
+		align-items: baseline;
 		margin-bottom: var(--space-4);
 	}
 
@@ -331,11 +397,103 @@
 		cursor: not-allowed;
 	}
 
+	.view-all {
+		color: var(--color-marinara-600);
+		font-size: var(--text-sm);
+		font-weight: var(--font-medium);
+		text-decoration: none;
+	}
+
+	.view-all:hover {
+		color: var(--color-marinara-800);
+		text-decoration: underline;
+	}
+
 	.section-empty {
 		color: var(--text-muted);
 		font-style: italic;
 	}
 
+	/* Hero card */
+	.hero-card {
+		display: block;
+		position: relative;
+		border-radius: var(--radius-lg);
+		overflow: hidden;
+		margin-bottom: var(--space-4);
+		text-decoration: none;
+		color: inherit;
+		aspect-ratio: 21/9;
+		transition: all var(--transition-normal);
+	}
+
+	.hero-card:hover {
+		box-shadow: var(--shadow-lg);
+	}
+
+	.hero-card-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.hero-card-img.placeholder {
+		background: var(--color-gray-200);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--text-muted);
+	}
+
+	.hero-card-overlay {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: var(--space-10) var(--space-6) var(--space-6);
+		background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+		color: white;
+	}
+
+	.hero-card-overlay h3 {
+		font-family: var(--font-serif);
+		font-size: var(--text-3xl);
+		margin: 0 0 var(--space-2);
+		color: white;
+		line-height: var(--leading-snug);
+	}
+
+	.hero-card-overlay p {
+		margin: 0;
+		font-size: var(--text-sm);
+		opacity: 0.85;
+		max-width: 500px;
+	}
+
+	.hero-card-tag {
+		display: inline-block;
+		padding: var(--space-1) var(--space-2);
+		background: rgba(255, 255, 255, 0.2);
+		backdrop-filter: blur(4px);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+		margin-bottom: var(--space-2);
+		font-weight: var(--font-medium);
+	}
+
+	.save-btn-hero {
+		margin-top: var(--space-3);
+		width: auto;
+		display: inline-block;
+	}
+
+	.hero-avoided {
+		position: absolute;
+		top: var(--space-3);
+		right: var(--space-3);
+	}
+
+	/* Card grid */
 	.card-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -423,6 +581,26 @@
 		font-size: var(--text-xs);
 		margin-top: var(--space-2);
 		border: var(--border-width-thin) solid var(--color-pasta-400);
+	}
+
+	@media (max-width: 768px) {
+		.dash-header {
+			flex-direction: column;
+			align-items: stretch;
+			gap: var(--space-4);
+		}
+
+		.add-recipe-form {
+			max-width: 100%;
+		}
+
+		.add-recipe-form input {
+			min-width: 0;
+		}
+
+		.hero-card {
+			aspect-ratio: 16/9;
+		}
 	}
 
 	@media (max-width: 640px) {
