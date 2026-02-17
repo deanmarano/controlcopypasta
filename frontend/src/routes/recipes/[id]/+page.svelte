@@ -938,9 +938,15 @@
 
 	.recipe-detail {
 		background: var(--bg-card);
-		border-radius: var(--radius-lg);
 		overflow: hidden;
 		box-shadow: var(--shadow-lg);
+		/* Break out of the <main> container to go full-width */
+		width: 100vw;
+		position: relative;
+		left: 50%;
+		right: 50%;
+		margin-left: -50vw;
+		margin-right: -50vw;
 	}
 
 	.archived-banner {
