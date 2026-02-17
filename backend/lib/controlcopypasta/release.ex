@@ -565,7 +565,8 @@ defmodule Controlcopypasta.Release do
     IO.puts("Building ingredient lookup...")
     lookup = Ingredients.build_ingredient_lookup()
 
-    query =
+    # Fetch just IDs first (lightweight query) to avoid DB timeout on large result sets
+    id_query =
       from r in Recipe,
         where:
           fragment(
@@ -573,50 +574,61 @@ defmodule Controlcopypasta.Release do
             r.ingredients,
             r.ingredients
           ),
-        select: [:id, :ingredients, :ingredients_parsed_at]
+        select: r.id
 
-    query = if limit, do: Ecto.Query.limit(query, ^limit), else: query
+    id_query = if limit, do: Ecto.Query.limit(id_query, ^limit), else: id_query
 
-    recipes = Repo.all(query)
-    total = length(recipes)
+    recipe_ids = Repo.all(id_query, timeout: 120_000)
+    total = length(recipe_ids)
     IO.puts("Found #{total} recipes with unparsed ingredients")
 
+    # Process in batches to avoid memory issues
+    batch_size = 200
     {success, failed} =
-      recipes
-      |> Enum.with_index(1)
-      |> Enum.reduce({0, 0}, fn {recipe, index}, {s, f} ->
-        if rem(index, 500) == 0 or index == total do
-          IO.puts("Progress: #{index}/#{total} (#{s} ok, #{f} failed)")
+      recipe_ids
+      |> Enum.chunk_every(batch_size)
+      |> Enum.with_index()
+      |> Enum.reduce({0, 0}, fn {batch_ids, batch_idx}, {s_acc, f_acc} ->
+        recipes = Repo.all(from r in Recipe, where: r.id in ^batch_ids, select: [:id, :ingredients])
+
+        {batch_s, batch_f} =
+          Enum.reduce(recipes, {0, 0}, fn recipe, {s, f} ->
+            try do
+              parsed_ingredients =
+                Enum.map(recipe.ingredients, fn ingredient ->
+                  text = ingredient["text"]
+
+                  if is_nil(text) or text == "" do
+                    ingredient
+                  else
+                    parsed = TokenParser.parse(text, lookup: lookup)
+                    jsonb = TokenParser.to_jsonb_map(parsed)
+                    group = ingredient["group"]
+                    if group, do: Map.put(jsonb, "group", group), else: jsonb
+                  end
+                end)
+
+              recipe
+              |> Ecto.Changeset.change(%{
+                ingredients: parsed_ingredients,
+                ingredients_parsed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+              })
+              |> Repo.update!()
+
+              {s + 1, f}
+            rescue
+              e ->
+                IO.puts("  Error parsing recipe #{recipe.id}: #{inspect(e)}")
+                {s, f + 1}
+            end
+          end)
+
+        done = s_acc + batch_s + f_acc + batch_f
+        if rem(batch_idx + 1, 5) == 0 or done == total do
+          IO.puts("Progress: #{done}/#{total} (#{s_acc + batch_s} ok, #{f_acc + batch_f} failed)")
         end
 
-        try do
-          parsed_ingredients =
-            Enum.map(recipe.ingredients, fn ingredient ->
-              text = ingredient["text"]
-
-              if is_nil(text) or text == "" do
-                ingredient
-              else
-                parsed = TokenParser.parse(text, lookup: lookup)
-                jsonb = TokenParser.to_jsonb_map(parsed)
-                group = ingredient["group"]
-                if group, do: Map.put(jsonb, "group", group), else: jsonb
-              end
-            end)
-
-          recipe
-          |> Ecto.Changeset.change(%{
-            ingredients: parsed_ingredients,
-            ingredients_parsed_at: DateTime.utc_now() |> DateTime.truncate(:second)
-          })
-          |> Repo.update!()
-
-          {s + 1, f}
-        rescue
-          e ->
-            IO.puts("  Error parsing recipe #{recipe.id}: #{inspect(e)}")
-            {s, f + 1}
-        end
+        {s_acc + batch_s, f_acc + batch_f}
       end)
 
     IO.puts("\nDone! #{success} parsed, #{failed} failed")
