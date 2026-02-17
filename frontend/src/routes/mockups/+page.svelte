@@ -1,6 +1,6 @@
 <div class="mockups-index">
 	<h1>Design Mockups</h1>
-	<p class="subtitle">Five design directions for ControlCopyPasta. Each includes a public landing page, logged-in dashboard, and recipe detail view.</p>
+	<p class="subtitle">Six design directions for ControlCopyPasta. Each includes a public landing page, logged-in dashboard, and recipe detail view.</p>
 
 	<div class="directions">
 		<a href="/mockups/1" class="direction-card">
@@ -35,8 +35,18 @@
 				<span class="tag">Vibrant accents</span>
 			</div>
 		</a>
-		<a href="/mockups/5" class="direction-card">
+		<a href="/mockups/4" class="direction-card">
 			<div class="direction-number">4</div>
+			<h2>Editorial Botanical</h2>
+			<p>Same editorial structure, new palette. Cormorant Garamond serif, deep forest green, terracotta accents. Botanical garden calm meets magazine polish.</p>
+			<div class="tags">
+				<span class="tag">Forest green</span>
+				<span class="tag">Terracotta</span>
+				<span class="tag">Cormorant</span>
+			</div>
+		</a>
+		<a href="/mockups/5" class="direction-card">
+			<div class="direction-number">5</div>
 			<h2>Scrapbook</h2>
 			<p>Handwriting fonts, taped-in photos, lined paper backgrounds. Feels like a personal recipe binder from someone who actually cooks. Cozy and tactile.</p>
 			<div class="tags">
@@ -46,7 +56,7 @@
 			</div>
 		</a>
 		<a href="/mockups/6" class="direction-card">
-			<div class="direction-number">5</div>
+			<div class="direction-number">6</div>
 			<h2>Frutiger Aero</h2>
 			<p>Glossy glass panels, nature-gradient backgrounds, sky-blue orb buttons. The optimistic tech-utopia aesthetic of 2006-2013. Fresh, clean, and luminous.</p>
 			<div class="tags">
