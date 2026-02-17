@@ -608,10 +608,26 @@ defmodule Controlcopypasta.Release do
                   end
                 end)
 
+              canonical_ids =
+                parsed_ingredients
+                |> Enum.map(& &1["canonical_id"])
+                |> Enum.reject(&is_nil/1)
+                |> Enum.reject(&(&1 == ""))
+                |> Enum.uniq()
+
+              all_parsed =
+                length(parsed_ingredients) > 0 and
+                Enum.all?(parsed_ingredients, fn ing ->
+                  (ing["canonical_id"] != nil and ing["canonical_id"] != "") or
+                  ing["skipped"] == true
+                end)
+
               recipe
               |> Ecto.Changeset.change(%{
                 ingredients: parsed_ingredients,
-                ingredients_parsed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+                ingredients_parsed_at: DateTime.utc_now() |> DateTime.truncate(:second),
+                ingredient_canonical_ids: canonical_ids,
+                all_ingredients_parsed: all_parsed
               })
               |> Repo.update!()
 

@@ -35,6 +35,10 @@ defmodule Controlcopypasta.Recipes.Recipe do
     field :nutrition_sodium_mg, :decimal
     field :nutrition_cholesterol_mg, :decimal
 
+    # Denormalized columns for fast avoided-ingredient filtering
+    field :all_ingredients_parsed, :boolean, default: false
+    field :ingredient_canonical_ids, {:array, :string}, default: []
+
     belongs_to :user, Controlcopypasta.Accounts.User
     many_to_many :tags, Controlcopypasta.Recipes.Tag, join_through: "recipe_tags"
 

@@ -189,30 +189,13 @@ defmodule Controlcopypasta.Recipes do
     # Convert MapSet to list if needed
     id_list = if is_struct(ids, MapSet), do: MapSet.to_list(ids), else: ids
 
-    # Exclude recipes that have any unparsed ingredients (no canonical_id
-    # and not marked as skipped), since we can't verify they don't contain
-    # avoided ingredients. Skipped ingredients (salt & pepper, equipment, etc.)
-    # are considered parsed. Also exclude recipes containing an avoided ingredient.
+    # Use denormalized columns for fast filtering:
+    # - all_ingredients_parsed: true when no unparsed ingredients
+    # - ingredient_canonical_ids: flat array for GIN-indexed overlap check
     from r in query,
       where:
-        fragment(
-          """
-          jsonb_array_length(?) > 0
-          AND NOT EXISTS (
-            SELECT 1 FROM jsonb_array_elements(?) AS elem
-            WHERE (elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = '')
-              AND (elem->>'skipped')::boolean IS NOT TRUE
-          )
-          AND NOT EXISTS (
-            SELECT 1 FROM jsonb_array_elements(?) AS elem
-            WHERE elem->>'canonical_id' = ANY(?)
-          )
-          """,
-          r.ingredients,
-          r.ingredients,
-          r.ingredients,
-          ^id_list
-        )
+        r.all_ingredients_parsed == true and
+        fragment("NOT (? && ?)", r.ingredient_canonical_ids, ^id_list)
   end
 
   defp apply_avoided_filter(query, _), do: query
