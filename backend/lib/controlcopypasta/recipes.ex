@@ -190,39 +190,28 @@ defmodule Controlcopypasta.Recipes do
     id_list = if is_struct(ids, MapSet), do: MapSet.to_list(ids), else: ids
     name_list = Map.get(params, "exclude_ingredient_names", [])
 
-    if name_list == [] do
-      # ID-only filter (original behavior)
-      from r in query,
-        where:
-          fragment(
-            "NOT EXISTS (SELECT 1 FROM jsonb_array_elements(?) AS elem WHERE elem->>'canonical_id' = ANY(?))",
-            r.ingredients,
-            ^id_list
+    # Exclude recipes that have any unparsed ingredients (no canonical_id),
+    # since we can't verify they don't contain avoided ingredients.
+    # Also exclude recipes that contain a known avoided ingredient.
+    from r in query,
+      where:
+        fragment(
+          """
+          jsonb_array_length(?) > 0
+          AND NOT EXISTS (
+            SELECT 1 FROM jsonb_array_elements(?) AS elem
+            WHERE elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = ''
           )
-    else
-      # Combined filter: match by canonical_id OR by text content for unparsed ingredients
-      from r in query,
-        where:
-          fragment(
-            """
-            NOT EXISTS (
-              SELECT 1 FROM jsonb_array_elements(?) AS elem
-              WHERE
-                elem->>'canonical_id' = ANY(?)
-                OR (
-                  (elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = '')
-                  AND EXISTS (
-                    SELECT 1 FROM unnest(?::text[]) AS avoided_name
-                    WHERE lower(elem->>'text') LIKE '%' || avoided_name || '%'
-                  )
-                )
-            )
-            """,
-            r.ingredients,
-            ^id_list,
-            ^name_list
+          AND NOT EXISTS (
+            SELECT 1 FROM jsonb_array_elements(?) AS elem
+            WHERE elem->>'canonical_id' = ANY(?)
           )
-    end
+          """,
+          r.ingredients,
+          r.ingredients,
+          r.ingredients,
+          ^id_list
+        )
   end
 
   defp apply_avoided_filter(query, _), do: query
