@@ -148,10 +148,10 @@ defmodule Controlcopypasta.Parser.JsonLd do
 
   defp normalize_ingredients(%{"recipeIngredient" => ingredients}) when is_list(ingredients) do
     ingredients
-    |> Enum.with_index()
-    |> Enum.map(fn {text, _index} ->
+    |> Enum.map(fn text ->
       %{"text" => normalize_text(text), "group" => nil}
     end)
+    |> Enum.reject(fn %{"text" => text} -> text == "" end)
   end
 
   defp normalize_ingredients(_), do: []
