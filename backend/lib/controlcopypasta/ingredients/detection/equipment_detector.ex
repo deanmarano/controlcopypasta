@@ -63,9 +63,13 @@ defmodule Controlcopypasta.Ingredients.Detection.EquipmentDetector do
   # Multi-word equipment phrases
   @equipment_phrases [
     "baking sheet",
+    "baking mat",
     "sheet pan",
     "muffin tin",
+    "muffin pan",
     "loaf pan",
+    "cake pan",
+    "cake pans",
     "pie dish",
     "casserole dish",
     "dutch oven",
@@ -96,7 +100,19 @@ defmodule Controlcopypasta.Ingredients.Detection.EquipmentDetector do
     "mortar and pestle",
     "weber barbecue",
     "weber chimney",
-    "pastry brush"
+    "pastry brush",
+    "pastry bag",
+    "cookie cutter",
+    "cookie cutters",
+    "ice pop mold",
+    "ice pop molds",
+    "bamboo skewer",
+    "bamboo skewers",
+    "star tip",
+    "ribbon tip",
+    "piping tip",
+    "piping tips",
+    "offset spatula"
   ]
 
   @doc """
@@ -128,6 +144,11 @@ defmodule Controlcopypasta.Ingredients.Detection.EquipmentDetector do
     normalized = String.downcase(text)
 
     cond do
+      # Pattern 0: "Special Equipment:" prefix - entire line is equipment
+      Regex.match?(~r/^\s*special\s+equipment\s*:/i, text) -> true
+      # Pattern 0b: "Two/Three/Four N-inch" + equipment word (e.g., "Two 8-inch cake pans")
+      Regex.match?(~r/^\s*(?:two|three|four|five|six)\s+\d+[- ]inch/i, text) and
+        contains_equipment_word?(normalized) -> true
       # Pattern 1: Starts with "a" or "an" followed by equipment word/phrase
       Regex.match?(~r/^an?\s+/i, text) ->
         contains_equipment_word?(normalized) or contains_equipment_phrase?(normalized)

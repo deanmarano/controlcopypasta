@@ -306,7 +306,25 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     |> String.replace("\u2033", "\"")  # double prime
     |> String.replace("\u2013", "-")   # en-dash (used in ranges: "1–2")
     |> String.replace("\u2014", "-")   # em-dash
+    |> normalize_superscript_subscript_digits()
     |> normalize_unicode_fraction_chars()
+  end
+
+  # Normalize Unicode superscript/subscript digits to ASCII
+  # ²/₃ → 2/3, ¹/₄ → 1/4, etc.
+  @superscript_digits %{
+    "⁰" => "0", "¹" => "1", "²" => "2", "³" => "3", "⁴" => "4",
+    "⁵" => "5", "⁶" => "6", "⁷" => "7", "⁸" => "8", "⁹" => "9"
+  }
+  @subscript_digits %{
+    "₀" => "0", "₁" => "1", "₂" => "2", "₃" => "3", "₄" => "4",
+    "₅" => "5", "₆" => "6", "₇" => "7", "₈" => "8", "₉" => "9"
+  }
+
+  defp normalize_superscript_subscript_digits(text) do
+    Enum.reduce(Map.merge(@superscript_digits, @subscript_digits), text, fn {char, replacement}, acc ->
+      String.replace(acc, char, replacement)
+    end)
   end
 
   # Convert unicode fraction characters (½ ¼ ¾ etc.) to ASCII fractions early
@@ -418,6 +436,19 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     |> String.replace(~r/,?\s+to\s+dust\b.*$/i, "")
     # "oil for deep-frying" -> "oil", "vegetable oil for frying" -> "vegetable oil"
     |> String.replace(~r/,?\s+for\s+(?:deep[- ]?)?frying\b.*$/i, "")
+    # "mint for serving" -> "mint", "parsley for garnish" -> "parsley"
+    |> String.replace(~r/,?\s+for\s+(?:serving|garnish|garnishing|topping|drizzling|dipping|finishing)\b.*$/i, "")
+    # "dill and/or thinly sliced chives" -> "dill" (take first before and/or)
+    |> normalize_and_or()
+  end
+
+  # Handle "and/or" splits: take the first ingredient
+  # "dill and/or thinly sliced chives" -> "dill"
+  defp normalize_and_or(text) do
+    case String.split(text, ~r/\s+and\/or\s+/i, parts: 2) do
+      [first, _rest] -> String.trim(first)
+      _ -> text
+    end
   end
 
   # Normalize "hard boiled eggs" -> "hard-boiled eggs" so tokenizer sees it as a prep
@@ -625,8 +656,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       end
     end)
 
-    # Get primary ingredient (first one)
-    primary = List.first(matched_ingredients)
+    # Get primary ingredient (prefer canonical match over measurement fragments)
+    primary = select_primary_ingredient(matched_ingredients)
 
     # Extract choices from "such as X, Y, or Z" patterns
     {choices, extra_preparations} = extract_choices(tokens, lookup)
@@ -650,6 +681,22 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       is_alternative: analysis.has_alternatives,
       choices: choices
     }
+  end
+
+  # Select the best primary ingredient from matched_ingredients.
+  # Prefers an ingredient with a canonical match over one that looks like a measurement fragment.
+  defp select_primary_ingredient([]), do: nil
+  defp select_primary_ingredient(ingredients) do
+    # Prefer ingredient with canonical match
+    Enum.find(ingredients, fn i -> i.canonical_id != nil end)
+    # Then prefer ingredient that doesn't look like a measurement fragment
+    || Enum.find(ingredients, fn i -> not measurement_fragment?(i.name) end)
+    # Fall back to first
+    || List.first(ingredients)
+  end
+
+  defp measurement_fragment?(name) do
+    Regex.match?(~r/^\d|^oz\.|^lb\.|inch|^²|^¼|^½|^¾|^⅓|^⅔/i, name)
   end
 
   @doc """

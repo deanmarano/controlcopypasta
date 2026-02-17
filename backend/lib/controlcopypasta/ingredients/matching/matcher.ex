@@ -52,26 +52,25 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
   def match(name, lookup) do
     normalized = String.downcase(name) |> String.trim()
 
+    # Try original form first, then with hyphens replaced by spaces
     case find_canonical_match(normalized, lookup) do
-      {canonical_name, canonical_id, base_confidence, matching_rules} ->
-        apply_scoring(name, canonical_name, canonical_id, base_confidence, matching_rules)
-
-      {canonical_name, canonical_id, confidence} ->
-        %{
-          name: name,
-          canonical_name: canonical_name,
-          canonical_id: canonical_id,
-          confidence: confidence
-        }
-
       nil ->
-        %{
-          name: name,
-          canonical_name: nil,
-          canonical_id: nil,
-          confidence: 0.5
-        }
+        dehyphenated = String.replace(normalized, "-", " ")
+        if dehyphenated != normalized do
+          case find_canonical_match(dehyphenated, lookup) do
+            nil -> %{name: name, canonical_name: nil, canonical_id: nil, confidence: 0.5}
+            result -> format_match_result(name, result)
+          end
+        else
+          %{name: name, canonical_name: nil, canonical_id: nil, confidence: 0.5}
+        end
+      result -> format_match_result(name, result)
     end
+  end
+
+  # Format a successful match result (always a 4-tuple from find_canonical_match)
+  defp format_match_result(name, {canonical_name, canonical_id, base_confidence, matching_rules}) do
+    apply_scoring(name, canonical_name, canonical_id, base_confidence, matching_rules)
   end
 
   # Apply IngredientScorer when matching_rules exist
@@ -148,7 +147,15 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
   # Leading modifiers to strip (adjectives that describe ingredient state/size)
   @leading_modifiers ~w(fresh dried frozen canned raw cooked large small medium
                         extra-large whole ground light dark unsalted salted organic
-                        ripe unripe hot cold warm thin thick fine coarse)
+                        ripe unripe hot cold warm thin thick fine coarse
+                        italian japanese chinese mexican thai french indian korean
+                        greek spanish american english swedish turkish vietnamese
+                        baby mini jumbo tiny
+                        sweet spicy mild sharp aged smoked roasted toasted pickled
+                        good-quality store-bought homemade prepared
+                        red green yellow golden brown white black pure
+                        plain boneless skinless lean low-fat nonfat full-fat
+                        regular instant quick old-fashioned)
 
   # Try partial matching strategies (strip modifiers, shorten)
   defp try_partial_match(name, lookup) do
