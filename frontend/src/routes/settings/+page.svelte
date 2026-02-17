@@ -636,9 +636,11 @@
 		{:else if items.length === 0}
 			<p class="empty">No avoided ingredients yet. Add items above to get started.</p>
 		{:else}
-			<h3 class="list-title">Your Avoided List ({items.length})</h3>
+			{@const nonAnimalItems = items.filter((i) => i.avoidance_type !== 'animal')}
+			{#if nonAnimalItems.length > 0}
+			<h3 class="list-title">Your Avoided List ({nonAnimalItems.length})</h3>
 			<ul class="ingredient-list">
-				{#each items as item}
+				{#each nonAnimalItems as item}
 					<li class={getTypeClass(item)}>
 						<div class="item-row">
 							<span class="type-badge">{getTypeLabel(item)}</span>
@@ -704,6 +706,7 @@
 					</li>
 				{/each}
 			</ul>
+			{/if}
 		{/if}
 	</section>
 </div>
