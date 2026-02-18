@@ -19,7 +19,7 @@ defmodule ControlcopypastaWeb.DashboardController do
     recently_added = Task.await(recent_task)
     this_time_last_year = Task.await(last_year_task)
 
-    avoided_set = Accounts.get_avoided_canonical_ids(user.id)
+    avoided_set = Accounts.get_avoided_canonical_names(user.id)
 
     render(conn, :index,
       dinner_ideas: dinner_ideas,

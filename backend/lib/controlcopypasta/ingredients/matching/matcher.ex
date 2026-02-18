@@ -225,7 +225,7 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
   # Try splitting a compound word at each position to find a match
   # e.g., "almondmilk" → tries "a lmondmilk", "al mondmilk", ... "almond milk", ...
   defp try_compound_split(word, lookup) when byte_size(word) >= 6 do
-    1..(String.length(word) - 2)
+    1..max(String.length(word) - 2, 0)//1
     |> Enum.find_value(fn i ->
       {left, right} = String.split_at(word, i)
       spaced = "#{left} #{right}"
