@@ -56,10 +56,10 @@ defmodule Controlcopypasta.Ingredients.SubParsers.Garlic do
 
   defp cloves_from_head?(texts) do
     # "cloves from N head of garlic" or "cloves from N head garlic"
+    # "from" must immediately follow "cloves" to avoid matching "cracked away from skins"
     clove_idx = Enum.find_index(texts, &(&1 in @clove_words))
-    from_idx = if clove_idx, do: Enum.find_index(Enum.drop(texts, clove_idx + 1), &(&1 == "from"))
 
-    clove_idx != nil and from_idx != nil
+    clove_idx != nil and Enum.at(texts, clove_idx + 1) == "from"
   end
 
   defp head_garlic_cloves_prep?(texts) do
