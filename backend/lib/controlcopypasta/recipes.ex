@@ -304,6 +304,8 @@ defmodule Controlcopypasta.Recipes do
     end
   end
 
+  defp ingredient_matches_avoided?("", _avoided_set), do: false
+
   defp ingredient_matches_avoided?(canonical, avoided_set) do
     # Check exact match first
     if MapSet.member?(avoided_set, canonical) do
