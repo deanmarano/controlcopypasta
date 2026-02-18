@@ -10,9 +10,10 @@ defmodule ControlcopypastaWeb.QuicklistController do
   def batch(conn, params) do
     user = conn.assigns.current_user
     count = Map.get(params, "count", "10") |> parse_int(10) |> min(30)
+    tag = Map.get(params, "tag")
     avoided_params = build_avoided_params(user)
 
-    recipes = Quicklist.get_swipe_batch(user.id, count, avoided_params)
+    recipes = Quicklist.get_swipe_batch(user.id, count, avoided_params, tag)
     render(conn, :batch, recipes: recipes, user_id: user.id)
   end
 

@@ -3,6 +3,9 @@
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { quicklist, type DashboardRecipe } from '$lib/api/client';
 
+	const tagOptions = ['dinner', 'breakfast', 'lunch', 'drinks', 'dessert', 'snacks'] as const;
+
+	let selectedTag = $state<string>('dinner');
 	let cards = $state<DashboardRecipe[]>([]);
 	let loading = $state(true);
 	let error = $state('');
@@ -26,13 +29,25 @@
 		if (!token) return;
 
 		try {
-			const result = await quicklist.batch(token, 10);
+			const result = await quicklist.batch(token, 10, selectedTag || undefined);
 			cards = [...cards, ...result.data];
 		} catch {
 			error = 'Failed to load recipes';
 		} finally {
 			loading = false;
 		}
+	}
+
+	function changeTag(newTag: string) {
+		selectedTag = newTag;
+		cards = [];
+		loading = true;
+		error = '';
+		loadBatch();
+	}
+
+	function tagLabel(tag: string): string {
+		return tag.charAt(0).toUpperCase() + tag.slice(1);
 	}
 
 	async function handleSwipe(action: 'maybe' | 'skip') {
@@ -63,16 +78,19 @@
 		isDragging = true;
 		dragStartX = e.clientX;
 		dragX = 0;
-		(e.target as HTMLElement).setPointerCapture(e.pointerId);
+		const el = e.currentTarget as HTMLElement;
+		el.setPointerCapture(e.pointerId);
 	}
 
 	function onPointerMove(e: PointerEvent) {
 		if (!isDragging) return;
+		e.preventDefault();
 		dragX = e.clientX - dragStartX;
 	}
 
-	function onPointerUp() {
+	function onPointerUp(e: PointerEvent) {
 		if (!isDragging) return;
+		e.preventDefault();
 		isDragging = false;
 
 		if (dragX > 80) {
@@ -102,7 +120,18 @@
 <div class="quicklist-page">
 	<header class="ql-header">
 		<a href="/home" class="back-link">Back</a>
-		<h1>Find Dinner</h1>
+		<div class="tag-picker">
+			<span class="tag-label">Find</span>
+			<select
+				class="tag-select"
+				value={selectedTag}
+				onchange={(e) => changeTag((e.target as HTMLSelectElement).value)}
+			>
+				{#each tagOptions as tag}
+					<option value={tag}>{tagLabel(tag)}</option>
+				{/each}
+			</select>
+		</div>
 		<a href="/quicklist/maybe" class="maybe-link">Maybe List</a>
 	</header>
 
@@ -195,11 +224,33 @@
 		margin-bottom: var(--space-6);
 	}
 
-	.ql-header h1 {
+	.tag-picker {
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-2);
+	}
+
+	.tag-label {
 		font-family: var(--font-serif);
 		font-size: var(--text-2xl);
 		color: var(--color-marinara-800);
-		margin: 0;
+	}
+
+	.tag-select {
+		font-family: var(--font-serif);
+		font-size: var(--text-2xl);
+		color: var(--color-marinara-600);
+		background: none;
+		border: none;
+		border-bottom: 2px solid var(--color-marinara-300);
+		padding: 0 var(--space-1);
+		cursor: pointer;
+		appearance: auto;
+	}
+
+	.tag-select:focus {
+		outline: none;
+		border-bottom-color: var(--color-marinara-600);
 	}
 
 	.back-link,
@@ -267,7 +318,6 @@
 		flex: 1;
 		min-height: 400px;
 		max-height: 65vh;
-		touch-action: pan-y;
 	}
 
 	.swipe-card {
@@ -284,6 +334,7 @@
 	.swipe-card.top {
 		cursor: grab;
 		transition: none;
+		touch-action: none;
 	}
 
 	.swipe-card.dragging {

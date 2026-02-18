@@ -750,8 +750,11 @@ export const dashboard = {
 
 // Quicklist API
 export const quicklist = {
-  batch: (token: string, count: number = 10) =>
-    request<{ data: DashboardRecipe[] }>(`/quicklist/batch?count=${count}`, { token }),
+  batch: (token: string, count: number = 10, tag?: string) => {
+    const params = new URLSearchParams({ count: count.toString() });
+    if (tag) params.set('tag', tag);
+    return request<{ data: DashboardRecipe[] }>(`/quicklist/batch?${params}`, { token });
+  },
 
   maybeList: (token: string) =>
     request<{ data: DashboardRecipe[] }>('/quicklist/maybe', { token }),
