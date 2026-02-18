@@ -29,7 +29,7 @@
 	// Redirect if already authenticated
 	$effect(() => {
 		if ($isAuthenticated) {
-			goto('/recipes');
+			goto('/home');
 		}
 	});
 
@@ -62,7 +62,7 @@
 
 		try {
 			const result = await authStore.authenticateWithPasskey(email.trim());
-			const destination = result.user.onboarding_completed === false ? '/setup' : '/recipes';
+			const destination = result.user.onboarding_completed === false ? '/setup' : '/home';
 			goto(destination);
 		} catch (err: unknown) {
 			if (err instanceof Error) {

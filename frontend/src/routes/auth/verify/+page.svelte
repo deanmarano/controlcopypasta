@@ -20,7 +20,7 @@
 			const result = await authStore.verifyMagicLink(token);
 			status = 'success';
 			// Redirect to setup wizard for new users, recipes for existing
-			const destination = result.user.onboarding_completed === false ? '/setup' : '/recipes';
+			const destination = result.user.onboarding_completed === false ? '/setup' : '/home';
 			setTimeout(() => goto(destination), 1500);
 		} catch (err: unknown) {
 			status = 'error';
