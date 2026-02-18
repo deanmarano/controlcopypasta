@@ -35,6 +35,11 @@
 			<h2>Pending Ingredients</h2>
 			<p>Review and approve new ingredients discovered from recipes.</p>
 		</a>
+
+		<a href="/setup" class="admin-card">
+			<h2>Setup Wizard</h2>
+			<p>Preview the new user onboarding flow for dietary preferences.</p>
+		</a>
 	</div>
 </div>
 
