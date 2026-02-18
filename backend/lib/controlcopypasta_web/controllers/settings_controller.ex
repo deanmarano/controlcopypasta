@@ -35,4 +35,19 @@ defmodule ControlcopypastaWeb.SettingsController do
         {:error, changeset}
     end
   end
+
+  @doc """
+  Marks the current user's onboarding as complete.
+  """
+  def complete_onboarding(conn, _params) do
+    user = conn.assigns.current_user
+
+    case Accounts.complete_onboarding(user) do
+      {:ok, updated_user} ->
+        json(conn, %{data: %{onboarding_completed: !is_nil(updated_user.onboarding_completed_at)}})
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
 end

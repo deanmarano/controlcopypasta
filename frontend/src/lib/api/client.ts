@@ -58,7 +58,7 @@ export const auth = {
     }),
 
   verifyMagicLink: (token: string) =>
-    request<{ token: string; user: { id: string; email: string } }>('/auth/magic-link/verify', {
+    request<{ token: string; user: { id: string; email: string; onboarding_completed?: boolean } }>('/auth/magic-link/verify', {
       method: 'POST',
       body: { token }
     }),
@@ -70,7 +70,7 @@ export const auth = {
     }),
 
   me: (token: string) =>
-    request<{ user: { id: string; email: string; inserted_at: string } }>('/auth/me', {
+    request<{ user: { id: string; email: string; inserted_at: string; onboarding_completed?: boolean } }>('/auth/me', {
       token
     }),
 
@@ -139,7 +139,7 @@ export const passkeys = {
     }),
 
   authenticate: (credential: unknown, challengeToken: string) =>
-    request<{ token: string; user: { id: string; email: string } }>('/auth/passkeys/authenticate', {
+    request<{ token: string; user: { id: string; email: string; onboarding_completed?: boolean } }>('/auth/passkeys/authenticate', {
       method: 'POST',
       body: { ...credential as object, challengeToken }
     }),
@@ -684,6 +684,14 @@ export const avoidedIngredients = {
     request<{ data: AvoidedIngredient }>(`/avoided-ingredients/${avoidanceId}/exceptions/${canonicalIngredientId}`, {
       method: 'DELETE',
       token
+    }),
+
+  // Bulk create avoided ingredients (for onboarding wizard)
+  bulkCreate: (token: string, avoidances: Array<{ type: string; value: string }>) =>
+    request<{ data: { created_count: number } }>('/avoided-ingredients/bulk', {
+      method: 'POST',
+      token,
+      body: { avoidances }
     })
 };
 
@@ -702,6 +710,12 @@ export const settings = {
       method: 'PUT',
       token,
       body: { preferences }
+    }),
+
+  completeOnboarding: (token: string) =>
+    request<{ data: { onboarding_completed: boolean } }>('/settings/complete-onboarding', {
+      method: 'POST',
+      token
     })
 };
 
@@ -726,11 +740,34 @@ export interface DashboardData {
   dinner_ideas: DashboardRecipe[];
   recently_added: DashboardRecipe[];
   this_time_last_year: DashboardRecipe[];
+  maybe_count: number;
 }
 
 export const dashboard = {
   get: (token: string) =>
     request<{ data: DashboardData }>('/dashboard', { token })
+};
+
+// Quicklist API
+export const quicklist = {
+  batch: (token: string, count: number = 10) =>
+    request<{ data: DashboardRecipe[] }>(`/quicklist/batch?count=${count}`, { token }),
+
+  maybeList: (token: string) =>
+    request<{ data: DashboardRecipe[] }>('/quicklist/maybe', { token }),
+
+  swipe: (token: string, recipeId: string, action: 'maybe' | 'skip') =>
+    request<{ data: { id: string; action: string; recipe_id: string } }>('/quicklist/swipe', {
+      method: 'POST',
+      token,
+      body: { recipe_id: recipeId, action }
+    }),
+
+  removeMaybe: (token: string, recipeId: string) =>
+    request<null>(`/quicklist/maybe/${recipeId}`, {
+      method: 'DELETE',
+      token
+    })
 };
 
 // Browse API

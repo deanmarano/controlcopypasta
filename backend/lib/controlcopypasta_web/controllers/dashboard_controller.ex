@@ -4,6 +4,7 @@ defmodule ControlcopypastaWeb.DashboardController do
   alias Controlcopypasta.Recipes
   alias Controlcopypasta.Accounts
   alias Controlcopypasta.Ingredients
+  alias Controlcopypasta.Quicklist
 
   action_fallback ControlcopypastaWeb.FallbackController
 
@@ -14,10 +15,12 @@ defmodule ControlcopypastaWeb.DashboardController do
     dinner_task = Task.async(fn -> Recipes.dinner_recipes_for_user(user.id, 6, avoided_params) end)
     recent_task = Task.async(fn -> Recipes.recent_recipes_for_user(user.id, 6) end)
     last_year_task = Task.async(fn -> Recipes.this_time_last_year_for_user(user.id, 6) end)
+    maybe_task = Task.async(fn -> Quicklist.maybe_count(user.id) end)
 
     dinner_ideas = Task.await(dinner_task)
     recently_added = Task.await(recent_task)
     this_time_last_year = Task.await(last_year_task)
+    maybe_count = Task.await(maybe_task)
 
     avoided_set = Accounts.get_avoided_canonical_names(user.id)
 
@@ -26,7 +29,8 @@ defmodule ControlcopypastaWeb.DashboardController do
       recently_added: recently_added,
       this_time_last_year: this_time_last_year,
       avoided_set: avoided_set,
-      user_id: user.id
+      user_id: user.id,
+      maybe_count: maybe_count
     )
   end
 

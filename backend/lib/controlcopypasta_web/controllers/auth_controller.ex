@@ -52,7 +52,12 @@ defmodule ControlcopypastaWeb.AuthController do
          {:ok, jwt, _claims} <- Guardian.encode_and_sign(user) do
       json(conn, %{
         token: jwt,
-        user: %{id: user.id, email: user.email, is_admin: AdminAuth.admin?(user.email)}
+        user: %{
+          id: user.id,
+          email: user.email,
+          is_admin: AdminAuth.admin?(user.email),
+          onboarding_completed: !is_nil(user.onboarding_completed_at)
+        }
       })
     else
       {:error, :expired} ->
@@ -122,7 +127,8 @@ defmodule ControlcopypastaWeb.AuthController do
             id: user.id,
             email: user.email,
             inserted_at: user.inserted_at,
-            is_admin: AdminAuth.admin?(user.email)
+            is_admin: AdminAuth.admin?(user.email),
+            onboarding_completed: !is_nil(user.onboarding_completed_at)
           }
         })
     end

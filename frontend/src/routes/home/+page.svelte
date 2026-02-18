@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { dashboard, recipes as recipesApi, type DashboardData, type DashboardRecipe } from '$lib/api/client';
+	import { dashboard, recipes as recipesApi, quicklist, type DashboardData, type DashboardRecipe } from '$lib/api/client';
 
 	let data = $state<DashboardData | null>(null);
 	let loading = $state(true);
@@ -119,6 +119,14 @@
 			<div class="greeting">
 				<h1>{getGreeting()}</h1>
 				<p>What are we cooking tonight?</p>
+			</div>
+			<div class="header-actions">
+				<a href="/quicklist" class="find-dinner-btn">Find Dinner</a>
+				{#if data.maybe_count > 0}
+					<a href="/quicklist/maybe" class="maybe-list-btn">
+						Maybe List ({data.maybe_count})
+					</a>
+				{/if}
 			</div>
 			<form class="add-recipe-form" onsubmit={handleAddRecipe}>
 				<input
@@ -308,6 +316,48 @@
 		margin: var(--space-1) 0 0;
 		color: var(--color-marinara-500);
 		font-size: var(--text-base);
+	}
+
+	.header-actions {
+		display: flex;
+		gap: var(--space-3);
+		align-items: center;
+	}
+
+	.find-dinner-btn {
+		display: inline-block;
+		padding: var(--space-2) var(--space-5);
+		background: var(--color-basil-600);
+		color: var(--color-white);
+		text-decoration: none;
+		border-radius: var(--radius-md);
+		font-weight: var(--font-medium);
+		font-size: var(--text-sm);
+		transition: all var(--transition-fast);
+		white-space: nowrap;
+	}
+
+	.find-dinner-btn:hover {
+		background: var(--color-basil-700);
+		box-shadow: var(--shadow-basil);
+	}
+
+	.maybe-list-btn {
+		display: inline-block;
+		padding: var(--space-2) var(--space-5);
+		background: var(--bg-card);
+		color: var(--color-basil-700);
+		text-decoration: none;
+		border: var(--border-width-thin) solid var(--color-basil-500);
+		border-radius: var(--radius-md);
+		font-weight: var(--font-medium);
+		font-size: var(--text-sm);
+		transition: all var(--transition-fast);
+		white-space: nowrap;
+	}
+
+	.maybe-list-btn:hover {
+		background: var(--color-basil-50);
 	}
 
 	.add-recipe-form {

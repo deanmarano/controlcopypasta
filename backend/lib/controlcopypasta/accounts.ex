@@ -259,6 +259,53 @@ defmodule Controlcopypasta.Accounts do
     |> MapSet.union(animal_ids)
   end
 
+  # Onboarding
+
+  @doc """
+  Marks the user's onboarding as complete.
+  """
+  def complete_onboarding(%User{} = user) do
+    user
+    |> User.preferences_changeset(%{onboarding_completed_at: DateTime.utc_now() |> DateTime.truncate(:second)})
+    |> Repo.update()
+  end
+
+  @doc """
+  Creates multiple avoided ingredients in a single transaction.
+  Skips duplicates (constraint errors).
+  """
+  def create_avoided_ingredients_bulk(user_id, avoidance_list) when is_list(avoidance_list) do
+    Repo.transaction(fn ->
+      Enum.map(avoidance_list, fn avoidance ->
+        result =
+          case Map.get(avoidance, "type") do
+            "allergen" ->
+              create_avoided_allergen_group(user_id, Map.get(avoidance, "value"))
+
+            "animal" ->
+              create_avoided_animal_type(user_id, Map.get(avoidance, "value"))
+
+            "category" ->
+              create_avoided_category(user_id, Map.get(avoidance, "value"))
+
+            "ingredient" ->
+              create_avoided_ingredient(user_id, %{"display_name" => Map.get(avoidance, "value")})
+
+            _ ->
+              {:error, :invalid_type}
+          end
+
+        case result do
+          {:ok, record} -> record
+          # Skip duplicates
+          {:error, %Ecto.Changeset{errors: [{_, {_, [constraint: :unique, constraint_name: _]}} | _]}} -> nil
+          {:error, _} -> nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+    end)
+  end
+
   # User Preferences
 
   @doc """
@@ -275,7 +322,8 @@ defmodule Controlcopypasta.Accounts do
   """
   def get_user_preferences(%User{} = user) do
     %{
-      hide_avoided_ingredients: user.hide_avoided_ingredients
+      hide_avoided_ingredients: user.hide_avoided_ingredients,
+      onboarding_completed: !is_nil(user.onboarding_completed_at)
     }
   end
 

@@ -8,6 +8,7 @@ defmodule Controlcopypasta.Accounts.User do
   schema "users" do
     field :email, :string
     field :hide_avoided_ingredients, :boolean, default: false
+    field :onboarding_completed_at, :utc_datetime
 
     has_many :recipes, Controlcopypasta.Recipes.Recipe
     has_many :avoided_ingredients, Controlcopypasta.Accounts.AvoidedIngredient
@@ -38,6 +39,6 @@ defmodule Controlcopypasta.Accounts.User do
   """
   def preferences_changeset(user, attrs) do
     user
-    |> cast(attrs, [:hide_avoided_ingredients])
+    |> cast(attrs, [:hide_avoided_ingredients, :onboarding_completed_at])
   end
 end

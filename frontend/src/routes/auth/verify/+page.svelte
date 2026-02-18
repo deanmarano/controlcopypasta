@@ -17,10 +17,11 @@
 		}
 
 		try {
-			await authStore.verifyMagicLink(token);
+			const result = await authStore.verifyMagicLink(token);
 			status = 'success';
-			// Redirect to recipes after a short delay
-			setTimeout(() => goto('/recipes'), 1500);
+			// Redirect to setup wizard for new users, recipes for existing
+			const destination = result.user.onboarding_completed === false ? '/setup' : '/recipes';
+			setTimeout(() => goto(destination), 1500);
 		} catch (err: unknown) {
 			status = 'error';
 			if (err && typeof err === 'object' && 'data' in err) {

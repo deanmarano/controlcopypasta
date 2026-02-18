@@ -72,6 +72,12 @@ defmodule ControlcopypastaWeb.Router do
 
     get "/dashboard", DashboardController, :index
 
+    # Quicklist (dinner swipe)
+    get "/quicklist/batch", QuicklistController, :batch
+    get "/quicklist/maybe", QuicklistController, :maybe_list
+    post "/quicklist/swipe", QuicklistController, :swipe
+    delete "/quicklist/maybe/:recipe_id", QuicklistController, :remove_maybe
+
     resources "/recipes", RecipeController, except: [:new, :edit]
     post "/recipes/parse", RecipeController, :parse
     post "/recipes/:id/copy", RecipeController, :copy
@@ -88,6 +94,7 @@ defmodule ControlcopypastaWeb.Router do
     resources "/tags", TagController, only: [:index, :create, :delete]
 
     # Avoided ingredients
+    post "/avoided-ingredients/bulk", AvoidedIngredientController, :bulk_create
     resources "/avoided-ingredients", AvoidedIngredientController, only: [:index, :create, :delete]
     get "/avoided-ingredients/options", AvoidedIngredientController, :options
     get "/avoided-ingredients/:id/ingredients", AvoidedIngredientController, :show_ingredients
@@ -97,6 +104,7 @@ defmodule ControlcopypastaWeb.Router do
     # Settings / Preferences
     get "/settings/preferences", SettingsController, :show_preferences
     put "/settings/preferences", SettingsController, :update_preferences
+    post "/settings/complete-onboarding", SettingsController, :complete_onboarding
 
     # Ingredients catalog and scaling
     get "/ingredients", IngredientController, :index

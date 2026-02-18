@@ -61,8 +61,9 @@
 		passkeyLoading = true;
 
 		try {
-			await authStore.authenticateWithPasskey(email.trim());
-			goto('/recipes');
+			const result = await authStore.authenticateWithPasskey(email.trim());
+			const destination = result.user.onboarding_completed === false ? '/setup' : '/recipes';
+			goto(destination);
 		} catch (err: unknown) {
 			if (err instanceof Error) {
 				if (err.message.includes('No passkeys registered')) {

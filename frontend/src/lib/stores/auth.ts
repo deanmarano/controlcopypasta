@@ -29,6 +29,7 @@ interface User {
   id: string;
   email: string;
   is_admin?: boolean;
+  onboarding_completed?: boolean;
 }
 
 interface AuthState {
@@ -317,3 +318,4 @@ export const isAuthenticated = derived(authStore, ($auth) => !!$auth.user);
 export const currentUser = derived(authStore, ($auth) => $auth.user);
 export const isLoading = derived(authStore, ($auth) => $auth.loading);
 export const isAdmin = derived(authStore, ($auth) => $auth.user?.is_admin ?? false);
+export const needsOnboarding = derived(authStore, ($auth) => !!$auth.user && $auth.user.onboarding_completed === false);

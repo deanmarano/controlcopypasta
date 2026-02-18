@@ -7,6 +7,26 @@ defmodule ControlcopypastaWeb.AvoidedIngredientController do
 
   action_fallback ControlcopypastaWeb.FallbackController
 
+  @doc """
+  Creates multiple avoided ingredients in bulk.
+  Accepts {"avoidances": [{"type": "allergen", "value": "dairy"}, ...]}
+  """
+  def bulk_create(conn, %{"avoidances" => avoidances}) when is_list(avoidances) do
+    user = conn.assigns.current_user
+
+    case Accounts.create_avoided_ingredients_bulk(user.id, avoidances) do
+      {:ok, created} ->
+        conn
+        |> put_status(:created)
+        |> json(%{data: %{created_count: length(created)}})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: "Failed to create avoidances: #{inspect(reason)}"})
+    end
+  end
+
   def index(conn, _params) do
     user = conn.assigns.current_user
     avoided_ingredients = Accounts.list_avoided_ingredients(user.id)

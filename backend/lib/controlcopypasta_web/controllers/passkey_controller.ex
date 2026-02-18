@@ -262,7 +262,8 @@ defmodule ControlcopypastaWeb.PasskeyController do
         user: %{
           id: passkey.user.id,
           email: passkey.user.email,
-          is_admin: AdminAuth.admin?(passkey.user.email)
+          is_admin: AdminAuth.admin?(passkey.user.email),
+          onboarding_completed: !is_nil(passkey.user.onboarding_completed_at)
         }
       })
     else
