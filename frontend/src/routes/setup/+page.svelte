@@ -12,9 +12,10 @@
 	let error = $state('');
 
 	// Preset definitions mapping to avoidance records
-	const presets: Record<string, { label: string; description: string; avoidances: Array<{ type: string; value: string }> }> = {
+	const presets: Record<string, { label: string; icon: string; description: string; avoidances: Array<{ type: string; value: string }> }> = {
 		vegetarian: {
 			label: 'Vegetarian',
+			icon: '\u{1F966}',
 			description: 'No meat or seafood',
 			avoidances: [
 				{ type: 'animal', value: 'chicken' },
@@ -33,6 +34,7 @@
 		},
 		vegan: {
 			label: 'Vegan',
+			icon: '\u{1F331}',
 			description: 'No animal products',
 			avoidances: [
 				{ type: 'animal', value: 'chicken' },
@@ -53,6 +55,7 @@
 		},
 		pescatarian: {
 			label: 'Pescatarian',
+			icon: '\u{1F41F}',
 			description: 'No land meat',
 			avoidances: [
 				{ type: 'animal', value: 'chicken' },
@@ -70,6 +73,7 @@
 		},
 		'gluten-free': {
 			label: 'Gluten-free',
+			icon: '\u{1F33E}',
 			description: 'No wheat or gluten',
 			avoidances: [
 				{ type: 'allergen', value: 'wheat' },
@@ -78,6 +82,7 @@
 		},
 		'dairy-free': {
 			label: 'Dairy-free',
+			icon: '\u{1F95B}',
 			description: 'No dairy products',
 			avoidances: [
 				{ type: 'allergen', value: 'dairy' }
@@ -85,6 +90,7 @@
 		},
 		'nut-free': {
 			label: 'Nut-free',
+			icon: '\u{1F95C}',
 			description: 'No peanuts or tree nuts',
 			avoidances: [
 				{ type: 'allergen', value: 'peanuts' },
@@ -212,6 +218,7 @@
 							class:selected={selectedPresets.has(key)}
 							onclick={() => togglePreset(key)}
 						>
+							<span class="preset-icon">{preset.icon}</span>
 							<span class="preset-label">{preset.label}</span>
 							<span class="preset-desc">{preset.description}</span>
 						</button>
@@ -417,6 +424,12 @@
 		border-color: var(--color-marinara-500);
 		background: var(--color-marinara-50);
 		box-shadow: 0 0 0 2px var(--color-marinara-200);
+	}
+
+	.preset-icon {
+		font-size: var(--text-3xl);
+		line-height: 1;
+		margin-bottom: var(--space-2);
 	}
 
 	.preset-label {
