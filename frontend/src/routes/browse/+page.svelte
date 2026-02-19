@@ -73,10 +73,14 @@
 						<span class="phone-tag-value">Dinner</span>
 					</div>
 					<div class="phone-cards">
-						<div class="mock-card card-3"></div>
-						<div class="mock-card card-2"></div>
+						<div class="mock-card card-3">
+							<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/63ac55080a308b862e48c9b2_639a44e8692ea801789551cd_quinoa-pesto-bowl-thumbnail.webp" alt="" class="mock-card-photo" />
+						</div>
+						<div class="mock-card card-2">
+							<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/6470dfae89487940cd3f2c85_one-pot-lemon-pasta-thumbnail.webp" alt="" class="mock-card-photo" />
+						</div>
 						<div class="mock-card card-1">
-							<div class="mock-img"></div>
+							<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/6585b42a484dac29edc39a97_jalapeno-pimento-cheese-thumbnail.webp" alt="" class="mock-card-photo" />
 							<div class="mock-overlay">
 								<div class="mock-badge">30m</div>
 								<div class="mock-title-bar"></div>
@@ -383,15 +387,11 @@
 		transform: rotate(0deg);
 	}
 
-	.mock-img {
+	.mock-card-photo {
 		width: 100%;
 		height: 100%;
-		background: linear-gradient(
-			145deg,
-			var(--color-pasta-200) 0%,
-			var(--color-pasta-300) 40%,
-			var(--color-marinara-200) 100%
-		);
+		object-fit: cover;
+		display: block;
 	}
 
 	.mock-overlay {
