@@ -387,19 +387,30 @@
 
 					<!-- Bottom info -->
 					<div class="feed-card-overlay">
-						{#if recipe.source_domain}
-							<span class="feed-source">{recipe.source_domain}</span>
-						{/if}
-						<h2 class="feed-title">{recipe.title}</h2>
-						{#if recipe.total_time_minutes}
-							<div class="feed-detail">
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<circle cx="12" cy="12" r="10"/>
-									<polyline points="12 6 12 12 16 14"/>
-								</svg>
-								{formatTime(recipe.total_time_minutes)}
-							</div>
-						{/if}
+						<div class="feed-card-overlay-content">
+							{#if recipe.source_domain}
+								<span class="feed-source">
+									<img
+										src="https://www.google.com/s2/favicons?domain={recipe.source_domain}&sz=32"
+										alt=""
+										class="feed-favicon"
+										width="14"
+										height="14"
+									/>
+									{recipe.source_domain}
+								</span>
+							{/if}
+							<h2 class="feed-title">{recipe.title}</h2>
+							{#if recipe.total_time_minutes}
+								<div class="feed-detail">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<circle cx="12" cy="12" r="10"/>
+										<polyline points="12 6 12 12 16 14"/>
+									</svg>
+									{formatTime(recipe.total_time_minutes)}
+								</div>
+							{/if}
+						</div>
 					</div>
 				</div>
 			{/each}
@@ -861,20 +872,30 @@
 		position: absolute;
 		bottom: 0;
 		left: 0;
-		right: 72px;
-		padding: 80px 16px 24px;
-		background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+		right: 0;
+		padding: 120px 0 0;
+		background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
 		color: white;
+		pointer-events: none;
+	}
+
+	.feed-card-overlay-content {
+		padding: 0 72px 24px 16px;
 	}
 
 	.feed-source {
-		font-size: 12px;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		opacity: 0.7;
-		display: block;
-		margin-bottom: 4px;
+		font-size: 13px;
+		font-weight: 600;
+		opacity: 0.85;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin-bottom: 5px;
+	}
+
+	.feed-favicon {
+		border-radius: 2px;
+		flex-shrink: 0;
 	}
 
 	.feed-title {
