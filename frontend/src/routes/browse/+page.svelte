@@ -73,13 +73,31 @@
 						<span class="phone-tag-value">Dinner</span>
 					</div>
 					<div class="phone-cards">
-						<div class="mock-card card-3">
-							<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/63ac55080a308b862e48c9b2_639a44e8692ea801789551cd_quinoa-pesto-bowl-thumbnail.webp" alt="" class="mock-card-photo" />
+						<div class="mock-card swipe-c4">
+							<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/649b7f9aaa7e9bd7c9662b4d_watermelon-basil-salad-thumbnail.webp" alt="" class="mock-card-photo" />
+							<div class="mock-overlay">
+								<div class="mock-badge">15m</div>
+								<div class="mock-title-bar"></div>
+								<div class="mock-subtitle-bar"></div>
+							</div>
 						</div>
-						<div class="mock-card card-2">
-							<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/6470dfae89487940cd3f2c85_one-pot-lemon-pasta-thumbnail.webp" alt="" class="mock-card-photo" />
+						<div class="mock-card swipe-c3">
+							<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/6723a19fcc12a7d0178521d9_tomato-red-pepper-soup-thumbnail.webp" alt="" class="mock-card-photo" />
+							<div class="mock-overlay">
+								<div class="mock-badge">45m</div>
+								<div class="mock-title-bar"></div>
+								<div class="mock-subtitle-bar"></div>
+							</div>
 						</div>
-						<div class="mock-card card-1">
+						<div class="mock-card swipe-c2">
+							<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/668c7c1038f9ea42fc3eff27_spinach-feta-grilled-cheese-thumbnail.webp" alt="" class="mock-card-photo" />
+							<div class="mock-overlay">
+								<div class="mock-badge">20m</div>
+								<div class="mock-title-bar"></div>
+								<div class="mock-subtitle-bar"></div>
+							</div>
+						</div>
+						<div class="mock-card swipe-c1">
 							<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/6585b42a484dac29edc39a97_jalapeno-pimento-cheese-thumbnail.webp" alt="" class="mock-card-photo" />
 							<div class="mock-overlay">
 								<div class="mock-badge">30m</div>
@@ -287,41 +305,68 @@
 		transform: scale(1.03);
 	}
 
-	.cta-swipe:hover .mock-card.card-1 {
-		animation: swipeDemo 4s ease-in-out infinite;
+	/* Swipe animations on hover — 4 cards, 8s cycle */
+	/* Card 1 (top): swipe right at ~12%, swipe left at ~37% */
+	.cta-swipe:hover .swipe-c1 {
+		animation: swipeCard1 8s ease-in-out infinite;
+	}
+	.cta-swipe:hover .mock-label-maybe { animation: labelMaybe 8s ease-in-out infinite; }
+	.cta-swipe:hover .mock-label-skip { animation: labelSkip 8s ease-in-out infinite; }
+
+	@keyframes swipeCard1 {
+		0%, 5% { transform: rotate(0) translateX(0); opacity: 1; z-index: 4; }
+		12% { transform: rotate(8deg) translateX(40px); opacity: 1; }
+		16% { transform: rotate(14deg) translateX(70px); opacity: 0; }
+		17%, 30% { transform: rotate(0) translateX(0); opacity: 0; z-index: 4; }
+		31% { opacity: 1; }
+		37% { transform: rotate(-8deg) translateX(-40px); opacity: 1; }
+		41% { transform: rotate(-14deg) translateX(-70px); opacity: 0; }
+		42%, 100% { opacity: 0; z-index: 0; }
+	}
+	@keyframes labelMaybe {
+		0%, 5% { opacity: 0; } 10% { opacity: 1; } 16%, 100% { opacity: 0; }
+	}
+	@keyframes labelSkip {
+		0%, 31% { opacity: 0; } 35% { opacity: 1; } 41%, 100% { opacity: 0; }
 	}
 
-	.cta-swipe:hover .mock-label-maybe {
-		animation: swipeLabelMaybe 4s ease-in-out infinite;
+	/* Card 2: becomes top after c1 first swipe, swipes right at ~62% */
+	.cta-swipe:hover .swipe-c2 {
+		animation: swipeCard2 8s ease-in-out infinite;
+	}
+	@keyframes swipeCard2 {
+		0%, 16% { transform: scale(0.95) translateY(4px); z-index: 2; }
+		17% { transform: scale(1) translateY(0); z-index: 3; }
+		55% { transform: rotate(0) translateX(0); opacity: 1; }
+		62% { transform: rotate(10deg) translateX(50px); opacity: 1; }
+		66% { transform: rotate(14deg) translateX(70px); opacity: 0; }
+		67%, 100% { opacity: 0; z-index: 0; }
 	}
 
-	.cta-swipe:hover .mock-label-skip {
-		animation: swipeLabelSkip 4s ease-in-out infinite;
+	/* Card 3: becomes top after c2 swipes */
+	.cta-swipe:hover .swipe-c3 {
+		animation: swipeCard3 8s ease-in-out infinite;
+	}
+	@keyframes swipeCard3 {
+		0%, 66% { transform: scale(0.9) translateY(8px); z-index: 1; }
+		67% { transform: scale(1) translateY(0); z-index: 3; }
+		80% { transform: rotate(0) translateX(0); opacity: 1; }
+		86% { transform: rotate(-9deg) translateX(-45px); opacity: 1; }
+		90% { transform: rotate(-14deg) translateX(-70px); opacity: 0; }
+		91%, 100% { opacity: 0; z-index: 0; }
 	}
 
-	@keyframes swipeDemo {
-		0%, 10% { transform: rotate(0deg) translateX(0); opacity: 1; }
-		20% { transform: rotate(8deg) translateX(30px); opacity: 1; }
-		28% { transform: rotate(12deg) translateX(60px); opacity: 0; }
-		29% { transform: rotate(0deg) translateX(0); opacity: 0; }
-		35% { transform: rotate(0deg) translateX(0); opacity: 1; }
-		45%, 55% { transform: rotate(0deg) translateX(0); opacity: 1; }
-		65% { transform: rotate(-8deg) translateX(-30px); opacity: 1; }
-		73% { transform: rotate(-12deg) translateX(-60px); opacity: 0; }
-		74% { transform: rotate(0deg) translateX(0); opacity: 0; }
-		80%, 100% { transform: rotate(0deg) translateX(0); opacity: 1; }
+	/* Card 4: background, becomes visible as others leave */
+	.swipe-c4 {
+		z-index: 0;
 	}
-
-	@keyframes swipeLabelMaybe {
-		0%, 10% { opacity: 0; }
-		18% { opacity: 1; }
-		28%, 100% { opacity: 0; }
+	.cta-swipe:hover .swipe-c4 {
+		animation: swipeCard4 8s ease-in-out infinite;
 	}
-
-	@keyframes swipeLabelSkip {
-		0%, 55% { opacity: 0; }
-		63% { opacity: 1; }
-		73%, 100% { opacity: 0; }
+	@keyframes swipeCard4 {
+		0%, 90% { transform: scale(0.85) translateY(12px); z-index: 0; }
+		91% { transform: scale(1) translateY(0); z-index: 3; }
+		100% { transform: scale(1) translateY(0); z-index: 3; opacity: 1; }
 	}
 
 	.cta-text {
@@ -402,23 +447,24 @@
 		overflow: hidden;
 	}
 
-	.mock-card.card-3 {
-		background: var(--color-gray-200);
+	.swipe-c4 {
+		transform: scale(0.85) translateY(12px);
+		z-index: 0;
+	}
+
+	.swipe-c3 {
 		transform: scale(0.9) translateY(8px);
 		z-index: 1;
 	}
 
-	.mock-card.card-2 {
-		background: var(--color-gray-150, var(--color-gray-200));
+	.swipe-c2 {
 		transform: scale(0.95) translateY(4px);
 		z-index: 2;
 	}
 
-	.mock-card.card-1 {
+	.swipe-c1 {
 		z-index: 3;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-		transition: transform var(--transition-normal);
-		transform: rotate(0deg);
 	}
 
 	.mock-card-photo {
