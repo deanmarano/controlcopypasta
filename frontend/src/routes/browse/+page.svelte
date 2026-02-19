@@ -59,39 +59,81 @@
 		<p class="subtitle">Discover recipes from various sources</p>
 	</header>
 
-	<a href="/quicklist" class="quicklist-cta">
-		<div class="cta-text">
-			<strong>Not sure what to cook?</strong>
-			<span>Swipe through recipes to find your next meal. Skip what you don't want, save what you might.</span>
-			<span class="cta-action">Try it &rarr;</span>
-		</div>
-		<div class="cta-phone" aria-hidden="true">
-			<div class="phone-frame">
-				<div class="phone-header">
-					<span class="phone-tag">Find</span>
-					<span class="phone-tag-value">Dinner</span>
-				</div>
-				<div class="phone-cards">
-					<div class="mock-card card-3"></div>
-					<div class="mock-card card-2"></div>
-					<div class="mock-card card-1">
-						<div class="mock-img"></div>
-						<div class="mock-overlay">
-							<div class="mock-badge">30m</div>
-							<div class="mock-title"></div>
-							<div class="mock-subtitle"></div>
+	<div class="quicklist-ctas">
+		<a href="/quicklist" class="quicklist-cta cta-swipe">
+			<div class="cta-text">
+				<strong>Tinder Style</strong>
+				<span>Swipe right to save, left to skip. Rapid-fire recipe discovery, one card at a time.</span>
+				<span class="cta-action">Try swiping &rarr;</span>
+			</div>
+			<div class="cta-phone" aria-hidden="true">
+				<div class="phone-frame">
+					<div class="phone-header">
+						<span class="phone-tag">Find</span>
+						<span class="phone-tag-value">Dinner</span>
+					</div>
+					<div class="phone-cards">
+						<div class="mock-card card-3"></div>
+						<div class="mock-card card-2"></div>
+						<div class="mock-card card-1">
+							<div class="mock-img"></div>
+							<div class="mock-overlay">
+								<div class="mock-badge">30m</div>
+								<div class="mock-title-bar"></div>
+								<div class="mock-subtitle-bar"></div>
+							</div>
+							<div class="mock-label-maybe">MAYBE</div>
 						</div>
-						<div class="mock-label-maybe">MAYBE</div>
+					</div>
+					<div class="phone-buttons">
+						<div class="mock-btn mock-skip">Skip</div>
+						<div class="mock-btn mock-view">View</div>
+						<div class="mock-btn mock-maybe">Maybe</div>
 					</div>
 				</div>
-				<div class="phone-buttons">
-					<div class="mock-btn mock-skip">Skip</div>
-					<div class="mock-btn mock-view">View</div>
-					<div class="mock-btn mock-maybe">Maybe</div>
+			</div>
+		</a>
+
+		<a href="/quicklist" class="quicklist-cta cta-feed">
+			<div class="cta-text">
+				<strong>Instagram Style</strong>
+				<span>Scroll a full-screen feed. Double-tap to save, just like your favorite app.</span>
+				<span class="cta-action">Try scrolling &rarr;</span>
+			</div>
+			<div class="cta-phone" aria-hidden="true">
+				<div class="phone-frame phone-frame-dark">
+					<div class="feed-mock-card feed-card-current">
+						<div class="feed-mock-img"></div>
+						<div class="feed-mock-overlay">
+							<div class="feed-mock-source">
+								<div class="feed-mock-favicon"></div>
+								<div class="feed-mock-domain-bar"></div>
+							</div>
+							<div class="feed-mock-title-bar"></div>
+							<div class="feed-mock-time-bar"></div>
+						</div>
+						<div class="feed-mock-rail">
+							<div class="feed-mock-heart">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+									<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+								</svg>
+							</div>
+							<div class="feed-mock-rail-icon"></div>
+							<div class="feed-mock-rail-icon"></div>
+						</div>
+						<div class="feed-mock-heart-burst">
+							<svg width="28" height="28" viewBox="0 0 24 24" fill="#ff3040" stroke="none">
+								<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+							</svg>
+						</div>
+					</div>
+					<div class="feed-mock-card feed-card-next">
+						<div class="feed-mock-img feed-mock-img-2"></div>
+					</div>
 				</div>
 			</div>
-		</div>
-	</a>
+		</a>
+	</div>
 
 	{#if loading}
 		<div class="loading">Loading sources...</div>
@@ -159,31 +201,63 @@
 		margin: 0;
 	}
 
+	.quicklist-ctas {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--space-4);
+		margin-bottom: var(--space-8);
+	}
+
 	.quicklist-cta {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: var(--space-6);
-		padding: var(--space-6) var(--space-8);
-		margin-bottom: var(--space-8);
-		background: linear-gradient(135deg, var(--color-basil-50) 0%, var(--color-basil-100) 100%);
-		border: var(--border-width-thin) solid var(--color-basil-300);
+		gap: var(--space-4);
+		padding: var(--space-5) var(--space-6);
 		border-radius: var(--radius-lg);
 		text-decoration: none;
 		transition: all var(--transition-fast);
 		overflow: hidden;
+		border: var(--border-width-thin) solid;
 	}
 
-	.quicklist-cta:hover {
+	.cta-swipe {
+		background: linear-gradient(135deg, var(--color-basil-50) 0%, var(--color-basil-100) 100%);
+		border-color: var(--color-basil-300);
+	}
+
+	.cta-swipe:hover {
 		border-color: var(--color-basil-400);
 		box-shadow: var(--shadow-lg);
+	}
+
+	.cta-feed {
+		background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+		border-color: #2a2a4a;
+	}
+
+	.cta-feed:hover {
+		border-color: #4a4a6a;
+		box-shadow: var(--shadow-lg);
+	}
+
+	.cta-feed .cta-text strong {
+		color: #fff;
+	}
+
+	.cta-feed .cta-text span {
+		color: rgba(255, 255, 255, 0.6);
+	}
+
+	.cta-feed .cta-action {
+		color: #ff3040 !important;
 	}
 
 	.quicklist-cta:hover .cta-phone {
 		transform: scale(1.03);
 	}
 
-	.quicklist-cta:hover .mock-card.card-1 {
+	.cta-swipe:hover .mock-card.card-1 {
 		transform: rotate(3deg);
 	}
 
@@ -314,7 +388,7 @@
 		margin-bottom: 3px;
 	}
 
-	.mock-title {
+	.mock-title-bar {
 		height: 6px;
 		width: 75%;
 		background: rgba(255, 255, 255, 0.9);
@@ -322,7 +396,7 @@
 		margin-bottom: 3px;
 	}
 
-	.mock-subtitle {
+	.mock-subtitle-bar {
 		height: 4px;
 		width: 50%;
 		background: rgba(255, 255, 255, 0.5);
@@ -370,6 +444,157 @@
 	.mock-maybe {
 		background: var(--color-basil-100);
 		color: var(--color-basil-700);
+	}
+
+	/* Feed phone mockup */
+	.phone-frame-dark {
+		background: #000 !important;
+		border-color: #333 !important;
+		padding: 0 !important;
+		position: relative;
+	}
+
+	.feed-mock-card {
+		position: absolute;
+		inset: 0;
+		overflow: hidden;
+		border-radius: 14px;
+	}
+
+	.feed-card-current {
+		z-index: 2;
+	}
+
+	.feed-card-next {
+		z-index: 1;
+		top: auto;
+		bottom: -10px;
+		height: 30px;
+		border-radius: 0 0 14px 14px;
+		opacity: 0.4;
+	}
+
+	.feed-mock-img {
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(
+			160deg,
+			#e8a87c 0%,
+			#d4856a 40%,
+			#b5654a 100%
+		);
+	}
+
+	.feed-mock-img-2 {
+		background: linear-gradient(
+			160deg,
+			#85c7a3 0%,
+			#5ba37d 40%,
+			#3d7a5a 100%
+		);
+	}
+
+	.feed-mock-overlay {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 24px;
+		padding: 20px 6px 8px;
+		background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+	}
+
+	.feed-mock-source {
+		display: flex;
+		align-items: center;
+		gap: 3px;
+		margin-bottom: 3px;
+	}
+
+	.feed-mock-favicon {
+		width: 6px;
+		height: 6px;
+		border-radius: 1px;
+		background: rgba(255, 255, 255, 0.5);
+	}
+
+	.feed-mock-domain-bar {
+		height: 4px;
+		width: 30px;
+		background: rgba(255, 255, 255, 0.5);
+		border-radius: 2px;
+	}
+
+	.feed-mock-title-bar {
+		height: 6px;
+		width: 70%;
+		background: rgba(255, 255, 255, 0.9);
+		border-radius: 3px;
+		margin-bottom: 3px;
+	}
+
+	.feed-mock-time-bar {
+		height: 4px;
+		width: 25px;
+		background: rgba(255, 255, 255, 0.4);
+		border-radius: 2px;
+	}
+
+	.feed-mock-rail {
+		position: absolute;
+		right: 5px;
+		bottom: 8px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8px;
+		z-index: 3;
+	}
+
+	.feed-mock-heart {
+		filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+	}
+
+	.feed-mock-rail-icon {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		border: 1.5px solid rgba(255, 255, 255, 0.7);
+	}
+
+	.feed-mock-heart-burst {
+		position: absolute;
+		top: 50%;
+		left: 45%;
+		transform: translate(-50%, -50%);
+		z-index: 5;
+		animation: mockHeartPop 2s ease-out infinite;
+	}
+
+	@keyframes mockHeartPop {
+		0%, 60% {
+			opacity: 0;
+			transform: translate(-50%, -50%) scale(0);
+		}
+		70% {
+			opacity: 1;
+			transform: translate(-50%, -50%) scale(1.3);
+		}
+		80% {
+			transform: translate(-50%, -50%) scale(0.9);
+		}
+		90% {
+			transform: translate(-50%, -50%) scale(1.05);
+		}
+		100% {
+			opacity: 0;
+			transform: translate(-50%, -50%) scale(1);
+		}
+	}
+
+	@media (max-width: 768px) {
+		.quicklist-ctas {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	@media (max-width: 640px) {
