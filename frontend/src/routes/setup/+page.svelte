@@ -10,6 +10,7 @@
 	let hideAvoided = $state(true);
 	let saving = $state(false);
 	let error = $state('');
+	let disabledAvoidances = $state<Set<string>>(new Set());
 
 	// Preset definitions mapping to avoidance records
 	const presets: Record<string, { label: string; icon: string; description: string; avoidances: Array<{ type: string; value: string }> }> = {
@@ -139,6 +140,25 @@
 		return a.value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 	}
 
+	function avoidanceKey(a: { type: string; value: string }): string {
+		return `${a.type}:${a.value}`;
+	}
+
+	function toggleAvoidance(a: { type: string; value: string }) {
+		const key = avoidanceKey(a);
+		const newSet = new Set(disabledAvoidances);
+		if (newSet.has(key)) {
+			newSet.delete(key);
+		} else {
+			newSet.add(key);
+		}
+		disabledAvoidances = newSet;
+	}
+
+	function getEnabledAvoidances(): Array<{ type: string; value: string }> {
+		return getAvoidanceSummary().filter((a) => !disabledAvoidances.has(avoidanceKey(a)));
+	}
+
 	async function finishSetup() {
 		const token = authStore.getToken();
 		if (!token) return;
@@ -147,7 +167,7 @@
 		error = '';
 
 		try {
-			const avoidances = getAvoidanceSummary();
+			const avoidances = getEnabledAvoidances();
 
 			// Create avoidances if any
 			if (avoidances.length > 0) {
@@ -247,12 +267,21 @@
 
 				<div class="avoidance-summary">
 					{#each getAvoidanceSummary() as avoidance}
-						<span class="avoidance-tag">
+						<button
+							class="avoidance-tag"
+							class:disabled={disabledAvoidances.has(avoidanceKey(avoidance))}
+							onclick={() => toggleAvoidance(avoidance)}
+						>
 							<span class="tag-type">{avoidance.type}</span>
 							{formatAvoidanceLabel(avoidance)}
-						</span>
+							<span class="tag-toggle">{disabledAvoidances.has(avoidanceKey(avoidance)) ? '＋' : '✕'}</span>
+						</button>
 					{/each}
 				</div>
+
+				{#if disabledAvoidances.size > 0}
+					<p class="exceptions-note">{disabledAvoidances.size} exception{disabledAvoidances.size === 1 ? '' : 's'} — tap to re-enable</p>
+				{/if}
 
 				<label class="toggle-row">
 					<input type="checkbox" bind:checked={hideAvoided} />
@@ -460,9 +489,27 @@
 		gap: var(--space-1);
 		padding: var(--space-1) var(--space-3);
 		background: var(--color-marinara-100);
+		border: var(--border-width-default) solid var(--color-marinara-200);
 		border-radius: var(--radius-full);
 		font-size: var(--text-sm);
 		color: var(--color-marinara-800);
+		cursor: pointer;
+		transition: all var(--transition-fast);
+	}
+
+	.avoidance-tag:hover {
+		border-color: var(--color-marinara-400);
+	}
+
+	.avoidance-tag.disabled {
+		background: var(--color-gray-100);
+		color: var(--text-muted);
+		border-color: var(--border-light);
+		text-decoration: line-through;
+	}
+
+	.avoidance-tag.disabled .tag-type {
+		color: var(--text-muted);
 	}
 
 	.tag-type {
@@ -470,6 +517,18 @@
 		color: var(--color-marinara-500);
 		text-transform: uppercase;
 		font-weight: var(--font-medium);
+	}
+
+	.tag-toggle {
+		font-size: var(--text-xs);
+		margin-left: var(--space-1);
+		opacity: 0.6;
+	}
+
+	.exceptions-note {
+		font-size: var(--text-xs);
+		color: var(--text-muted);
+		margin: 0 0 var(--space-4);
 	}
 
 	.toggle-row {
