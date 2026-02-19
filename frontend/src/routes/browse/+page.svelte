@@ -87,6 +87,7 @@
 								<div class="mock-subtitle-bar"></div>
 							</div>
 							<div class="mock-label-maybe">MAYBE</div>
+							<div class="mock-label-skip">SKIP</div>
 						</div>
 					</div>
 					<div class="phone-buttons">
@@ -287,7 +288,40 @@
 	}
 
 	.cta-swipe:hover .mock-card.card-1 {
-		transform: rotate(3deg);
+		animation: swipeDemo 4s ease-in-out infinite;
+	}
+
+	.cta-swipe:hover .mock-label-maybe {
+		animation: swipeLabelMaybe 4s ease-in-out infinite;
+	}
+
+	.cta-swipe:hover .mock-label-skip {
+		animation: swipeLabelSkip 4s ease-in-out infinite;
+	}
+
+	@keyframes swipeDemo {
+		0%, 10% { transform: rotate(0deg) translateX(0); opacity: 1; }
+		20% { transform: rotate(8deg) translateX(30px); opacity: 1; }
+		28% { transform: rotate(12deg) translateX(60px); opacity: 0; }
+		29% { transform: rotate(0deg) translateX(0); opacity: 0; }
+		35% { transform: rotate(0deg) translateX(0); opacity: 1; }
+		45%, 55% { transform: rotate(0deg) translateX(0); opacity: 1; }
+		65% { transform: rotate(-8deg) translateX(-30px); opacity: 1; }
+		73% { transform: rotate(-12deg) translateX(-60px); opacity: 0; }
+		74% { transform: rotate(0deg) translateX(0); opacity: 0; }
+		80%, 100% { transform: rotate(0deg) translateX(0); opacity: 1; }
+	}
+
+	@keyframes swipeLabelMaybe {
+		0%, 10% { opacity: 0; }
+		18% { opacity: 1; }
+		28%, 100% { opacity: 0; }
+	}
+
+	@keyframes swipeLabelSkip {
+		0%, 55% { opacity: 0; }
+		63% { opacity: 1; }
+		73%, 100% { opacity: 0; }
 	}
 
 	.cta-text {
@@ -428,18 +462,31 @@
 		border-radius: 2px;
 	}
 
-	.mock-label-maybe {
+	.mock-label-maybe,
+	.mock-label-skip {
 		position: absolute;
 		top: 8px;
-		left: 4px;
 		font-size: 7px;
 		font-weight: var(--font-bold);
-		color: var(--color-basil-600);
-		border: 1.5px solid var(--color-basil-600);
 		background: rgba(255, 255, 255, 0.9);
 		padding: 1px 4px;
 		border-radius: 3px;
+		border: 1.5px solid;
+		opacity: 0;
+	}
+
+	.mock-label-maybe {
+		left: 4px;
+		color: var(--color-basil-600);
+		border-color: var(--color-basil-600);
 		transform: rotate(-12deg);
+	}
+
+	.mock-label-skip {
+		right: 4px;
+		color: var(--color-marinara-600);
+		border-color: var(--color-marinara-600);
+		transform: rotate(12deg);
 	}
 
 	.phone-buttons {
