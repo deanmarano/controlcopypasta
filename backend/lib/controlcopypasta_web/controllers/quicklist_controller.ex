@@ -2,8 +2,7 @@ defmodule ControlcopypastaWeb.QuicklistController do
   use ControlcopypastaWeb, :controller
 
   alias Controlcopypasta.Quicklist
-  alias Controlcopypasta.Accounts
-  alias Controlcopypasta.Ingredients
+  alias Controlcopypasta.Quicklist.AvoidedCache
 
   action_fallback ControlcopypastaWeb.FallbackController
 
@@ -11,7 +10,7 @@ defmodule ControlcopypastaWeb.QuicklistController do
     user = conn.assigns.current_user
     count = Map.get(params, "count", "10") |> parse_int(10) |> min(30)
     tag = Map.get(params, "tag")
-    avoided_params = build_avoided_params(user)
+    avoided_params = AvoidedCache.get_avoided_params(user)
 
     recipes = Quicklist.get_swipe_batch(user.id, count, avoided_params, tag)
     render(conn, :batch, recipes: recipes, user_id: user.id)
@@ -41,25 +40,6 @@ defmodule ControlcopypastaWeb.QuicklistController do
     user = conn.assigns.current_user
     :ok = Quicklist.remove_from_maybe(user.id, recipe_id)
     send_resp(conn, :no_content, "")
-  end
-
-  defp build_avoided_params(user) do
-    if user.hide_avoided_ingredients do
-      avoided_ids = Accounts.get_avoided_canonical_ids(user.id)
-
-      if MapSet.size(avoided_ids) > 0 do
-        avoided_names = Ingredients.list_canonical_names_by_ids(avoided_ids)
-
-        %{
-          "exclude_ingredient_ids" => MapSet.to_list(avoided_ids),
-          "exclude_ingredient_names" => avoided_names
-        }
-      else
-        %{}
-      end
-    else
-      %{}
-    end
   end
 
   defp parse_int(val, default) when is_binary(val) do

@@ -9,64 +9,56 @@ defmodule Controlcopypasta.Quicklist do
   alias Controlcopypasta.Recipes.Recipe
 
   @doc """
-  Gets a batch of recipes for swiping, round-robin from domains with 100+ recipes.
-  Excludes already-swiped recipes, requires image_url, and applies avoided ingredient filter.
+  Gets a batch of recipes for swiping, using a single query with ROW_NUMBER()
+  to round-robin across domains. Excludes already-swiped recipes via subquery,
+  requires image_url, and applies avoided ingredient filter.
   Optional tag filter restricts results to recipes with the given tag.
   """
   def get_swipe_batch(user_id, count, avoided_params \\ %{}, tag \\ nil) do
-    # Get already-swiped recipe IDs for this user
-    swiped_ids =
-      Swipe
-      |> where([s], s.user_id == ^user_id)
-      |> select([s], s.recipe_id)
-      |> Repo.all()
+    swiped_subquery = swiped_recipe_ids_query(user_id)
+    per_domain = max(div(count, 5), 2)
 
-    # Get domains with 100+ recipes (matching the tag filter)
-    big_domains =
+    # Base query: unswiped recipes with images, not archived
+    base =
       Recipe
-      |> where([r], not is_nil(r.source_domain) and not is_nil(r.image_url) and r.image_url != "")
+      |> where([r], not is_nil(r.image_url) and r.image_url != "")
       |> where([r], is_nil(r.archived_at))
+      |> where([r], r.id not in subquery(swiped_subquery))
       |> apply_tag_filter(tag)
-      |> group_by([r, ...], r.source_domain)
-      |> having([r, ...], count(r.id) >= 100)
-      |> select([r, ...], r.source_domain)
+      |> apply_avoided_filter(avoided_params)
+
+    # Ranked subquery: assign row_number per domain, ordered randomly
+    ranked =
+      from r in base,
+        select: %{
+          id: r.id,
+          rn:
+            fragment(
+              "ROW_NUMBER() OVER (PARTITION BY ? ORDER BY RANDOM())",
+              r.source_domain
+            )
+        }
+
+    # Outer query: join ranked back, take top N per domain, shuffle, limit
+    recipes =
+      from(r in Recipe,
+        join: ranked in subquery(ranked),
+        on: ranked.id == r.id,
+        where: ranked.rn <= ^per_domain,
+        order_by: fragment("RANDOM()"),
+        limit: ^count,
+        preload: [:tags]
+      )
       |> Repo.all()
 
-    if Enum.empty?(big_domains) do
-      # Fallback: just get random recipes with images
-      fallback_query(user_id, swiped_ids, count, avoided_params, tag)
+    # If we don't have enough, fill with a simple fallback
+    if length(recipes) < count do
+      existing_ids = Enum.map(recipes, & &1.id)
+      remaining = count - length(recipes)
+      fillers = fallback_query(user_id, existing_ids, remaining, avoided_params, tag)
+      recipes ++ fillers
     else
-      # Round-robin: get ~equal recipes from each domain
-      per_domain = max(div(count, length(big_domains)), 1)
-
-      recipes =
-        Enum.flat_map(big_domains, fn domain ->
-          query =
-            Recipe
-            |> where([r], r.source_domain == ^domain)
-            |> where([r], not is_nil(r.image_url) and r.image_url != "")
-            |> where([r], is_nil(r.archived_at))
-            |> apply_tag_filter(tag)
-            |> exclude_swiped(swiped_ids)
-            |> apply_avoided_filter(avoided_params)
-            |> order_by(fragment("RANDOM()"))
-            |> limit(^per_domain)
-            |> preload(:tags)
-
-          Repo.all(query)
-        end)
-        |> Enum.shuffle()
-        |> Enum.take(count)
-
-      # If we don't have enough, fill with fallback
-      if length(recipes) < count do
-        existing_ids = Enum.map(recipes, & &1.id)
-        remaining = count - length(recipes)
-        fillers = fallback_query(user_id, swiped_ids ++ existing_ids, remaining, avoided_params, tag)
-        recipes ++ fillers
-      else
-        recipes
-      end
+      recipes
     end
   end
 
@@ -125,12 +117,21 @@ defmodule Controlcopypasta.Quicklist do
 
   # Private helpers
 
-  defp fallback_query(_user_id, exclude_ids, count, avoided_params, tag) do
+  defp swiped_recipe_ids_query(user_id) do
+    Swipe
+    |> where([s], s.user_id == ^user_id)
+    |> select([s], s.recipe_id)
+  end
+
+  defp fallback_query(user_id, extra_exclude_ids, count, avoided_params, tag) do
+    swiped_subquery = swiped_recipe_ids_query(user_id)
+
     Recipe
     |> where([r], not is_nil(r.image_url) and r.image_url != "")
     |> where([r], is_nil(r.archived_at))
+    |> where([r], r.id not in subquery(swiped_subquery))
+    |> exclude_ids(extra_exclude_ids)
     |> apply_tag_filter(tag)
-    |> exclude_swiped(exclude_ids)
     |> apply_avoided_filter(avoided_params)
     |> order_by(fragment("RANDOM()"))
     |> limit(^count)
@@ -138,13 +139,15 @@ defmodule Controlcopypasta.Quicklist do
     |> Repo.all()
   end
 
-  defp exclude_swiped(query, []), do: query
-  defp exclude_swiped(query, ids) do
+  defp exclude_ids(query, []), do: query
+
+  defp exclude_ids(query, ids) do
     where(query, [r], r.id not in ^ids)
   end
 
   defp apply_tag_filter(query, nil), do: query
   defp apply_tag_filter(query, ""), do: query
+
   defp apply_tag_filter(query, tag) do
     query
     |> join(:inner, [r], t in assoc(r, :tags))

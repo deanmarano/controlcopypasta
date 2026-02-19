@@ -14,6 +14,8 @@ defmodule Controlcopypasta.Application do
       {Phoenix.PubSub, name: Controlcopypasta.PubSub},
       # Parser vocabulary cache (loads preparations + normalizer from DB)
       Controlcopypasta.Ingredients.ParserCache,
+      # Per-user avoided ingredient cache (ETS with 5-min TTL)
+      Controlcopypasta.Quicklist.AvoidedCache,
       # Start to serve requests, typically the last entry
       ControlcopypastaWeb.Endpoint
     ]
