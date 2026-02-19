@@ -46,6 +46,21 @@
 	});
 
 	let heartingId = $state<number | null>(null);
+	let lastTapTime = 0;
+	let lastTapTarget = 0;
+
+	function onFeedCardTap(recipeId: number) {
+		const now = Date.now();
+		if (lastTapTarget === recipeId && now - lastTapTime < 400) {
+			// Double-tap → heart
+			handleFeedAction(recipeId, 'maybe');
+			lastTapTime = 0;
+			lastTapTarget = 0;
+		} else {
+			lastTapTime = now;
+			lastTapTarget = recipeId;
+		}
+	}
 
 	async function handleFeedAction(recipeId: number, action: 'maybe' | 'skip') {
 		if (swiping) return;
@@ -55,9 +70,8 @@
 		swiping = true;
 
 		if (action === 'maybe') {
-			// Show heart animation before dismissing
 			heartingId = recipeId;
-			await new Promise((r) => setTimeout(r, 600));
+			await new Promise((r) => setTimeout(r, 800));
 			heartingId = null;
 		}
 
@@ -298,63 +312,102 @@
 			</button>
 		</div>
 	{:else}
+		<!-- Floating top bar over feed -->
+		<div class="feed-top-bar">
+			<button class="feed-nav-btn" onclick={() => setViewMode('swipe')} aria-label="Back to swipe view">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="19" y1="12" x2="5" y2="12"/>
+					<polyline points="12 19 5 12 12 5"/>
+				</svg>
+			</button>
+			<div class="feed-tag-pills">
+				{#each tagOptions as tag}
+					<button
+						class="feed-tag-pill"
+						class:active={selectedTag === tag}
+						onclick={() => changeTag(tag)}
+					>{tagLabel(tag)}</button>
+				{/each}
+			</div>
+			<a href="/quicklist/maybe" class="feed-nav-btn" aria-label="Maybe list">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+				</svg>
+			</a>
+		</div>
+
 		<div class="feed-container" bind:this={feedContainer}>
 			{#each cards as recipe (recipe.id)}
-				<div class="feed-card" class:dismissing={dismissingId === recipe.id}>
+				<div
+					class="feed-card"
+					class:dismissing={dismissingId === recipe.id}
+					onclick={() => onFeedCardTap(recipe.id)}
+					role="button"
+					tabindex="0"
+				>
 					{#if recipe.image_url}
 						<img src={recipe.image_url} alt={recipe.title} class="feed-card-img" />
 					{:else}
 						<div class="feed-card-img placeholder">No image</div>
 					{/if}
 
-					<!-- Heart animation overlay -->
 					{#if heartingId === recipe.id}
 						<div class="heart-burst">
-							<svg width="80" height="80" viewBox="0 0 24 24" fill="#ff3040" stroke="none">
+							<svg width="100" height="100" viewBox="0 0 24 24" fill="#ff3040" stroke="none">
 								<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
 							</svg>
 						</div>
 					{/if}
 
-					<!-- Right-side icon buttons (Instagram-style) -->
-					<div class="feed-side-actions">
-						<button class="feed-icon-btn heart" onclick={() => handleFeedAction(recipe.id, 'maybe')} disabled={swiping} aria-label="Save recipe">
-							<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<!-- Right-side action rail -->
+					<div class="feed-action-rail">
+						<button class="rail-btn" onclick={(e: MouseEvent) => { e.stopPropagation(); handleFeedAction(recipe.id, 'maybe'); }} disabled={swiping} aria-label="Save recipe">
+							<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
 							</svg>
+							<span class="rail-label">Save</span>
 						</button>
-						<button class="feed-icon-btn" onclick={() => goto(`/recipes/${recipe.id}`)} aria-label="View recipe">
+						<a class="rail-btn" href="/recipes/{recipe.id}" onclick={(e: MouseEvent) => e.stopPropagation()} aria-label="View recipe">
 							<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-								<polyline points="15 3 21 3 21 9"/>
-								<line x1="10" y1="14" x2="21" y2="3"/>
+								<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+								<line x1="3" y1="9" x2="21" y2="9"/>
+								<line x1="9" y1="21" x2="9" y2="9"/>
 							</svg>
-						</button>
-						<button class="feed-icon-btn skip" onclick={() => handleFeedAction(recipe.id, 'skip')} disabled={swiping} aria-label="Skip recipe">
+							<span class="rail-label">View</span>
+						</a>
+						<button class="rail-btn" onclick={(e: MouseEvent) => { e.stopPropagation(); handleFeedAction(recipe.id, 'skip'); }} disabled={swiping} aria-label="Skip recipe">
 							<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<line x1="18" y1="6" x2="6" y2="18"/>
-								<line x1="6" y1="6" x2="18" y2="18"/>
+								<circle cx="12" cy="12" r="10"/>
+								<line x1="15" y1="9" x2="9" y2="15"/>
+								<line x1="9" y1="9" x2="15" y2="15"/>
 							</svg>
+							<span class="rail-label">Skip</span>
 						</button>
 					</div>
 
-					<!-- Bottom info overlay -->
+					<!-- Bottom info -->
 					<div class="feed-card-overlay">
-						<h2>{recipe.title}</h2>
-						<div class="feed-meta">
-							{#if recipe.total_time_minutes}
-								<span class="feed-meta-item">{formatTime(recipe.total_time_minutes)}</span>
-							{/if}
-							{#if recipe.source_domain}
-								<span class="feed-meta-item">{recipe.source_domain}</span>
-							{/if}
-						</div>
+						{#if recipe.source_domain}
+							<span class="feed-source">{recipe.source_domain}</span>
+						{/if}
+						<h2 class="feed-title">{recipe.title}</h2>
+						{#if recipe.total_time_minutes}
+							<div class="feed-detail">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<circle cx="12" cy="12" r="10"/>
+									<polyline points="12 6 12 12 16 14"/>
+								</svg>
+								{formatTime(recipe.total_time_minutes)}
+							</div>
+						{/if}
 					</div>
 				</div>
 			{/each}
 			<div class="feed-sentinel" bind:this={feedSentinel}></div>
 			{#if loading}
-				<div class="feed-loading">Loading more...</div>
+				<div class="feed-loading">
+					<div class="feed-spinner"></div>
+				</div>
 			{/if}
 		</div>
 	{/if}
@@ -676,7 +729,7 @@
 		color: var(--text-primary);
 	}
 
-	/* Feed mode: full-screen overlay to escape layout chrome */
+	/* Feed mode: immersive full-screen */
 	.quicklist-page.feed-mode {
 		position: fixed;
 		inset: 0;
@@ -684,19 +737,89 @@
 		max-width: none;
 		padding: 0;
 		margin: 0;
-		background: var(--bg-page, #fff);
+		background: #000;
 		overflow: hidden;
 	}
 
 	.feed-mode .ql-header {
-		padding: var(--space-2) var(--space-4);
-		margin-bottom: 0;
+		display: none;
 	}
 
-	/* Feed view */
-	.feed-container {
+	/* Floating top bar */
+	.feed-top-bar {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		z-index: 20;
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: env(safe-area-inset-top, 12px) var(--space-3) var(--space-2);
+		background: linear-gradient(rgba(0, 0, 0, 0.5), transparent);
+		pointer-events: none;
+	}
+
+	.feed-top-bar > * {
+		pointer-events: auto;
+	}
+
+	.feed-nav-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 40px;
+		height: 40px;
+		border: none;
+		border-radius: 50%;
+		background: transparent;
+		color: white;
+		cursor: pointer;
+		text-decoration: none;
+		flex-shrink: 0;
+		filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+	}
+
+	.feed-tag-pills {
 		flex: 1;
-		min-height: 0;
+		display: flex;
+		gap: 6px;
+		overflow-x: auto;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+		padding: var(--space-1) 0;
+	}
+
+	.feed-tag-pills::-webkit-scrollbar {
+		display: none;
+	}
+
+	.feed-tag-pill {
+		padding: 6px 14px;
+		border-radius: var(--radius-full);
+		border: 1.5px solid rgba(255, 255, 255, 0.4);
+		background: rgba(0, 0, 0, 0.3);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		color: rgba(255, 255, 255, 0.85);
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+		white-space: nowrap;
+		flex-shrink: 0;
+		transition: all 0.15s ease;
+	}
+
+	.feed-tag-pill.active {
+		background: white;
+		color: #000;
+		border-color: white;
+	}
+
+	/* Feed container */
+	.feed-container {
+		position: absolute;
+		inset: 0;
 		overflow-y: auto;
 		scroll-snap-type: y mandatory;
 		-webkit-overflow-scrolling: touch;
@@ -709,12 +832,12 @@
 		scroll-snap-stop: always;
 		position: relative;
 		overflow: hidden;
-		transition: opacity 0.3s ease, transform 0.3s ease;
+		background: #000;
+		transition: opacity 0.3s ease;
 	}
 
 	.feed-card.dismissing {
 		opacity: 0;
-		transform: scale(0.95);
 	}
 
 	.feed-card-img {
@@ -725,85 +848,95 @@
 	}
 
 	.feed-card-img.placeholder {
-		background: var(--color-gray-200);
+		background: #1a1a1a;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: var(--text-muted);
+		color: #555;
 		font-size: var(--text-lg);
 	}
 
+	/* Bottom overlay */
 	.feed-card-overlay {
 		position: absolute;
 		bottom: 0;
 		left: 0;
-		right: 60px;
-		padding: var(--space-12) var(--space-4) var(--space-5);
-		background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+		right: 72px;
+		padding: 80px 16px 24px;
+		background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
 		color: white;
 	}
 
-	.feed-card-overlay h2 {
+	.feed-source {
+		font-size: 12px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		opacity: 0.7;
+		display: block;
+		margin-bottom: 4px;
+	}
+
+	.feed-title {
 		font-family: var(--font-serif);
-		font-size: var(--text-xl);
-		margin: 0 0 var(--space-1);
+		font-size: 20px;
+		font-weight: 700;
+		margin: 0;
 		color: white;
-		line-height: var(--leading-snug);
-		text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+		line-height: 1.25;
+		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 	}
 
-	.feed-meta {
+	.feed-detail {
 		display: flex;
-		gap: var(--space-3);
-		font-size: var(--text-sm);
-		opacity: 0.8;
+		align-items: center;
+		gap: 4px;
+		margin-top: 6px;
+		font-size: 13px;
+		opacity: 0.75;
+		color: white;
 	}
 
-	.feed-meta-item {
-		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-	}
-
-	/* Right-side icon buttons */
-	.feed-side-actions {
+	/* Right-side action rail */
+	.feed-action-rail {
 		position: absolute;
-		right: var(--space-3);
-		bottom: var(--space-5);
+		right: 8px;
+		bottom: 24px;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: var(--space-5);
+		gap: 20px;
+		z-index: 5;
 	}
 
-	.feed-icon-btn {
+	.rail-btn {
 		display: flex;
+		flex-direction: column;
 		align-items: center;
-		justify-content: center;
-		width: 48px;
-		height: 48px;
+		gap: 4px;
 		border: none;
-		border-radius: 50%;
 		background: transparent;
 		color: white;
 		cursor: pointer;
-		filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+		text-decoration: none;
+		filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.6));
 		transition: transform 0.15s ease;
+		padding: 0;
 	}
 
-	.feed-icon-btn:active:not(:disabled) {
-		transform: scale(0.9);
+	.rail-btn:active:not(:disabled) {
+		transform: scale(0.85);
 	}
 
-	.feed-icon-btn:disabled {
-		opacity: 0.4;
+	.rail-btn:disabled {
+		opacity: 0.3;
 		cursor: not-allowed;
 	}
 
-	.feed-icon-btn.heart:hover:not(:disabled) {
-		color: #ff3040;
-	}
-
-	.feed-icon-btn.skip:hover:not(:disabled) {
-		color: rgba(255, 255, 255, 0.6);
+	.rail-label {
+		font-size: 11px;
+		font-weight: 600;
+		text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 	}
 
 	/* Heart burst animation */
@@ -815,7 +948,7 @@
 		justify-content: center;
 		z-index: 10;
 		pointer-events: none;
-		animation: heartPop 0.6s ease-out forwards;
+		animation: heartPop 0.8s ease-out forwards;
 	}
 
 	@keyframes heartPop {
@@ -825,13 +958,13 @@
 		}
 		15% {
 			opacity: 1;
-			transform: scale(1.3);
+			transform: scale(1.4);
 		}
 		30% {
-			transform: scale(0.95);
+			transform: scale(0.9);
 		}
-		45% {
-			transform: scale(1.05);
+		50% {
+			transform: scale(1.1);
 		}
 		100% {
 			opacity: 0;
@@ -844,9 +977,22 @@
 	}
 
 	.feed-loading {
-		text-align: center;
-		padding: var(--space-6);
-		color: var(--text-secondary);
+		display: flex;
+		justify-content: center;
+		padding: 40px 0;
+	}
+
+	.feed-spinner {
+		width: 24px;
+		height: 24px;
+		border: 2.5px solid rgba(255, 255, 255, 0.2);
+		border-top-color: white;
+		border-radius: 50%;
+		animation: spin 0.7s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
 	}
 
 	@media (max-width: 500px) {
