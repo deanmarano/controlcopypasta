@@ -481,6 +481,10 @@
 	}
 
 	.feed-mock-scroll {
+		animation: none;
+	}
+
+	.cta-feed:hover .feed-mock-scroll {
 		animation: feedScroll 6s ease-in-out infinite;
 	}
 
