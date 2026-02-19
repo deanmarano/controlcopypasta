@@ -678,7 +678,7 @@
 
 	/* Feed mode page overrides */
 	.quicklist-page.feed-mode {
-		height: 100dvh;
+		height: 100svh;
 		padding: 0;
 		overflow: hidden;
 	}
