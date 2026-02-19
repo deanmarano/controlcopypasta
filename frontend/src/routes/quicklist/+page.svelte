@@ -676,10 +676,15 @@
 		color: var(--text-primary);
 	}
 
-	/* Feed mode page overrides */
+	/* Feed mode: full-screen overlay to escape layout chrome */
 	.quicklist-page.feed-mode {
-		height: 100svh;
+		position: fixed;
+		inset: 0;
+		z-index: 100;
+		max-width: none;
 		padding: 0;
+		margin: 0;
+		background: var(--bg-page, #fff);
 		overflow: hidden;
 	}
 
