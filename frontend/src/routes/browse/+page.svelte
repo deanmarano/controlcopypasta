@@ -613,7 +613,7 @@
 		border: 1.5px solid rgba(255, 255, 255, 0.7);
 	}
 
-	/* Heart burst: hidden by default, plays once on hover */
+	/* Heart burst: synced with scroll, fires on 1st and 3rd slides */
 	.feed-mock-heart-burst {
 		position: absolute;
 		top: 50%;
@@ -625,28 +625,24 @@
 	}
 
 	.cta-feed:hover .feed-mock-heart-burst {
-		animation: mockHeartPop 0.7s ease-out forwards;
+		animation: mockHeartSync 6s ease-in-out infinite;
 	}
 
-	@keyframes mockHeartPop {
-		0% {
-			opacity: 0;
-			transform: translate(-50%, -50%) scale(0);
-		}
-		20% {
-			opacity: 1;
-			transform: translate(-50%, -50%) scale(1.4);
-		}
-		40% {
-			transform: translate(-50%, -50%) scale(0.9);
-		}
-		60% {
-			transform: translate(-50%, -50%) scale(1.1);
-		}
-		100% {
-			opacity: 0;
-			transform: translate(-50%, -50%) scale(1);
-		}
+	@keyframes mockHeartSync {
+		/* Heart on 1st slide (visible 0-20%) — pop at ~12% */
+		0%, 10% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+		12% { opacity: 1; transform: translate(-50%, -50%) scale(1.4); }
+		14% { transform: translate(-50%, -50%) scale(0.9); }
+		16% { transform: translate(-50%, -50%) scale(1.05); }
+		20% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+		/* No heart on 2nd slide (33-53%) */
+		33%, 64% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+		/* Heart on 3rd slide (visible 66-86%) — pop at ~76% */
+		76% { opacity: 1; transform: translate(-50%, -50%) scale(1.4); }
+		78% { transform: translate(-50%, -50%) scale(0.9); }
+		80% { transform: translate(-50%, -50%) scale(1.05); }
+		84% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+		85%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
 	}
 
 	@media (max-width: 768px) {
