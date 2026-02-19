@@ -62,9 +62,35 @@
 	<a href="/quicklist" class="quicklist-cta">
 		<div class="cta-text">
 			<strong>Not sure what to cook?</strong>
-			<span>Swipe through recipes to find dinner tonight</span>
+			<span>Swipe through recipes to find your next meal. Skip what you don't want, save what you might.</span>
+			<span class="cta-action">Try it &rarr;</span>
 		</div>
-		<span class="cta-arrow">Find Dinner &rarr;</span>
+		<div class="cta-phone" aria-hidden="true">
+			<div class="phone-frame">
+				<div class="phone-header">
+					<span class="phone-tag">Find</span>
+					<span class="phone-tag-value">Dinner</span>
+				</div>
+				<div class="phone-cards">
+					<div class="mock-card card-3"></div>
+					<div class="mock-card card-2"></div>
+					<div class="mock-card card-1">
+						<div class="mock-img"></div>
+						<div class="mock-overlay">
+							<div class="mock-badge">30m</div>
+							<div class="mock-title"></div>
+							<div class="mock-subtitle"></div>
+						</div>
+						<div class="mock-label-maybe">MAYBE</div>
+					</div>
+				</div>
+				<div class="phone-buttons">
+					<div class="mock-btn mock-skip">Skip</div>
+					<div class="mock-btn mock-view">View</div>
+					<div class="mock-btn mock-maybe">Maybe</div>
+				</div>
+			</div>
+		</div>
 	</a>
 
 	{#if loading}
@@ -137,43 +163,235 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: var(--space-4);
-		padding: var(--space-4) var(--space-6);
+		gap: var(--space-6);
+		padding: var(--space-6) var(--space-8);
 		margin-bottom: var(--space-8);
-		background: var(--color-basil-50);
+		background: linear-gradient(135deg, var(--color-basil-50) 0%, var(--color-basil-100) 100%);
 		border: var(--border-width-thin) solid var(--color-basil-300);
 		border-radius: var(--radius-lg);
 		text-decoration: none;
 		transition: all var(--transition-fast);
+		overflow: hidden;
 	}
 
 	.quicklist-cta:hover {
-		background: var(--color-basil-100);
 		border-color: var(--color-basil-400);
-		box-shadow: var(--shadow-md);
+		box-shadow: var(--shadow-lg);
+	}
+
+	.quicklist-cta:hover .cta-phone {
+		transform: scale(1.03);
+	}
+
+	.quicklist-cta:hover .mock-card.card-1 {
+		transform: rotate(3deg);
 	}
 
 	.cta-text {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-1);
+		gap: var(--space-2);
+		flex: 1;
+		min-width: 0;
 	}
 
 	.cta-text strong {
 		color: var(--color-marinara-800);
-		font-size: var(--text-base);
+		font-size: var(--text-xl);
+		font-family: var(--font-serif);
 	}
 
 	.cta-text span {
 		color: var(--text-secondary);
 		font-size: var(--text-sm);
+		line-height: var(--leading-relaxed);
 	}
 
-	.cta-arrow {
-		color: var(--color-basil-700);
+	.cta-action {
+		color: var(--color-basil-700) !important;
 		font-weight: var(--font-semibold);
-		font-size: var(--text-sm);
-		white-space: nowrap;
+		font-size: var(--text-base) !important;
+		margin-top: var(--space-1);
+	}
+
+	/* Phone mockup */
+	.cta-phone {
+		flex-shrink: 0;
+		transition: transform var(--transition-normal);
+	}
+
+	.phone-frame {
+		width: 140px;
+		height: 200px;
+		background: var(--bg-card);
+		border-radius: 16px;
+		box-shadow: var(--shadow-lg);
+		padding: 8px;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		border: 2px solid var(--color-gray-200);
+	}
+
+	.phone-header {
+		display: flex;
+		align-items: baseline;
+		gap: 4px;
+		padding: 4px 4px 6px;
+	}
+
+	.phone-tag {
+		font-size: 9px;
+		font-weight: var(--font-semibold);
+		color: var(--color-marinara-800);
+	}
+
+	.phone-tag-value {
+		font-size: 9px;
+		color: var(--color-marinara-500);
+		border-bottom: 1px solid var(--color-marinara-300);
+	}
+
+	.phone-cards {
+		position: relative;
+		flex: 1;
+		margin: 0 2px;
+	}
+
+	.mock-card {
+		position: absolute;
+		inset: 0;
+		border-radius: 8px;
+		overflow: hidden;
+	}
+
+	.mock-card.card-3 {
+		background: var(--color-gray-200);
+		transform: scale(0.9) translateY(8px);
+		z-index: 1;
+	}
+
+	.mock-card.card-2 {
+		background: var(--color-gray-150, var(--color-gray-200));
+		transform: scale(0.95) translateY(4px);
+		z-index: 2;
+	}
+
+	.mock-card.card-1 {
+		z-index: 3;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+		transition: transform var(--transition-normal);
+		transform: rotate(0deg);
+	}
+
+	.mock-img {
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(
+			145deg,
+			var(--color-pasta-200) 0%,
+			var(--color-pasta-300) 40%,
+			var(--color-marinara-200) 100%
+		);
+	}
+
+	.mock-overlay {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: 16px 6px 6px;
+		background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+	}
+
+	.mock-badge {
+		display: inline-block;
+		font-size: 6px;
+		color: white;
+		background: rgba(255, 255, 255, 0.25);
+		padding: 1px 4px;
+		border-radius: 3px;
+		margin-bottom: 3px;
+	}
+
+	.mock-title {
+		height: 6px;
+		width: 75%;
+		background: rgba(255, 255, 255, 0.9);
+		border-radius: 3px;
+		margin-bottom: 3px;
+	}
+
+	.mock-subtitle {
+		height: 4px;
+		width: 50%;
+		background: rgba(255, 255, 255, 0.5);
+		border-radius: 2px;
+	}
+
+	.mock-label-maybe {
+		position: absolute;
+		top: 8px;
+		left: 4px;
+		font-size: 7px;
+		font-weight: var(--font-bold);
+		color: var(--color-basil-600);
+		border: 1.5px solid var(--color-basil-600);
+		background: rgba(255, 255, 255, 0.9);
+		padding: 1px 4px;
+		border-radius: 3px;
+		transform: rotate(-12deg);
+	}
+
+	.phone-buttons {
+		display: flex;
+		justify-content: center;
+		gap: 4px;
+		padding: 6px 2px 4px;
+	}
+
+	.mock-btn {
+		font-size: 6px;
+		font-weight: var(--font-semibold);
+		padding: 2px 8px;
+		border-radius: 99px;
+	}
+
+	.mock-skip {
+		background: var(--color-marinara-100);
+		color: var(--color-marinara-700);
+	}
+
+	.mock-view {
+		background: var(--color-gray-100);
+		color: var(--text-primary);
+	}
+
+	.mock-maybe {
+		background: var(--color-basil-100);
+		color: var(--color-basil-700);
+	}
+
+	@media (max-width: 640px) {
+		.quicklist-cta {
+			padding: var(--space-4) var(--space-5);
+			gap: var(--space-4);
+		}
+
+		.cta-text strong {
+			font-size: var(--text-lg);
+		}
+
+		.phone-frame {
+			width: 110px;
+			height: 160px;
+		}
+	}
+
+	@media (max-width: 400px) {
+		.cta-phone {
+			display: none;
+		}
 	}
 
 	.loading,
