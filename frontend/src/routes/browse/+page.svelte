@@ -59,6 +59,14 @@
 		<p class="subtitle">Discover recipes from various sources</p>
 	</header>
 
+	<a href="/quicklist" class="quicklist-cta">
+		<div class="cta-text">
+			<strong>Not sure what to cook?</strong>
+			<span>Swipe through recipes to find dinner tonight</span>
+		</div>
+		<span class="cta-arrow">Find Dinner &rarr;</span>
+	</a>
+
 	{#if loading}
 		<div class="loading">Loading sources...</div>
 	{:else if error}
@@ -123,6 +131,49 @@
 	.subtitle {
 		color: var(--text-secondary);
 		margin: 0;
+	}
+
+	.quicklist-cta {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-4);
+		padding: var(--space-4) var(--space-6);
+		margin-bottom: var(--space-8);
+		background: var(--color-basil-50);
+		border: var(--border-width-thin) solid var(--color-basil-300);
+		border-radius: var(--radius-lg);
+		text-decoration: none;
+		transition: all var(--transition-fast);
+	}
+
+	.quicklist-cta:hover {
+		background: var(--color-basil-100);
+		border-color: var(--color-basil-400);
+		box-shadow: var(--shadow-md);
+	}
+
+	.cta-text {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+
+	.cta-text strong {
+		color: var(--color-marinara-800);
+		font-size: var(--text-base);
+	}
+
+	.cta-text span {
+		color: var(--text-secondary);
+		font-size: var(--text-sm);
+	}
+
+	.cta-arrow {
+		color: var(--color-basil-700);
+		font-weight: var(--font-semibold);
+		font-size: var(--text-sm);
+		white-space: nowrap;
 	}
 
 	.loading,
