@@ -102,33 +102,58 @@
 			</div>
 			<div class="cta-phone" aria-hidden="true">
 				<div class="phone-frame phone-frame-dark">
-					<div class="feed-mock-card feed-card-current">
-						<div class="feed-mock-img"></div>
-						<div class="feed-mock-overlay">
-							<div class="feed-mock-source">
-								<div class="feed-mock-favicon"></div>
-								<div class="feed-mock-domain-bar"></div>
+					<div class="feed-mock-scroll">
+						<div class="feed-mock-slide">
+							<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/64b959a840c6917d162cf62b_salmon-quiona-salad-thumbnail.webp" alt="" class="feed-mock-photo" />
+							<div class="feed-mock-overlay">
+								<div class="feed-mock-source">
+									<img src="https://www.google.com/s2/favicons?domain=sigsbeestreet.co&sz=16" alt="" class="feed-mock-fav" />
+									<span class="feed-mock-domain">sigsbeestreet.co</span>
+								</div>
+								<div class="feed-mock-name">Salmon Quinoa Salad</div>
 							</div>
-							<div class="feed-mock-title-bar"></div>
-							<div class="feed-mock-time-bar"></div>
-						</div>
-						<div class="feed-mock-rail">
-							<div class="feed-mock-heart">
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
-									<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-								</svg>
+							<div class="feed-mock-rail">
+								<svg class="feed-rail-heart" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+								<div class="feed-rail-dot"></div>
+								<div class="feed-rail-dot"></div>
 							</div>
-							<div class="feed-mock-rail-icon"></div>
-							<div class="feed-mock-rail-icon"></div>
 						</div>
-						<div class="feed-mock-heart-burst">
-							<svg width="28" height="28" viewBox="0 0 24 24" fill="#ff3040" stroke="none">
-								<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-							</svg>
+						<div class="feed-mock-slide">
+							<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/6470dfae89487940cd3f2c85_one-pot-lemon-pasta-thumbnail.webp" alt="" class="feed-mock-photo" />
+							<div class="feed-mock-overlay">
+								<div class="feed-mock-source">
+									<img src="https://www.google.com/s2/favicons?domain=sigsbeestreet.co&sz=16" alt="" class="feed-mock-fav" />
+									<span class="feed-mock-domain">sigsbeestreet.co</span>
+								</div>
+								<div class="feed-mock-name">One Pot Lemon Pasta</div>
+							</div>
+							<div class="feed-mock-rail">
+								<svg class="feed-rail-heart" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+								<div class="feed-rail-dot"></div>
+								<div class="feed-rail-dot"></div>
+							</div>
+						</div>
+						<div class="feed-mock-slide">
+							<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/63ac55080a308b862e48c9b2_639a44e8692ea801789551cd_quinoa-pesto-bowl-thumbnail.webp" alt="" class="feed-mock-photo" />
+							<div class="feed-mock-overlay">
+								<div class="feed-mock-source">
+									<img src="https://www.google.com/s2/favicons?domain=sigsbeestreet.co&sz=16" alt="" class="feed-mock-fav" />
+									<span class="feed-mock-domain">sigsbeestreet.co</span>
+								</div>
+								<div class="feed-mock-name">Quinoa Pesto Bowl</div>
+							</div>
+							<div class="feed-mock-rail">
+								<svg class="feed-rail-heart" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+								<div class="feed-rail-dot"></div>
+								<div class="feed-rail-dot"></div>
+							</div>
 						</div>
 					</div>
-					<div class="feed-mock-card feed-card-next">
-						<div class="feed-mock-img feed-mock-img-2"></div>
+					<!-- Heart burst on hover -->
+					<div class="feed-mock-heart-burst">
+						<svg width="32" height="32" viewBox="0 0 24 24" fill="#ff3040" stroke="none">
+							<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+						</svg>
 					</div>
 				</div>
 			</div>
@@ -452,91 +477,67 @@
 		border-color: #333 !important;
 		padding: 0 !important;
 		position: relative;
-	}
-
-	.feed-mock-card {
-		position: absolute;
-		inset: 0;
 		overflow: hidden;
-		border-radius: 14px;
 	}
 
-	.feed-card-current {
-		z-index: 2;
+	.feed-mock-scroll {
+		animation: feedScroll 6s ease-in-out infinite;
 	}
 
-	.feed-card-next {
-		z-index: 1;
-		top: auto;
-		bottom: -10px;
-		height: 30px;
-		border-radius: 0 0 14px 14px;
-		opacity: 0.4;
+	@keyframes feedScroll {
+		0%, 20% { transform: translateY(0); }
+		33%, 53% { transform: translateY(-33.333%); }
+		66%, 86% { transform: translateY(-66.666%); }
+		100% { transform: translateY(0); }
 	}
 
-	.feed-mock-img {
+	.feed-mock-slide {
+		width: 100%;
+		aspect-ratio: 140 / 200;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.feed-mock-photo {
 		width: 100%;
 		height: 100%;
-		background: linear-gradient(
-			160deg,
-			#e8a87c 0%,
-			#d4856a 40%,
-			#b5654a 100%
-		);
-	}
-
-	.feed-mock-img-2 {
-		background: linear-gradient(
-			160deg,
-			#85c7a3 0%,
-			#5ba37d 40%,
-			#3d7a5a 100%
-		);
+		object-fit: cover;
+		display: block;
 	}
 
 	.feed-mock-overlay {
 		position: absolute;
 		bottom: 0;
 		left: 0;
-		right: 24px;
-		padding: 20px 6px 8px;
-		background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+		right: 0;
+		padding: 24px 6px 8px;
+		background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
 	}
 
 	.feed-mock-source {
 		display: flex;
 		align-items: center;
 		gap: 3px;
-		margin-bottom: 3px;
+		margin-bottom: 2px;
 	}
 
-	.feed-mock-favicon {
-		width: 6px;
-		height: 6px;
+	.feed-mock-fav {
+		width: 8px;
+		height: 8px;
 		border-radius: 1px;
-		background: rgba(255, 255, 255, 0.5);
 	}
 
-	.feed-mock-domain-bar {
-		height: 4px;
-		width: 30px;
-		background: rgba(255, 255, 255, 0.5);
-		border-radius: 2px;
+	.feed-mock-domain {
+		font-size: 5px;
+		color: rgba(255, 255, 255, 0.6);
+		font-weight: 600;
 	}
 
-	.feed-mock-title-bar {
-		height: 6px;
-		width: 70%;
-		background: rgba(255, 255, 255, 0.9);
-		border-radius: 3px;
-		margin-bottom: 3px;
-	}
-
-	.feed-mock-time-bar {
-		height: 4px;
-		width: 25px;
-		background: rgba(255, 255, 255, 0.4);
-		border-radius: 2px;
+	.feed-mock-name {
+		font-size: 7px;
+		font-weight: 700;
+		color: white;
+		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 	}
 
 	.feed-mock-rail {
@@ -546,44 +547,50 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 8px;
+		gap: 6px;
 		z-index: 3;
 	}
 
-	.feed-mock-heart {
+	.feed-rail-heart {
 		filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
 	}
 
-	.feed-mock-rail-icon {
+	.feed-rail-dot {
 		width: 10px;
 		height: 10px;
 		border-radius: 50%;
 		border: 1.5px solid rgba(255, 255, 255, 0.7);
 	}
 
+	/* Heart burst: hidden by default, plays once on hover */
 	.feed-mock-heart-burst {
 		position: absolute;
 		top: 50%;
 		left: 45%;
-		transform: translate(-50%, -50%);
+		transform: translate(-50%, -50%) scale(0);
 		z-index: 5;
-		animation: mockHeartPop 2s ease-out infinite;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.cta-feed:hover .feed-mock-heart-burst {
+		animation: mockHeartPop 0.7s ease-out forwards;
 	}
 
 	@keyframes mockHeartPop {
-		0%, 60% {
+		0% {
 			opacity: 0;
 			transform: translate(-50%, -50%) scale(0);
 		}
-		70% {
+		20% {
 			opacity: 1;
-			transform: translate(-50%, -50%) scale(1.3);
+			transform: translate(-50%, -50%) scale(1.4);
 		}
-		80% {
+		40% {
 			transform: translate(-50%, -50%) scale(0.9);
 		}
-		90% {
-			transform: translate(-50%, -50%) scale(1.05);
+		60% {
+			transform: translate(-50%, -50%) scale(1.1);
 		}
 		100% {
 			opacity: 0;
@@ -611,6 +618,7 @@
 			width: 110px;
 			height: 160px;
 		}
+
 	}
 
 	@media (max-width: 400px) {
