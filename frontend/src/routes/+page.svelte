@@ -35,12 +35,11 @@
 <div class="eb">
 	<header class="eb-hero">
 		<div class="eb-hero-inner">
-			<p class="eb-eyebrow">Self-hosted recipe management</p>
+			<p class="eb-eyebrow">Recipe management, simplified</p>
 			<h1 class="eb-title">Your recipes,<br />your kitchen,<br />your rules.</h1>
-			<p class="eb-subtitle">Save recipes from anywhere on the web. Scale, organize, and cook with confidence. No subscriptions, no ads, no data harvesting.</p>
+			<p class="eb-subtitle">Save recipes from anywhere on the web. Scale, organize, and cook with confidence. Free to use, no ads.</p>
 			<div class="eb-hero-actions">
-				<a href="/login" class="eb-btn-primary">Get Started</a>
-				<a href="https://github.com/deanmarano/controlcopypasta" class="eb-btn-ghost">View on GitHub</a>
+				<a href="/login" class="eb-btn-primary">Get Started — It's Free</a>
 			</div>
 		</div>
 		<div class="eb-hero-image">
@@ -114,8 +113,8 @@
 				<p>Discover which recipes share ingredients. Compare side by side. Browse by source.</p>
 			</div>
 			<div class="eb-feature">
-				<h3>Own your data</h3>
-				<p>Self-host on your own server. Export anytime. No vendor lock-in. AGPL licensed.</p>
+				<h3>Always free</h3>
+				<p>No subscriptions, no paywalls, no data harvesting. Your recipes are yours — export anytime.</p>
 			</div>
 		</div>
 	</section>
@@ -130,19 +129,19 @@
 			<span class="eb-stat-label">Average import time</span>
 		</div>
 		<div class="eb-stat">
-			<span class="eb-stat-number">100%</span>
-			<span class="eb-stat-label">Open source</span>
+			<span class="eb-stat-number">Free</span>
+			<span class="eb-stat-label">No subscriptions</span>
 		</div>
 		<div class="eb-stat">
 			<span class="eb-stat-number">0</span>
-			<span class="eb-stat-label">Tracking scripts</span>
+			<span class="eb-stat-label">Ads</span>
 		</div>
 	</section>
 
 	<section class="eb-cta-section">
 		<h2>Ready to take control of your recipe collection?</h2>
-		<p class="eb-cta-sub">Deploy in minutes with Docker. Your recipes stay on your server, forever.</p>
-		<a href="/login" class="eb-btn-primary eb-btn-inverted">Get Started</a>
+		<p class="eb-cta-sub">Sign up in seconds. Start saving recipes immediately.</p>
+		<a href="/login" class="eb-btn-primary eb-btn-inverted">Get Started — It's Free</a>
 	</section>
 </div>
 
