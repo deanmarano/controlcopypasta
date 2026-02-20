@@ -561,26 +561,33 @@ defmodule Controlcopypasta.Release do
     alias Controlcopypasta.Ingredients.TokenParser
 
     limit = Keyword.get(opts, :limit)
+    recipe_id = Keyword.get(opts, :recipe_id)
 
     IO.puts("Building ingredient lookup...")
     lookup = Ingredients.build_ingredient_lookup()
 
-    # Fetch just IDs first (lightweight query) to avoid DB timeout on large result sets
-    id_query =
-      from r in Recipe,
-        where:
-          fragment(
-            "jsonb_array_length(?) > 0 AND EXISTS (SELECT 1 FROM jsonb_array_elements(?) AS elem WHERE elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = '')",
-            r.ingredients,
-            r.ingredients
-          ),
-        select: r.id
+    recipe_ids =
+      if recipe_id do
+        # Force re-parse a specific recipe
+        [recipe_id]
+      else
+        # Fetch just IDs first (lightweight query) to avoid DB timeout on large result sets
+        id_query =
+          from r in Recipe,
+            where:
+              fragment(
+                "jsonb_array_length(?) > 0 AND EXISTS (SELECT 1 FROM jsonb_array_elements(?) AS elem WHERE elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = '')",
+                r.ingredients,
+                r.ingredients
+              ),
+            select: r.id
 
-    id_query = if limit, do: Ecto.Query.limit(id_query, ^limit), else: id_query
+        id_query = if limit, do: Ecto.Query.limit(id_query, ^limit), else: id_query
+        Repo.all(id_query, timeout: 120_000)
+      end
 
-    recipe_ids = Repo.all(id_query, timeout: 120_000)
     total = length(recipe_ids)
-    IO.puts("Found #{total} recipes with unparsed ingredients")
+    IO.puts("Found #{total} recipes to parse")
 
     # Process in batches to avoid memory issues
     batch_size = 200
