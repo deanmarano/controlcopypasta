@@ -8,24 +8,26 @@
 		}
 	});
 
+	const heroImage = 'https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/64679cfc5d7c74151c1c561d_spicy-vodka-rigatoni-thumbnail.webp';
+
 	const recipes = [
 		{
-			title: 'Simple Spaghetti Carbonara, Step-by-Step',
-			source_domain: 'bonappetit.com',
+			title: 'One Pot Lemon Pasta',
+			source_domain: 'sigsbeestreet.co',
 			image_url:
-				'https://assets.bonappetit.com/photos/6917aa378ac0eb7fbdadae2a/16:9/w_4351,h_2447,c_limit/simple-carbonara_RECIPE_V1_111125_13849_VOG_final.jpg'
+				'https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/6470dfae89487940cd3f2c85_one-pot-lemon-pasta-thumbnail.webp'
 		},
 		{
-			title: 'Ruffled Mushroom Pot Pie',
-			source_domain: 'bonappetit.com',
+			title: 'Salmon Quinoa Salad',
+			source_domain: 'sigsbeestreet.co',
 			image_url:
-				'https://assets.bonappetit.com/photos/6765f1bd9ae953633b06a3d0/16:9/w_4845,h_2726,c_limit/ruffled-mushroom-pot-pie_LEDE_V2_110624_7344_VOG_final.jpg'
+				'https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/64b959a840c6917d162cf62b_salmon-quiona-salad-thumbnail.webp'
 		},
 		{
-			title: 'Herby Cauliflower Fritters',
-			source_domain: 'bonappetit.com',
+			title: 'Watermelon Basil Salad',
+			source_domain: 'sigsbeestreet.co',
 			image_url:
-				'https://assets.bonappetit.com/photos/65bbdfe22c3c1e1bdd2c7f07/16:9/w_6176,h_3474,c_limit/20231207-0324-DIS-7172.jpg'
+				'https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/649b7f9aaa7e9bd7c9662b4d_watermelon-basil-salad-thumbnail.webp'
 		}
 	];
 </script>
@@ -42,7 +44,7 @@
 			</div>
 		</div>
 		<div class="eb-hero-image">
-			<img src={recipes[0].image_url} alt="Spaghetti Carbonara" />
+			<img src={heroImage} alt="Spicy Vodka Rigatoni" />
 		</div>
 	</header>
 
