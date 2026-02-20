@@ -551,8 +551,14 @@ defmodule Controlcopypasta.Release do
   """
   def parse_ingredients(opts \\ []) do
     load_app()
-    Application.ensure_all_started(@app)
 
+    {:ok, _, _} =
+      Ecto.Migrator.with_repo(Controlcopypasta.Repo, fn _repo ->
+        do_parse_ingredients(opts)
+      end)
+  end
+
+  defp do_parse_ingredients(opts) do
     import Ecto.Query
 
     alias Controlcopypasta.Repo
