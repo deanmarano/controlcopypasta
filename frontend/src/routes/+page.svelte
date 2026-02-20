@@ -7,377 +7,470 @@
 			goto('/home');
 		}
 	});
+
+	const recipes = [
+		{
+			title: 'Simple Spaghetti Carbonara, Step-by-Step',
+			source_domain: 'bonappetit.com',
+			image_url:
+				'https://assets.bonappetit.com/photos/6917aa378ac0eb7fbdadae2a/16:9/w_4351,h_2447,c_limit/simple-carbonara_RECIPE_V1_111125_13849_VOG_final.jpg'
+		},
+		{
+			title: 'Ruffled Mushroom Pot Pie',
+			source_domain: 'bonappetit.com',
+			image_url:
+				'https://assets.bonappetit.com/photos/6765f1bd9ae953633b06a3d0/16:9/w_4845,h_2726,c_limit/ruffled-mushroom-pot-pie_LEDE_V2_110624_7344_VOG_final.jpg'
+		},
+		{
+			title: 'Herby Cauliflower Fritters',
+			source_domain: 'bonappetit.com',
+			image_url:
+				'https://assets.bonappetit.com/photos/65bbdfe22c3c1e1bdd2c7f07/16:9/w_6176,h_3474,c_limit/20231207-0324-DIS-7172.jpg'
+		}
+	];
 </script>
 
-<div class="landing">
-	<div class="hero">
-		<p class="eyebrow">Self-hosted recipe management</p>
-		<h1>Your recipes, your kitchen, your rules.</h1>
-		<p class="description">
-			Save recipes from anywhere on the web. Scale, organize, and cook with confidence. No
-			subscriptions, no ads, no data harvesting.
-		</p>
-		<div class="hero-actions">
-			<a href="/login" class="cta">Get Started</a>
-			<a href="https://github.com/deanmarano/controlcopypasta" class="cta-ghost">View on GitHub</a>
+<div class="eb">
+	<header class="eb-hero">
+		<div class="eb-hero-inner">
+			<p class="eb-eyebrow">Self-hosted recipe management</p>
+			<h1 class="eb-title">Your recipes,<br />your kitchen,<br />your rules.</h1>
+			<p class="eb-subtitle">Save recipes from anywhere on the web. Scale, organize, and cook with confidence. No subscriptions, no ads, no data harvesting.</p>
+			<div class="eb-hero-actions">
+				<a href="/login" class="eb-btn-primary">Get Started</a>
+				<a href="https://github.com/deanmarano/controlcopypasta" class="eb-btn-ghost">View on GitHub</a>
+			</div>
 		</div>
-	</div>
+		<div class="eb-hero-image">
+			<img src={recipes[0].image_url} alt="Spaghetti Carbonara" />
+		</div>
+	</header>
 
-	<section class="how-it-works">
+	<section class="eb-how-it-works">
 		<h2>How it works</h2>
-		<div class="steps">
-			<div class="step">
-				<div class="step-number">1</div>
+		<div class="eb-steps">
+			<div class="eb-step">
+				<div class="eb-step-number">1</div>
 				<h3>Paste a URL</h3>
-				<p>
-					Find a recipe you love anywhere on the web. Paste the link and we'll extract
-					everything — ingredients, instructions, images, and nutrition data.
-				</p>
+				<p>Find a recipe you love anywhere on the web. Paste the link and we'll extract everything — ingredients, instructions, images, and nutrition data.</p>
 			</div>
-			<div class="step">
-				<div class="step-number">2</div>
+			<div class="eb-step">
+				<div class="eb-step-number">2</div>
 				<h3>Organize your way</h3>
-				<p>
-					Tag recipes by meal type, cuisine, or season. Browse by source. Build a collection
-					that mirrors how you actually cook.
-				</p>
+				<p>Tag recipes by meal type, cuisine, or season. Browse by source. Build a collection that mirrors how you actually cook.</p>
 			</div>
-			<div class="step">
-				<div class="step-number">3</div>
+			<div class="eb-step">
+				<div class="eb-step-number">3</div>
 				<h3>Cook with confidence</h3>
-				<p>
-					Scale ingredients for any crowd. Check nutrition facts. Generate shopping lists.
-					Print clean recipe cards for the kitchen counter.
-				</p>
+				<p>Scale ingredients for any crowd. Check nutrition facts. Generate shopping lists. Print clean recipe cards for the kitchen counter.</p>
 			</div>
 		</div>
 	</section>
 
-	<section class="feature-section">
-		<h2 class="section-title">Tools for the home cook who takes food seriously</h2>
-		<div class="features">
-			<div class="feature">
+	<section class="eb-preview">
+		<div class="eb-preview-text">
+			<p class="eb-eyebrow">Your collection, beautifully organized</p>
+			<h2>Every recipe from every corner of the web, in one place.</h2>
+			<p>Import from Bon Appetit, NYT Cooking, Serious Eats, food blogs — any site with a recipe. The browser extension makes it one click.</p>
+		</div>
+		<div class="eb-preview-cards">
+			{#each recipes as recipe}
+				<div class="eb-preview-card">
+					<img src={recipe.image_url} alt={recipe.title} />
+					<div class="eb-preview-card-info">
+						<span class="eb-preview-card-source">{recipe.source_domain}</span>
+						<h4>{recipe.title}</h4>
+					</div>
+				</div>
+			{/each}
+		</div>
+	</section>
+
+	<section class="eb-features">
+		<p class="eb-eyebrow" style="text-align: center; margin-bottom: 0.5rem;">What you get</p>
+		<h2 class="eb-features-title">Tools for the home cook who takes food seriously</h2>
+		<div class="eb-feature-grid">
+			<div class="eb-feature">
 				<h3>Clip from any site</h3>
-				<p>
-					Paste a URL or use the browser extension. We extract ingredients, steps, and images
-					automatically.
-				</p>
+				<p>Paste a URL or use the browser extension. We extract ingredients, steps, and images automatically.</p>
 			</div>
-			<div class="feature">
+			<div class="eb-feature">
 				<h3>Scale with confidence</h3>
-				<p>
-					Cooking for 2 or 12? Adjust quantities from 0.25x to 4x with smart fraction
-					handling.
-				</p>
+				<p>Cooking for 2 or 12? Adjust quantities from 0.25x to 4x with smart fraction handling.</p>
 			</div>
-			<div class="feature">
+			<div class="eb-feature">
 				<h3>Know your nutrition</h3>
-				<p>
-					Per-recipe and per-serving breakdowns. Calories, macros, and micronutrients from
-					verified sources.
-				</p>
+				<p>Per-recipe and per-serving breakdowns. Calories, macros, and micronutrients from verified sources.</p>
 			</div>
-			<div class="feature">
+			<div class="eb-feature">
 				<h3>Shop smarter</h3>
-				<p>
-					Generate shopping lists from any recipe. Items grouped by category, quantities
-					combined.
-				</p>
+				<p>Generate shopping lists from any recipe. Items grouped by category, quantities combined.</p>
 			</div>
-			<div class="feature">
+			<div class="eb-feature">
 				<h3>Find connections</h3>
-				<p>
-					Discover which recipes share ingredients. Compare side by side. Browse by source.
-				</p>
+				<p>Discover which recipes share ingredients. Compare side by side. Browse by source.</p>
 			</div>
-			<div class="feature">
+			<div class="eb-feature">
 				<h3>Own your data</h3>
-				<p>
-					Self-host on your own server. Import from Copy Me That. Export anytime. AGPL
-					licensed.
-				</p>
+				<p>Self-host on your own server. Export anytime. No vendor lock-in. AGPL licensed.</p>
 			</div>
 		</div>
 	</section>
 
-	<section class="stats-bar">
-		<div class="stat">
-			<span class="stat-number">200+</span>
-			<span class="stat-label">Supported sites</span>
+	<section class="eb-stats-bar">
+		<div class="eb-stat">
+			<span class="eb-stat-number">200+</span>
+			<span class="eb-stat-label">Supported sites</span>
 		</div>
-		<div class="stat">
-			<span class="stat-number">30s</span>
-			<span class="stat-label">Average import time</span>
+		<div class="eb-stat">
+			<span class="eb-stat-number">30s</span>
+			<span class="eb-stat-label">Average import time</span>
 		</div>
-		<div class="stat">
-			<span class="stat-number">100%</span>
-			<span class="stat-label">Open source</span>
+		<div class="eb-stat">
+			<span class="eb-stat-number">100%</span>
+			<span class="eb-stat-label">Open source</span>
 		</div>
-		<div class="stat">
-			<span class="stat-number">0</span>
-			<span class="stat-label">Tracking scripts</span>
+		<div class="eb-stat">
+			<span class="eb-stat-number">0</span>
+			<span class="eb-stat-label">Tracking scripts</span>
 		</div>
 	</section>
 
-	<section class="final-cta">
+	<section class="eb-cta-section">
 		<h2>Ready to take control of your recipe collection?</h2>
-		<p class="cta-subtitle">Deploy in minutes with Docker. Your recipes stay on your server, forever.</p>
-		<a href="/login" class="cta cta-inverted">Get Started</a>
+		<p class="eb-cta-sub">Deploy in minutes with Docker. Your recipes stay on your server, forever.</p>
+		<a href="/login" class="eb-btn-primary eb-btn-inverted">Get Started</a>
 	</section>
 </div>
 
 <style>
-	.landing {
-		text-align: center;
+	@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+	.eb {
+		font-family: 'Inter', system-ui, sans-serif;
+		color: #1b3a2d;
+		background: #f7f5f0;
 	}
 
-	.hero {
-		padding: var(--space-16) var(--space-4);
+	/* HERO */
+	.eb-hero {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		min-height: 80vh;
+		overflow: hidden;
 	}
-
-	.eyebrow {
+	.eb-hero-inner {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding: 4rem 3rem 4rem 6rem;
+	}
+	.eb-eyebrow {
 		text-transform: uppercase;
 		letter-spacing: 0.15em;
-		font-size: var(--text-xs);
-		color: var(--color-marinara-500);
-		margin: 0 0 var(--space-4);
-		font-weight: var(--font-medium);
+		font-size: 0.75rem;
+		color: #c17c5a;
+		margin: 0 0 1.5rem;
+		font-weight: 500;
+	}
+	.eb-title {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 3.75rem;
+		line-height: 1.08;
+		margin: 0 0 1.5rem;
+		color: #1b3a2d;
+		font-weight: 600;
+	}
+	.eb-subtitle {
+		font-size: 1.125rem;
+		line-height: 1.7;
+		color: #5a7264;
+		margin: 0 0 2.5rem;
+		max-width: 420px;
+	}
+	.eb-hero-actions { display: flex; gap: 1rem; }
+	.eb-hero-image { position: relative; overflow: hidden; }
+	.eb-hero-image img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
 
-	h1 {
-		font-family: var(--font-serif);
-		font-size: var(--text-5xl);
-		margin: 0 0 var(--space-4);
-		color: var(--color-marinara-800);
-		letter-spacing: var(--tracking-tight);
-		line-height: var(--leading-tight);
-	}
-
-	.description {
-		max-width: 600px;
-		margin: 0 auto var(--space-8);
-		font-size: var(--text-lg);
-		line-height: var(--leading-relaxed);
-		color: var(--text-secondary);
-	}
-
-	.hero-actions {
-		display: flex;
-		gap: var(--space-4);
-		justify-content: center;
-	}
-
-	.cta {
+	/* BUTTONS */
+	.eb-btn-primary {
 		display: inline-block;
-		padding: var(--space-4) var(--space-10);
-		background: var(--color-marinara-600);
-		color: var(--color-white);
+		padding: 0.875rem 2rem;
+		background: #1b3a2d;
+		color: #f7f5f0;
+		border: none;
+		border-radius: 2px;
+		font-size: 0.9375rem;
+		font-weight: 500;
+		cursor: pointer;
+		letter-spacing: 0.02em;
+		transition: background 200ms;
 		text-decoration: none;
-		border-radius: var(--radius-md);
-		font-size: var(--text-xl);
-		font-weight: var(--font-medium);
-		transition: all var(--transition-fast);
-		box-shadow: var(--shadow-md);
 	}
+	.eb-btn-primary:hover { background: #2d5a47; }
 
-	.cta:hover {
-		background: var(--color-marinara-700);
-		box-shadow: var(--shadow-basil);
-		transform: translateY(-2px);
-	}
-
-	.cta-ghost {
+	.eb-btn-ghost {
 		display: inline-block;
-		padding: var(--space-4) var(--space-10);
+		padding: 0.875rem 2rem;
 		background: none;
-		color: var(--color-marinara-700);
-		border: var(--border-width-default) solid var(--border-default);
+		color: #1b3a2d;
+		border: 1.5px solid #a8bfb0;
+		border-radius: 2px;
+		font-size: 0.9375rem;
+		font-weight: 500;
 		text-decoration: none;
-		border-radius: var(--radius-md);
-		font-size: var(--text-xl);
-		font-weight: var(--font-medium);
-		transition: all var(--transition-fast);
+		transition: all 200ms;
 	}
+	.eb-btn-ghost:hover { border-color: #1b3a2d; }
 
-	.cta-ghost:hover {
-		border-color: var(--color-marinara-600);
-		color: var(--color-marinara-800);
-	}
-
-	/* How It Works */
-	.how-it-works {
-		max-width: 960px;
+	/* HOW IT WORKS */
+	.eb-how-it-works {
+		max-width: 1100px;
 		margin: 0 auto;
-		padding: var(--space-12) var(--space-4);
-		border-bottom: var(--border-width-thin) solid var(--border-default);
+		padding: 5rem 3rem;
+		border-bottom: 1px solid #ddd8ce;
 	}
-
-	.how-it-works h2 {
-		font-family: var(--font-serif);
-		font-size: var(--text-3xl);
+	.eb-how-it-works h2 {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 2.25rem;
 		text-align: center;
-		margin: 0 0 var(--space-10);
-		color: var(--color-marinara-700);
+		margin: 0 0 3rem;
+		color: #1b3a2d;
+		font-weight: 400;
 	}
-
-	.steps {
+	.eb-steps {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: var(--space-8);
+		gap: 3rem;
 	}
-
-	.step {
-		text-align: center;
-	}
-
-	.step-number {
+	.eb-step { text-align: center; }
+	.eb-step-number {
 		width: 48px;
 		height: 48px;
 		border-radius: 50%;
-		border: 2px solid var(--color-marinara-700);
+		border: 2px solid #1b3a2d;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		font-family: var(--font-serif);
-		font-size: var(--text-xl);
-		color: var(--color-marinara-700);
-		margin-bottom: var(--space-4);
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 1.25rem;
+		color: #1b3a2d;
+		margin-bottom: 1.25rem;
 	}
-
-	.step h3 {
-		font-family: var(--font-serif);
-		font-size: var(--text-xl);
-		margin: 0 0 var(--space-2);
-		color: var(--color-marinara-700);
+	.eb-step h3 {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 1.375rem;
+		margin: 0 0 0.75rem;
+		color: #1b3a2d;
+		font-weight: 500;
 	}
-
-	.step p {
-		color: var(--text-secondary);
-		line-height: var(--leading-relaxed);
+	.eb-step p {
+		color: #5a7264;
+		line-height: 1.7;
 		margin: 0;
-		font-size: var(--text-base);
+		font-size: 0.9375rem;
 	}
 
-	/* Features */
-	.feature-section {
-		padding: var(--space-12) var(--space-4);
-	}
-
-	.section-title {
-		font-family: var(--font-serif);
-		font-size: var(--text-3xl);
-		color: var(--color-marinara-700);
-		margin: 0 0 var(--space-10);
-	}
-
-	.features {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: var(--space-8);
-		max-width: 960px;
+	/* PREVIEW */
+	.eb-preview {
+		max-width: 1100px;
 		margin: 0 auto;
-		text-align: left;
+		padding: 5rem 3rem;
+		display: grid;
+		grid-template-columns: 1fr 1.2fr;
+		gap: 4rem;
+		align-items: center;
 	}
-
-	.feature {
-		padding: var(--space-6);
-		background: var(--bg-card);
-		border-radius: var(--radius-lg);
-		box-shadow: var(--shadow-md);
+	.eb-preview-text h2 {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 2.25rem;
+		line-height: 1.2;
+		margin: 0 0 1.25rem;
+		color: #1b3a2d;
+		font-weight: 400;
 	}
-
-	.feature h3 {
-		font-family: var(--font-serif);
-		font-size: var(--text-xl);
-		margin: 0 0 var(--space-2);
-		color: var(--color-marinara-700);
-	}
-
-	.feature p {
+	.eb-preview-text p {
+		color: #5a7264;
+		line-height: 1.7;
 		margin: 0;
-		color: var(--text-secondary);
-		line-height: var(--leading-relaxed);
+		font-size: 0.9375rem;
 	}
-
-	/* Stats Bar */
-	.stats-bar {
+	.eb-preview-cards {
 		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.eb-preview-card {
+		display: flex;
+		gap: 1rem;
+		background: white;
+		border-radius: 4px;
+		overflow: hidden;
+		box-shadow: 0 2px 8px rgba(27, 58, 45, 0.06);
+		transition: transform 200ms, box-shadow 200ms;
+	}
+	.eb-preview-card:hover {
+		transform: translateX(4px);
+		box-shadow: 0 4px 16px rgba(27, 58, 45, 0.1);
+	}
+	.eb-preview-card img {
+		width: 120px;
+		height: 80px;
+		object-fit: cover;
+		flex-shrink: 0;
+	}
+	.eb-preview-card-info {
+		padding: 0.75rem 1rem 0.75rem 0;
+		display: flex;
+		flex-direction: column;
 		justify-content: center;
-		gap: var(--space-12);
-		padding: var(--space-8) var(--space-4);
-		border-top: var(--border-width-thin) solid var(--border-default);
-		border-bottom: var(--border-width-thin) solid var(--border-default);
 	}
-
-	.stat {
-		text-align: center;
-	}
-
-	.stat-number {
-		display: block;
-		font-family: var(--font-serif);
-		font-size: var(--text-4xl);
-		color: var(--color-marinara-700);
-		font-weight: var(--font-semibold);
-		line-height: 1;
-		margin-bottom: var(--space-2);
-	}
-
-	.stat-label {
-		font-size: var(--text-sm);
+	.eb-preview-card-source {
+		font-size: 0.6875rem;
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
-		color: var(--text-muted);
+		color: #c17c5a;
+		margin-bottom: 0.25rem;
+	}
+	.eb-preview-card-info h4 {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 1rem;
+		margin: 0;
+		color: #1b3a2d;
+		font-weight: 500;
+		line-height: 1.35;
 	}
 
-	/* Final CTA */
-	.final-cta {
-		padding: var(--space-12) var(--space-4) var(--space-16);
-		background: var(--color-marinara-800);
-		color: var(--color-white);
+	/* FEATURES */
+	.eb-features {
+		padding: 5rem 3rem;
+		max-width: 1100px;
+		margin: 0 auto;
+	}
+	.eb-features-title {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 2.25rem;
+		text-align: center;
+		margin: 0 0 3rem;
+		color: #1b3a2d;
+		font-weight: 400;
+	}
+	.eb-feature-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 2.5rem;
+	}
+	.eb-feature h3 {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 1.375rem;
+		margin: 0 0 0.75rem;
+		color: #1b3a2d;
+		font-weight: 500;
+	}
+	.eb-feature p {
+		color: #5a7264;
+		line-height: 1.7;
+		margin: 0;
+		font-size: 0.9375rem;
 	}
 
-	.final-cta h2 {
-		font-family: var(--font-serif);
-		font-size: var(--text-3xl);
-		margin: 0 0 var(--space-3);
+	/* STATS */
+	.eb-stats-bar {
+		display: flex;
+		justify-content: center;
+		gap: 4rem;
+		padding: 3rem 2rem;
+		border-top: 1px solid #ddd8ce;
+		border-bottom: 1px solid #ddd8ce;
+	}
+	.eb-stat { text-align: center; }
+	.eb-stat-number {
+		display: block;
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 2.75rem;
+		color: #1b3a2d;
+		font-weight: 600;
+		line-height: 1;
+		margin-bottom: 0.5rem;
+	}
+	.eb-stat-label {
+		font-size: 0.8125rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: #c17c5a;
 	}
 
-	.cta-subtitle {
-		color: rgba(255, 255, 255, 0.7);
-		font-size: var(--text-base);
-		margin: 0 0 var(--space-8);
+	/* CTA */
+	.eb-cta-section {
+		text-align: center;
+		padding: 5rem 2rem;
+		background: #1b3a2d;
+		color: #f7f5f0;
+	}
+	.eb-cta-section h2 {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 2.25rem;
+		margin: 0 0 1rem;
+		font-weight: 400;
+	}
+	.eb-cta-sub {
+		color: rgba(247, 245, 240, 0.7);
+		font-size: 1rem;
+		margin: 0 0 2rem;
+	}
+	.eb-btn-inverted {
+		background: #f7f5f0;
+		color: #1b3a2d;
+	}
+	.eb-btn-inverted:hover {
+		background: #ddd8ce;
 	}
 
-	.cta-inverted {
-		background: var(--color-white);
-		color: var(--color-marinara-800);
-	}
-
-	.cta-inverted:hover {
-		background: var(--color-gray-200);
-		color: var(--color-marinara-800);
-	}
-
-	/* Responsive */
+	/* RESPONSIVE */
 	@media (max-width: 768px) {
-		.steps {
+		.eb-hero {
 			grid-template-columns: 1fr;
-			gap: var(--space-8);
+			min-height: auto;
 		}
-
-		.features {
-			grid-template-columns: 1fr;
+		.eb-hero-inner {
+			padding: 3rem 1.5rem;
 		}
-
-		.stats-bar {
-			flex-wrap: wrap;
-			gap: var(--space-8);
+		.eb-title {
+			font-size: 2.5rem;
 		}
-
-		.hero-actions {
+		.eb-hero-image {
+			height: 300px;
+		}
+		.eb-hero-actions {
 			flex-direction: column;
-			align-items: center;
+			align-items: flex-start;
+		}
+		.eb-how-it-works {
+			padding: 3rem 1.5rem;
+		}
+		.eb-steps {
+			grid-template-columns: 1fr;
+			gap: 2rem;
+		}
+		.eb-preview {
+			grid-template-columns: 1fr;
+			padding: 3rem 1.5rem;
+			gap: 2rem;
+		}
+		.eb-features {
+			padding: 3rem 1.5rem;
+		}
+		.eb-feature-grid {
+			grid-template-columns: 1fr;
+			gap: 1.5rem;
+		}
+		.eb-stats-bar {
+			flex-wrap: wrap;
+			gap: 2rem;
 		}
 	}
 </style>
