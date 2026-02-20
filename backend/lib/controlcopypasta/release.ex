@@ -572,24 +572,37 @@ defmodule Controlcopypasta.Release do
     IO.puts("Building ingredient lookup...")
     lookup = Ingredients.build_ingredient_lookup()
 
-    recipe_ids =
-      if recipe_id do
-        # Force re-parse a specific recipe
-        [recipe_id]
-      else
-        # Fetch just IDs first (lightweight query) to avoid DB timeout on large result sets
-        id_query =
-          from r in Recipe,
-            where:
-              fragment(
-                "jsonb_array_length(?) > 0 AND EXISTS (SELECT 1 FROM jsonb_array_elements(?) AS elem WHERE elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = '')",
-                r.ingredients,
-                r.ingredients
-              ),
-            select: r.id
+    force = Keyword.get(opts, :force, false)
 
-        id_query = if limit, do: Ecto.Query.limit(id_query, ^limit), else: id_query
-        Repo.all(id_query, timeout: 120_000)
+    recipe_ids =
+      cond do
+        recipe_id ->
+          [recipe_id]
+
+        force ->
+          # Re-parse ALL recipes with ingredients
+          id_query =
+            from r in Recipe,
+              where: fragment("jsonb_array_length(?) > 0", r.ingredients),
+              select: r.id
+
+          id_query = if limit, do: Ecto.Query.limit(id_query, ^limit), else: id_query
+          Repo.all(id_query, timeout: 120_000)
+
+        true ->
+          # Only unparsed ingredients
+          id_query =
+            from r in Recipe,
+              where:
+                fragment(
+                  "jsonb_array_length(?) > 0 AND EXISTS (SELECT 1 FROM jsonb_array_elements(?) AS elem WHERE elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = '')",
+                  r.ingredients,
+                  r.ingredients
+                ),
+              select: r.id
+
+          id_query = if limit, do: Ecto.Query.limit(id_query, ^limit), else: id_query
+          Repo.all(id_query, timeout: 120_000)
       end
 
     total = length(recipe_ids)
