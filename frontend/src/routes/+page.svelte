@@ -8,7 +8,7 @@
 		}
 	});
 
-	const heroImage = 'https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/65b034087326da484e550fac_spaghetti-arrabiatta-thumbanil.webp';
+	const heroImage = 'https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/64b16419eae159d5a43205b5_meatless-baked-ziti.webp';
 
 	const recipes = [
 		{
@@ -44,7 +44,7 @@
 			</div>
 		</div>
 		<div class="eb-hero-image">
-			<img src={heroImage} alt="Spaghetti Arrabbiata" />
+			<img src={heroImage} alt="Meatless Baked Ziti" />
 		</div>
 	</header>
 
@@ -156,16 +156,26 @@
 
 	/* HERO */
 	.eb-hero {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		min-height: 80vh;
+		display: flex;
+		flex-direction: column;
 		overflow: hidden;
 	}
 	.eb-hero-inner {
 		display: flex;
 		flex-direction: column;
-		justify-content: center;
-		padding: 4rem 3rem 4rem 6rem;
+		align-items: center;
+		text-align: center;
+		padding: 5rem 3rem 3rem;
+	}
+	.eb-hero-image {
+		width: 100%;
+		max-height: 60vh;
+		overflow: hidden;
+	}
+	.eb-hero-image img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
 	.eb-eyebrow {
 		text-transform: uppercase;
@@ -188,15 +198,9 @@
 		line-height: 1.7;
 		color: #5a7264;
 		margin: 0 0 2.5rem;
-		max-width: 420px;
+		max-width: 520px;
 	}
 	.eb-hero-actions { display: flex; gap: 1rem; }
-	.eb-hero-image { position: relative; overflow: hidden; }
-	.eb-hero-image img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-	}
 
 	/* BUTTONS */
 	.eb-btn-primary {
@@ -434,22 +438,18 @@
 
 	/* RESPONSIVE */
 	@media (max-width: 768px) {
-		.eb-hero {
-			grid-template-columns: 1fr;
-			min-height: auto;
-		}
 		.eb-hero-inner {
-			padding: 3rem 1.5rem;
+			padding: 3rem 1.5rem 2rem;
 		}
 		.eb-title {
 			font-size: 2.5rem;
 		}
 		.eb-hero-image {
-			height: 300px;
+			max-height: 40vh;
 		}
 		.eb-hero-actions {
 			flex-direction: column;
-			align-items: flex-start;
+			align-items: center;
 		}
 		.eb-how-it-works {
 			padding: 3rem 1.5rem;
