@@ -1,0 +1,11 @@
+{
+  "name": "controlcopypasta-extension-tests",
+  "private": true,
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ci": "xvfb-run npx playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

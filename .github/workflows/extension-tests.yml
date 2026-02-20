@@ -1,0 +1,31 @@
+name: Extension E2E Tests
+
+on:
+  push:
+    paths:
+      - 'extension/**'
+  pull_request:
+    paths:
+      - 'extension/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: extension
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: extension
+        run: npx playwright install --with-deps chromium
+
+      - name: Run extension E2E tests
+        working-directory: extension
+        run: xvfb-run npx playwright test

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mixed Instructions Recipe</title>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Recipe",
+    "name": "Mixed Format Recipe",
+    "description": "A recipe with various instruction formats.",
+    "recipeIngredient": [
+      "1 cup flour",
+      "2 eggs"
+    ],
+    "recipeInstructions": [
+      "Preheat oven to 350F.",
+      {
+        "@type": "HowToStep",
+        "text": "Mix dry ingredients together."
+      },
+      {
+        "@type": "HowToSection",
+        "itemListElement": [
+          { "@type": "HowToStep", "text": "Add wet ingredients." },
+          { "@type": "HowToStep", "text": "Stir until combined." }
+        ]
+      }
+    ],
+    "recipeYield": ["4 servings", "12 pieces"]
+  }
+  </script>
+</head>
+<body>
+  <h1>Mixed Format Recipe</h1>
+</body>
+</html>

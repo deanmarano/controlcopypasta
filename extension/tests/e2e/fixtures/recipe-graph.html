@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Graph Recipe Page</title>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "name": "My Food Blog"
+      },
+      {
+        "@type": "Recipe",
+        "name": "Chicken Tikka Masala",
+        "description": "A creamy, spiced tomato curry.",
+        "image": {
+          "url": "https://example.com/tikka.jpg"
+        },
+        "recipeIngredient": [
+          "500g chicken breast",
+          "1 cup yogurt",
+          "2 tbsp garam masala",
+          "400ml tomato sauce",
+          "200ml heavy cream"
+        ],
+        "recipeInstructions": [
+          {
+            "@type": "HowToStep",
+            "text": "Marinate chicken in yogurt and spices."
+          },
+          {
+            "@type": "HowToStep",
+            "text": "Grill the chicken until charred."
+          },
+          {
+            "@type": "HowToStep",
+            "text": "Simmer in tomato sauce and cream."
+          }
+        ],
+        "totalTime": "PT1H15M",
+        "recipeYield": "6"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <h1>Chicken Tikka Masala</h1>
+</body>
+</html>
