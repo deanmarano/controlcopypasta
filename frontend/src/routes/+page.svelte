@@ -8,7 +8,7 @@
 		}
 	});
 
-	const heroImage = 'https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/64679cfc5d7c74151c1c561d_spicy-vodka-rigatoni-thumbnail.webp';
+	const heroImage = 'https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/65b034087326da484e550fac_spaghetti-arrabiatta-thumbanil.webp';
 
 	const recipes = [
 		{
@@ -44,7 +44,7 @@
 			</div>
 		</div>
 		<div class="eb-hero-image">
-			<img src={heroImage} alt="Spicy Vodka Rigatoni" />
+			<img src={heroImage} alt="Spaghetti Arrabbiata" />
 		</div>
 	</header>
 
