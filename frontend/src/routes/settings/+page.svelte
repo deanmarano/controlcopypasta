@@ -575,7 +575,7 @@
 							<strong>All Land Meat</strong>
 						</label>
 						<div class="animal-checkboxes">
-							{#each landAnimals.filter((a) => options.animal_types.includes(a)) as animal}
+							{#each landAnimals.filter((a) => options?.animal_types.includes(a)) as animal}
 								<label class="animal-toggle">
 									<input
 										type="checkbox"
@@ -599,7 +599,7 @@
 							<strong>All Seafood</strong>
 						</label>
 						<div class="animal-checkboxes">
-							{#each seaAnimals.filter((a) => options.animal_types.includes(a)) as animal}
+							{#each seaAnimals.filter((a) => options?.animal_types.includes(a)) as animal}
 								<label class="animal-toggle">
 									<input
 										type="checkbox"

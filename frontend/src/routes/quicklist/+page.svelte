@@ -16,7 +16,7 @@
 	let viewMode = $state<'swipe' | 'feed'>('swipe');
 	let feedContainer = $state<HTMLElement | null>(null);
 	let feedSentinel = $state<HTMLElement | null>(null);
-	let dismissingId = $state<number | null>(null);
+	let dismissingId = $state<string | null>(null);
 
 	onMount(() => {
 		const saved = localStorage.getItem('quicklist-view');
@@ -45,24 +45,24 @@
 		return () => observer.disconnect();
 	});
 
-	let heartingId = $state<number | null>(null);
+	let heartingId = $state<string | null>(null);
 	let lastTapTime = 0;
-	let lastTapTarget = 0;
+	let lastTapTarget: string | null = null;
 
-	function onFeedCardTap(recipeId: number) {
+	function onFeedCardTap(recipeId: string) {
 		const now = Date.now();
 		if (lastTapTarget === recipeId && now - lastTapTime < 400) {
 			// Double-tap → heart
 			handleFeedAction(recipeId, 'maybe');
 			lastTapTime = 0;
-			lastTapTarget = 0;
+			lastTapTarget = null;
 		} else {
 			lastTapTime = now;
 			lastTapTarget = recipeId;
 		}
 	}
 
-	async function handleFeedAction(recipeId: number, action: 'maybe' | 'skip') {
+	async function handleFeedAction(recipeId: string, action: 'maybe' | 'skip') {
 		if (swiping) return;
 		const token = authStore.getToken();
 		if (!token) return;
