@@ -689,8 +689,10 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   # Prefers an ingredient with a canonical match over one that looks like a measurement fragment.
   defp select_primary_ingredient([]), do: nil
   defp select_primary_ingredient(ingredients) do
-    # Prefer ingredient with canonical match
-    Enum.find(ingredients, fn i -> i.canonical_id != nil end)
+    # Prefer ingredient with canonical match that isn't a measurement fragment
+    Enum.find(ingredients, fn i -> i.canonical_id != nil and not measurement_fragment?(i.name) end)
+    # Then any canonical match
+    || Enum.find(ingredients, fn i -> i.canonical_id != nil end)
     # Then prefer ingredient that doesn't look like a measurement fragment
     || Enum.find(ingredients, fn i -> not measurement_fragment?(i.name) end)
     # Fall back to first
