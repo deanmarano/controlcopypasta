@@ -49,7 +49,7 @@
 					<div class="nav-links desktop-only">
 						<a href="/recipes">My Recipes</a>
 						<a href="/browse">Browse</a>
-						<a href="/shopping-lists">Shopping List</a>
+						<a href="/shopping-lists">Shopping Lists</a>
 						<a href="/settings">Settings</a>
 						{#if $isAdmin}
 							<a href="/admin" class="admin-link">Admin</a>
