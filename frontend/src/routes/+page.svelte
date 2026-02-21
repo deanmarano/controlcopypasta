@@ -8,7 +8,86 @@
 		}
 	});
 
+	import { onDestroy } from 'svelte';
+
 	const heroImage = 'https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/65b034087326da484e550fac_spaghetti-arrabiatta-thumbanil.webp';
+
+	// Swipe card animation state
+	let swipeActive = $state(0);
+	let swipeState = $state<'idle' | 'showing' | 'label' | 'swiping'>('idle');
+	let swipeTimers: ReturnType<typeof setTimeout>[] = [];
+
+	function clearSwipeTimers() {
+		swipeTimers.forEach(clearTimeout);
+		swipeTimers = [];
+	}
+
+	function scheduleSwipe() {
+		// Show card for 1.2s, then show label for 0.4s, then swipe for 0.5s, then next
+		swipeTimers.push(setTimeout(() => {
+			swipeState = 'label';
+			swipeTimers.push(setTimeout(() => {
+				swipeState = 'swiping';
+				swipeTimers.push(setTimeout(() => {
+					const next = swipeActive + 1;
+					if (next >= 4) {
+						// Reset: brief pause then restart
+						swipeState = 'idle';
+						swipeTimers.push(setTimeout(() => {
+							swipeActive = 0;
+							swipeState = 'showing';
+							scheduleSwipe();
+						}, 600));
+					} else {
+						swipeActive = next;
+						swipeState = 'showing';
+						scheduleSwipe();
+					}
+				}, 500));
+			}, 400));
+		}, 1200));
+	}
+
+	function startSwipeAnimation() {
+		clearSwipeTimers();
+		swipeActive = 0;
+		swipeState = 'showing';
+		scheduleSwipe();
+	}
+
+	function stopSwipeAnimation() {
+		clearSwipeTimers();
+		swipeActive = 0;
+		swipeState = 'idle';
+	}
+
+	function getSwipeClass(cardIndex: number): string {
+		if (swipeState === 'idle') {
+			return ['eb-sc-front', 'eb-sc-behind-1', 'eb-sc-behind-2', 'eb-sc-behind-3'][cardIndex];
+		}
+
+		if (cardIndex === swipeActive) {
+			if (swipeState === 'swiping') {
+				return cardIndex % 2 === 0 ? 'eb-sc-front eb-sc-swipe-right' : 'eb-sc-front eb-sc-swipe-left';
+			}
+			return 'eb-sc-front';
+		}
+
+		// Already swiped off
+		if (cardIndex < swipeActive) return 'eb-sc-gone';
+
+		// Behind the active card
+		const behind = cardIndex - swipeActive;
+		return ['', 'eb-sc-behind-1', 'eb-sc-behind-2', 'eb-sc-behind-3'][behind];
+	}
+
+	function showLabel(cardIndex: number, label: 'maybe' | 'skip'): boolean {
+		if (cardIndex !== swipeActive || swipeState !== 'label') return false;
+		// Even cards swipe right (maybe), odd cards swipe left (skip)
+		return cardIndex % 2 === 0 ? label === 'maybe' : label === 'skip';
+	}
+
+	onDestroy(clearSwipeTimers);
 
 	const recipes = [
 		{
@@ -92,7 +171,11 @@
 		<p class="eb-eyebrow" style="text-align: center; margin-bottom: 0.5rem;">Two ways to discover</p>
 		<h2 class="eb-quicklist-title">Browse your collection like never before</h2>
 		<div class="eb-quicklist-grid">
-			<a href="/login" class="eb-ql-card eb-ql-swipe">
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<a href="/login" class="eb-ql-card eb-ql-swipe"
+				onmouseenter={startSwipeAnimation}
+				onmouseleave={stopSwipeAnimation}
+			>
 				<div class="eb-ql-text">
 					<strong>Tinder Style</strong>
 					<span>Swipe right to save, left to skip. Rapid-fire recipe discovery, one card at a time.</span>
@@ -105,39 +188,45 @@
 							<span class="eb-phone-tag-value">Dinner</span>
 						</div>
 						<div class="eb-phone-cards">
-							<div class="eb-mock-card eb-swipe-c4">
+							<div class="eb-mock-card {getSwipeClass(3)}">
 								<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/649b7f9aaa7e9bd7c9662b4d_watermelon-basil-salad-thumbnail.webp" alt="" class="eb-mock-card-photo" />
 								<div class="eb-mock-overlay">
 									<div class="eb-mock-badge">15m</div>
 									<div class="eb-mock-title-bar"></div>
 									<div class="eb-mock-subtitle-bar"></div>
 								</div>
+								<div class="eb-mock-label-maybe" class:eb-label-show={showLabel(3, 'maybe')}>MAYBE</div>
+								<div class="eb-mock-label-skip" class:eb-label-show={showLabel(3, 'skip')}>SKIP</div>
 							</div>
-							<div class="eb-mock-card eb-swipe-c3">
+							<div class="eb-mock-card {getSwipeClass(2)}">
 								<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/6723a19fcc12a7d0178521d9_tomato-red-pepper-soup-thumbnail.webp" alt="" class="eb-mock-card-photo" />
 								<div class="eb-mock-overlay">
 									<div class="eb-mock-badge">45m</div>
 									<div class="eb-mock-title-bar"></div>
 									<div class="eb-mock-subtitle-bar"></div>
 								</div>
+								<div class="eb-mock-label-maybe" class:eb-label-show={showLabel(2, 'maybe')}>MAYBE</div>
+								<div class="eb-mock-label-skip" class:eb-label-show={showLabel(2, 'skip')}>SKIP</div>
 							</div>
-							<div class="eb-mock-card eb-swipe-c2">
+							<div class="eb-mock-card {getSwipeClass(1)}">
 								<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/668c7c1038f9ea42fc3eff27_spinach-feta-grilled-cheese-thumbnail.webp" alt="" class="eb-mock-card-photo" />
 								<div class="eb-mock-overlay">
 									<div class="eb-mock-badge">20m</div>
 									<div class="eb-mock-title-bar"></div>
 									<div class="eb-mock-subtitle-bar"></div>
 								</div>
+								<div class="eb-mock-label-maybe" class:eb-label-show={showLabel(1, 'maybe')}>MAYBE</div>
+								<div class="eb-mock-label-skip" class:eb-label-show={showLabel(1, 'skip')}>SKIP</div>
 							</div>
-							<div class="eb-mock-card eb-swipe-c1">
+							<div class="eb-mock-card {getSwipeClass(0)}">
 								<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/6585b42a484dac29edc39a97_jalapeno-pimento-cheese-thumbnail.webp" alt="" class="eb-mock-card-photo" />
 								<div class="eb-mock-overlay">
 									<div class="eb-mock-badge">30m</div>
 									<div class="eb-mock-title-bar"></div>
 									<div class="eb-mock-subtitle-bar"></div>
 								</div>
-								<div class="eb-mock-label-maybe">MAYBE</div>
-								<div class="eb-mock-label-skip">SKIP</div>
+								<div class="eb-mock-label-maybe" class:eb-label-show={showLabel(0, 'maybe')}>MAYBE</div>
+								<div class="eb-mock-label-skip" class:eb-label-show={showLabel(0, 'skip')}>SKIP</div>
 							</div>
 						</div>
 						<div class="eb-phone-buttons">
@@ -599,10 +688,15 @@
 		border-radius: 8px;
 		overflow: hidden;
 	}
-	.eb-swipe-c4 { transform: scale(0.85) translateY(12px); z-index: 0; }
-	.eb-swipe-c3 { transform: scale(0.9) translateY(8px); z-index: 1; }
-	.eb-swipe-c2 { transform: scale(0.95) translateY(4px); z-index: 2; }
-	.eb-swipe-c1 { z-index: 3; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
+	/* JS-driven swipe card positions */
+	.eb-sc-front { z-index: 3; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); transition: transform 0.5s ease, opacity 0.4s ease; }
+	.eb-sc-behind-1 { transform: scale(0.95) translateY(4px); z-index: 2; transition: transform 0.3s ease; }
+	.eb-sc-behind-2 { transform: scale(0.9) translateY(8px); z-index: 1; transition: transform 0.3s ease; }
+	.eb-sc-behind-3 { transform: scale(0.85) translateY(12px); z-index: 0; transition: transform 0.3s ease; }
+	.eb-sc-swipe-right { transform: rotate(14deg) translateX(80px); opacity: 0; }
+	.eb-sc-swipe-left { transform: rotate(-14deg) translateX(-80px); opacity: 0; }
+	.eb-sc-gone { opacity: 0; z-index: -1; transition: none; }
+	.eb-label-show { opacity: 1 !important; }
 	.eb-mock-card-photo {
 		width: 100%;
 		height: 100%;
@@ -679,55 +773,10 @@
 	.eb-mock-view { background: #eee; color: #1b3a2d; }
 	.eb-mock-maybe { background: #d4e4da; color: #2d5a47; }
 
-	/* Swipe animations — cycle c1→c2→c3→c4 in order */
-	.eb-ql-swipe:hover .eb-swipe-c1 { animation: ebSwipeCard1 10s ease-in-out infinite; }
-	.eb-ql-swipe:hover .eb-mock-label-maybe { animation: ebLabelMaybe 10s ease-in-out infinite; }
-	.eb-ql-swipe:hover .eb-mock-label-skip { animation: ebLabelSkip 10s ease-in-out infinite; }
-	@keyframes ebSwipeCard1 {
-		0% { transform: none; opacity: 1; z-index: 3; }
-		14% { transform: none; opacity: 1; z-index: 3; }
-		20% { transform: rotate(10deg) translateX(60px); opacity: 1; z-index: 3; }
-		24% { transform: rotate(14deg) translateX(80px); opacity: 0; z-index: 3; }
-		25% { opacity: 0; z-index: 0; }
-		100% { opacity: 0; z-index: 0; }
-	}
-	@keyframes ebLabelMaybe {
-		0%, 9% { opacity: 0; } 14% { opacity: 1; } 20%, 100% { opacity: 0; }
-	}
-	@keyframes ebLabelSkip {
-		0%, 100% { opacity: 0; }
-	}
-	.eb-ql-swipe:hover .eb-swipe-c2 { animation: ebSwipeCard2 10s ease-in-out infinite; }
-	@keyframes ebSwipeCard2 {
-		0% { transform: scale(0.95) translateY(4px); opacity: 1; z-index: 2; }
-		24% { transform: scale(0.95) translateY(4px); opacity: 1; z-index: 2; }
-		25% { transform: none; opacity: 1; z-index: 3; }
-		39% { transform: none; opacity: 1; z-index: 3; }
-		45% { transform: rotate(-10deg) translateX(-60px); opacity: 1; z-index: 3; }
-		49% { transform: rotate(-14deg) translateX(-80px); opacity: 0; z-index: 3; }
-		50% { opacity: 0; z-index: 0; }
-		100% { opacity: 0; z-index: 0; }
-	}
-	.eb-ql-swipe:hover .eb-swipe-c3 { animation: ebSwipeCard3 10s ease-in-out infinite; }
-	@keyframes ebSwipeCard3 {
-		0% { transform: scale(0.9) translateY(8px); opacity: 1; z-index: 1; }
-		49% { transform: scale(0.9) translateY(8px); opacity: 1; z-index: 1; }
-		50% { transform: none; opacity: 1; z-index: 3; }
-		64% { transform: none; opacity: 1; z-index: 3; }
-		70% { transform: rotate(10deg) translateX(60px); opacity: 1; z-index: 3; }
-		74% { transform: rotate(14deg) translateX(80px); opacity: 0; z-index: 3; }
-		75% { opacity: 0; z-index: 0; }
-		100% { opacity: 0; z-index: 0; }
-	}
-	.eb-ql-swipe:hover .eb-swipe-c4 { animation: ebSwipeCard4 10s ease-in-out infinite; }
-	@keyframes ebSwipeCard4 {
-		0% { transform: scale(0.85) translateY(12px); opacity: 1; z-index: 0; }
-		74% { transform: scale(0.85) translateY(12px); opacity: 1; z-index: 0; }
-		75% { transform: none; opacity: 1; z-index: 3; }
-		89% { transform: none; opacity: 1; z-index: 3; }
-		95% { transform: rotate(-10deg) translateX(-60px); opacity: 1; z-index: 3; }
-		99% { transform: rotate(-14deg) translateX(-80px); opacity: 0; z-index: 3; }
-		100% { opacity: 0; z-index: 0; }
+	/* Swipe label transitions */
+	.eb-mock-label-maybe,
+	.eb-mock-label-skip {
+		transition: opacity 0.2s ease;
 	}
 
 	/* Feed phone mockup */
