@@ -679,49 +679,55 @@
 	.eb-mock-view { background: #eee; color: #1b3a2d; }
 	.eb-mock-maybe { background: #d4e4da; color: #2d5a47; }
 
-	/* Swipe animations */
-	.eb-ql-swipe:hover .eb-swipe-c1 { animation: ebSwipeCard1 8s ease-in-out infinite; }
-	.eb-ql-swipe:hover .eb-mock-label-maybe { animation: ebLabelMaybe 8s ease-in-out infinite; }
-	.eb-ql-swipe:hover .eb-mock-label-skip { animation: ebLabelSkip 8s ease-in-out infinite; }
+	/* Swipe animations — cycle c1→c2→c3→c4 in order */
+	.eb-ql-swipe:hover .eb-swipe-c1 { animation: ebSwipeCard1 10s ease-in-out infinite; }
+	.eb-ql-swipe:hover .eb-mock-label-maybe { animation: ebLabelMaybe 10s ease-in-out infinite; }
+	.eb-ql-swipe:hover .eb-mock-label-skip { animation: ebLabelSkip 10s ease-in-out infinite; }
 	@keyframes ebSwipeCard1 {
-		0%, 5% { transform: rotate(0) translateX(0); opacity: 1; z-index: 4; }
-		12% { transform: rotate(8deg) translateX(40px); opacity: 1; }
-		16% { transform: rotate(14deg) translateX(70px); opacity: 0; }
-		17%, 30% { transform: rotate(0) translateX(0); opacity: 0; z-index: 4; }
-		31% { opacity: 1; }
-		37% { transform: rotate(-8deg) translateX(-40px); opacity: 1; }
-		41% { transform: rotate(-14deg) translateX(-70px); opacity: 0; }
-		42%, 100% { opacity: 0; z-index: 0; }
+		0% { transform: none; opacity: 1; z-index: 3; }
+		14% { transform: none; opacity: 1; z-index: 3; }
+		20% { transform: rotate(10deg) translateX(60px); opacity: 1; z-index: 3; }
+		24% { transform: rotate(14deg) translateX(80px); opacity: 0; z-index: 3; }
+		25% { opacity: 0; z-index: 0; }
+		100% { opacity: 0; z-index: 0; }
 	}
 	@keyframes ebLabelMaybe {
-		0%, 5% { opacity: 0; } 10% { opacity: 1; } 16%, 100% { opacity: 0; }
+		0%, 9% { opacity: 0; } 14% { opacity: 1; } 20%, 100% { opacity: 0; }
 	}
 	@keyframes ebLabelSkip {
-		0%, 31% { opacity: 0; } 35% { opacity: 1; } 41%, 100% { opacity: 0; }
+		0%, 100% { opacity: 0; }
 	}
-	.eb-ql-swipe:hover .eb-swipe-c2 { animation: ebSwipeCard2 8s ease-in-out infinite; }
+	.eb-ql-swipe:hover .eb-swipe-c2 { animation: ebSwipeCard2 10s ease-in-out infinite; }
 	@keyframes ebSwipeCard2 {
-		0%, 16% { transform: scale(0.95) translateY(4px); z-index: 2; }
-		17% { transform: scale(1) translateY(0); z-index: 3; }
-		55% { transform: rotate(0) translateX(0); opacity: 1; }
-		62% { transform: rotate(10deg) translateX(50px); opacity: 1; }
-		66% { transform: rotate(14deg) translateX(70px); opacity: 0; }
-		67%, 100% { opacity: 0; z-index: 0; }
+		0% { transform: scale(0.95) translateY(4px); opacity: 1; z-index: 2; }
+		24% { transform: scale(0.95) translateY(4px); opacity: 1; z-index: 2; }
+		25% { transform: none; opacity: 1; z-index: 3; }
+		39% { transform: none; opacity: 1; z-index: 3; }
+		45% { transform: rotate(-10deg) translateX(-60px); opacity: 1; z-index: 3; }
+		49% { transform: rotate(-14deg) translateX(-80px); opacity: 0; z-index: 3; }
+		50% { opacity: 0; z-index: 0; }
+		100% { opacity: 0; z-index: 0; }
 	}
-	.eb-ql-swipe:hover .eb-swipe-c3 { animation: ebSwipeCard3 8s ease-in-out infinite; }
+	.eb-ql-swipe:hover .eb-swipe-c3 { animation: ebSwipeCard3 10s ease-in-out infinite; }
 	@keyframes ebSwipeCard3 {
-		0%, 66% { transform: scale(0.9) translateY(8px); z-index: 1; }
-		67% { transform: scale(1) translateY(0); z-index: 3; }
-		80% { transform: rotate(0) translateX(0); opacity: 1; }
-		86% { transform: rotate(-9deg) translateX(-45px); opacity: 1; }
-		90% { transform: rotate(-14deg) translateX(-70px); opacity: 0; }
-		91%, 100% { opacity: 0; z-index: 0; }
+		0% { transform: scale(0.9) translateY(8px); opacity: 1; z-index: 1; }
+		49% { transform: scale(0.9) translateY(8px); opacity: 1; z-index: 1; }
+		50% { transform: none; opacity: 1; z-index: 3; }
+		64% { transform: none; opacity: 1; z-index: 3; }
+		70% { transform: rotate(10deg) translateX(60px); opacity: 1; z-index: 3; }
+		74% { transform: rotate(14deg) translateX(80px); opacity: 0; z-index: 3; }
+		75% { opacity: 0; z-index: 0; }
+		100% { opacity: 0; z-index: 0; }
 	}
-	.eb-ql-swipe:hover .eb-swipe-c4 { animation: ebSwipeCard4 8s ease-in-out infinite; }
+	.eb-ql-swipe:hover .eb-swipe-c4 { animation: ebSwipeCard4 10s ease-in-out infinite; }
 	@keyframes ebSwipeCard4 {
-		0%, 90% { transform: scale(0.85) translateY(12px); z-index: 0; }
-		91% { transform: scale(1) translateY(0); z-index: 3; }
-		100% { transform: scale(1) translateY(0); z-index: 3; opacity: 1; }
+		0% { transform: scale(0.85) translateY(12px); opacity: 1; z-index: 0; }
+		74% { transform: scale(0.85) translateY(12px); opacity: 1; z-index: 0; }
+		75% { transform: none; opacity: 1; z-index: 3; }
+		89% { transform: none; opacity: 1; z-index: 3; }
+		95% { transform: rotate(-10deg) translateX(-60px); opacity: 1; z-index: 3; }
+		99% { transform: rotate(-14deg) translateX(-80px); opacity: 0; z-index: 3; }
+		100% { opacity: 0; z-index: 0; }
 	}
 
 	/* Feed phone mockup */
