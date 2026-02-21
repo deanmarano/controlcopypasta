@@ -63,7 +63,7 @@
 			const result = await avoidedIngredients.list(token);
 			items = result.data;
 		} catch {
-			error = 'Failed to load avoided ingredients';
+			error = 'Failed to load dietary preferences';
 		} finally {
 			loading = false;
 		}
@@ -471,11 +471,7 @@
 	</section>
 
 	<section class="avoided-section">
-		<h2>Avoided Ingredients</h2>
-		<p class="description">
-			Recipes containing these ingredients will be flagged with a warning. Useful for allergies,
-			dietary restrictions, or personal preferences.
-		</p>
+		<h2>Dietary Preferences</h2>
 
 		{#if preferences}
 			<div class="preference-toggle">
@@ -486,7 +482,7 @@
 						onchange={toggleHideAvoided}
 						disabled={savingPreferences}
 					/>
-					<span class="toggle-text">Hide recipes with avoided ingredients when browsing</span>
+					<span class="toggle-text">Hide recipes that conflict with my dietary preferences</span>
 				</label>
 			</div>
 		{/if}
@@ -530,7 +526,7 @@
 			<!-- Category Selection -->
 			{#if options?.categories}
 				<div class="add-method">
-					<h3>Avoid Entire Category</h3>
+					<h3>Exclude Entire Category</h3>
 					<div class="select-wrapper">
 						<select bind:value={selectedCategory}>
 							<option value="">Select a category...</option>
@@ -546,7 +542,7 @@
 			<!-- Allergen Selection -->
 			{#if options?.allergen_groups}
 				<div class="add-method">
-					<h3>Avoid Allergen Group</h3>
+					<h3>Exclude Allergen Group</h3>
 					<div class="select-wrapper">
 						<select bind:value={selectedAllergen}>
 							<option value="">Select an allergen...</option>
@@ -562,7 +558,7 @@
 			<!-- Animal Type Selection -->
 			{#if options?.animal_types}
 				<div class="add-method">
-					<h3>Avoid Animal Types</h3>
+					<h3>Exclude Animal Types</h3>
 
 					<!-- Land Animals -->
 					<div class="animal-group">
@@ -634,11 +630,11 @@
 		{#if loading}
 			<p class="loading">Loading...</p>
 		{:else if items.length === 0}
-			<p class="empty">No avoided ingredients yet. Add items above to get started.</p>
+			<p class="empty">No dietary preferences set. Add items above to get started.</p>
 		{:else}
 			{@const nonAnimalItems = items.filter((i) => i.avoidance_type !== 'animal')}
 			{#if nonAnimalItems.length > 0}
-			<h3 class="list-title">Your Avoided List ({nonAnimalItems.length})</h3>
+			<h3 class="list-title">Your Exclusions ({nonAnimalItems.length})</h3>
 			<ul class="ingredient-list">
 				{#each nonAnimalItems as item}
 					<li class={getTypeClass(item)}>
@@ -686,7 +682,7 @@
 										{/if}
 									</div>
 									<p class="expanded-help">
-										Uncheck ingredients you're okay with eating despite avoiding this {item.avoidance_type}.
+										Uncheck ingredients you're okay with eating despite excluding this {item.avoidance_type}.
 									</p>
 									<div class="ingredients-grid">
 										{#each expandedIngredients.ingredients as ing}
