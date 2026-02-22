@@ -91,12 +91,59 @@
 		</div>
 	</section>
 
-	<section class="eb-quicklist">
-		<p class="eb-eyebrow" style="text-align: center; margin-bottom: 0.5rem;">Two ways to discover</p>
-		<h2 class="eb-quicklist-title">Browse your collection like never before</h2>
-		<div class="eb-quicklist-grid">
-			<SwipePhoneMockup href="/login" />
-			<FeedPhoneMockup href="/login" />
+	<section class="eb-browsing">
+		<div class="eb-browsing-intro">
+			<p class="eb-eyebrow">Browse your recipe database</p>
+			<h2>A smarter way to explore what you've saved.</h2>
+		</div>
+
+		<div class="eb-browsing-subsection eb-dietary">
+			<div class="eb-dietary-text">
+				<p class="eb-eyebrow">Customized for you</p>
+				<h2>Never see foods you don't eat.</h2>
+				<p>Set your preferences once and recipes containing those ingredients disappear from browsing. Exclude entire categories like dairy or gluten, allergen groups like tree nuts, animal types like shellfish, or individual ingredients you simply don't like.</p>
+				<p style="margin-top: 1rem;">Need granular control? Add exceptions — skip dairy but keep butter, avoid nuts but allow almonds. Your collection adapts to how you actually eat.</p>
+				<a href="/login" class="eb-btn-ghost" style="margin-top: 1.5rem;">Set your preferences</a>
+			</div>
+			<div class="eb-dietary-visual">
+				<div class="eb-dietary-panel">
+					<div class="eb-dietary-panel-header">Your preferences</div>
+					<div class="eb-dietary-tags">
+						<span class="eb-dietary-tag active">Dairy-free</span>
+						<span class="eb-dietary-tag active">No Shellfish</span>
+						<span class="eb-dietary-tag active">No Peanuts</span>
+						<span class="eb-dietary-tag">Gluten-free</span>
+						<span class="eb-dietary-tag">Vegetarian</span>
+					</div>
+					<div class="eb-dietary-divider"></div>
+					<div class="eb-dietary-recipe visible">
+						<div class="eb-dietary-recipe-dot green"></div>
+						<span>One Pot Lemon Pasta</span>
+					</div>
+					<div class="eb-dietary-recipe dimmed">
+						<div class="eb-dietary-recipe-dot red"></div>
+						<span>Shrimp Scampi</span>
+						<span class="eb-dietary-reason">shellfish</span>
+					</div>
+					<div class="eb-dietary-recipe dimmed">
+						<div class="eb-dietary-recipe-dot red"></div>
+						<span>Mac and Cheese</span>
+						<span class="eb-dietary-reason">dairy</span>
+					</div>
+					<div class="eb-dietary-recipe visible">
+						<div class="eb-dietary-recipe-dot green"></div>
+						<span>Watermelon Basil Salad</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="eb-browsing-subsection eb-quicklist">
+			<h3 class="eb-quicklist-title">Two ways to discover</h3>
+			<div class="eb-quicklist-grid">
+				<SwipePhoneMockup href="/login" />
+				<FeedPhoneMockup href="/login" />
+			</div>
 		</div>
 	</section>
 
@@ -362,18 +409,38 @@
 		line-height: 1.35;
 	}
 
-	/* QUICKLIST */
-	.eb-quicklist {
+	/* BROWSING */
+	.eb-browsing {
 		max-width: 1100px;
 		margin: 0 auto;
-		padding: 5rem 3rem;
+		padding: 5rem 3rem 3rem;
 		border-top: 1px solid #ddd8ce;
+	}
+	.eb-browsing-intro {
+		text-align: center;
+		margin-bottom: 3rem;
+	}
+	.eb-browsing-intro h2 {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 2.25rem;
+		line-height: 1.2;
+		margin: 0;
+		color: #1b3a2d;
+		font-weight: 400;
+	}
+	.eb-browsing-subsection {
+		margin-bottom: 3rem;
+	}
+
+	/* QUICKLIST */
+	.eb-quicklist {
+		padding: 0;
 	}
 	.eb-quicklist-title {
 		font-family: 'Cormorant Garamond', Georgia, serif;
-		font-size: 2.25rem;
+		font-size: 1.75rem;
 		text-align: center;
-		margin: 0 0 3rem;
+		margin: 0 0 2rem;
 		color: #1b3a2d;
 		font-weight: 400;
 	}
@@ -468,6 +535,102 @@
 		background: #ddd8ce;
 	}
 
+	/* DIETARY PREFERENCES */
+	.eb-dietary {
+		display: grid;
+		grid-template-columns: 1fr 1.2fr;
+		gap: 4rem;
+		align-items: center;
+		padding: 0;
+	}
+	.eb-dietary-text h2 {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 2.25rem;
+		line-height: 1.2;
+		margin: 0 0 1.25rem;
+		color: #1b3a2d;
+		font-weight: 400;
+	}
+	.eb-dietary-text p {
+		color: #5a7264;
+		line-height: 1.7;
+		margin: 0;
+		font-size: 0.9375rem;
+	}
+	.eb-dietary-panel {
+		background: white;
+		border-radius: 6px;
+		padding: 1.5rem;
+		box-shadow: 0 2px 12px rgba(27, 58, 45, 0.08);
+	}
+	.eb-dietary-panel-header {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 1.125rem;
+		color: #1b3a2d;
+		font-weight: 500;
+		margin-bottom: 1rem;
+	}
+	.eb-dietary-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-bottom: 0.25rem;
+	}
+	.eb-dietary-tag {
+		display: inline-block;
+		padding: 0.375rem 0.875rem;
+		border-radius: 100px;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		border: 1.5px solid #a8bfb0;
+		color: #5a7264;
+		transition: all 200ms;
+	}
+	.eb-dietary-tag.active {
+		background: #1b3a2d;
+		border-color: #1b3a2d;
+		color: #f7f5f0;
+	}
+	.eb-dietary-divider {
+		height: 1px;
+		background: #e8e4dc;
+		margin: 1rem 0;
+	}
+	.eb-dietary-recipe {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		padding: 0.5rem 0;
+		font-size: 0.9375rem;
+		color: #1b3a2d;
+		transition: opacity 200ms;
+	}
+	.eb-dietary-recipe.dimmed {
+		opacity: 0.35;
+		text-decoration: line-through;
+		text-decoration-color: #c17c5a;
+	}
+	.eb-dietary-recipe-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+	.eb-dietary-recipe-dot.green {
+		background: #3a8f5c;
+	}
+	.eb-dietary-recipe-dot.red {
+		background: #c17c5a;
+	}
+	.eb-dietary-reason {
+		margin-left: auto;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #c17c5a;
+		text-decoration: none;
+	}
+
 	/* RESPONSIVE */
 	@media (max-width: 768px) {
 		.eb-hero {
@@ -497,6 +660,13 @@
 		.eb-preview {
 			grid-template-columns: 1fr;
 			padding: 3rem 1.5rem;
+			gap: 2rem;
+		}
+		.eb-browsing {
+			padding: 3rem 1.5rem 1.5rem;
+		}
+		.eb-dietary {
+			grid-template-columns: 1fr;
 			gap: 2rem;
 		}
 		.eb-features {
