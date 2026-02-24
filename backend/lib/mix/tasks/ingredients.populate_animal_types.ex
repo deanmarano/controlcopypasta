@@ -51,11 +51,13 @@ defmodule Mix.Tasks.Ingredients.PopulateAnimalTypes do
     |> Enum.sort_by(fn {animal_type, _} -> animal_type end)
     |> Enum.each(fn {animal_type, items} ->
       IO.puts("  #{animal_type}: #{length(items)} ingredients")
+
       items
       |> Enum.take(5)
       |> Enum.each(fn {ing, _} ->
         IO.puts("    - #{ing.display_name}")
       end)
+
       if length(items) > 5 do
         IO.puts("    ... and #{length(items) - 5} more")
       end

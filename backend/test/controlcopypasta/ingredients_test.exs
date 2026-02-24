@@ -125,8 +125,12 @@ defmodule Controlcopypasta.IngredientsTest do
 
     test "get_canonical_ingredient_by_name/1 returns ingredient by name" do
       {:ok, ingredient} = Ingredients.create_canonical_ingredient(@valid_attrs)
-      assert Ingredients.get_canonical_ingredient_by_name("test_chicken breast").id == ingredient.id
-      assert Ingredients.get_canonical_ingredient_by_name("TEST_CHICKEN BREAST").id == ingredient.id
+
+      assert Ingredients.get_canonical_ingredient_by_name("test_chicken breast").id ==
+               ingredient.id
+
+      assert Ingredients.get_canonical_ingredient_by_name("TEST_CHICKEN BREAST").id ==
+               ingredient.id
     end
 
     test "find_canonical_ingredient/1 finds by exact name" do
@@ -141,7 +145,9 @@ defmodule Controlcopypasta.IngredientsTest do
           Map.put(@valid_attrs, :aliases, ["test_boneless skinless chicken breast", "test_bscb"])
         )
 
-      assert {:ok, found} = Ingredients.find_canonical_ingredient("test_boneless skinless chicken breast")
+      assert {:ok, found} =
+               Ingredients.find_canonical_ingredient("test_boneless skinless chicken breast")
+
       assert found.id == ingredient.id
     end
 
@@ -180,7 +186,10 @@ defmodule Controlcopypasta.IngredientsTest do
 
     test "create_canonical_ingredient/1 validates category" do
       attrs = Map.put(@valid_attrs, :category, "invalid_category")
-      assert {:error, %Ecto.Changeset{errors: errors}} = Ingredients.create_canonical_ingredient(attrs)
+
+      assert {:error, %Ecto.Changeset{errors: errors}} =
+               Ingredients.create_canonical_ingredient(attrs)
+
       assert {:category, _} = List.keyfind(errors, :category, 0)
     end
 
@@ -311,7 +320,9 @@ defmodule Controlcopypasta.IngredientsTest do
       assert hd(forms).id == form.id
     end
 
-    test "get_ingredient_form/2 returns form by ingredient and form name", %{ingredient: ingredient} do
+    test "get_ingredient_form/2 returns form by ingredient and form name", %{
+      ingredient: ingredient
+    } do
       {:ok, form} =
         Ingredients.create_ingredient_form(%{
           canonical_ingredient_id: ingredient.id,

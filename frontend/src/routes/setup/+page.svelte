@@ -215,7 +215,7 @@
 
 				<div class="welcome-actions">
 					<button class="btn-primary" onclick={() => step = 'presets'}>
-						Yes, I avoid some foods
+						Yes, I have dietary preferences
 					</button>
 					<button class="btn-secondary" onclick={skipSetup} disabled={saving}>
 						{saving ? 'Setting up...' : 'I eat everything'}
@@ -228,7 +228,7 @@
 			</div>
 		{:else if step === 'presets'}
 			<div class="step">
-				<h1>What do you avoid?</h1>
+				<h1>What do you prefer to exclude?</h1>
 				<p class="subtitle">Select any that apply. You can always change this later in settings.</p>
 
 				<div class="preset-grid">
@@ -259,7 +259,7 @@
 		{:else if step === 'review'}
 			<div class="step">
 				<h1>Review your preferences</h1>
-				<p class="subtitle">These ingredients will be avoided when browsing recipes.</p>
+				<p class="subtitle">These ingredients will be excluded when browsing recipes.</p>
 
 				{#if error}
 					<div class="error">{error}</div>
@@ -285,7 +285,7 @@
 
 				<label class="toggle-row">
 					<input type="checkbox" bind:checked={hideAvoided} />
-					<span>Hide recipes containing avoided ingredients</span>
+					<span>Hide recipes that conflict with my preferences</span>
 				</label>
 
 				<div class="step-actions">

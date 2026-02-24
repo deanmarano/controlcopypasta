@@ -11,7 +11,10 @@ defmodule ControlcopypastaWeb.RecipeJSON do
   end
 
   def show(%{recipe: recipe, avoided_set: avoided_set, user_id: user_id}) do
-    %{data: data_with_avoided(recipe, avoided_set) |> Map.put(:is_owned, recipe.user_id == user_id)}
+    %{
+      data:
+        data_with_avoided(recipe, avoided_set) |> Map.put(:is_owned, recipe.user_id == user_id)
+    }
   end
 
   def show(%{recipe: recipe, avoided_set: avoided_set}) do
@@ -139,6 +142,7 @@ defmodule ControlcopypastaWeb.RecipeJSON do
   # Format a nutrient value - pass through range maps, convert scalars
   defp format_nutrient_value(%{min: _, best: _, max: _, confidence: _} = range), do: range
   defp format_nutrient_value(nil), do: nil
+
   defp format_nutrient_value(value) when is_number(value) do
     # Legacy scalar value - convert to range format for consistency
     %{min: value, best: value, max: value, confidence: 1.0}

@@ -71,7 +71,8 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Units do
   # All valid unit strings (for tokenizer)
   @all_units @unit_definitions
              |> Enum.flat_map(fn {_canonical, aliases} -> aliases end)
-             |> Enum.sort_by(&(-String.length(&1)))  # Longer units first for matching
+             # Longer units first for matching
+             |> Enum.sort_by(&(-String.length(&1)))
 
   @doc """
   Returns all unit strings, sorted longest-first for tokenization.
@@ -95,6 +96,7 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Units do
       "unknown"
   """
   def normalize(nil), do: nil
+
   def normalize(unit) when is_binary(unit) do
     Map.get(@unit_aliases, String.downcase(unit), String.downcase(unit))
   end
@@ -111,6 +113,7 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Units do
       false
   """
   def is_unit?(nil), do: false
+
   def is_unit?(text) when is_binary(text) do
     Map.has_key?(@unit_aliases, String.downcase(text))
   end
@@ -132,6 +135,7 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Units do
       :count
   """
   def unit_type(nil), do: :unknown
+
   def unit_type(unit) when is_binary(unit) do
     canonical = normalize(unit)
 

@@ -93,8 +93,13 @@ defmodule Controlcopypasta.Repo.Migrations.AddAlmondFlourAndMore do
 
   def down do
     ingredients_to_remove = [
-      "almond flour", "coconut flour", "lemon curd",
-      "confectioners sugar", "peppermint", "udon noodles", "lasagna noodles"
+      "almond flour",
+      "coconut flour",
+      "lemon curd",
+      "confectioners sugar",
+      "peppermint",
+      "udon noodles",
+      "lasagna noodles"
     ]
 
     for name <- ingredients_to_remove do
@@ -103,6 +108,7 @@ defmodule Controlcopypasta.Repo.Migrations.AddAlmondFlourAndMore do
   end
 
   defp format_array([]), do: ""
+
   defp format_array(items) do
     items
     |> Enum.map(&"'#{String.replace(&1, "'", "''")}'")

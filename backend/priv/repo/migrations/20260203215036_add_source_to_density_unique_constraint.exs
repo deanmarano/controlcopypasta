@@ -8,10 +8,10 @@ defmodule Controlcopypasta.Repo.Migrations.AddSourceToDensityUniqueConstraint do
     # Create new unique index that includes source
     # This allows storing density data from multiple sources (usda, fatsecret, openfoodfacts, etc.)
     create unique_index(
-      :ingredient_densities,
-      ["canonical_ingredient_id", "volume_unit", "COALESCE(preparation, '')", "source"],
-      name: :ingredient_densities_unique_idx
-    )
+             :ingredient_densities,
+             ["canonical_ingredient_id", "volume_unit", "COALESCE(preparation, '')", "source"],
+             name: :ingredient_densities_unique_idx
+           )
   end
 
   def down do
@@ -30,9 +30,9 @@ defmodule Controlcopypasta.Repo.Migrations.AddSourceToDensityUniqueConstraint do
     """
 
     create unique_index(
-      :ingredient_densities,
-      ["canonical_ingredient_id", "volume_unit", "COALESCE(preparation, '')"],
-      name: :ingredient_densities_unique_idx
-    )
+             :ingredient_densities,
+             ["canonical_ingredient_id", "volume_unit", "COALESCE(preparation, '')"],
+             name: :ingredient_densities_unique_idx
+           )
   end
 end

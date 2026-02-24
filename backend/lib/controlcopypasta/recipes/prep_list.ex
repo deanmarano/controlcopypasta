@@ -95,6 +95,7 @@ defmodule Controlcopypasta.Recipes.PrepList do
   end
 
   defp format_category(_cat, []), do: ""
+
   defp format_category(cat, steps) do
     label = Map.get(@category_labels, cat, "Other")
     header = "### #{label}\n"
@@ -122,6 +123,7 @@ defmodule Controlcopypasta.Recipes.PrepList do
   defp format_number(n) when is_float(n) do
     if n == trunc(n), do: "#{trunc(n)}", else: "#{n}"
   end
+
   defp format_number(n), do: "#{n}"
 
   # Extract pre_steps from ingredients, handling both parsed structs and JSONB maps
@@ -134,7 +136,9 @@ defmodule Controlcopypasta.Recipes.PrepList do
   defp extract_ingredient_pre_steps(%{pre_steps: steps}) when is_list(steps), do: steps
 
   # For parsed ingredients without pre_steps, generate them
-  defp extract_ingredient_pre_steps(%Controlcopypasta.Ingredients.TokenParser.ParsedIngredient{} = parsed) do
+  defp extract_ingredient_pre_steps(
+         %Controlcopypasta.Ingredients.TokenParser.ParsedIngredient{} = parsed
+       ) do
     parsed
     |> PreStepGenerator.generate_pre_steps()
     |> Enum.map(&PreStepGenerator.to_map/1)
@@ -150,28 +154,32 @@ defmodule Controlcopypasta.Recipes.PrepList do
     end)
     |> Enum.map(fn {_key, group} ->
       # Merge quantities for the same action/target
-      merged = Enum.reduce(group, fn step, acc ->
-        merge_step(acc, step)
-      end)
+      merged =
+        Enum.reduce(group, fn step, acc ->
+          merge_step(acc, step)
+        end)
+
       merged
     end)
   end
 
   defp merge_step(step1, step2) do
     # Add quantities if both have them and same unit
-    new_qty = case {step1["quantity"], step2["quantity"], step1["unit"], step2["unit"]} do
-      {q1, q2, u, u} when is_number(q1) and is_number(q2) -> q1 + q2
-      {q1, _, _, _} when is_number(q1) -> q1
-      {_, q2, _, _} when is_number(q2) -> q2
-      _ -> nil
-    end
+    new_qty =
+      case {step1["quantity"], step2["quantity"], step1["unit"], step2["unit"]} do
+        {q1, q2, u, u} when is_number(q1) and is_number(q2) -> q1 + q2
+        {q1, _, _, _} when is_number(q1) -> q1
+        {_, q2, _, _} when is_number(q2) -> q2
+        _ -> nil
+      end
 
     # Recalculate time estimate if we merged quantities
-    new_time = if new_qty && new_qty != step1["quantity"] do
-      recalculate_time(step1, new_qty)
-    else
-      step1["estimated_time_min"]
-    end
+    new_time =
+      if new_qty && new_qty != step1["quantity"] do
+        recalculate_time(step1, new_qty)
+      else
+        step1["estimated_time_min"]
+      end
 
     %{step1 | "quantity" => new_qty, "estimated_time_min" => new_time}
   end
@@ -181,12 +189,14 @@ defmodule Controlcopypasta.Recipes.PrepList do
     case {step["quantity"], step["estimated_time_min"]} do
       {old_qty, time} when is_number(old_qty) and old_qty > 0 and is_number(time) ->
         round(time * new_qty / old_qty)
+
       _ ->
         step["estimated_time_min"]
     end
   end
 
   defp maybe_filter_unknown(steps, true), do: steps
+
   defp maybe_filter_unknown(steps, false) do
     Enum.reject(steps, &(&1["category"] == "other"))
   end
@@ -221,12 +231,14 @@ defmodule Controlcopypasta.Recipes.PrepList do
 
   # Calculate parallel time: temperature can run while other work happens
   defp calculate_parallel_time(by_category) do
-    temp_time = by_category
+    temp_time =
+      by_category
       |> Map.get(:temperature, [])
       |> Enum.map(&(&1["estimated_time_min"] || 0))
       |> Enum.max(fn -> 0 end)
 
-    other_time = [:cook, :process, :cut, :other]
+    other_time =
+      [:cook, :process, :cut, :other]
       |> Enum.flat_map(&Map.get(by_category, &1, []))
       |> Enum.map(&(&1["estimated_time_min"] || 0))
       |> Enum.sum()

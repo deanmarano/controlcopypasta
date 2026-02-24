@@ -34,7 +34,8 @@ defmodule Controlcopypasta.Ingredients.SubParsers.GarlicTest do
     end
 
     test "parses 'Cloves from 1 head of garlic (about 8 cloves), smashed and peeled'" do
-      result = TokenParser.parse("Cloves from 1 head of garlic (about 8 cloves), smashed and peeled")
+      result =
+        TokenParser.parse("Cloves from 1 head of garlic (about 8 cloves), smashed and peeled")
 
       assert result.quantity == 1.0
       assert result.unit == "head"

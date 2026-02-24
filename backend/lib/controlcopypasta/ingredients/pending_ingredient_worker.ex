@@ -49,50 +49,122 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
 
   # Multi-word phrases that should never be queued
   @blacklist_phrases [
-    "at room temperature", "room temperature", "to taste", "as needed",
-    "as desired", "cut into", "patted dry", "see tip", "see tips",
-    "see note", "see notes", "juice of", "zest of", "juice from",
-    "zest from", "juice and zest", "fresh juice from juice",
-    "for the pan", "the pan", "if needed", "if desired",
-    "from about", "or more", "or less", "plus more",
-    "for serving", "for garnish", "for topping",
-    "for sprinkling", "for dusting", "for dipping", "for drizzling",
-    "for coating", "for brushing", "for frying", "for greasing",
-    "very finely", "very thinly", "percent fat",
-    "on a diagonal", "pale green parts only", "pale-green parts only",
-    "inch thick", "tough outer layers", "leaves picked",
-    "star tip", "snail shells", "against the grain",
-    "dark green parts", "large ears", "half of a",
-    "pink liquid", "red liquid",
+    "at room temperature",
+    "room temperature",
+    "to taste",
+    "as needed",
+    "as desired",
+    "cut into",
+    "patted dry",
+    "see tip",
+    "see tips",
+    "see note",
+    "see notes",
+    "juice of",
+    "zest of",
+    "juice from",
+    "zest from",
+    "juice and zest",
+    "fresh juice from juice",
+    "for the pan",
+    "the pan",
+    "if needed",
+    "if desired",
+    "from about",
+    "or more",
+    "or less",
+    "plus more",
+    "for serving",
+    "for garnish",
+    "for topping",
+    "for sprinkling",
+    "for dusting",
+    "for dipping",
+    "for drizzling",
+    "for coating",
+    "for brushing",
+    "for frying",
+    "for greasing",
+    "very finely",
+    "very thinly",
+    "percent fat",
+    "on a diagonal",
+    "pale green parts only",
+    "pale-green parts only",
+    "inch thick",
+    "tough outer layers",
+    "leaves picked",
+    "star tip",
+    "snail shells",
+    "against the grain",
+    "dark green parts",
+    "large ears",
+    "half of a",
+    "pink liquid",
+    "red liquid",
     # Salt measurement notes
-    "use half as much by volume", "half as much by volume",
+    "use half as much by volume",
+    "half as much by volume",
     # Temperature notes
-    "at least 65°f", "at room temp", "at least 65",
+    "at least 65°f",
+    "at room temp",
+    "at least 65",
     # Dietary notes
-    "use gluten free if needed", "gluten free if needed",
+    "use gluten free if needed",
+    "gluten free if needed",
     # Recipe reference patterns
-    "recipe above", "reserved from above", "from above",
+    "recipe above",
+    "reserved from above",
+    "from above",
     # Preparation patterns
-    "soaked overnight", "if lumpy", "sifted if lumpy",
-    "whole preferred", "dutch-process or natural",
+    "soaked overnight",
+    "if lumpy",
+    "sifted if lumpy",
+    "whole preferred",
+    "dutch-process or natural",
     # Citrus artifact patterns
-    "juice from juice", "zest from zest", "lemon zest from zest",
+    "juice from juice",
+    "zest from zest",
+    "lemon zest from zest",
     # King Arthur branded products (should be handled separately)
-    "king arthur fiori di sicilia", "king arthur easy roll dough improver",
-    "king arthur cinnamon sweet bits", "king arthur artisan bread topping",
-    "king arthur harvest grains blend", "king arthur pie filling enhancer",
-    "king arthur fruitcake fruit blend", "king arthur bread and cake enhancer",
+    "king arthur fiori di sicilia",
+    "king arthur easy roll dough improver",
+    "king arthur cinnamon sweet bits",
+    "king arthur artisan bread topping",
+    "king arthur harvest grains blend",
+    "king arthur pie filling enhancer",
+    "king arthur fruitcake fruit blend",
+    "king arthur bread and cake enhancer",
     # Misc noise
-    "any color", "medium scoops", "shaved with a vegetable peeler",
-    "woody ends", "from the cob"
+    "any color",
+    "medium scoops",
+    "shaved with a vegetable peeler",
+    "woody ends",
+    "from the cob"
   ]
 
   # Prefixes - if name starts with any of these, skip it
   @blacklist_prefixes [
-    "cut into ", "plus more ", "or more ", "see ",
-    "for ", "to ", "into ", "on a ", "on the ",
-    "each ", "until ", "about ", "well ", "through ",
-    "from a ", "other ", "tied ", "two ", "three ", "four "
+    "cut into ",
+    "plus more ",
+    "or more ",
+    "see ",
+    "for ",
+    "to ",
+    "into ",
+    "on a ",
+    "on the ",
+    "each ",
+    "until ",
+    "about ",
+    "well ",
+    "through ",
+    "from a ",
+    "other ",
+    "tied ",
+    "two ",
+    "three ",
+    "four "
   ]
 
   @batch_size 5000
@@ -114,41 +186,46 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
     chunks = Enum.chunk_every(texts, @parse_chunk_size)
     num_chunks = length(chunks)
 
-    {total_upserted, _acc} = chunks
-    |> Enum.with_index(1)
-    |> Enum.reduce({0, %{}}, fn {chunk, chunk_num}, {_prev_upserted, acc} ->
-      Logger.info("Parsing chunk #{chunk_num}/#{num_chunks} (#{min(chunk_num * @parse_chunk_size, total_texts)}/#{total_texts} texts)...")
+    {total_upserted, _acc} =
+      chunks
+      |> Enum.with_index(1)
+      |> Enum.reduce({0, %{}}, fn {chunk, chunk_num}, {_prev_upserted, acc} ->
+        Logger.info(
+          "Parsing chunk #{chunk_num}/#{num_chunks} (#{min(chunk_num * @parse_chunk_size, total_texts)}/#{total_texts} texts)..."
+        )
 
-      # Parse this chunk and accumulate unmatched
-      acc = Enum.reduce(chunk, acc, fn {text, freq}, inner_acc ->
-        parsed = TokenParser.parse(text, lookup: lookup)
+        # Parse this chunk and accumulate unmatched
+        acc =
+          Enum.reduce(chunk, acc, fn {text, freq}, inner_acc ->
+            parsed = TokenParser.parse(text, lookup: lookup)
 
-        parsed.ingredients
-        |> Enum.reject(& &1.canonical_name)
-        |> Enum.reduce(inner_acc, fn ingredient, name_acc ->
-          name = String.downcase(String.trim(ingredient.name))
+            parsed.ingredients
+            |> Enum.reject(& &1.canonical_name)
+            |> Enum.reduce(inner_acc, fn ingredient, name_acc ->
+              name = String.downcase(String.trim(ingredient.name))
 
-          Map.update(name_acc, name, %{count: freq, samples: [text]}, fn existing ->
-            %{
-              count: existing.count + freq,
-              samples: Enum.take(Enum.uniq([text | existing.samples]), @max_sample_texts)
-            }
+              Map.update(name_acc, name, %{count: freq, samples: [text]}, fn existing ->
+                %{
+                  count: existing.count + freq,
+                  samples: Enum.take(Enum.uniq([text | existing.samples]), @max_sample_texts)
+                }
+              end)
+            end)
           end)
-        end)
+
+        # Upsert candidates that meet threshold so far
+        candidates =
+          acc
+          |> Enum.filter(fn {name, %{count: count}} ->
+            count >= @min_occurrences and not blacklisted?(name)
+          end)
+          |> Enum.sort_by(fn {_, %{count: count}} -> -count end)
+
+        inserted = upsert_pending(candidates)
+        Logger.info("Chunk #{chunk_num}: #{inserted} candidates upserted so far")
+
+        {inserted, acc}
       end)
-
-      # Upsert candidates that meet threshold so far
-      candidates = acc
-      |> Enum.filter(fn {name, %{count: count}} ->
-        count >= @min_occurrences and not blacklisted?(name)
-      end)
-      |> Enum.sort_by(fn {_, %{count: count}} -> -count end)
-
-      inserted = upsert_pending(candidates)
-      Logger.info("Chunk #{chunk_num}: #{inserted} candidates upserted so far")
-
-      {inserted, acc}
-    end)
 
     Logger.info("Scan complete: #{total_upserted} pending ingredients upserted")
 
@@ -156,11 +233,12 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
   end
 
   defp collect_text_frequencies do
-    total = Repo.one(
-      from r in Recipe,
-      where: fragment("jsonb_array_length(ingredients) > 0"),
-      select: count(r.id)
-    )
+    total =
+      Repo.one(
+        from r in Recipe,
+          where: fragment("jsonb_array_length(ingredients) > 0"),
+          select: count(r.id)
+      )
 
     num_batches = div(total + @batch_size - 1, @batch_size)
     Logger.info("Scanning #{total} recipes in #{num_batches} batches...")
@@ -169,18 +247,20 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
       offset = batch_num * @batch_size
       Logger.info("Collecting texts batch #{batch_num + 1}/#{num_batches}...")
 
-      recipes = Repo.all(
-        from r in Recipe,
-        where: fragment("jsonb_array_length(ingredients) > 0"),
-        select: r.ingredients,
-        offset: ^offset,
-        limit: ^@batch_size
-      )
+      recipes =
+        Repo.all(
+          from r in Recipe,
+            where: fragment("jsonb_array_length(ingredients) > 0"),
+            select: r.ingredients,
+            offset: ^offset,
+            limit: ^@batch_size
+        )
 
       recipes
       |> Enum.flat_map(fn ings -> ings || [] end)
       |> Enum.reduce(acc, fn ing, inner_acc ->
         text = ing["text"]
+
         if text do
           Map.update(inner_acc, text, 1, &(&1 + 1))
         else
@@ -194,45 +274,45 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
   def blacklisted?(name) do
     normalized = String.downcase(String.trim(name))
 
+    # Too short (likely parsing artifact)
+    # Contains only numbers
+    # Metric weights like "113g", "30ml", "1.5kg" (parenthetical equivalents)
+    # Metric weight ranges like "28g to 43g"
+    # Looks like a measurement or metric conversion
+    # Starts with articles
+    # Starts with a unit word (parsing artifact, e.g. "teaspoon salt")
+    # Equipment words
+    # Contains slash with numbers (metric conversions like "cup/240")
+    # Measurement patterns like "1/2-inch", "1/2" thick", abbreviations like "oz.", "lb."
+    # Ends with "only" or "size" (usually prep descriptions)
+    # Contains "online" (recipe references)
+    # Unicode fractions (parsing artifacts)
+    # Contains instruction/description words
+    # Contains "-oz." or similar unit abbreviations with numbers
     normalized in @blacklist_words or
       normalized in @blacklist_phrases or
       Enum.any?(@blacklist_prefixes, &String.starts_with?(normalized, &1)) or
-      # Too short (likely parsing artifact)
       String.length(normalized) < 3 or
-      # Contains only numbers
       Regex.match?(~r/^\d+$/, normalized) or
-      # Metric weights like "113g", "30ml", "1.5kg" (parenthetical equivalents)
       Regex.match?(~r/^\d+([.,]\d+)?(g|kg|ml|l)$/i, normalized) or
-      # Metric weight ranges like "28g to 43g"
       Regex.match?(~r/^\d+g\s+to\s+\d+g$/i, normalized) or
-      # Looks like a measurement or metric conversion
       Regex.match?(~r/^\d+["'-]/, normalized) or
       Regex.match?(~r/^cups?\/\d+/, normalized) or
-      # Starts with articles
       String.starts_with?(normalized, ["a ", "an ", "the "]) or
-      # Starts with a unit word (parsing artifact, e.g. "teaspoon salt")
       starts_with_unit?(normalized) or
-      # Equipment words
       String.contains?(normalized, ["springform", "thermometer", "skillet"]) or
-      # Contains slash with numbers (metric conversions like "cup/240")
       Regex.match?(~r/\/\d+$/, normalized) or
-      # Measurement patterns like "1/2-inch", "1/2" thick", abbreviations like "oz.", "lb."
       Regex.match?(~r/^\d+\/?\d*-inch/, normalized) or
       Regex.match?(~r/^\d+\/?\d*"/, normalized) or
       Regex.match?(~r/^\d+%/, normalized) or
       Regex.match?(~r/^[a-z]{1,3}\.$/, normalized) or
-      # Ends with "only" or "size" (usually prep descriptions)
       String.ends_with?(normalized, " only") or
       String.ends_with?(normalized, " size") or
-      # Contains "online" (recipe references)
       String.contains?(normalized, "online") or
-      # Unicode fractions (parsing artifacts)
       Regex.match?(~r/^[²³⁄₁₂₃₄₅₆₇₈₉₀]+$/, normalized) or
-      # Contains instruction/description words
       String.contains?(normalized, "depending") or
       String.contains?(normalized, "and/or") or
       String.contains?(normalized, "diameter") or
-      # Contains "-oz." or similar unit abbreviations with numbers
       Regex.match?(~r/\d+-?oz\./, normalized) or
       Regex.match?(~r/\d+-?lb\./, normalized)
   end
@@ -256,7 +336,6 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
   end
 
   defp upsert_pending(candidates) do
-
     candidates
     |> Enum.reduce(0, fn {name, %{count: count, samples: samples}}, acc ->
       attrs = %{
@@ -271,6 +350,7 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
           %PendingIngredient{}
           |> PendingIngredient.changeset(attrs)
           |> Repo.insert()
+
           acc + 1
 
         existing ->
@@ -279,10 +359,12 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
             existing
             |> PendingIngredient.changeset(%{
               occurrence_count: count,
-              sample_texts: Enum.take(Enum.uniq(samples ++ existing.sample_texts), @max_sample_texts)
+              sample_texts:
+                Enum.take(Enum.uniq(samples ++ existing.sample_texts), @max_sample_texts)
             })
             |> Repo.update()
           end
+
           acc
       end
     end)

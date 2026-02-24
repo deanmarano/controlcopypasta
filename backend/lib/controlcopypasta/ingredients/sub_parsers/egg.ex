@@ -31,10 +31,15 @@ defmodule Controlcopypasta.Ingredients.SubParsers.Egg do
 
   defp has_problem_indicator?(texts) do
     has_beaten_with = "beaten" in texts and "with" in texts
-    has_separated = "separated" in texts and
-      (Enum.any?(texts, &(&1 in @yolk_words)) or Enum.any?(texts, &(&1 in @white_words)))
-    has_plus_part = "plus" in texts and
-      (Enum.any?(texts, &(&1 in @yolk_words)) or Enum.any?(texts, &(&1 in @white_words)))
+
+    has_separated =
+      "separated" in texts and
+        (Enum.any?(texts, &(&1 in @yolk_words)) or Enum.any?(texts, &(&1 in @white_words)))
+
+    has_plus_part =
+      "plus" in texts and
+        (Enum.any?(texts, &(&1 in @yolk_words)) or Enum.any?(texts, &(&1 in @white_words)))
+
     has_hard_boiled = "hard-boiled" in texts
 
     has_beaten_with or has_separated or has_plus_part or has_hard_boiled
@@ -46,7 +51,7 @@ defmodule Controlcopypasta.Ingredients.SubParsers.Egg do
 
     cond do
       # "1 egg plus 1 yolk" — compound, produces two ingredients
-      "plus" in texts and Enum.any?(texts, &(&1 in @yolk_words ++ @white_words)) ->
+      "plus" in texts and Enum.any?(texts, &(&1 in (@yolk_words ++ @white_words))) ->
         parse_plus_pattern(tokens, original, lookup)
 
       # "beaten with" — truncate at "beaten with", rest becomes note
@@ -73,7 +78,9 @@ defmodule Controlcopypasta.Ingredients.SubParsers.Egg do
     # Find egg quantity (before egg token)
     egg_idx = Enum.find_index(tokens, &(String.downcase(&1.text) in @egg_words))
     qty_tokens = tokens |> Enum.take(egg_idx || 0) |> Enum.filter(&(&1.label == :qty))
-    {quantity, quantity_min, quantity_max} = TokenParser.parse_quantity(Enum.map(qty_tokens, & &1.text))
+
+    {quantity, quantity_min, quantity_max} =
+      TokenParser.parse_quantity(Enum.map(qty_tokens, & &1.text))
 
     matched = TokenParser.match_ingredient("egg", lookup)
 
@@ -101,7 +108,9 @@ defmodule Controlcopypasta.Ingredients.SubParsers.Egg do
   defp parse_separated(tokens, original, lookup) do
     egg_idx = Enum.find_index(tokens, &(String.downcase(&1.text) in @egg_words))
     qty_tokens = tokens |> Enum.take(egg_idx || 0) |> Enum.filter(&(&1.label == :qty))
-    {quantity, quantity_min, quantity_max} = TokenParser.parse_quantity(Enum.map(qty_tokens, & &1.text))
+
+    {quantity, quantity_min, quantity_max} =
+      TokenParser.parse_quantity(Enum.map(qty_tokens, & &1.text))
 
     matched = TokenParser.match_ingredient("egg", lookup)
 
@@ -137,14 +146,18 @@ defmodule Controlcopypasta.Ingredients.SubParsers.Egg do
     # After "plus": extract part quantity and type
     after_plus = Enum.drop(tokens, plus_idx + 1)
     part_qty_tokens = Enum.filter(after_plus, &(&1.label == :qty))
-    {part_qty, _part_min, _part_max} = TokenParser.parse_quantity(Enum.map(part_qty_tokens, & &1.text))
+
+    {part_qty, _part_min, _part_max} =
+      TokenParser.parse_quantity(Enum.map(part_qty_tokens, & &1.text))
 
     after_texts = Enum.map(after_plus, &String.downcase(&1.text))
-    part_name = cond do
-      Enum.any?(after_texts, &(&1 in @yolk_words)) -> "egg yolk"
-      Enum.any?(after_texts, &(&1 in @white_words)) -> "egg white"
-      true -> "egg"
-    end
+
+    part_name =
+      cond do
+        Enum.any?(after_texts, &(&1 in @yolk_words)) -> "egg yolk"
+        Enum.any?(after_texts, &(&1 in @white_words)) -> "egg white"
+        true -> "egg"
+      end
 
     matched_egg = TokenParser.match_ingredient("egg", lookup)
     matched_part = TokenParser.match_ingredient(part_name, lookup)
@@ -174,15 +187,20 @@ defmodule Controlcopypasta.Ingredients.SubParsers.Egg do
   defp parse_hard_boiled(tokens, original, lookup) do
     egg_idx = Enum.find_index(tokens, &(String.downcase(&1.text) in @egg_words))
     qty_tokens = tokens |> Enum.take(egg_idx || 0) |> Enum.filter(&(&1.label == :qty))
-    {quantity, quantity_min, quantity_max} = TokenParser.parse_quantity(Enum.map(qty_tokens, & &1.text))
+
+    {quantity, quantity_min, quantity_max} =
+      TokenParser.parse_quantity(Enum.map(qty_tokens, & &1.text))
 
     # Collect preps: "hard-boiled" plus any other prep tokens after the egg
     preps = ["hard-boiled"]
-    additional_preps = tokens
+
+    additional_preps =
+      tokens
       |> Enum.drop((egg_idx || 0) + 1)
       |> Enum.filter(&(&1.label == :prep))
       |> Enum.map(& &1.text)
-      |> Enum.reject(&(&1 == "separated"))  # don't mix patterns
+      # don't mix patterns
+      |> Enum.reject(&(&1 == "separated"))
 
     all_preps = preps ++ additional_preps
 

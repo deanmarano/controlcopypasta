@@ -4,7 +4,10 @@ defmodule Controlcopypasta.Repo.Migrations.AddBrandPackageSizes do
   def change do
     create table(:brand_package_sizes, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :canonical_ingredient_id, references(:canonical_ingredients, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :canonical_ingredient_id,
+          references(:canonical_ingredients, type: :binary_id, on_delete: :delete_all),
+          null: false
 
       # Package description (e.g., "can", "bottle", "box", "bag")
       add :package_type, :string, null: false
@@ -23,6 +26,12 @@ defmodule Controlcopypasta.Repo.Migrations.AddBrandPackageSizes do
     end
 
     create index(:brand_package_sizes, [:canonical_ingredient_id])
-    create unique_index(:brand_package_sizes, [:canonical_ingredient_id, :package_type, :size_value, :size_unit])
+
+    create unique_index(:brand_package_sizes, [
+             :canonical_ingredient_id,
+             :package_type,
+             :size_value,
+             :size_unit
+           ])
   end
 end

@@ -42,8 +42,8 @@ defmodule Controlcopypasta.Ingredients.IngredientDensity do
   # Volume units plus "each"/"whole" for countable items (eggs, lemons, etc.)
   # Note: "oz" is included because recipes often use it for fluid ounces
   @valid_volume_units ~w(cup tbsp tsp oz pint quart gallon ml liter each whole
-                        can block slice leaf fillet pinch piece bunch stalk sprig)
-                      ++ ["fl oz"]
+                        can block slice leaf fillet pinch piece bunch stalk sprig) ++
+                        ["fl oz"]
   @valid_sources ~w(usda fatsecret openfoodfacts manual calculated standard\ estimate)
   @valid_preparations ~w(packed sifted chopped diced minced sliced grated shredded whole
                          cubed chunks sections flaked canned cooked drained crumbled
@@ -59,19 +59,32 @@ defmodule Controlcopypasta.Ingredients.IngredientDensity do
     field :notes, :string
 
     # Provenance tracking (matching IngredientNutrition pattern)
-    field :source_id, :string          # USDA portion ID or FatSecret serving_id
-    field :source_url, :string         # Link to source data
-    field :confidence, :decimal        # 0.0-1.0 data quality score
-    field :data_points, :integer       # USDA: number of measurements
-    field :retrieved_at, :utc_datetime # When fetched from API
+    # USDA portion ID or FatSecret serving_id
+    field :source_id, :string
+    # Link to source data
+    field :source_url, :string
+    # 0.0-1.0 data quality score
+    field :confidence, :decimal
+    # USDA: number of measurements
+    field :data_points, :integer
+    # When fetched from API
+    field :retrieved_at, :utc_datetime
     field :last_checked_at, :utc_datetime
 
     timestamps()
   end
 
   @required_fields [:canonical_ingredient_id, :volume_unit, :grams_per_unit, :source]
-  @optional_fields [:preparation, :notes, :source_id, :source_url, :confidence, :data_points,
-                    :retrieved_at, :last_checked_at]
+  @optional_fields [
+    :preparation,
+    :notes,
+    :source_id,
+    :source_url,
+    :confidence,
+    :data_points,
+    :retrieved_at,
+    :last_checked_at
+  ]
 
   @doc """
   Creates a changeset for an ingredient density.

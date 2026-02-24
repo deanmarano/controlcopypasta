@@ -156,7 +156,8 @@ defmodule Controlcopypasta.Parser.JsonLd do
 
   defp normalize_ingredients(_), do: []
 
-  defp normalize_instructions(%{"recipeInstructions" => instructions}) when is_list(instructions) do
+  defp normalize_instructions(%{"recipeInstructions" => instructions})
+       when is_list(instructions) do
     instructions
     |> Enum.with_index(1)
     |> Enum.flat_map(&normalize_instruction/1)

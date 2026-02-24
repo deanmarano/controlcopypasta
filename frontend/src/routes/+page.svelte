@@ -8,6 +8,9 @@
 		}
 	});
 
+	import SwipePhoneMockup from '$lib/components/SwipePhoneMockup.svelte';
+	import FeedPhoneMockup from '$lib/components/FeedPhoneMockup.svelte';
+
 	const heroImage = 'https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/65b034087326da484e550fac_spaghetti-arrabiatta-thumbanil.webp';
 
 	const recipes = [
@@ -88,130 +91,59 @@
 		</div>
 	</section>
 
-	<section class="eb-quicklist">
-		<p class="eb-eyebrow" style="text-align: center; margin-bottom: 0.5rem;">Two ways to discover</p>
-		<h2 class="eb-quicklist-title">Browse your collection like never before</h2>
-		<div class="eb-quicklist-grid">
-			<a href="/login" class="eb-ql-card eb-ql-swipe">
-				<div class="eb-ql-text">
-					<strong>Tinder Style</strong>
-					<span>Swipe right to save, left to skip. Rapid-fire recipe discovery, one card at a time.</span>
-					<span class="eb-ql-action">Try swiping &rarr;</span>
-				</div>
-				<div class="eb-ql-phone" aria-hidden="true">
-					<div class="eb-phone-frame">
-						<div class="eb-phone-header">
-							<span class="eb-phone-tag">Find</span>
-							<span class="eb-phone-tag-value">Dinner</span>
-						</div>
-						<div class="eb-phone-cards">
-							<div class="eb-mock-card eb-swipe-c4">
-								<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/649b7f9aaa7e9bd7c9662b4d_watermelon-basil-salad-thumbnail.webp" alt="" class="eb-mock-card-photo" />
-								<div class="eb-mock-overlay">
-									<div class="eb-mock-badge">15m</div>
-									<div class="eb-mock-title-bar"></div>
-									<div class="eb-mock-subtitle-bar"></div>
-								</div>
-							</div>
-							<div class="eb-mock-card eb-swipe-c3">
-								<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/6723a19fcc12a7d0178521d9_tomato-red-pepper-soup-thumbnail.webp" alt="" class="eb-mock-card-photo" />
-								<div class="eb-mock-overlay">
-									<div class="eb-mock-badge">45m</div>
-									<div class="eb-mock-title-bar"></div>
-									<div class="eb-mock-subtitle-bar"></div>
-								</div>
-							</div>
-							<div class="eb-mock-card eb-swipe-c2">
-								<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/668c7c1038f9ea42fc3eff27_spinach-feta-grilled-cheese-thumbnail.webp" alt="" class="eb-mock-card-photo" />
-								<div class="eb-mock-overlay">
-									<div class="eb-mock-badge">20m</div>
-									<div class="eb-mock-title-bar"></div>
-									<div class="eb-mock-subtitle-bar"></div>
-								</div>
-							</div>
-							<div class="eb-mock-card eb-swipe-c1">
-								<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/6585b42a484dac29edc39a97_jalapeno-pimento-cheese-thumbnail.webp" alt="" class="eb-mock-card-photo" />
-								<div class="eb-mock-overlay">
-									<div class="eb-mock-badge">30m</div>
-									<div class="eb-mock-title-bar"></div>
-									<div class="eb-mock-subtitle-bar"></div>
-								</div>
-								<div class="eb-mock-label-maybe">MAYBE</div>
-								<div class="eb-mock-label-skip">SKIP</div>
-							</div>
-						</div>
-						<div class="eb-phone-buttons">
-							<div class="eb-mock-btn eb-mock-skip">Skip</div>
-							<div class="eb-mock-btn eb-mock-view">View</div>
-							<div class="eb-mock-btn eb-mock-maybe">Maybe</div>
-						</div>
-					</div>
-				</div>
-			</a>
+	<section class="eb-browsing">
+		<div class="eb-browsing-intro">
+			<p class="eb-eyebrow">Browse your recipe database</p>
+			<h2>A smarter way to explore what you've saved.</h2>
+		</div>
 
-			<a href="/login" class="eb-ql-card eb-ql-feed">
-				<div class="eb-ql-text">
-					<strong>Instagram Style</strong>
-					<span>Scroll a full-screen feed. Double-tap to save, just like your favorite app.</span>
-					<span class="eb-ql-action">Try scrolling &rarr;</span>
-				</div>
-				<div class="eb-ql-phone" aria-hidden="true">
-					<div class="eb-phone-frame eb-phone-frame-dark">
-						<div class="eb-feed-mock-scroll">
-							<div class="eb-feed-mock-slide">
-								<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/64b959a840c6917d162cf62b_salmon-quiona-salad-thumbnail.webp" alt="" class="eb-feed-mock-photo" />
-								<div class="eb-feed-mock-overlay">
-									<div class="eb-feed-mock-source">
-										<img src="https://www.google.com/s2/favicons?domain=sigsbeestreet.co&sz=16" alt="" class="eb-feed-mock-fav" />
-										<span class="eb-feed-mock-domain">sigsbeestreet.co</span>
-									</div>
-									<div class="eb-feed-mock-name">Salmon Quinoa Salad</div>
-								</div>
-								<div class="eb-feed-mock-rail">
-									<svg class="eb-feed-rail-heart" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-									<div class="eb-feed-rail-dot"></div>
-									<div class="eb-feed-rail-dot"></div>
-								</div>
-							</div>
-							<div class="eb-feed-mock-slide">
-								<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/6470dfae89487940cd3f2c85_one-pot-lemon-pasta-thumbnail.webp" alt="" class="eb-feed-mock-photo" />
-								<div class="eb-feed-mock-overlay">
-									<div class="eb-feed-mock-source">
-										<img src="https://www.google.com/s2/favicons?domain=sigsbeestreet.co&sz=16" alt="" class="eb-feed-mock-fav" />
-										<span class="eb-feed-mock-domain">sigsbeestreet.co</span>
-									</div>
-									<div class="eb-feed-mock-name">One Pot Lemon Pasta</div>
-								</div>
-								<div class="eb-feed-mock-rail">
-									<svg class="eb-feed-rail-heart" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-									<div class="eb-feed-rail-dot"></div>
-									<div class="eb-feed-rail-dot"></div>
-								</div>
-							</div>
-							<div class="eb-feed-mock-slide">
-								<img src="https://cdn.prod.website-files.com/60805a0f5f83cfc3688b8d9f/63ac55080a308b862e48c9b2_639a44e8692ea801789551cd_quinoa-pesto-bowl-thumbnail.webp" alt="" class="eb-feed-mock-photo" />
-								<div class="eb-feed-mock-overlay">
-									<div class="eb-feed-mock-source">
-										<img src="https://www.google.com/s2/favicons?domain=sigsbeestreet.co&sz=16" alt="" class="eb-feed-mock-fav" />
-										<span class="eb-feed-mock-domain">sigsbeestreet.co</span>
-									</div>
-									<div class="eb-feed-mock-name">Quinoa Pesto Bowl</div>
-								</div>
-								<div class="eb-feed-mock-rail">
-									<svg class="eb-feed-rail-heart" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-									<div class="eb-feed-rail-dot"></div>
-									<div class="eb-feed-rail-dot"></div>
-								</div>
-							</div>
-						</div>
-						<div class="eb-feed-mock-heart-burst">
-							<svg width="32" height="32" viewBox="0 0 24 24" fill="#ff3040" stroke="none">
-								<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-							</svg>
-						</div>
+		<div class="eb-browsing-subsection eb-dietary">
+			<div class="eb-dietary-text">
+				<p class="eb-eyebrow">Customized for you</p>
+				<h2>Never see foods you don't eat.</h2>
+				<p>Set your preferences once and recipes containing those ingredients disappear from browsing. Exclude entire categories like dairy or gluten, allergen groups like tree nuts, animal types like shellfish, or individual ingredients you simply don't like.</p>
+				<p style="margin-top: 1rem;">Need granular control? Add exceptions — skip dairy but keep butter, avoid nuts but allow almonds. Your collection adapts to how you actually eat.</p>
+				<a href="/login" class="eb-btn-ghost" style="margin-top: 1.5rem;">Set your preferences</a>
+			</div>
+			<div class="eb-dietary-visual">
+				<div class="eb-dietary-panel">
+					<div class="eb-dietary-panel-header">Your preferences</div>
+					<div class="eb-dietary-tags">
+						<span class="eb-dietary-tag active">Dairy-free</span>
+						<span class="eb-dietary-tag active">No Shellfish</span>
+						<span class="eb-dietary-tag active">No Peanuts</span>
+						<span class="eb-dietary-tag">Gluten-free</span>
+						<span class="eb-dietary-tag">Vegetarian</span>
+					</div>
+					<div class="eb-dietary-divider"></div>
+					<div class="eb-dietary-recipe visible">
+						<div class="eb-dietary-recipe-dot green"></div>
+						<span>One Pot Lemon Pasta</span>
+					</div>
+					<div class="eb-dietary-recipe dimmed">
+						<div class="eb-dietary-recipe-dot red"></div>
+						<span>Shrimp Scampi</span>
+						<span class="eb-dietary-reason">shellfish</span>
+					</div>
+					<div class="eb-dietary-recipe dimmed">
+						<div class="eb-dietary-recipe-dot red"></div>
+						<span>Mac and Cheese</span>
+						<span class="eb-dietary-reason">dairy</span>
+					</div>
+					<div class="eb-dietary-recipe visible">
+						<div class="eb-dietary-recipe-dot green"></div>
+						<span>Watermelon Basil Salad</span>
 					</div>
 				</div>
-			</a>
+			</div>
+		</div>
+
+		<div class="eb-browsing-subsection eb-quicklist">
+			<h3 class="eb-quicklist-title">Two ways to discover</h3>
+			<div class="eb-quicklist-grid">
+				<SwipePhoneMockup href="/login" />
+				<FeedPhoneMockup href="/login" />
+			</div>
 		</div>
 	</section>
 
@@ -477,18 +409,38 @@
 		line-height: 1.35;
 	}
 
-	/* QUICKLIST */
-	.eb-quicklist {
+	/* BROWSING */
+	.eb-browsing {
 		max-width: 1100px;
 		margin: 0 auto;
-		padding: 5rem 3rem;
+		padding: 5rem 3rem 3rem;
 		border-top: 1px solid #ddd8ce;
+	}
+	.eb-browsing-intro {
+		text-align: center;
+		margin-bottom: 3rem;
+	}
+	.eb-browsing-intro h2 {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 2.25rem;
+		line-height: 1.2;
+		margin: 0;
+		color: #1b3a2d;
+		font-weight: 400;
+	}
+	.eb-browsing-subsection {
+		margin-bottom: 3rem;
+	}
+
+	/* QUICKLIST */
+	.eb-quicklist {
+		padding: 0;
 	}
 	.eb-quicklist-title {
 		font-family: 'Cormorant Garamond', Georgia, serif;
-		font-size: 2.25rem;
+		font-size: 1.75rem;
 		text-align: center;
-		margin: 0 0 3rem;
+		margin: 0 0 2rem;
 		color: #1b3a2d;
 		font-weight: 400;
 	}
@@ -496,333 +448,6 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 2rem;
-	}
-	.eb-ql-card {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1.5rem;
-		padding: 1.75rem 2rem;
-		border-radius: 8px;
-		text-decoration: none;
-		transition: all 200ms;
-		overflow: hidden;
-		border: 1px solid;
-	}
-	.eb-ql-swipe {
-		background: linear-gradient(135deg, #e8f0eb 0%, #d4e4da 100%);
-		border-color: #a8bfb0;
-	}
-	.eb-ql-swipe:hover {
-		border-color: #7a9e88;
-		box-shadow: 0 8px 24px rgba(27, 58, 45, 0.12);
-	}
-	.eb-ql-feed {
-		background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-		border-color: #2a2a4a;
-	}
-	.eb-ql-feed:hover {
-		border-color: #4a4a6a;
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-	}
-	.eb-ql-feed .eb-ql-text strong { color: #fff; }
-	.eb-ql-feed .eb-ql-text span { color: rgba(255, 255, 255, 0.6); }
-	.eb-ql-feed .eb-ql-action { color: #ff3040 !important; }
-
-	.eb-ql-card:hover .eb-ql-phone { transform: scale(1.03); }
-
-	.eb-ql-text {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		flex: 1;
-		min-width: 0;
-	}
-	.eb-ql-text strong {
-		color: #1b3a2d;
-		font-size: 1.25rem;
-		font-family: 'Cormorant Garamond', Georgia, serif;
-	}
-	.eb-ql-text span {
-		color: #5a7264;
-		font-size: 0.875rem;
-		line-height: 1.7;
-	}
-	.eb-ql-action {
-		color: #2d5a47 !important;
-		font-weight: 600;
-		font-size: 0.9375rem !important;
-		margin-top: 0.25rem;
-	}
-
-	/* Phone mockup */
-	.eb-ql-phone {
-		flex-shrink: 0;
-		transition: transform 200ms;
-	}
-	.eb-phone-frame {
-		width: 140px;
-		height: 200px;
-		background: white;
-		border-radius: 16px;
-		box-shadow: 0 8px 24px rgba(27, 58, 45, 0.12);
-		padding: 8px;
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
-		border: 2px solid #ddd8ce;
-	}
-	.eb-phone-header {
-		display: flex;
-		align-items: baseline;
-		gap: 4px;
-		padding: 4px 4px 6px;
-	}
-	.eb-phone-tag {
-		font-size: 9px;
-		font-weight: 600;
-		color: #1b3a2d;
-	}
-	.eb-phone-tag-value {
-		font-size: 9px;
-		color: #c17c5a;
-		border-bottom: 1px solid #dbb9a0;
-	}
-	.eb-phone-cards {
-		position: relative;
-		flex: 1;
-		margin: 0 2px;
-	}
-	.eb-mock-card {
-		position: absolute;
-		inset: 0;
-		border-radius: 8px;
-		overflow: hidden;
-	}
-	.eb-swipe-c4 { transform: scale(0.85) translateY(12px); z-index: 0; }
-	.eb-swipe-c3 { transform: scale(0.9) translateY(8px); z-index: 1; }
-	.eb-swipe-c2 { transform: scale(0.95) translateY(4px); z-index: 2; }
-	.eb-swipe-c1 { z-index: 3; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
-	.eb-mock-card-photo {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		display: block;
-	}
-	.eb-mock-overlay {
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		padding: 16px 6px 6px;
-		background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-	}
-	.eb-mock-badge {
-		display: inline-block;
-		font-size: 6px;
-		color: white;
-		background: rgba(255, 255, 255, 0.25);
-		padding: 1px 4px;
-		border-radius: 3px;
-		margin-bottom: 3px;
-	}
-	.eb-mock-title-bar {
-		height: 6px;
-		width: 75%;
-		background: rgba(255, 255, 255, 0.9);
-		border-radius: 3px;
-		margin-bottom: 3px;
-	}
-	.eb-mock-subtitle-bar {
-		height: 4px;
-		width: 50%;
-		background: rgba(255, 255, 255, 0.5);
-		border-radius: 2px;
-	}
-	.eb-mock-label-maybe,
-	.eb-mock-label-skip {
-		position: absolute;
-		top: 8px;
-		font-size: 7px;
-		font-weight: 700;
-		background: rgba(255, 255, 255, 0.9);
-		padding: 1px 4px;
-		border-radius: 3px;
-		border: 1.5px solid;
-		opacity: 0;
-	}
-	.eb-mock-label-maybe {
-		left: 4px;
-		color: #2d5a47;
-		border-color: #2d5a47;
-		transform: rotate(-12deg);
-	}
-	.eb-mock-label-skip {
-		right: 4px;
-		color: #c17c5a;
-		border-color: #c17c5a;
-		transform: rotate(12deg);
-	}
-	.eb-phone-buttons {
-		display: flex;
-		justify-content: center;
-		gap: 4px;
-		padding: 6px 2px 4px;
-	}
-	.eb-mock-btn {
-		font-size: 6px;
-		font-weight: 600;
-		padding: 2px 8px;
-		border-radius: 99px;
-	}
-	.eb-mock-skip { background: #f5e6dc; color: #a05a3a; }
-	.eb-mock-view { background: #eee; color: #1b3a2d; }
-	.eb-mock-maybe { background: #d4e4da; color: #2d5a47; }
-
-	/* Swipe animations */
-	.eb-ql-swipe:hover .eb-swipe-c1 { animation: ebSwipeCard1 8s ease-in-out infinite; }
-	.eb-ql-swipe:hover .eb-mock-label-maybe { animation: ebLabelMaybe 8s ease-in-out infinite; }
-	.eb-ql-swipe:hover .eb-mock-label-skip { animation: ebLabelSkip 8s ease-in-out infinite; }
-	@keyframes ebSwipeCard1 {
-		0%, 5% { transform: rotate(0) translateX(0); opacity: 1; z-index: 4; }
-		12% { transform: rotate(8deg) translateX(40px); opacity: 1; }
-		16% { transform: rotate(14deg) translateX(70px); opacity: 0; }
-		17%, 30% { transform: rotate(0) translateX(0); opacity: 0; z-index: 4; }
-		31% { opacity: 1; }
-		37% { transform: rotate(-8deg) translateX(-40px); opacity: 1; }
-		41% { transform: rotate(-14deg) translateX(-70px); opacity: 0; }
-		42%, 100% { opacity: 0; z-index: 0; }
-	}
-	@keyframes ebLabelMaybe {
-		0%, 5% { opacity: 0; } 10% { opacity: 1; } 16%, 100% { opacity: 0; }
-	}
-	@keyframes ebLabelSkip {
-		0%, 31% { opacity: 0; } 35% { opacity: 1; } 41%, 100% { opacity: 0; }
-	}
-	.eb-ql-swipe:hover .eb-swipe-c2 { animation: ebSwipeCard2 8s ease-in-out infinite; }
-	@keyframes ebSwipeCard2 {
-		0%, 16% { transform: scale(0.95) translateY(4px); z-index: 2; }
-		17% { transform: scale(1) translateY(0); z-index: 3; }
-		55% { transform: rotate(0) translateX(0); opacity: 1; }
-		62% { transform: rotate(10deg) translateX(50px); opacity: 1; }
-		66% { transform: rotate(14deg) translateX(70px); opacity: 0; }
-		67%, 100% { opacity: 0; z-index: 0; }
-	}
-	.eb-ql-swipe:hover .eb-swipe-c3 { animation: ebSwipeCard3 8s ease-in-out infinite; }
-	@keyframes ebSwipeCard3 {
-		0%, 66% { transform: scale(0.9) translateY(8px); z-index: 1; }
-		67% { transform: scale(1) translateY(0); z-index: 3; }
-		80% { transform: rotate(0) translateX(0); opacity: 1; }
-		86% { transform: rotate(-9deg) translateX(-45px); opacity: 1; }
-		90% { transform: rotate(-14deg) translateX(-70px); opacity: 0; }
-		91%, 100% { opacity: 0; z-index: 0; }
-	}
-	.eb-ql-swipe:hover .eb-swipe-c4 { animation: ebSwipeCard4 8s ease-in-out infinite; }
-	@keyframes ebSwipeCard4 {
-		0%, 90% { transform: scale(0.85) translateY(12px); z-index: 0; }
-		91% { transform: scale(1) translateY(0); z-index: 3; }
-		100% { transform: scale(1) translateY(0); z-index: 3; opacity: 1; }
-	}
-
-	/* Feed phone mockup */
-	.eb-phone-frame-dark {
-		background: #000 !important;
-		border-color: #333 !important;
-		padding: 0 !important;
-		position: relative;
-		overflow: hidden;
-	}
-	.eb-feed-mock-scroll { animation: none; }
-	.eb-ql-feed:hover .eb-feed-mock-scroll { animation: ebFeedScroll 6s ease-in-out infinite; }
-	@keyframes ebFeedScroll {
-		0%, 20% { transform: translateY(0); }
-		33%, 53% { transform: translateY(-33.333%); }
-		66%, 86% { transform: translateY(-66.666%); }
-		100% { transform: translateY(0); }
-	}
-	.eb-feed-mock-slide {
-		width: 100%;
-		aspect-ratio: 140 / 200;
-		position: relative;
-		overflow: hidden;
-	}
-	.eb-feed-mock-photo {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		display: block;
-	}
-	.eb-feed-mock-overlay {
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		padding: 24px 6px 8px;
-		background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
-	}
-	.eb-feed-mock-source {
-		display: flex;
-		align-items: center;
-		gap: 3px;
-		margin-bottom: 2px;
-	}
-	.eb-feed-mock-fav {
-		width: 8px;
-		height: 8px;
-		border-radius: 1px;
-	}
-	.eb-feed-mock-domain {
-		font-size: 5px;
-		color: rgba(255, 255, 255, 0.6);
-		font-weight: 600;
-	}
-	.eb-feed-mock-name {
-		font-size: 7px;
-		font-weight: 700;
-		color: white;
-		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-	}
-	.eb-feed-mock-rail {
-		position: absolute;
-		right: 5px;
-		bottom: 8px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 6px;
-		z-index: 3;
-	}
-	.eb-feed-rail-heart {
-		filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
-	}
-	.eb-feed-rail-dot {
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
-		border: 1.5px solid rgba(255, 255, 255, 0.7);
-	}
-	.eb-feed-mock-heart-burst {
-		position: absolute;
-		top: 50%;
-		left: 45%;
-		transform: translate(-50%, -50%) scale(0);
-		z-index: 5;
-		opacity: 0;
-		pointer-events: none;
-	}
-	.eb-ql-feed:hover .eb-feed-mock-heart-burst { animation: ebMockHeartSync 6s ease-in-out infinite; }
-	@keyframes ebMockHeartSync {
-		0%, 10% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
-		12% { opacity: 1; transform: translate(-50%, -50%) scale(1.4); }
-		14% { transform: translate(-50%, -50%) scale(0.9); }
-		16% { transform: translate(-50%, -50%) scale(1.05); }
-		20% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
-		33%, 64% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
-		76% { opacity: 1; transform: translate(-50%, -50%) scale(1.4); }
-		78% { transform: translate(-50%, -50%) scale(0.9); }
-		80% { transform: translate(-50%, -50%) scale(1.05); }
-		84% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
-		85%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
 	}
 
 	/* FEATURES */
@@ -910,6 +535,102 @@
 		background: #ddd8ce;
 	}
 
+	/* DIETARY PREFERENCES */
+	.eb-dietary {
+		display: grid;
+		grid-template-columns: 1fr 1.2fr;
+		gap: 4rem;
+		align-items: center;
+		padding: 0;
+	}
+	.eb-dietary-text h2 {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 2.25rem;
+		line-height: 1.2;
+		margin: 0 0 1.25rem;
+		color: #1b3a2d;
+		font-weight: 400;
+	}
+	.eb-dietary-text p {
+		color: #5a7264;
+		line-height: 1.7;
+		margin: 0;
+		font-size: 0.9375rem;
+	}
+	.eb-dietary-panel {
+		background: white;
+		border-radius: 6px;
+		padding: 1.5rem;
+		box-shadow: 0 2px 12px rgba(27, 58, 45, 0.08);
+	}
+	.eb-dietary-panel-header {
+		font-family: 'Cormorant Garamond', Georgia, serif;
+		font-size: 1.125rem;
+		color: #1b3a2d;
+		font-weight: 500;
+		margin-bottom: 1rem;
+	}
+	.eb-dietary-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-bottom: 0.25rem;
+	}
+	.eb-dietary-tag {
+		display: inline-block;
+		padding: 0.375rem 0.875rem;
+		border-radius: 100px;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		border: 1.5px solid #a8bfb0;
+		color: #5a7264;
+		transition: all 200ms;
+	}
+	.eb-dietary-tag.active {
+		background: #1b3a2d;
+		border-color: #1b3a2d;
+		color: #f7f5f0;
+	}
+	.eb-dietary-divider {
+		height: 1px;
+		background: #e8e4dc;
+		margin: 1rem 0;
+	}
+	.eb-dietary-recipe {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		padding: 0.5rem 0;
+		font-size: 0.9375rem;
+		color: #1b3a2d;
+		transition: opacity 200ms;
+	}
+	.eb-dietary-recipe.dimmed {
+		opacity: 0.35;
+		text-decoration: line-through;
+		text-decoration-color: #c17c5a;
+	}
+	.eb-dietary-recipe-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+	.eb-dietary-recipe-dot.green {
+		background: #3a8f5c;
+	}
+	.eb-dietary-recipe-dot.red {
+		background: #c17c5a;
+	}
+	.eb-dietary-reason {
+		margin-left: auto;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #c17c5a;
+		text-decoration: none;
+	}
+
 	/* RESPONSIVE */
 	@media (max-width: 768px) {
 		.eb-hero {
@@ -941,6 +662,13 @@
 			padding: 3rem 1.5rem;
 			gap: 2rem;
 		}
+		.eb-browsing {
+			padding: 3rem 1.5rem 1.5rem;
+		}
+		.eb-dietary {
+			grid-template-columns: 1fr;
+			gap: 2rem;
+		}
 		.eb-features {
 			padding: 3rem 1.5rem;
 		}
@@ -957,9 +685,4 @@
 		}
 	}
 
-	@media (max-width: 400px) {
-		.eb-ql-phone {
-			display: none;
-		}
-	}
 </style>

@@ -149,7 +149,8 @@ defmodule Controlcopypasta.Similarity do
     |> Enum.filter(fn r -> r.id != recipe_id end)
   end
 
-  defp get_candidate_recipes(%Recipe{id: recipe_id, user_id: user_id}, _) when is_binary(user_id) do
+  defp get_candidate_recipes(%Recipe{id: recipe_id, user_id: user_id}, _)
+       when is_binary(user_id) do
     Recipes.list_recipes_for_user(user_id, %{"limit" => "1000"})
     |> Enum.filter(fn r -> r.id != recipe_id end)
   end
@@ -173,7 +174,9 @@ defmodule Controlcopypasta.Similarity do
     combined_score = @overlap_weight * overlap_score + @proportion_weight * proportion_score
 
     shared = MapSet.intersection(source_ingredients, candidate_ingredients) |> MapSet.to_list()
-    unique_to_candidate = MapSet.difference(candidate_ingredients, source_ingredients) |> MapSet.to_list()
+
+    unique_to_candidate =
+      MapSet.difference(candidate_ingredients, source_ingredients) |> MapSet.to_list()
 
     %{
       recipe: candidate,

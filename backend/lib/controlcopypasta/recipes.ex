@@ -174,7 +174,8 @@ defmodule Controlcopypasta.Recipes do
 
   defp apply_filters(query, _), do: query
 
-  defp apply_search(query, %{"q" => search_term}) when is_binary(search_term) and search_term != "" do
+  defp apply_search(query, %{"q" => search_term})
+       when is_binary(search_term) and search_term != "" do
     search_pattern = "%#{search_term}%"
 
     from r in query,
@@ -195,7 +196,7 @@ defmodule Controlcopypasta.Recipes do
     from r in query,
       where:
         r.all_ingredients_parsed == true and
-        fragment("NOT (? && ?)", r.ingredient_canonical_ids, ^id_list)
+          fragment("NOT (? && ?)", r.ingredient_canonical_ids, ^id_list)
   end
 
   defp apply_avoided_filter(query, _), do: query
@@ -280,7 +281,8 @@ defmodule Controlcopypasta.Recipes do
     end
   end
 
-  def get_avoided_ingredients_in_recipe(recipe, avoided_set) when is_struct(avoided_set, MapSet) do
+  def get_avoided_ingredients_in_recipe(recipe, avoided_set)
+      when is_struct(avoided_set, MapSet) do
     if MapSet.size(avoided_set) == 0 do
       []
     else
@@ -489,7 +491,11 @@ defmodule Controlcopypasta.Recipes do
   """
   def delete_decision(recipe_id, user_id, ingredient_index) do
     IngredientDecision
-    |> where([d], d.recipe_id == ^recipe_id and d.user_id == ^user_id and d.ingredient_index == ^ingredient_index)
+    |> where(
+      [d],
+      d.recipe_id == ^recipe_id and d.user_id == ^user_id and
+        d.ingredient_index == ^ingredient_index
+    )
     |> Repo.delete_all()
   end
 

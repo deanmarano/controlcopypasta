@@ -51,10 +51,12 @@ defmodule ControlcopypastaWeb.BrowseController do
         {:error, :not_found}
 
       recipe ->
-        opts = [
-          servings_override: if(servings_override, do: parse_int(servings_override, nil)),
-          source: source
-        ] |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+        opts =
+          [
+            servings_override: if(servings_override, do: parse_int(servings_override, nil)),
+            source: source
+          ]
+          |> Enum.reject(fn {_k, v} -> is_nil(v) end)
 
         nutrition = Calculator.calculate_recipe_nutrition(recipe, opts)
         render(conn, :nutrition, nutrition: nutrition, recipe: recipe)
@@ -63,6 +65,7 @@ defmodule ControlcopypastaWeb.BrowseController do
 
   # Parse source parameter into atom, default to :composite
   defp parse_source_param(nil), do: :composite
+
   defp parse_source_param(source) when is_binary(source) do
     valid_sources = Calculator.valid_sources() |> Enum.map(&Atom.to_string/1)
 
@@ -72,6 +75,7 @@ defmodule ControlcopypastaWeb.BrowseController do
       :composite
     end
   end
+
   defp parse_source_param(_), do: :composite
 
   # Check if we should filter out avoided ingredients

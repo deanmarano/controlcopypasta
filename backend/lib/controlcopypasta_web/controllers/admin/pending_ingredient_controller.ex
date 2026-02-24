@@ -47,7 +47,9 @@ defmodule ControlcopypastaWeb.Admin.PendingIngredientController do
   Updates a pending ingredient's suggested values.
   """
   def update(conn, %{"id" => id} = params) do
-    attrs = Map.take(params, ["suggested_display_name", "suggested_category", "suggested_aliases"])
+    attrs =
+      Map.take(params, ["suggested_display_name", "suggested_category", "suggested_aliases"])
+
     attrs = for {k, v} <- attrs, into: %{}, do: {String.to_atom(k), v}
 
     case Ingredients.update_pending_ingredient(id, attrs) do

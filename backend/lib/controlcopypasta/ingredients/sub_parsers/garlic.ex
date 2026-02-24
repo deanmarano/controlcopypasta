@@ -26,7 +26,7 @@ defmodule Controlcopypasta.Ingredients.SubParsers.Garlic do
   def match?(tokens) do
     texts = Enum.map(tokens, &String.downcase(&1.text))
     has_garlic = Enum.any?(texts, &(&1 in @garlic_words))
-    has_clove_or_head = Enum.any?(texts, &(&1 in @clove_words ++ @head_words))
+    has_clove_or_head = Enum.any?(texts, &(&1 in (@clove_words ++ @head_words)))
     has_garlic and has_clove_or_head
   end
 
@@ -95,7 +95,9 @@ defmodule Controlcopypasta.Ingredients.SubParsers.Garlic do
     # Find quantity (the number before "head")
     head_idx = Enum.find_index(tokens, &(String.downcase(&1.text) in @head_words))
     qty_tokens = tokens |> Enum.take(head_idx) |> Enum.filter(&(&1.label == :qty))
-    {quantity, quantity_min, quantity_max} = TokenParser.parse_quantity(Enum.map(qty_tokens, & &1.text))
+
+    {quantity, quantity_min, quantity_max} =
+      TokenParser.parse_quantity(Enum.map(qty_tokens, & &1.text))
 
     # Extract preparations from after the comma (or parenthetical)
     preps = extract_preps_after_garlic(tokens)
@@ -123,7 +125,9 @@ defmodule Controlcopypasta.Ingredients.SubParsers.Garlic do
   defp parse_head_garlic(tokens, original, lookup) do
     # "1 head garlic, cloves peeled"
     qty_tokens = Enum.filter(tokens, &(&1.label == :qty))
-    {quantity, quantity_min, quantity_max} = TokenParser.parse_quantity(Enum.map(qty_tokens, & &1.text))
+
+    {quantity, quantity_min, quantity_max} =
+      TokenParser.parse_quantity(Enum.map(qty_tokens, & &1.text))
 
     preps = extract_preps_after_garlic(tokens)
 
@@ -152,7 +156,9 @@ defmodule Controlcopypasta.Ingredients.SubParsers.Garlic do
     # Quantity is before "garlic"
     garlic_idx = Enum.find_index(tokens, &(String.downcase(&1.text) in @garlic_words))
     qty_tokens = tokens |> Enum.take(garlic_idx) |> Enum.filter(&(&1.label == :qty))
-    {quantity, quantity_min, quantity_max} = TokenParser.parse_quantity(Enum.map(qty_tokens, & &1.text))
+
+    {quantity, quantity_min, quantity_max} =
+      TokenParser.parse_quantity(Enum.map(qty_tokens, & &1.text))
 
     preps = extract_preps_after_garlic(tokens)
 

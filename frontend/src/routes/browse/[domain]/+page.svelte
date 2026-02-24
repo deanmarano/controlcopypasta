@@ -118,7 +118,7 @@
 
 		<label class="filter-toggle">
 			<input type="checkbox" checked={hideAvoided} onchange={toggleHideAvoided} />
-			<span>Hide avoided</span>
+			<span>Hide excluded</span>
 		</label>
 	</div>
 
@@ -131,7 +131,7 @@
 			<p>No recipes found{searchQuery ? ` matching "${searchQuery}"` : ' for this source'}.</p>
 			{#if hideAvoided}
 				<p class="empty-hint">
-					Some recipes may be hidden due to your avoided ingredients settings.
+					Some recipes may be hidden based on your dietary preferences.
 					<button class="text-link" onclick={toggleHideAvoided}>Show all recipes</button>
 				</p>
 			{/if}
@@ -141,7 +141,7 @@
 			Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, total)} of {total}
 			recipes
 			{#if hideAvoided}
-				<span class="filter-note">(hiding avoided ingredients)</span>
+				<span class="filter-note">(dietary preferences active)</span>
 			{/if}
 		</div>
 

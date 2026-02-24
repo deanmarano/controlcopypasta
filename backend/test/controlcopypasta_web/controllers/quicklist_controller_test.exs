@@ -44,7 +44,10 @@ defmodule ControlcopypastaWeb.QuicklistControllerTest do
       recipe = RecipesFixtures.recipe_fixture(%{user: user})
 
       conn = post(conn, "/api/quicklist/swipe", %{recipe_id: recipe.id, action: "maybe"})
-      assert %{"data" => %{"action" => "maybe", "recipe_id" => recipe_id}} = json_response(conn, 201)
+
+      assert %{"data" => %{"action" => "maybe", "recipe_id" => recipe_id}} =
+               json_response(conn, 201)
+
       assert recipe_id == recipe.id
     end
 
@@ -63,7 +66,10 @@ defmodule ControlcopypastaWeb.QuicklistControllerTest do
       assert json_response(conn1, 201)
 
       # Change to maybe - rebuild conn to avoid recycled state
-      conn2 = recycle(conn) |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+      conn2 =
+        recycle(conn)
+        |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+
       conn2 = post(conn2, "/api/quicklist/swipe", %{recipe_id: recipe.id, action: "maybe"})
       assert %{"data" => %{"action" => "maybe"}} = json_response(conn2, 201)
     end
@@ -76,7 +82,10 @@ defmodule ControlcopypastaWeb.QuicklistControllerTest do
       assert json_response(conn1, 201)
 
       # Batch should not include it
-      conn2 = recycle(conn) |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+      conn2 =
+        recycle(conn)
+        |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+
       conn2 = get(conn2, "/api/quicklist/batch")
       assert %{"data" => recipes} = json_response(conn2, 200)
       assert Enum.all?(recipes, fn r -> r["id"] != recipe.id end)
@@ -92,7 +101,10 @@ defmodule ControlcopypastaWeb.QuicklistControllerTest do
       assert json_response(conn1, 201)
 
       # List maybes
-      conn2 = recycle(conn) |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+      conn2 =
+        recycle(conn)
+        |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+
       conn2 = get(conn2, "/api/quicklist/maybe")
       assert %{"data" => recipes} = json_response(conn2, 200)
       assert length(recipes) == 1
@@ -105,7 +117,10 @@ defmodule ControlcopypastaWeb.QuicklistControllerTest do
       conn1 = post(conn, "/api/quicklist/swipe", %{recipe_id: recipe.id, action: "skip"})
       assert json_response(conn1, 201)
 
-      conn2 = recycle(conn) |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+      conn2 =
+        recycle(conn)
+        |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+
       conn2 = get(conn2, "/api/quicklist/maybe")
       assert %{"data" => []} = json_response(conn2, 200)
     end
@@ -120,12 +135,18 @@ defmodule ControlcopypastaWeb.QuicklistControllerTest do
       assert json_response(conn1, 201)
 
       # Remove
-      conn2 = recycle(conn) |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+      conn2 =
+        recycle(conn)
+        |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+
       conn2 = delete(conn2, "/api/quicklist/maybe/#{recipe.id}")
       assert response(conn2, 204)
 
       # Verify removed
-      conn3 = recycle(conn) |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+      conn3 =
+        recycle(conn)
+        |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+
       conn3 = get(conn3, "/api/quicklist/maybe")
       assert %{"data" => []} = json_response(conn3, 200)
     end
@@ -138,12 +159,18 @@ defmodule ControlcopypastaWeb.QuicklistControllerTest do
       assert json_response(conn1, 201)
 
       # Remove from maybe (deletes swipe record)
-      conn2 = recycle(conn) |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+      conn2 =
+        recycle(conn)
+        |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+
       conn2 = delete(conn2, "/api/quicklist/maybe/#{recipe.id}")
       assert response(conn2, 204)
 
       # Should appear in batch again
-      conn3 = recycle(conn) |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+      conn3 =
+        recycle(conn)
+        |> put_req_header("authorization", get_req_header(conn, "authorization") |> hd())
+
       conn3 = get(conn3, "/api/quicklist/batch")
       assert %{"data" => recipes} = json_response(conn3, 200)
       assert Enum.any?(recipes, fn r -> r["id"] == recipe.id end)

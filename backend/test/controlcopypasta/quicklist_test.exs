@@ -106,7 +106,9 @@ defmodule Controlcopypasta.QuicklistTest do
 
       # Set ingredient_canonical_ids and all_ingredients_parsed directly
       from(r in Controlcopypasta.Recipes.Recipe, where: r.id == ^recipe_with_avoided.id)
-      |> Repo.update_all(set: [all_ingredients_parsed: true, ingredient_canonical_ids: [avoided_id]])
+      |> Repo.update_all(
+        set: [all_ingredients_parsed: true, ingredient_canonical_ids: [avoided_id]]
+      )
 
       from(r in Controlcopypasta.Recipes.Recipe, where: r.id == ^recipe_safe.id)
       |> Repo.update_all(set: [all_ingredients_parsed: true, ingredient_canonical_ids: [safe_id]])

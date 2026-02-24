@@ -43,7 +43,8 @@ defmodule ControlcopypastaWeb.ShoppingListController do
         {:error, :not_found}
 
       list ->
-        with {:ok, %ShoppingList{} = list} <- ShoppingLists.update_shopping_list(list, list_params) do
+        with {:ok, %ShoppingList{} = list} <-
+               ShoppingLists.update_shopping_list(list, list_params) do
           render(conn, :show, shopping_list: list)
         end
     end

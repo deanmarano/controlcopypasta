@@ -34,8 +34,7 @@ config :phoenix,
   sort_verified_routes_query_params: true
 
 # Use test adapter for Swoosh to capture emails in tests
-config :controlcopypasta, Controlcopypasta.Mailer,
-  adapter: Swoosh.Adapters.Test
+config :controlcopypasta, Controlcopypasta.Mailer, adapter: Swoosh.Adapters.Test
 
 # WebAuthn/Passkey configuration for tests - override any .env values
 config :controlcopypasta, :webauthn,

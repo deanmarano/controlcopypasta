@@ -16,7 +16,8 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
     test "parses quantity range" do
       result = TokenParser.parse("1-2 Tbsp olive oil")
 
-      assert result.quantity == 1.5  # average
+      # average
+      assert result.quantity == 1.5
       assert result.quantity_min == 1.0
       assert result.quantity_max == 2.0
       assert result.unit == "tbsp"
@@ -42,7 +43,8 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
       # "1 -1 1/2 cup" means "1 to 1½ cups"
       result = TokenParser.parse("1 -1 1/2 cup semi-sweet chocolate chips")
 
-      assert result.quantity == 1.25  # average of 1 and 1.5
+      # average of 1 and 1.5
+      assert result.quantity == 1.25
       assert result.quantity_min == 1.0
       assert result.quantity_max == 1.5
       assert result.unit == "cup"
@@ -376,8 +378,10 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
 
       # Should find a match (the singular form matches)
       primary = hd(result.ingredients)
+
       assert primary.canonical_name == "red bell pepper",
              "Expected 'roasted red peppers' to match 'red bell pepper', got: #{inspect(primary)}"
+
       assert primary.confidence >= 0.9
     end
   end
@@ -460,6 +464,7 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
 
       for word <- stop_words do
         result = TokenParser.parse(word)
+
         assert result.ingredients == [],
                "'#{word}' should not be an ingredient name, got: #{inspect(result.ingredients)}"
       end
@@ -468,7 +473,8 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
 
   describe "choices extraction (such as X, Y, or Z)" do
     test "extracts choices from 'such as' pattern" do
-      result = TokenParser.parse("2 whole fish, such as branzini, mackerel, or trout, scaled and gutted")
+      result =
+        TokenParser.parse("2 whole fish, such as branzini, mackerel, or trout, scaled and gutted")
 
       assert result.choices != nil
       assert length(result.choices) == 3
@@ -480,7 +486,8 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
     end
 
     test "extracts preparations after choices" do
-      result = TokenParser.parse("2 whole fish, such as branzini, mackerel, or trout, scaled and gutted")
+      result =
+        TokenParser.parse("2 whole fish, such as branzini, mackerel, or trout, scaled and gutted")
 
       assert "scaled" in result.preparations
       assert "gutted" in result.preparations

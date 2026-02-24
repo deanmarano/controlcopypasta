@@ -19,6 +19,7 @@ defmodule Controlcopypasta.Accounts.AvoidedIngredient do
     field :category, :string
     field :allergen_group, :string
     field :animal_type, :string
+
     # Exceptions: canonical_ingredient_ids that are allowed despite the category/allergen avoidance
     field :exceptions, {:array, :binary_id}, default: []
 
@@ -81,9 +82,7 @@ defmodule Controlcopypasta.Accounts.AvoidedIngredient do
       "category" ->
         changeset
         |> validate_required([:category], message: "is required for category avoidance")
-        |> validate_inclusion(:category, @valid_categories,
-          message: "must be a valid category"
-        )
+        |> validate_inclusion(:category, @valid_categories, message: "must be a valid category")
 
       "allergen" ->
         changeset

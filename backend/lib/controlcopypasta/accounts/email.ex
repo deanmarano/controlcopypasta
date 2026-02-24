@@ -33,7 +33,9 @@ defmodule Controlcopypasta.Accounts.Email do
   end
 
   defp build_magic_link_url(token, base_url) do
-    frontend_url = base_url || Application.get_env(:controlcopypasta, :frontend_url, "http://localhost:5173")
+    frontend_url =
+      base_url || Application.get_env(:controlcopypasta, :frontend_url, "http://localhost:5173")
+
     "#{frontend_url}/auth/verify?token=#{token}"
   end
 

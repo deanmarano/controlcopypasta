@@ -47,17 +47,20 @@ defmodule Controlcopypasta.ShoppingListsTest do
       user = user_fixture()
       list = shopping_list_fixture(%{user: user})
 
-      {:ok, _} = ShoppingLists.create_item(%{
-        shopping_list_id: list.id,
-        display_text: "Milk",
-        category: "dairy"
-      })
+      {:ok, _} =
+        ShoppingLists.create_item(%{
+          shopping_list_id: list.id,
+          display_text: "Milk",
+          category: "dairy"
+        })
 
-      {:ok, checked_item} = ShoppingLists.create_item(%{
-        shopping_list_id: list.id,
-        display_text: "Bread",
-        category: "bakery"
-      })
+      {:ok, checked_item} =
+        ShoppingLists.create_item(%{
+          shopping_list_id: list.id,
+          display_text: "Bread",
+          category: "bakery"
+        })
+
       {:ok, _} = ShoppingLists.check_item(checked_item)
 
       result = ShoppingLists.get_shopping_list_for_user(user.id, list.id)
@@ -153,14 +156,18 @@ defmodule Controlcopypasta.ShoppingListsTest do
     test "removes all checked items from list" do
       list = shopping_list_fixture()
 
-      {:ok, item1} = ShoppingLists.create_item(%{
-        shopping_list_id: list.id,
-        display_text: "Item 1"
-      })
-      {:ok, item2} = ShoppingLists.create_item(%{
-        shopping_list_id: list.id,
-        display_text: "Item 2"
-      })
+      {:ok, item1} =
+        ShoppingLists.create_item(%{
+          shopping_list_id: list.id,
+          display_text: "Item 1"
+        })
+
+      {:ok, item2} =
+        ShoppingLists.create_item(%{
+          shopping_list_id: list.id,
+          display_text: "Item 2"
+        })
+
       {:ok, _} = ShoppingLists.check_item(item1)
 
       {:ok, updated_list} = ShoppingLists.clear_checked_items(list)
@@ -174,13 +181,15 @@ defmodule Controlcopypasta.ShoppingListsTest do
     test "adds ingredients from recipe to shopping list" do
       user = user_fixture()
       list = shopping_list_fixture(%{user: user})
-      recipe = recipe_fixture(%{
-        user: user,
-        ingredients: [
-          %{"text" => "2 cups flour"},
-          %{"text" => "3 eggs"}
-        ]
-      })
+
+      recipe =
+        recipe_fixture(%{
+          user: user,
+          ingredients: [
+            %{"text" => "2 cups flour"},
+            %{"text" => "3 eggs"}
+          ]
+        })
 
       {:ok, updated_list} = ShoppingLists.add_items_from_recipe(list, recipe.id)
 
@@ -193,10 +202,12 @@ defmodule Controlcopypasta.ShoppingListsTest do
     test "applies scale factor to quantities" do
       user = user_fixture()
       list = shopping_list_fixture(%{user: user})
-      recipe = recipe_fixture(%{
-        user: user,
-        ingredients: [%{"text" => "2 cups flour"}]
-      })
+
+      recipe =
+        recipe_fixture(%{
+          user: user,
+          ingredients: [%{"text" => "2 cups flour"}]
+        })
 
       {:ok, updated_list} = ShoppingLists.add_items_from_recipe(list, recipe.id, 2.0)
 

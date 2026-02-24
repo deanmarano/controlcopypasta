@@ -75,4 +75,3 @@ config :controlcopypasta, Controlcopypasta.Mailer,
   adapter: Swoosh.Adapters.SMTP,
   relay: System.get_env("SMTP_HOST") || "localhost",
   port: String.to_integer(System.get_env("SMTP_PORT") || "1025")
-

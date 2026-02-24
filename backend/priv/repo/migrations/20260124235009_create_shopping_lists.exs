@@ -15,11 +15,18 @@ defmodule Controlcopypasta.Repo.Migrations.CreateShoppingLists do
 
     create table(:shopping_list_items, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :shopping_list_id, references(:shopping_lists, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :shopping_list_id,
+          references(:shopping_lists, type: :binary_id, on_delete: :delete_all),
+          null: false
+
       add :display_text, :string, size: 500, null: false
       add :quantity, :decimal
       add :unit, :string, size: 50
-      add :canonical_ingredient_id, references(:canonical_ingredients, type: :binary_id, on_delete: :nilify_all)
+
+      add :canonical_ingredient_id,
+          references(:canonical_ingredients, type: :binary_id, on_delete: :nilify_all)
+
       add :canonical_name, :string
       add :raw_name, :string
       add :category, :string, size: 100, default: "other"

@@ -56,7 +56,13 @@ defmodule Controlcopypasta.Recipes.RecipeReference do
   end
 
   @required_fields [:parent_recipe_id, :ingredient_index, :reference_type]
-  @optional_fields [:child_recipe_id, :reference_text, :extracted_name, :resolved_at, :is_optional]
+  @optional_fields [
+    :child_recipe_id,
+    :reference_text,
+    :extracted_name,
+    :resolved_at,
+    :is_optional
+  ]
 
   @doc """
   Creates a changeset for a recipe reference.

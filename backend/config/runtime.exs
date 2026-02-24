@@ -4,14 +4,17 @@ import Config
 # This makes environment variables available without manual sourcing
 if config_env() in [:dev, :test] do
   {:ok, env} = Dotenvy.source(["../.env", ".env", System.get_env()])
+
   Enum.each(env, fn {key, value} ->
     System.put_env(key, value)
   end)
 
   # Dev/test secret key base from env (or safe default for local dev only)
-  dev_secret = System.get_env("SECRET_KEY_BASE") || "dev_only_not_for_production_change_me_xxxxxxxxxxxxxxxxxxxxxxxxx"
-  config :controlcopypasta, ControlcopypastaWeb.Endpoint,
-    secret_key_base: dev_secret
+  dev_secret =
+    System.get_env("SECRET_KEY_BASE") ||
+      "dev_only_not_for_production_change_me_xxxxxxxxxxxxxxxxxxxxxxxxx"
+
+  config :controlcopypasta, ControlcopypastaWeb.Endpoint, secret_key_base: dev_secret
 end
 
 # Admin emails (comma-separated list from ADMIN_EMAILS env var)
@@ -113,8 +116,7 @@ if config_env() == :prod do
     secret_key: guardian_secret
 
   # Frontend URL for magic links
-  config :controlcopypasta, :frontend_url,
-    System.get_env("FRONTEND_URL") || "https://#{host}"
+  config :controlcopypasta, :frontend_url, System.get_env("FRONTEND_URL") || "https://#{host}"
 
   # SMTP configuration for production emails
   smtp_host = System.get_env("SMTP_HOST")

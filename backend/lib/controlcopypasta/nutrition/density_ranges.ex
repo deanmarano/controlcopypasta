@@ -45,11 +45,14 @@ defmodule Controlcopypasta.Nutrition.DensityRanges do
   # Preparation-based modifiers
   # Some preparations reduce or increase variation
   @preparation_modifiers %{
-    "packed" => 0.5,        # Packed measurement reduces variation
+    # Packed measurement reduces variation
+    "packed" => 0.5,
     "loosely packed" => 0.7,
-    "sifted" => 0.5,        # Sifted is more consistent
+    # Sifted is more consistent
+    "sifted" => 0.5,
     "firmly packed" => 0.4,
-    "chopped" => 1.2,       # Chopping increases variation
+    # Chopping increases variation
+    "chopped" => 1.2,
     "diced" => 1.1,
     "minced" => 1.3,
     "sliced" => 1.15

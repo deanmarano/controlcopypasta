@@ -23,6 +23,7 @@ defmodule Controlcopypasta.Repo.Migrations.CleanupDuplicateIngredients do
     WHERE name = 'za''atar'
     AND NOT ('zaatar' = ANY(aliases))
     """
+
     execute "DELETE FROM canonical_ingredients WHERE name = 'zaatar'"
 
     # 2. andouille sausage (keep singular) / andouille sausages (delete)
@@ -32,6 +33,7 @@ defmodule Controlcopypasta.Repo.Migrations.CleanupDuplicateIngredients do
     WHERE name = 'andouille sausage'
     AND NOT ('andouille sausages' = ANY(aliases))
     """
+
     execute "DELETE FROM canonical_ingredients WHERE name = 'andouille sausages'"
 
     # 3. poppy seeds (keep plural) / poppy seed (delete)
@@ -41,6 +43,7 @@ defmodule Controlcopypasta.Repo.Migrations.CleanupDuplicateIngredients do
     WHERE name = 'poppy seeds'
     AND NOT ('poppy seed' = ANY(aliases))
     """
+
     execute "DELETE FROM canonical_ingredients WHERE name = 'poppy seed'"
 
     # 4. sardines (keep plural) / sardine (delete)
@@ -50,6 +53,7 @@ defmodule Controlcopypasta.Repo.Migrations.CleanupDuplicateIngredients do
     WHERE name = 'sardines'
     AND NOT ('sardine' = ANY(aliases))
     """
+
     execute "DELETE FROM canonical_ingredients WHERE name = 'sardine'"
   end
 
@@ -87,12 +91,15 @@ defmodule Controlcopypasta.Repo.Migrations.CleanupDuplicateIngredients do
     execute """
     UPDATE canonical_ingredients SET aliases = array_remove(aliases, 'zaatar') WHERE name = 'za''atar'
     """
+
     execute """
     UPDATE canonical_ingredients SET aliases = array_remove(aliases, 'andouille sausages') WHERE name = 'andouille sausage'
     """
+
     execute """
     UPDATE canonical_ingredients SET aliases = array_remove(aliases, 'poppy seed') WHERE name = 'poppy seeds'
     """
+
     execute """
     UPDATE canonical_ingredients SET aliases = array_remove(aliases, 'sardine') WHERE name = 'sardines'
     """

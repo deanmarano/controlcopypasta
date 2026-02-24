@@ -87,7 +87,16 @@ defmodule Mix.Tasks.Ingredients.GenerateMatchingRules do
     },
     "tomato" => %{
       "boost_words" => ["fresh", "ripe", "roma", "cherry", "grape", "heirloom", "vine"],
-      "anti_patterns" => ["sauce", "paste", "puree", "canned", "diced", "crushed", "sun-dried", "juice"],
+      "anti_patterns" => [
+        "sauce",
+        "paste",
+        "puree",
+        "canned",
+        "diced",
+        "crushed",
+        "sun-dried",
+        "juice"
+      ],
       "exclude_patterns" => ["\\btomato\\s+sauce\\b", "\\btomato\\s+paste\\b"]
     },
     "tomato sauce" => %{
@@ -146,7 +155,16 @@ defmodule Mix.Tasks.Ingredients.GenerateMatchingRules do
     },
     "flour" => %{
       "boost_words" => ["all-purpose", "white", "wheat"],
-      "anti_patterns" => ["almond", "coconut", "rice", "oat", "self-rising", "bread", "cake", "pastry"]
+      "anti_patterns" => [
+        "almond",
+        "coconut",
+        "rice",
+        "oat",
+        "self-rising",
+        "bread",
+        "cake",
+        "pastry"
+      ]
     },
     "almond flour" => %{
       "boost_words" => ["almond", "blanched", "superfine"],
@@ -172,7 +190,15 @@ defmodule Mix.Tasks.Ingredients.GenerateMatchingRules do
     },
     "milk" => %{
       "boost_words" => ["whole", "2%", "skim", "fresh"],
-      "anti_patterns" => ["coconut", "almond", "oat", "soy", "condensed", "evaporated", "buttermilk"]
+      "anti_patterns" => [
+        "coconut",
+        "almond",
+        "oat",
+        "soy",
+        "condensed",
+        "evaporated",
+        "buttermilk"
+      ]
     },
     "coconut milk" => %{
       "boost_words" => ["coconut", "full-fat", "light"],
@@ -208,7 +234,17 @@ defmodule Mix.Tasks.Ingredients.GenerateMatchingRules do
     },
     "rice" => %{
       "boost_words" => ["white", "long-grain", "basmati", "jasmine"],
-      "anti_patterns" => ["brown", "wild", "arborio", "sushi", "fried", "vinegar", "wine", "paper", "noodle"]
+      "anti_patterns" => [
+        "brown",
+        "wild",
+        "arborio",
+        "sushi",
+        "fried",
+        "vinegar",
+        "wine",
+        "paper",
+        "noodle"
+      ]
     },
     "brown rice" => %{
       "boost_words" => ["brown", "whole", "long-grain"],
@@ -217,7 +253,16 @@ defmodule Mix.Tasks.Ingredients.GenerateMatchingRules do
     },
     "chicken" => %{
       "boost_words" => ["whole", "fresh", "roasted"],
-      "anti_patterns" => ["broth", "stock", "bouillon", "seasoning", "breast", "thigh", "wing", "drumstick"]
+      "anti_patterns" => [
+        "broth",
+        "stock",
+        "bouillon",
+        "seasoning",
+        "breast",
+        "thigh",
+        "wing",
+        "drumstick"
+      ]
     },
     "beef" => %{
       "boost_words" => ["fresh", "lean"],
@@ -267,7 +312,9 @@ defmodule Mix.Tasks.Ingredients.GenerateMatchingRules do
       |> Enum.filter(fn {_ing, rules} -> rules != nil and map_size(rules) > 0 end)
 
     # Display summary
-    with_overrides = Enum.count(updates, fn {ing, _} -> Map.has_key?(@ingredient_overrides, ing.name) end)
+    with_overrides =
+      Enum.count(updates, fn {ing, _} -> Map.has_key?(@ingredient_overrides, ing.name) end)
+
     with_category = length(updates) - with_overrides
 
     IO.puts("Generated rules for #{length(updates)} ingredients:")
@@ -281,18 +328,23 @@ defmodule Mix.Tasks.Ingredients.GenerateMatchingRules do
     |> Enum.take(10)
     |> Enum.each(fn {ing, rules} ->
       IO.puts("  #{ing.display_name} (#{ing.category || "uncategorized"}):")
+
       if rules["boost_words"] && length(rules["boost_words"]) > 0 do
         IO.puts("    boost: #{Enum.join(rules["boost_words"], ", ")}")
       end
+
       if rules["anti_patterns"] && length(rules["anti_patterns"]) > 0 do
         IO.puts("    anti:  #{Enum.join(rules["anti_patterns"], ", ")}")
       end
+
       if rules["required_words"] && length(rules["required_words"]) > 0 do
         IO.puts("    req:   #{Enum.join(rules["required_words"], ", ")}")
       end
+
       if rules["exclude_patterns"] && length(rules["exclude_patterns"]) > 0 do
         IO.puts("    excl:  #{Enum.join(rules["exclude_patterns"], ", ")}")
       end
+
       IO.puts("")
     end)
 

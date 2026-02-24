@@ -74,14 +74,17 @@ defmodule ControlcopypastaWeb.ShoppingListJSON do
   end
 
   defp decimal_to_number(nil), do: nil
+
   defp decimal_to_number(%Decimal{} = d) do
     # Convert to float if it has decimals, otherwise to integer
     float_val = Decimal.to_float(d)
+
     if float_val == trunc(float_val) do
       trunc(float_val)
     else
       Float.round(float_val, 2)
     end
   end
+
   defp decimal_to_number(n), do: n
 end

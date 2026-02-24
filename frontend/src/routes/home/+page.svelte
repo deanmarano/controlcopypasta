@@ -4,6 +4,7 @@
 	import { dashboard, recipes as recipesApi, quicklist, type DashboardData, type DashboardRecipe } from '$lib/api/client';
 
 	let data = $state<DashboardData | null>(null);
+	let maybeRecipes = $state<DashboardRecipe[]>([]);
 	let loading = $state(true);
 	let error = $state('');
 	let addUrl = $state('');
@@ -33,8 +34,12 @@
 		error = '';
 
 		try {
-			const result = await dashboard.get(token);
-			data = result.data;
+			const [dashResult, maybeResult] = await Promise.all([
+				dashboard.get(token),
+				quicklist.maybeList(token).catch(() => ({ data: [] as DashboardRecipe[] }))
+			]);
+			data = dashResult.data;
+			maybeRecipes = maybeResult.data;
 		} catch {
 			error = 'Failed to load dashboard';
 		} finally {
@@ -118,7 +123,7 @@
 		<header class="dash-header">
 			<div class="greeting">
 				<h1>{getGreeting()}</h1>
-				<p>What are we cooking tonight?</p>
+				<p>What's cooking?</p>
 			</div>
 			<div class="header-actions">
 				<a href="/quicklist" class="find-dinner-btn">Find Dinner</a>
@@ -140,42 +145,96 @@
 
 		<section class="section">
 			<div class="section-header">
-				<h2>Tonight's inspiration</h2>
-				<button class="shuffle-btn" onclick={shuffle} disabled={shuffling}>
-					{shuffling ? 'Shuffling...' : 'Shuffle'}
-				</button>
+				<h2>Recently added</h2>
+				<a href="/recipes" class="view-all">View all</a>
 			</div>
-			{#if data.dinner_ideas.length === 0}
-				<p class="section-empty">No recipes to suggest yet.</p>
+			{#if data.recently_added.length === 0}
+				<p class="section-empty">No recent recipes.</p>
 			{:else}
-				{@const heroRecipe = data.dinner_ideas[0]}
-				<a href="/recipes/{heroRecipe.id}" class="hero-card">
-					{#if heroRecipe.image_url}
-						<img src={heroRecipe.image_url} alt={heroRecipe.title} class="hero-card-img" />
+				{@const heroRecent = data.recently_added[0]}
+				<a href="/recipes/{heroRecent.id}" class="hero-card">
+					{#if heroRecent.image_url}
+						<img src={heroRecent.image_url} alt={heroRecent.title} class="hero-card-img" />
 					{:else}
 						<div class="hero-card-img placeholder">No image</div>
 					{/if}
 					<div class="hero-card-overlay">
-						{#if heroRecipe.total_time_minutes}
-							<span class="hero-card-tag">{formatTime(heroRecipe.total_time_minutes)}</span>
+						{#if heroRecent.total_time_minutes}
+							<span class="hero-card-tag">{formatTime(heroRecent.total_time_minutes)}</span>
 						{/if}
-						<h3>{heroRecipe.title}</h3>
-						{#if heroRecipe.description}
-							<p>{heroRecipe.description}</p>
+						<h3>{heroRecent.title}</h3>
+						{#if heroRecent.description}
+							<p>{heroRecent.description}</p>
 						{/if}
-						{#if !heroRecipe.is_owned}
+					</div>
+					{#if heroRecent.contains_avoided && heroRecent.avoided_ingredients && heroRecent.avoided_ingredients.length > 0}
+						<div class="avoided-warning hero-avoided">
+							Contains: {heroRecent.avoided_ingredients.map((i) => i.name).join(', ')}
+						</div>
+					{/if}
+				</a>
+				{#if data.recently_added.length > 1}
+					<div class="card-grid">
+						{#each data.recently_added.slice(1) as recipe}
+							{@render recipeCard(recipe)}
+						{/each}
+					</div>
+				{/if}
+			{/if}
+		</section>
+
+		{#if maybeRecipes.length > 0}
+			<section class="section">
+				<div class="section-header">
+					<h2>Any of these still interesting?</h2>
+					<a href="/quicklist/maybe" class="view-all">View all ({maybeRecipes.length})</a>
+				</div>
+				<div class="card-grid">
+					{#each maybeRecipes.slice(0, 4) as recipe}
+						{@render recipeCard(recipe)}
+					{/each}
+				</div>
+			</section>
+		{/if}
+
+		{#if data.dinner_ideas.length > 0}
+			<section class="section">
+				<div class="section-header">
+					<h2>Looking for something new?</h2>
+					<div class="section-header-actions">
+						<button class="shuffle-btn" onclick={shuffle} disabled={shuffling}>
+							{shuffling ? 'Shuffling...' : 'Shuffle'}
+						</button>
+						<a href="/browse" class="view-all">Browse all</a>
+					</div>
+				</div>
+				<a href="/recipes/{data.dinner_ideas[0].id}" class="hero-card">
+					{#if data.dinner_ideas[0].image_url}
+						<img src={data.dinner_ideas[0].image_url} alt={data.dinner_ideas[0].title} class="hero-card-img" />
+					{:else}
+						<div class="hero-card-img placeholder">No image</div>
+					{/if}
+					<div class="hero-card-overlay">
+						{#if data.dinner_ideas[0].total_time_minutes}
+							<span class="hero-card-tag">{formatTime(data.dinner_ideas[0].total_time_minutes)}</span>
+						{/if}
+						<h3>{data.dinner_ideas[0].title}</h3>
+						{#if data.dinner_ideas[0].description}
+							<p>{data.dinner_ideas[0].description}</p>
+						{/if}
+						{#if !data.dinner_ideas[0].is_owned}
 							<button
 								class="save-btn save-btn-hero"
-								onclick={(e) => saveRecipe(e, heroRecipe.id)}
-								disabled={savingId === heroRecipe.id}
+								onclick={(e) => saveRecipe(e, data!.dinner_ideas[0].id)}
+								disabled={savingId === data.dinner_ideas[0].id}
 							>
-								{savingId === heroRecipe.id ? 'Saving...' : 'Save to My Recipes'}
+								{savingId === data.dinner_ideas[0].id ? 'Saving...' : 'Save to My Recipes'}
 							</button>
 						{/if}
 					</div>
-					{#if heroRecipe.contains_avoided && heroRecipe.avoided_ingredients && heroRecipe.avoided_ingredients.length > 0}
+					{#if data.dinner_ideas[0].contains_avoided && data.dinner_ideas[0].avoided_ingredients && data.dinner_ideas[0].avoided_ingredients.length > 0}
 						<div class="avoided-warning hero-avoided">
-							Contains: {heroRecipe.avoided_ingredients.map((i) => i.name).join(', ')}
+							Contains: {data.dinner_ideas[0].avoided_ingredients.map((i) => i.name).join(', ')}
 						</div>
 					{/if}
 				</a>
@@ -186,24 +245,8 @@
 						{/each}
 					</div>
 				{/if}
-			{/if}
-		</section>
-
-		<section class="section">
-			<div class="section-header">
-				<h2>Recently added</h2>
-				<a href="/recipes" class="view-all">View all</a>
-			</div>
-			{#if data.recently_added.length === 0}
-				<p class="section-empty">No recent recipes.</p>
-			{:else}
-				<div class="card-grid">
-					{#each data.recently_added as recipe}
-						{@render recipeCard(recipe)}
-					{/each}
-				</div>
-			{/if}
-		</section>
+			</section>
+		{/if}
 
 		{#if data.this_time_last_year.length > 0}
 			<section class="section">
@@ -424,6 +467,12 @@
 
 	.section-header h2 {
 		margin-bottom: 0;
+	}
+
+	.section-header-actions {
+		display: flex;
+		gap: var(--space-3);
+		align-items: center;
 	}
 
 	.shuffle-btn {

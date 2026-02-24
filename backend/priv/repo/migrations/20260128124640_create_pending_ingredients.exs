@@ -7,7 +7,8 @@ defmodule Controlcopypasta.Repo.Migrations.CreatePendingIngredients do
       add :name, :string, null: false
       add :occurrence_count, :integer, default: 1
       add :sample_texts, {:array, :string}, default: []
-      add :status, :string, default: "pending"  # pending, approved, rejected, merged
+      # pending, approved, rejected, merged
+      add :status, :string, default: "pending"
 
       # FatSecret data (pre-populated if found)
       add :fatsecret_id, :string
@@ -20,7 +21,8 @@ defmodule Controlcopypasta.Repo.Migrations.CreatePendingIngredients do
       add :suggested_aliases, {:array, :string}, default: []
 
       # If merged into existing canonical
-      add :merged_into_id, references(:canonical_ingredients, type: :binary_id, on_delete: :nilify_all)
+      add :merged_into_id,
+          references(:canonical_ingredients, type: :binary_id, on_delete: :nilify_all)
 
       # Tracking
       add :reviewed_at, :utc_datetime

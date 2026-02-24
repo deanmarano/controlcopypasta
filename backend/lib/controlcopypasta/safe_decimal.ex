@@ -41,7 +41,9 @@ defmodule Controlcopypasta.SafeDecimal do
       #Decimal<0>
   """
   def from_number_with_factor(nil, _factor), do: nil
+
   def from_number_with_factor(val, factor) when is_number(val) and is_number(factor) do
-    from_number(val * factor / 1.0)  # Ensure float result
+    # Ensure float result
+    from_number(val * factor / 1.0)
   end
 end

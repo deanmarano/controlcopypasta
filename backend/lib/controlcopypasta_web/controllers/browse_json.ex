@@ -62,6 +62,7 @@ defmodule ControlcopypastaWeb.BrowseJSON do
   # Format a nutrient value - pass through range maps, convert scalars
   defp format_nutrient_value(%{min: _, best: _, max: _, confidence: _} = range), do: range
   defp format_nutrient_value(nil), do: nil
+
   defp format_nutrient_value(value) when is_number(value) do
     %{min: value, best: value, max: value, confidence: 1.0}
   end

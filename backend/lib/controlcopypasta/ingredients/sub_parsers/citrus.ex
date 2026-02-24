@@ -81,11 +81,12 @@ defmodule Controlcopypasta.Ingredients.SubParsers.Citrus do
     {quantity, quantity_min, quantity_max, unit} = extract_quantity_and_unit(tokens, texts)
 
     # Build ingredient names
-    ingredient_names = case derivative do
-      :both -> ["#{fruit} juice", "#{fruit} zest"]
-      :juice -> ["#{fruit} juice"]
-      :zest -> ["#{fruit} zest"]
-    end
+    ingredient_names =
+      case derivative do
+        :both -> ["#{fruit} juice", "#{fruit} zest"]
+        :juice -> ["#{fruit} juice"]
+        :zest -> ["#{fruit} zest"]
+      end
 
     matched_ingredients = Enum.map(ingredient_names, &TokenParser.match_ingredient(&1, lookup))
     primary = List.first(matched_ingredients)
@@ -115,8 +116,9 @@ defmodule Controlcopypasta.Ingredients.SubParsers.Citrus do
     unit_token = Enum.find(tokens, &(&1.label == :unit))
 
     # Check if there's a real measurement unit (not just a count unit like "clove")
-    has_measured_unit = unit_token != nil and
-      String.downcase(unit_token.text) not in ~w(clove cloves head heads)
+    has_measured_unit =
+      unit_token != nil and
+        String.downcase(unit_token.text) not in ~w(clove cloves head heads)
 
     cond do
       has_measured_unit and length(qty_tokens) >= 1 ->

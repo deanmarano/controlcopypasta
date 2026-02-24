@@ -36,6 +36,11 @@
 			<p>Review and approve new ingredients discovered from recipes.</p>
 		</a>
 
+		<a href="/tags" class="admin-card">
+			<h2>Tags</h2>
+			<p>Manage recipe tags and categories for organizing your collection.</p>
+		</a>
+
 		<a href="/setup" class="admin-card">
 			<h2>Setup Wizard</h2>
 			<p>Preview the new user onboarding flow for dietary preferences.</p>

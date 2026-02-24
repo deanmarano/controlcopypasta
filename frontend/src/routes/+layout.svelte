@@ -47,11 +47,9 @@
 				<a href="/" class="brand">ControlCopyPasta</a>
 				{#if $isAuthenticated}
 					<div class="nav-links desktop-only">
-						<a href="/recipes">Recipes</a>
+						<a href="/recipes">My Recipes</a>
 						<a href="/browse">Browse</a>
-						<a href="/shopping-lists">Shopping</a>
-						<a href="/ingredients">Ingredients</a>
-						<a href="/tags">Tags</a>
+						<a href="/shopping-lists">Shopping Lists</a>
 						<a href="/settings">Settings</a>
 						{#if $isAdmin}
 							<a href="/admin" class="admin-link">Admin</a>
@@ -86,11 +84,9 @@
 					<span class="mobile-user-email">{$currentUser?.email}</span>
 				</div>
 				<nav class="mobile-nav">
-					<a href="/recipes" onclick={closeMobileMenu}>Recipes</a>
+					<a href="/recipes" onclick={closeMobileMenu}>My Recipes</a>
 					<a href="/browse" onclick={closeMobileMenu}>Browse</a>
-					<a href="/shopping-lists" onclick={closeMobileMenu}>Shopping Lists</a>
-					<a href="/ingredients" onclick={closeMobileMenu}>Ingredients</a>
-					<a href="/tags" onclick={closeMobileMenu}>Tags</a>
+					<a href="/shopping-lists" onclick={closeMobileMenu}>Shopping List</a>
 					<a href="/settings" onclick={closeMobileMenu}>Settings</a>
 					{#if $isAdmin}
 						<a href="/admin" onclick={closeMobileMenu} class="admin-link">Admin</a>

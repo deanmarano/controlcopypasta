@@ -168,9 +168,15 @@ defmodule Controlcopypasta.Repo.Migrations.AddOilsFruitsAndChileAliases do
 
   def down do
     ingredients_to_remove = [
-      "vegetable oil", "greens", "nectarine", "apricot",
-      "chocolate chips", "chocolate chunks", "fire roasted tomatoes",
-      "dulce de leche", "hominy"
+      "vegetable oil",
+      "greens",
+      "nectarine",
+      "apricot",
+      "chocolate chips",
+      "chocolate chunks",
+      "fire roasted tomatoes",
+      "dulce de leche",
+      "hominy"
     ]
 
     for name <- ingredients_to_remove do
@@ -198,6 +204,7 @@ defmodule Controlcopypasta.Repo.Migrations.AddOilsFruitsAndChileAliases do
   end
 
   defp format_array([]), do: ""
+
   defp format_array(items) do
     items
     |> Enum.map(&"'#{String.replace(&1, "'", "''")}'")

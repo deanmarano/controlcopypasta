@@ -161,7 +161,7 @@ defmodule Controlcopypasta.Quicklist do
     from r in query,
       where:
         r.all_ingredients_parsed == true and
-        fragment("NOT (? && ?)", r.ingredient_canonical_ids, ^id_list)
+          fragment("NOT (? && ?)", r.ingredient_canonical_ids, ^id_list)
   end
 
   defp apply_avoided_filter(query, _), do: query

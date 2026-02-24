@@ -140,9 +140,18 @@ defmodule Controlcopypasta.Repo.Migrations.AddMissingCanonicalIngredients do
 
   def down do
     ingredients_to_remove = [
-      "cloves", "nuts", "broth", "creole seasoning", "poultry seasoning",
-      "taco seasoning", "italian seasoning", "five-spice powder",
-      "puff pastry", "pizza dough", "phyllo dough", "pie crust"
+      "cloves",
+      "nuts",
+      "broth",
+      "creole seasoning",
+      "poultry seasoning",
+      "taco seasoning",
+      "italian seasoning",
+      "five-spice powder",
+      "puff pastry",
+      "pizza dough",
+      "phyllo dough",
+      "pie crust"
     ]
 
     for name <- ingredients_to_remove do
@@ -151,6 +160,7 @@ defmodule Controlcopypasta.Repo.Migrations.AddMissingCanonicalIngredients do
   end
 
   defp format_array([]), do: ""
+
   defp format_array(items) do
     items
     |> Enum.map(&"'#{String.replace(&1, "'", "''")}'")

@@ -43,8 +43,11 @@ defmodule Controlcopypasta.Ingredients.Parsing.Singularizer do
 
     cond do
       # Don't singularize short words or words in exception list
-      String.length(word) < 3 -> word
-      downcased in @no_singularize -> word
+      String.length(word) < 3 ->
+        word
+
+      downcased in @no_singularize ->
+        word
 
       # -ves -> -f (leaves -> leaf, halves -> half, loaves -> loaf)
       String.ends_with?(downcased, "ves") ->
@@ -85,10 +88,11 @@ defmodule Controlcopypasta.Ingredients.Parsing.Singularizer do
       # -s (general plural, but not -ss, -us)
       String.ends_with?(downcased, "s") and
         not String.ends_with?(downcased, "ss") and
-        not String.ends_with?(downcased, "us") ->
+          not String.ends_with?(downcased, "us") ->
         String.slice(word, 0..-2//1)
 
-      true -> word
+      true ->
+        word
     end
   end
 
