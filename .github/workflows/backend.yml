@@ -55,4 +55,6 @@ jobs:
       - run: mix deps.get
       - run: mix compile --warnings-as-errors
       - run: mix format --check-formatted
+      - run: mix ecto.create
+      - run: mix ecto.migrate
       - run: mix test
