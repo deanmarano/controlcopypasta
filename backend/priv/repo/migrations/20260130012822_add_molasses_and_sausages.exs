@@ -10,7 +10,12 @@ defmodule Controlcopypasta.Repo.Migrations.AddMolassesAndSausages do
         name: "molasses",
         display_name: "Molasses",
         category: "sweetener",
-        aliases: ["light molasses", "mild-flavored molasses", "blackstrap molasses", "dark molasses"],
+        aliases: [
+          "light molasses",
+          "mild-flavored molasses",
+          "blackstrap molasses",
+          "dark molasses"
+        ],
         dietary_flags: ["vegan", "vegetarian", "gluten_free", "dairy_free"]
       },
 
@@ -120,8 +125,15 @@ defmodule Controlcopypasta.Repo.Migrations.AddMolassesAndSausages do
 
   def down do
     ingredients_to_remove = [
-      "molasses", "andouille sausage", "chorizo", "italian sausage",
-      "quail", "sardine", "anchovy paste", "pork shoulder", "brisket"
+      "molasses",
+      "andouille sausage",
+      "chorizo",
+      "italian sausage",
+      "quail",
+      "sardine",
+      "anchovy paste",
+      "pork shoulder",
+      "brisket"
     ]
 
     for name <- ingredients_to_remove do
@@ -130,6 +142,7 @@ defmodule Controlcopypasta.Repo.Migrations.AddMolassesAndSausages do
   end
 
   defp format_array([]), do: ""
+
   defp format_array(items) do
     items
     |> Enum.map(&"'#{String.replace(&1, "'", "''")}'")

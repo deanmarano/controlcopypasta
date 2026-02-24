@@ -20,7 +20,12 @@ defmodule Controlcopypasta.Repo.Migrations.AddMissingHighPriorityIngredients do
         name: "sesame seeds",
         display_name: "Sesame Seeds",
         category: "nut_seed",
-        aliases: ["sesame", "toasted sesame seeds", "unhulled sesame seeds", "hulled sesame seeds"],
+        aliases: [
+          "sesame",
+          "toasted sesame seeds",
+          "unhulled sesame seeds",
+          "hulled sesame seeds"
+        ],
         is_allergen: true,
         allergen_groups: ["sesame"],
         dietary_flags: ["vegan", "vegetarian", "gluten_free", "dairy_free"]
@@ -257,15 +262,32 @@ defmodule Controlcopypasta.Repo.Migrations.AddMissingHighPriorityIngredients do
 
   def down do
     ingredients_to_remove = [
-      "sesame seeds", "white sesame seeds", "black sesame seeds",
-      "peas", "frozen peas", "snow peas", "sugar snap peas",
-      "black peppercorns", "white peppercorns", "pink peppercorns", "szechuan peppercorns",
-      "xanthan gum", "guar gum",
-      "white beans", "cannellini beans", "great northern beans", "navy beans",
+      "sesame seeds",
+      "white sesame seeds",
+      "black sesame seeds",
+      "peas",
+      "frozen peas",
+      "snow peas",
+      "sugar snap peas",
+      "black peppercorns",
+      "white peppercorns",
+      "pink peppercorns",
+      "szechuan peppercorns",
+      "xanthan gum",
+      "guar gum",
+      "white beans",
+      "cannellini beans",
+      "great northern beans",
+      "navy beans",
       "dried currants",
-      "curry leaves", "kaffir lime leaves",
-      "jalapeño", "pickled jalapeños",
-      "rice wine vinegar", "fish sauce", "mirin", "rice noodles"
+      "curry leaves",
+      "kaffir lime leaves",
+      "jalapeño",
+      "pickled jalapeños",
+      "rice wine vinegar",
+      "fish sauce",
+      "mirin",
+      "rice noodles"
     ]
 
     for name <- ingredients_to_remove do
@@ -274,6 +296,7 @@ defmodule Controlcopypasta.Repo.Migrations.AddMissingHighPriorityIngredients do
   end
 
   defp format_array([]), do: ""
+
   defp format_array(items) do
     items
     |> Enum.map(&"'#{escape_sql(&1)}'")

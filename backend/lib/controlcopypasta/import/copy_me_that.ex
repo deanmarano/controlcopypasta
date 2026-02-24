@@ -80,6 +80,7 @@ defmodule Controlcopypasta.Import.CopyMeThat do
   end
 
   defp normalize_ingredients(nil), do: []
+
   defp normalize_ingredients(ingredients) when is_binary(ingredients) do
     ingredients
     |> String.split("\n")
@@ -87,12 +88,15 @@ defmodule Controlcopypasta.Import.CopyMeThat do
     |> Enum.reject(&(&1 == ""))
     |> Enum.map(&%{"text" => &1, "group" => nil})
   end
+
   defp normalize_ingredients(ingredients) when is_list(ingredients) do
     Enum.map(ingredients, fn
       ingredient when is_binary(ingredient) ->
         %{"text" => String.trim(ingredient), "group" => nil}
+
       %{"text" => _} = ingredient ->
         ingredient
+
       _ ->
         nil
     end)
@@ -100,6 +104,7 @@ defmodule Controlcopypasta.Import.CopyMeThat do
   end
 
   defp normalize_instructions(nil), do: []
+
   defp normalize_instructions(instructions) when is_binary(instructions) do
     instructions
     |> String.split(~r/\n+/)
@@ -112,14 +117,17 @@ defmodule Controlcopypasta.Import.CopyMeThat do
       %{"step" => step, "text" => clean_text}
     end)
   end
+
   defp normalize_instructions(instructions) when is_list(instructions) do
     instructions
     |> Enum.with_index(1)
     |> Enum.map(fn
       {instruction, step} when is_binary(instruction) ->
         %{"step" => step, "text" => String.trim(instruction)}
+
       {%{"text" => _text} = instruction, step} ->
         Map.put(instruction, "step", step)
+
       _ ->
         nil
     end)
@@ -128,6 +136,7 @@ defmodule Controlcopypasta.Import.CopyMeThat do
 
   defp parse_time(nil), do: nil
   defp parse_time(time) when is_integer(time), do: time
+
   defp parse_time(time) when is_binary(time) do
     cond do
       # "1 hour 30 mins" or "1h 30m" - must check this FIRST
@@ -135,7 +144,9 @@ defmodule Controlcopypasta.Import.CopyMeThat do
         case Regex.run(~r/(\d+)\s*h.*?(\d+)\s*m/i, time) do
           [_, hours, minutes | _] ->
             String.to_integer(hours) * 60 + String.to_integer(minutes)
-          _ -> nil
+
+          _ ->
+            nil
         end
 
       # "1 hour", "1 hr", "1h" (hours only)

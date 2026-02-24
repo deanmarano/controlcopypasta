@@ -34,7 +34,8 @@ defmodule Controlcopypasta.Ingredients.SubParsers.RecipeReference do
     texts = tokens |> Enum.map(&String.downcase(&1.text))
     combined = Enum.join(texts, " ")
 
-    has_recipe_reference?(combined) or has_notes_reference?(combined) or has_optional_pattern?(combined)
+    has_recipe_reference?(combined) or has_notes_reference?(combined) or
+      has_optional_pattern?(combined)
   end
 
   defp has_recipe_reference?(text) do
@@ -78,10 +79,11 @@ defmodule Controlcopypasta.Ingredients.SubParsers.RecipeReference do
 
         :skip ->
           # Still return with reference even if base parsing fails
-          {:ok, %ParsedIngredient{
-            original: original,
-            recipe_reference: reference
-          }}
+          {:ok,
+           %ParsedIngredient{
+             original: original,
+             recipe_reference: reference
+           }}
       end
     else
       :skip
@@ -175,12 +177,14 @@ defmodule Controlcopypasta.Ingredients.SubParsers.RecipeReference do
   defp extract_ingredient_name(text) do
     # Remove common reference phrases to get the ingredient name
     text
-    |> String.replace(~r/\s*\(.*?\)\s*/, " ")  # Remove parentheticals
+    # Remove parentheticals
+    |> String.replace(~r/\s*\(.*?\)\s*/, " ")
     |> String.replace(~r/,?\s*(see\s+)?(recipe\s+)?(below|above|follows|following)\s*/i, " ")
     |> String.replace(~r/,?\s*(see\s+)?(the\s+)?notes?\s*/i, " ")
     |> String.replace(~r/,?\s*homemade\s+or\s+store-?bought\s*/i, " ")
     |> String.replace(~r/,?\s*recipe\s+follows\s*/i, " ")
-    |> String.replace(~r/\d+\s*(cups?|tbsps?|tsps?|oz|lbs?)\s*/i, " ")  # Remove quantities
+    # Remove quantities
+    |> String.replace(~r/\d+\s*(cups?|tbsps?|tsps?|oz|lbs?)\s*/i, " ")
     |> String.trim()
     |> String.trim(",")
     |> String.trim()
@@ -192,8 +196,11 @@ defmodule Controlcopypasta.Ingredients.SubParsers.RecipeReference do
 
   defp filter_reference_tokens(tokens) do
     # Remove tokens that are part of the reference phrase
-    reference_words = @below_indicators ++ @above_indicators ++ @notes_indicators ++
-      @recipe_words ++ @see_words ++ @optional_indicators ++ ["or", "(", ")"]
+    reference_words =
+      @below_indicators ++
+        @above_indicators ++
+        @notes_indicators ++
+        @recipe_words ++ @see_words ++ @optional_indicators ++ ["or", "(", ")"]
 
     Enum.reject(tokens, fn token ->
       String.downcase(token.text) in reference_words or

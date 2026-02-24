@@ -101,11 +101,13 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
   def can_combine?(item1, item2) do
     cond do
       # Same canonical ingredient ID
-      item1.canonical_ingredient_id && item1.canonical_ingredient_id == item2.canonical_ingredient_id ->
+      item1.canonical_ingredient_id &&
+          item1.canonical_ingredient_id == item2.canonical_ingredient_id ->
         true
 
       # Same canonical name
-      item1.canonical_name && normalize_name(item1.canonical_name) == normalize_name(item2.canonical_name) ->
+      item1.canonical_name &&
+          normalize_name(item1.canonical_name) == normalize_name(item2.canonical_name) ->
         true
 
       # Similar raw names
@@ -132,17 +134,33 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
         {:incompatible, "Cannot combine items without units"}
 
       true ->
-        case combine(existing_item.quantity, existing_item.unit, new_item_attrs[:quantity], new_item_attrs[:unit]) do
+        case combine(
+               existing_item.quantity,
+               existing_item.unit,
+               new_item_attrs[:quantity],
+               new_item_attrs[:unit]
+             ) do
           {:ok, {new_qty, new_unit}} ->
-            source_ids = merge_source_ids(existing_item.source_recipe_ids, new_item_attrs[:source_recipe_ids])
-            new_display = format_display_text(new_qty, new_unit, existing_item.canonical_name || existing_item.raw_name)
+            source_ids =
+              merge_source_ids(
+                existing_item.source_recipe_ids,
+                new_item_attrs[:source_recipe_ids]
+              )
 
-            {:ok, %{
-              quantity: new_qty,
-              unit: new_unit,
-              display_text: new_display,
-              source_recipe_ids: source_ids
-            }}
+            new_display =
+              format_display_text(
+                new_qty,
+                new_unit,
+                existing_item.canonical_name || existing_item.raw_name
+              )
+
+            {:ok,
+             %{
+               quantity: new_qty,
+               unit: new_unit,
+               display_text: new_display,
+               source_recipe_ids: source_ids
+             }}
 
           {:incompatible, reason} ->
             {:incompatible, reason}
@@ -192,13 +210,14 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
 
   defp find_best_unit(value, unit_order) do
     # Find the largest unit where the result is >= 1
+    # Fall back to smallest unit
     Enum.find_value(unit_order, fn {unit, factor} ->
       converted = Decimal.div(value, SafeDecimal.from_number(factor))
+
       if Decimal.compare(converted, Decimal.new(1)) in [:gt, :eq] do
         {unit, round_decimal(converted)}
       end
     end) ||
-      # Fall back to smallest unit
       case List.last(unit_order) do
         {unit, factor} ->
           {unit, round_decimal(Decimal.div(value, SafeDecimal.from_number(factor)))}
@@ -208,6 +227,7 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
   defp round_decimal(d) do
     # Round to 2 decimal places, but show as integer if whole number
     rounded = Decimal.round(d, 2)
+
     if Decimal.equal?(rounded, Decimal.round(rounded, 0)) do
       Decimal.round(rounded, 0)
     else
@@ -220,11 +240,11 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
     n2 = normalize_name(name2)
 
     # Exact match
+    # One contains the other
+    # Remove common suffixes and compare
     n1 == n2 ||
-      # One contains the other
       String.contains?(n1, n2) ||
       String.contains?(n2, n1) ||
-      # Remove common suffixes and compare
       strip_plurals(n1) == strip_plurals(n2)
   end
 
@@ -251,5 +271,6 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
     |> Decimal.to_string(:normal)
     |> String.replace(~r/\.0+$/, "")
   end
+
   defp format_quantity(n), do: to_string(n)
 end

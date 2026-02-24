@@ -44,7 +44,9 @@ defmodule Mix.Tasks.ExportRecipeFixture do
         export(email, output_path)
 
       _ ->
-        Mix.shell().error("Usage: mix export_recipe_fixture <email> <output_path> [--database-url <url>]")
+        Mix.shell().error(
+          "Usage: mix export_recipe_fixture <email> <output_path> [--database-url <url>]"
+        )
     end
   end
 

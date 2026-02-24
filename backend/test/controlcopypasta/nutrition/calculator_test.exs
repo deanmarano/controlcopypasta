@@ -146,7 +146,9 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
       assert get_value(result.total.carbohydrates_g) > 0
 
       # Check per-serving values are reasonable (total / servings)
-      assert_in_delta get_value(result.per_serving.calories), get_value(result.total.calories) / 12, 1.0
+      assert_in_delta get_value(result.per_serving.calories),
+                      get_value(result.total.calories) / 12,
+                      1.0
     end
 
     test "handles unmatched ingredients gracefully", %{user: user} do
@@ -211,7 +213,9 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
       result = Calculator.calculate_recipe_nutrition(recipe)
 
       # Should have warning about missing density
-      nodensity_result = Enum.find(result.ingredients, &String.contains?(&1.original, "nodensity"))
+      nodensity_result =
+        Enum.find(result.ingredients, &String.contains?(&1.original, "nodensity"))
+
       assert nodensity_result.status == :no_density
     end
 
@@ -255,7 +259,10 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
 
       # Different per-serving
       assert result_override.servings == 8
-      assert_in_delta get_value(result_override.per_serving.calories), get_value(result_default.per_serving.calories) / 2, 1.0
+
+      assert_in_delta get_value(result_override.per_serving.calories),
+                      get_value(result_default.per_serving.calories) / 2,
+                      1.0
     end
 
     test "parses various serving formats", %{user: user} do
@@ -277,7 +284,9 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
           })
 
         result = Calculator.calculate_recipe_nutrition(recipe)
-        assert result.servings == expected_servings, "Expected #{expected_servings} for '#{servings_str}', got #{result.servings}"
+
+        assert result.servings == expected_servings,
+               "Expected #{expected_servings} for '#{servings_str}', got #{result.servings}"
       end
     end
   end
@@ -318,7 +327,8 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
 
       assert result.status == :calculated
       # grams is now a Range struct
-      assert result.grams.best == 250.0  # 2 cups * 125g/cup
+      # 2 cups * 125g/cup
+      assert result.grams.best == 250.0
 
       # Scaled from per-100g values (now returned as Range)
       # 250g / 100g * 364 cal = 910 cal

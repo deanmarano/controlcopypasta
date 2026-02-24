@@ -50,7 +50,10 @@ defmodule Mix.Tasks.ParseIngredients do
 
     recipes = Repo.all(query)
     total = length(recipes)
-    IO.puts("Found #{total} recipes with unparsed ingredients#{if limit, do: " (limited to #{limit})", else: ""}")
+
+    IO.puts(
+      "Found #{total} recipes with unparsed ingredients#{if limit, do: " (limited to #{limit})", else: ""}"
+    )
 
     if dry_run do
       IO.puts("Dry run - no changes will be saved")
@@ -103,10 +106,10 @@ defmodule Mix.Tasks.ParseIngredients do
 
         all_parsed =
           length(parsed_ingredients) > 0 and
-          Enum.all?(parsed_ingredients, fn ing ->
-            (ing["canonical_id"] != nil and ing["canonical_id"] != "") or
-            ing["skipped"] == true
-          end)
+            Enum.all?(parsed_ingredients, fn ing ->
+              (ing["canonical_id"] != nil and ing["canonical_id"] != "") or
+                ing["skipped"] == true
+            end)
 
         recipe
         |> Ecto.Changeset.change(%{

@@ -149,7 +149,9 @@ defmodule Controlcopypasta.Accounts do
       {:ok, avoidance}
     else
       avoidance
-      |> AvoidedIngredient.changeset(%{exceptions: [canonical_ingredient_id | current_exceptions]})
+      |> AvoidedIngredient.changeset(%{
+        exceptions: [canonical_ingredient_id | current_exceptions]
+      })
       |> Repo.update()
     end
   end
@@ -219,7 +221,9 @@ defmodule Controlcopypasta.Accounts do
         MapSet.new()
       else
         Enum.reduce(category_avoidances, MapSet.new(), fn avoidance, acc ->
-          category_ingredient_ids = Ingredients.list_canonical_ids_by_categories([avoidance.category])
+          category_ingredient_ids =
+            Ingredients.list_canonical_ids_by_categories([avoidance.category])
+
           exceptions = MapSet.new(avoidance.exceptions || [])
           filtered_ids = MapSet.difference(category_ingredient_ids, exceptions)
           MapSet.union(acc, filtered_ids)
@@ -232,7 +236,9 @@ defmodule Controlcopypasta.Accounts do
         MapSet.new()
       else
         Enum.reduce(allergen_avoidances, MapSet.new(), fn avoidance, acc ->
-          allergen_ingredient_ids = Ingredients.list_canonical_ids_by_allergen_groups([avoidance.allergen_group])
+          allergen_ingredient_ids =
+            Ingredients.list_canonical_ids_by_allergen_groups([avoidance.allergen_group])
+
           exceptions = MapSet.new(avoidance.exceptions || [])
           filtered_ids = MapSet.difference(allergen_ingredient_ids, exceptions)
           MapSet.union(acc, filtered_ids)
@@ -245,7 +251,9 @@ defmodule Controlcopypasta.Accounts do
         MapSet.new()
       else
         Enum.reduce(animal_avoidances, MapSet.new(), fn avoidance, acc ->
-          animal_ingredient_ids = Ingredients.list_canonical_ids_by_animal_types([avoidance.animal_type])
+          animal_ingredient_ids =
+            Ingredients.list_canonical_ids_by_animal_types([avoidance.animal_type])
+
           exceptions = MapSet.new(avoidance.exceptions || [])
           filtered_ids = MapSet.difference(animal_ingredient_ids, exceptions)
           MapSet.union(acc, filtered_ids)
@@ -266,7 +274,9 @@ defmodule Controlcopypasta.Accounts do
   """
   def complete_onboarding(%User{} = user) do
     user
-    |> User.preferences_changeset(%{onboarding_completed_at: DateTime.utc_now() |> DateTime.truncate(:second)})
+    |> User.preferences_changeset(%{
+      onboarding_completed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
     |> Repo.update()
   end
 
@@ -296,10 +306,16 @@ defmodule Controlcopypasta.Accounts do
           end
 
         case result do
-          {:ok, record} -> record
+          {:ok, record} ->
+            record
+
           # Skip duplicates
-          {:error, %Ecto.Changeset{errors: [{_, {_, [constraint: :unique, constraint_name: _]}} | _]}} -> nil
-          {:error, _} -> nil
+          {:error,
+           %Ecto.Changeset{errors: [{_, {_, [constraint: :unique, constraint_name: _]}} | _]}} ->
+            nil
+
+          {:error, _} ->
+            nil
         end
       end)
       |> Enum.reject(&is_nil/1)

@@ -54,7 +54,10 @@ defmodule ControlcopypastaWeb.AvoidedIngredientJSON do
 
   defp maybe_add_category_field(base, _item), do: base
 
-  defp maybe_add_allergen_field(base, %{avoidance_type: "allergen", allergen_group: allergen_group} = item) do
+  defp maybe_add_allergen_field(
+         base,
+         %{avoidance_type: "allergen", allergen_group: allergen_group} = item
+       ) do
     base
     |> Map.put(:allergen_group, allergen_group)
     |> Map.put(:exceptions, item.exceptions || [])

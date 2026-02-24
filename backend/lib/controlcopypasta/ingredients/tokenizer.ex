@@ -81,18 +81,50 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   # Notes/instructions that aren't part of the ingredient
   @notes ~w(optional divided)
   @note_phrases [
-    "to taste", "as needed", "for serving", "for garnish", "for topping",
-    "for sprinkling", "for dusting", "for dipping", "for drizzling", "for coating",
-    "for brushing", "for frying", "for greasing", "for finishing",
-    "plus more", "or more", "or less", "or to taste",
-    "at room temperature", "at room temp",
-    "reserved from above", "recipe above", "from above",
-    "recipe below", "recipe follows", "homemade recipe below",
-    "if lumpy", "if needed", "if necessary", "if desired", "if grilling",
-    "if you have them", "if you have it", "if you like", "if you want",
-    "if available", "if using", "if making",
-    "your choice", "any flavor", "any color", "any kind",
-    "shaken well", "well shaken"
+    "to taste",
+    "as needed",
+    "for serving",
+    "for garnish",
+    "for topping",
+    "for sprinkling",
+    "for dusting",
+    "for dipping",
+    "for drizzling",
+    "for coating",
+    "for brushing",
+    "for frying",
+    "for greasing",
+    "for finishing",
+    "plus more",
+    "or more",
+    "or less",
+    "or to taste",
+    "at room temperature",
+    "at room temp",
+    "reserved from above",
+    "recipe above",
+    "from above",
+    "recipe below",
+    "recipe follows",
+    "homemade recipe below",
+    "if lumpy",
+    "if needed",
+    "if necessary",
+    "if desired",
+    "if grilling",
+    "if you have them",
+    "if you have it",
+    "if you like",
+    "if you want",
+    "if available",
+    "if using",
+    "if making",
+    "your choice",
+    "any flavor",
+    "any color",
+    "any kind",
+    "shaken well",
+    "well shaken"
   ]
 
   # Parts of ingredients that are often removed (seeds, ribs, stems, etc.)
@@ -176,7 +208,8 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
       has_word_before = Enum.any?(tokens_before, &(&1.label == :word))
 
       # Also check for modifier before (e.g., "fresh cloves", "dried cloves")
-      has_modifier_before = tokens_before
+      has_modifier_before =
+        tokens_before
         |> Enum.reverse()
         |> Enum.take_while(&(&1.label in [:mod, :qty]))
         |> Enum.any?(&(&1.label == :mod))
@@ -201,7 +234,8 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
 
   # "seeds" after an ingredient word should be part of the name ("poppy seeds", "sesame seeds")
   # But "seeds removed" or "seeds, ribs removed" should keep seeds as :part
-  defp should_relabel_part_as_word?(%Token{label: :part, text: text}, tokens, idx) when text in ["seeds", "peel"] do
+  defp should_relabel_part_as_word?(%Token{label: :part, text: text}, tokens, idx)
+       when text in ["seeds", "peel"] do
     # Check what comes before
     tokens_before = Enum.take(tokens, idx)
     prev_token = List.last(tokens_before)
@@ -241,7 +275,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
         # If followed by a word that's part of a compound ingredient name
         next_token != nil and
           next_token.label == :word and
-          String.downcase(next_token.text) in @compound_qty_followers ->
+            String.downcase(next_token.text) in @compound_qty_followers ->
           true
 
         true ->
@@ -259,6 +293,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     case tokens do
       [%Token{text: and_text}, %Token{text: half_text} | _] ->
         String.downcase(and_text) == "and" and String.downcase(half_text) == "half"
+
       _ ->
         false
     end
@@ -306,10 +341,12 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     # Get tokens before "in" or "such as" for ingredient extraction
     # These introduce storage medium or examples, not ingredient names
     stop_labels = [:prep_in, :example_intro]
-    main_tokens = case Enum.find_index(tokens, &(&1.label in stop_labels)) do
-      nil -> tokens
-      idx -> Enum.take(tokens, idx)
-    end
+
+    main_tokens =
+      case Enum.find_index(tokens, &(&1.label in stop_labels)) do
+        nil -> tokens
+        idx -> Enum.take(tokens, idx)
+      end
 
     # Identify and expand "or" patterns only in main tokens (not in examples/storage)
     expanded_tokens = expand_or_patterns(main_tokens)
@@ -345,7 +382,8 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   # Find and analyze "or" patterns in tokens
   defp find_or_pattern(tokens) do
     # Find position of "or" conjunction
-    or_positions = tokens
+    or_positions =
+      tokens
       |> Enum.with_index()
       |> Enum.filter(fn {t, _} -> t.label == :conj and t.text == "or" end)
       |> Enum.map(fn {_, idx} -> idx end)
@@ -374,8 +412,9 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
       # Pattern: "X or Y Z" where Z is shared (e.g., "avocado oil or coconut oil")
       # Both sides end with the same word(s)
       length(words_before) >= 2 and length(words_after) >= 2 and
-        List.last(words_before) == List.last(words_after) ->
+          List.last(words_before) == List.last(words_after) ->
         shared_suffix = find_shared_suffix(words_before, words_after)
+
         %{
           type: :shared_suffix,
           alternatives: [
@@ -390,6 +429,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
       length(words_before) == 1 and length(words_after) >= 2 ->
         [adj | rest] = words_after
         noun = Enum.join(rest, " ")
+
         %{
           type: :shared_noun,
           alternatives: [
@@ -460,11 +500,15 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     |> String.trim()
     |> String.downcase()
     |> normalize_unicode_fractions()
-    |> String.replace("–", "-")  # Normalize en-dash
-    |> String.replace("—", "-")  # Normalize em-dash
-    |> normalize_range_patterns()  # "1 -2" or "1 - 2" -> "1-2"
+    # Normalize en-dash
+    |> String.replace("–", "-")
+    # Normalize em-dash
+    |> String.replace("—", "-")
+    # "1 -2" or "1 - 2" -> "1-2"
+    |> normalize_range_patterns()
     |> mark_note_phrases()
-    |> split_attached_metric()  # "400g" -> "400 g", "200ml" -> "200 ml"
+    # "400g" -> "400 g", "200ml" -> "200 ml"
+    |> split_attached_metric()
     |> String.replace(~r/\s+/, " ")
   end
 
@@ -494,11 +538,21 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   end
 
   @unicode_fractions %{
-    "½" => "1/2", "⅓" => "1/3", "⅔" => "2/3",
-    "¼" => "1/4", "¾" => "3/4",
-    "⅕" => "1/5", "⅖" => "2/5", "⅗" => "3/5", "⅘" => "4/5",
-    "⅙" => "1/6", "⅚" => "5/6",
-    "⅛" => "1/8", "⅜" => "3/8", "⅝" => "5/8", "⅞" => "7/8"
+    "½" => "1/2",
+    "⅓" => "1/3",
+    "⅔" => "2/3",
+    "¼" => "1/4",
+    "¾" => "3/4",
+    "⅕" => "1/5",
+    "⅖" => "2/5",
+    "⅗" => "3/5",
+    "⅘" => "4/5",
+    "⅙" => "1/6",
+    "⅚" => "5/6",
+    "⅛" => "1/8",
+    "⅜" => "3/8",
+    "⅝" => "5/8",
+    "⅞" => "7/8"
   }
 
   defp normalize_unicode_fractions(text) do
@@ -534,7 +588,8 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   end
 
   @punctuation [",", ";", "(", ")", "+"]
-  @qty_connectors ["plus"]  # Words that connect quantities (like "+")
+  # Words that connect quantities (like "+")
+  @qty_connectors ["plus"]
 
   defp classify_token(text) do
     # Strip trailing period for unit matching
@@ -543,52 +598,37 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     cond do
       # Punctuation (including + for compound quantities)
       text in @punctuation -> :punct
-
       # Quantity connectors (words that act like + between quantities)
       String.downcase(text) in @qty_connectors -> :punct
-
       # Note phrase markers (shouldn't reach here normally, but just in case)
       String.starts_with?(text, "__NOTE_") -> :note
-
       # Quantity patterns
       is_quantity?(text) -> :qty
-
       # Size pattern (e.g., "14-oz", "15-ounce")
       is_size?(text) -> :size
-
       # Units (check both with and without trailing period)
       String.downcase(text) in @units -> :unit
       String.downcase(text_clean) in @units -> :unit
-
       # Containers
       String.downcase(text) in @containers -> :container
-
       # Preparations
       MapSet.member?(ParserCache.preparations(), String.downcase(text)) -> :prep
-
       # Modifiers
       String.downcase(text) in @modifiers -> :mod
-
       # Conjunctions
       String.downcase(text) in @conjunctions -> :conj
-
       # Notes (single-word notes)
       String.downcase(text) in @notes -> :note
-
       # "in" is a preposition that often starts a storage/packing phrase
       String.downcase(text) == "in" -> :prep_in
-
       # "such" and "preferably" start example phrases - these aren't ingredient names
       String.downcase(text) in ["such", "preferably"] -> :example_intro
-
       # Removable parts (seeds, ribs, etc.) - usually part of prep instructions
       String.downcase(text) in @removable_parts -> :part
-
       # Metric weights like "113g", "30ml" - these appear in parentheses as
       # metric equivalents (e.g., "1 cup (113g) flour") and should not be
       # extracted as ingredient names
       is_metric_weight?(text) -> :metric_weight
-
       # Default - likely part of ingredient name
       true -> :word
     end
@@ -596,16 +636,30 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
 
   # Written numbers map
   @written_numbers %{
-    "one" => 1, "two" => 2, "three" => 3, "four" => 4, "five" => 5,
-    "six" => 6, "seven" => 7, "eight" => 8, "nine" => 9, "ten" => 10,
-    "eleven" => 11, "twelve" => 12, "a" => 1, "an" => 1,
-    "half" => 0.5, "quarter" => 0.25, "third" => 0.333
+    "one" => 1,
+    "two" => 2,
+    "three" => 3,
+    "four" => 4,
+    "five" => 5,
+    "six" => 6,
+    "seven" => 7,
+    "eight" => 8,
+    "nine" => 9,
+    "ten" => 10,
+    "eleven" => 11,
+    "twelve" => 12,
+    "a" => 1,
+    "an" => 1,
+    "half" => 0.5,
+    "quarter" => 0.25,
+    "third" => 0.333
   }
 
   # Quantity detection
   defp is_quantity?(text) do
     # Matches: 1, 2.5, 1/2, 1-2, 2-3 OR written numbers (one, two, etc.)
     downcased = String.downcase(text)
+
     Regex.match?(~r/^\d+([.,]\d+)?(\/\d+)?(-\d+([.,]\d+)?(\/\d+)?)?$/, text) or
       Map.has_key?(@written_numbers, downcased)
   end
@@ -684,7 +738,9 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   def extract_storage_medium(tokens) do
     # Find "in" token and get words after it
     case Enum.find_index(tokens, &(&1.label == :prep_in)) do
-      nil -> nil
+      nil ->
+        nil
+
       idx ->
         tokens
         |> Enum.drop(idx + 1)

@@ -12,7 +12,9 @@ defmodule ControlcopypastaWeb.DashboardController do
     user = conn.assigns.current_user
     avoided_params = build_avoided_params(user)
 
-    dinner_task = Task.async(fn -> Recipes.dinner_recipes_for_user(user.id, 6, avoided_params) end)
+    dinner_task =
+      Task.async(fn -> Recipes.dinner_recipes_for_user(user.id, 6, avoided_params) end)
+
     recent_task = Task.async(fn -> Recipes.recent_recipes_for_user(user.id, 6) end)
     last_year_task = Task.async(fn -> Recipes.this_time_last_year_for_user(user.id, 6) end)
     maybe_task = Task.async(fn -> Quicklist.maybe_count(user.id) end)

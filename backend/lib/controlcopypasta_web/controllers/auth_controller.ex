@@ -122,6 +122,7 @@ defmodule ControlcopypastaWeb.AuthController do
 
       user ->
         alias ControlcopypastaWeb.Plugs.AdminAuth
+
         json(conn, %{
           user: %{
             id: user.id,

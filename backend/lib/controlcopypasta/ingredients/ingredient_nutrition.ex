@@ -148,17 +148,48 @@ defmodule Controlcopypasta.Ingredients.IngredientNutrition do
 
   @required_fields [:canonical_ingredient_id, :source, :serving_size_value, :serving_size_unit]
   @optional_fields [
-    :source_id, :source_name, :source_url, :serving_description,
-    :calories, :protein_g, :fat_total_g, :fat_saturated_g, :fat_trans_g,
-    :fat_polyunsaturated_g, :fat_monounsaturated_g, :carbohydrates_g,
-    :fiber_g, :sugar_g, :sugar_added_g,
-    :sodium_mg, :potassium_mg, :calcium_mg, :iron_mg, :magnesium_mg,
-    :phosphorus_mg, :zinc_mg,
-    :vitamin_a_mcg, :vitamin_c_mg, :vitamin_d_mcg, :vitamin_e_mg, :vitamin_k_mcg,
-    :vitamin_b6_mg, :vitamin_b12_mcg, :folate_mcg, :thiamin_mg, :riboflavin_mg, :niacin_mg,
-    :cholesterol_mg, :water_g,
-    :is_primary, :verified_at, :notes,
-    :confidence, :confidence_factors, :retrieved_at, :last_checked_at
+    :source_id,
+    :source_name,
+    :source_url,
+    :serving_description,
+    :calories,
+    :protein_g,
+    :fat_total_g,
+    :fat_saturated_g,
+    :fat_trans_g,
+    :fat_polyunsaturated_g,
+    :fat_monounsaturated_g,
+    :carbohydrates_g,
+    :fiber_g,
+    :sugar_g,
+    :sugar_added_g,
+    :sodium_mg,
+    :potassium_mg,
+    :calcium_mg,
+    :iron_mg,
+    :magnesium_mg,
+    :phosphorus_mg,
+    :zinc_mg,
+    :vitamin_a_mcg,
+    :vitamin_c_mg,
+    :vitamin_d_mcg,
+    :vitamin_e_mg,
+    :vitamin_k_mcg,
+    :vitamin_b6_mg,
+    :vitamin_b12_mcg,
+    :folate_mcg,
+    :thiamin_mg,
+    :riboflavin_mg,
+    :niacin_mg,
+    :cholesterol_mg,
+    :water_g,
+    :is_primary,
+    :verified_at,
+    :notes,
+    :confidence,
+    :confidence_factors,
+    :retrieved_at,
+    :last_checked_at
   ]
 
   @valid_units ~w(g mg ml oz lb cup tbsp tsp serving piece)
@@ -179,9 +210,19 @@ defmodule Controlcopypasta.Ingredients.IngredientNutrition do
 
   defp validate_non_negative_nutrients(changeset) do
     nutrient_fields = [
-      :calories, :protein_g, :fat_total_g, :fat_saturated_g, :fat_trans_g,
-      :carbohydrates_g, :fiber_g, :sugar_g, :sodium_mg, :potassium_mg,
-      :calcium_mg, :iron_mg, :cholesterol_mg
+      :calories,
+      :protein_g,
+      :fat_total_g,
+      :fat_saturated_g,
+      :fat_trans_g,
+      :carbohydrates_g,
+      :fiber_g,
+      :sugar_g,
+      :sodium_mg,
+      :potassium_mg,
+      :calcium_mg,
+      :iron_mg,
+      :cholesterol_mg
     ]
 
     Enum.reduce(nutrient_fields, changeset, fn field, cs ->
@@ -220,14 +261,37 @@ defmodule Controlcopypasta.Ingredients.IngredientNutrition do
   """
   def all_nutrient_fields do
     [
-      :calories, :protein_g, :fat_total_g, :fat_saturated_g, :fat_trans_g,
-      :fat_polyunsaturated_g, :fat_monounsaturated_g, :carbohydrates_g,
-      :fiber_g, :sugar_g, :sugar_added_g,
-      :sodium_mg, :potassium_mg, :calcium_mg, :iron_mg, :magnesium_mg,
-      :phosphorus_mg, :zinc_mg,
-      :vitamin_a_mcg, :vitamin_c_mg, :vitamin_d_mcg, :vitamin_e_mg, :vitamin_k_mcg,
-      :vitamin_b6_mg, :vitamin_b12_mcg, :folate_mcg, :thiamin_mg, :riboflavin_mg, :niacin_mg,
-      :cholesterol_mg, :water_g
+      :calories,
+      :protein_g,
+      :fat_total_g,
+      :fat_saturated_g,
+      :fat_trans_g,
+      :fat_polyunsaturated_g,
+      :fat_monounsaturated_g,
+      :carbohydrates_g,
+      :fiber_g,
+      :sugar_g,
+      :sugar_added_g,
+      :sodium_mg,
+      :potassium_mg,
+      :calcium_mg,
+      :iron_mg,
+      :magnesium_mg,
+      :phosphorus_mg,
+      :zinc_mg,
+      :vitamin_a_mcg,
+      :vitamin_c_mg,
+      :vitamin_d_mcg,
+      :vitamin_e_mg,
+      :vitamin_k_mcg,
+      :vitamin_b6_mg,
+      :vitamin_b12_mcg,
+      :folate_mcg,
+      :thiamin_mg,
+      :riboflavin_mg,
+      :niacin_mg,
+      :cholesterol_mg,
+      :water_g
     ]
   end
 
@@ -307,6 +371,7 @@ defmodule Controlcopypasta.Ingredients.IngredientNutrition do
   end
 
   defp calculate_staleness_penalty(nil), do: Decimal.new("0.20")
+
   defp calculate_staleness_penalty(last_checked_at) do
     days_since = DateTime.diff(DateTime.utc_now(), last_checked_at, :day)
 

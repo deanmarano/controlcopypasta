@@ -20,7 +20,15 @@ defmodule Controlcopypasta.Accounts.Passkey do
 
   def changeset(passkey, attrs) do
     passkey
-    |> cast(attrs, [:credential_id, :public_key, :sign_count, :name, :aaguid, :transports, :user_id])
+    |> cast(attrs, [
+      :credential_id,
+      :public_key,
+      :sign_count,
+      :name,
+      :aaguid,
+      :transports,
+      :user_id
+    ])
     |> validate_required([:credential_id, :public_key, :user_id])
     |> unique_constraint(:credential_id)
     |> foreign_key_constraint(:user_id)

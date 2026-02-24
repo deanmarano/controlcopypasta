@@ -20,11 +20,9 @@ defmodule Controlcopypasta.Parser.MealTypeMapper do
   }
 
   # Build a reverse lookup: lowercased term -> tag name
-  @reverse_lookup (
-    for {tag, terms} <- @tag_mappings, term <- terms, into: %{} do
-      {term, tag}
-    end
-  )
+  @reverse_lookup (for {tag, terms} <- @tag_mappings, term <- terms, into: %{} do
+                     {term, tag}
+                   end)
 
   @doc """
   Given lists of category and keyword terms from JSON-LD,

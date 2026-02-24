@@ -4,20 +4,29 @@ defmodule Controlcopypasta.Repo.Migrations.DecodeAdditionalHtmlEntities do
   def up do
     # Numeric fraction entities
     execute ~s|UPDATE recipes SET title = REPLACE(title, '&#188;', '¼') WHERE title LIKE '%&#188;%';|
+
     execute ~s|UPDATE recipes SET title = REPLACE(title, '&#189;', '½') WHERE title LIKE '%&#189;%';|
+
     execute ~s|UPDATE recipes SET title = REPLACE(title, '&#190;', '¾') WHERE title LIKE '%&#190;%';|
 
     # Named fraction entities
     execute ~s|UPDATE recipes SET title = REPLACE(title, '&frac14;', '¼') WHERE title LIKE '%&frac14;%';|
+
     execute ~s|UPDATE recipes SET title = REPLACE(title, '&frac12;', '½') WHERE title LIKE '%&frac12;%';|
+
     execute ~s|UPDATE recipes SET title = REPLACE(title, '&frac34;', '¾') WHERE title LIKE '%&frac34;%';|
 
     # Other common entities in titles
     execute ~s|UPDATE recipes SET title = REPLACE(title, '&#233;', 'é') WHERE title LIKE '%&#233;%';|
+
     execute ~s|UPDATE recipes SET title = REPLACE(title, '&eacute;', 'é') WHERE title LIKE '%&eacute;%';|
+
     execute ~s|UPDATE recipes SET title = REPLACE(title, '&#8211;', '–') WHERE title LIKE '%&#8211;%';|
+
     execute ~s|UPDATE recipes SET title = REPLACE(title, '&#8230;', '…') WHERE title LIKE '%&#8230;%';|
+
     execute ~s|UPDATE recipes SET title = REPLACE(title, '&nbsp;', ' ') WHERE title LIKE '%&nbsp;%';|
+
     execute ~s|UPDATE recipes SET title = REPLACE(title, '&deg;', '°') WHERE title LIKE '%&deg;%';|
 
     # JSONB fields - ingredients

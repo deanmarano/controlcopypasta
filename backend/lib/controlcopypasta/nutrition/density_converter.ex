@@ -93,18 +93,30 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
   # Category average densities (grams per cup) as fallbacks
   # These are rough averages when ingredient-specific data isn't available
   @category_densities %{
-    "grain" => 130.0,      # flour, rice, oats average
-    "sweetener" => 200.0,  # sugar average
-    "dairy" => 240.0,      # milk-like liquids
-    "oil" => 218.0,        # oils average
-    "produce" => 150.0,    # chopped vegetables average
-    "spice" => 6.0,        # ground spices (per tbsp: ~2.5g, so cup: ~40g, but we store per cup)
-    "herb" => 30.0,        # fresh herbs, loosely packed
-    "nut" => 140.0,        # chopped nuts average
-    "legume" => 180.0,     # cooked beans average
-    "protein" => 140.0,    # diced meat average
-    "condiment" => 250.0,  # liquid condiments average
-    "other" => 150.0       # generic fallback
+    # flour, rice, oats average
+    "grain" => 130.0,
+    # sugar average
+    "sweetener" => 200.0,
+    # milk-like liquids
+    "dairy" => 240.0,
+    # oils average
+    "oil" => 218.0,
+    # chopped vegetables average
+    "produce" => 150.0,
+    # ground spices (per tbsp: ~2.5g, so cup: ~40g, but we store per cup)
+    "spice" => 6.0,
+    # fresh herbs, loosely packed
+    "herb" => 30.0,
+    # chopped nuts average
+    "nut" => 140.0,
+    # cooked beans average
+    "legume" => 180.0,
+    # diced meat average
+    "protein" => 140.0,
+    # liquid condiments average
+    "condiment" => 250.0,
+    # generic fallback
+    "other" => 150.0
   }
 
   # Water-based liquid densities (grams per unit)
@@ -260,7 +272,8 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
   """
   def to_grams_range(canonical_id, qty, qty_min, qty_max, unit, opts \\ [])
 
-  def to_grams_range(_canonical_id, nil, _qty_min, _qty_max, _unit, _opts), do: {:error, :no_quantity}
+  def to_grams_range(_canonical_id, nil, _qty_min, _qty_max, _unit, _opts),
+    do: {:error, :no_quantity}
 
   # Handle nil/count units (e.g., "3 eggs" with no unit)
   def to_grams_range(canonical_id, qty, qty_min, qty_max, nil, opts) do
@@ -285,7 +298,15 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
       # Count units (each, whole, etc.)
       count_unit?(normalized_unit) ->
         canonical_count_unit = Map.get(@count_unit_canonical, normalized_unit, "each")
-        convert_count_to_grams_range(canonical_id, qty, qty_min, qty_max, canonical_count_unit, opts)
+
+        convert_count_to_grams_range(
+          canonical_id,
+          qty,
+          qty_min,
+          qty_max,
+          canonical_count_unit,
+          opts
+        )
 
       # Unknown unit
       true ->
@@ -300,11 +321,13 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
         {:error, :invalid_unit}
 
       factor ->
-        range = Range.from_range(
-          to_float(qty_min) * factor,
-          to_float(qty) * factor,
-          to_float(qty_max) * factor
-        )
+        range =
+          Range.from_range(
+            to_float(qty_min) * factor,
+            to_float(qty) * factor,
+            to_float(qty_max) * factor
+          )
+
         {:ok, range}
     end
   end
@@ -349,7 +372,15 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
 
           _ ->
             # Standard behavior: try to derive from cup density or category average
-            derive_from_cup_density_range(canonical_id, qty, qty_min, qty_max, unit, canonical_volume_unit, category)
+            derive_from_cup_density_range(
+              canonical_id,
+              qty,
+              qty_min,
+              qty_max,
+              unit,
+              canonical_volume_unit,
+              category
+            )
         end
     end
   end
@@ -364,12 +395,14 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
         if cups_ratio do
           grams_per_cup = @liquid_densities["cup"]
 
-          qty_range = Range.from_range(
-            to_float(qty_min) * cups_ratio * grams_per_cup,
-            to_float(qty) * cups_ratio * grams_per_cup,
-            to_float(qty_max) * cups_ratio * grams_per_cup,
-            0.85  # Lower confidence since we're using water density as approximation
-          )
+          qty_range =
+            Range.from_range(
+              to_float(qty_min) * cups_ratio * grams_per_cup,
+              to_float(qty) * cups_ratio * grams_per_cup,
+              to_float(qty_max) * cups_ratio * grams_per_cup,
+              # Lower confidence since we're using water density as approximation
+              0.85
+            )
 
           {:ok, qty_range}
         else
@@ -377,18 +410,28 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
         end
 
       grams_per_unit ->
-        qty_range = Range.from_range(
-          to_float(qty_min) * grams_per_unit,
-          to_float(qty) * grams_per_unit,
-          to_float(qty_max) * grams_per_unit,
-          0.85  # Lower confidence since we're using water density as approximation
-        )
+        qty_range =
+          Range.from_range(
+            to_float(qty_min) * grams_per_unit,
+            to_float(qty) * grams_per_unit,
+            to_float(qty_max) * grams_per_unit,
+            # Lower confidence since we're using water density as approximation
+            0.85
+          )
 
         {:ok, qty_range}
     end
   end
 
-  defp derive_from_cup_density_range(canonical_id, qty, qty_min, qty_max, _unit, canonical_volume_unit, category) do
+  defp derive_from_cup_density_range(
+         canonical_id,
+         qty,
+         qty_min,
+         qty_max,
+         _unit,
+         canonical_volume_unit,
+         category
+       ) do
     # If we don't have the exact unit, try to find cup density and derive
     case Ingredients.get_any_density(canonical_id, "cup") do
       {:ok, cup_density} ->
@@ -435,14 +478,38 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
       [count_unit, "each", "whole"]
       |> Enum.uniq()
 
-    try_density_range_lookup(canonical_id, qty, qty_min, qty_max, units_to_try, category, canonical_name)
+    try_density_range_lookup(
+      canonical_id,
+      qty,
+      qty_min,
+      qty_max,
+      units_to_try,
+      category,
+      canonical_name
+    )
   end
 
-  defp try_density_range_lookup(_canonical_id, _qty, _qty_min, _qty_max, [], _category, _canonical_name) do
+  defp try_density_range_lookup(
+         _canonical_id,
+         _qty,
+         _qty_min,
+         _qty_max,
+         [],
+         _category,
+         _canonical_name
+       ) do
     {:error, :no_count_density}
   end
 
-  defp try_density_range_lookup(canonical_id, qty, qty_min, qty_max, [unit | rest], category, canonical_name) do
+  defp try_density_range_lookup(
+         canonical_id,
+         qty,
+         qty_min,
+         qty_max,
+         [unit | rest],
+         category,
+         canonical_name
+       ) do
     case Ingredients.get_density(canonical_id, unit, nil) do
       {:ok, density} ->
         grams_per_item = Decimal.to_float(density.grams_per_unit)
@@ -460,7 +527,15 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
         {:ok, grams_range}
 
       {:error, :not_found} ->
-        try_density_range_lookup(canonical_id, qty, qty_min, qty_max, rest, category, canonical_name)
+        try_density_range_lookup(
+          canonical_id,
+          qty,
+          qty_min,
+          qty_max,
+          rest,
+          category,
+          canonical_name
+        )
     end
   end
 
@@ -478,13 +553,14 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
   """
   def batch_to_grams(ingredients) when is_list(ingredients) do
     Enum.map(ingredients, fn ing ->
-      result = to_grams(
-        ing[:canonical_id],
-        ing[:quantity],
-        ing[:unit],
-        preparation: ing[:preparation],
-        category: ing[:category]
-      )
+      result =
+        to_grams(
+          ing[:canonical_id],
+          ing[:quantity],
+          ing[:unit],
+          preparation: ing[:preparation],
+          category: ing[:category]
+        )
 
       Map.put(ing, :grams_result, result)
     end)
@@ -672,11 +748,13 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
   defp to_float(value) when is_float(value), do: value
   defp to_float(value) when is_integer(value), do: value * 1.0
   defp to_float(%Decimal{} = value), do: Decimal.to_float(value)
+
   defp to_float(value) when is_binary(value) do
     case Float.parse(value) do
       {f, _} -> f
       :error -> 0.0
     end
   end
+
   defp to_float(_), do: 0.0
 end

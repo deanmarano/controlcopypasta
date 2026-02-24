@@ -85,8 +85,10 @@ defmodule Controlcopypasta.Repo.Migrations.AddMoreCanonicalIngredients do
         display_name: "Chipotle in Adobo",
         category: "condiment",
         aliases: [
-          "chipotle in adobo sauce", "chipotles in adobo",
-          "chipotle peppers in adobo", "chipotle in adobo, minced"
+          "chipotle in adobo sauce",
+          "chipotles in adobo",
+          "chipotle peppers in adobo",
+          "chipotle in adobo, minced"
         ],
         dietary_flags: ["vegan", "vegetarian", "gluten_free", "dairy_free"]
       },
@@ -126,8 +128,12 @@ defmodule Controlcopypasta.Repo.Migrations.AddMoreCanonicalIngredients do
         display_name: "Oats",
         category: "grain",
         aliases: [
-          "rolled oats", "old-fashioned oats", "quick oats",
-          "instant oats", "oatmeal", "porridge oats"
+          "rolled oats",
+          "old-fashioned oats",
+          "quick oats",
+          "instant oats",
+          "oatmeal",
+          "porridge oats"
         ],
         is_allergen: true,
         allergen_groups: ["gluten"],
@@ -201,10 +207,22 @@ defmodule Controlcopypasta.Repo.Migrations.AddMoreCanonicalIngredients do
 
   def down do
     ingredients_to_remove = [
-      "grapeseed oil", "flax meal", "meringue powder", "barley malt syrup",
-      "turbinado sugar", "granola", "ancho chile powder", "red chile powder",
-      "chili sauce", "chipotle in adobo", "bean sprouts", "brioche",
-      "hoagie roll", "oats", "mexican cheese blend", "shredded cheese"
+      "grapeseed oil",
+      "flax meal",
+      "meringue powder",
+      "barley malt syrup",
+      "turbinado sugar",
+      "granola",
+      "ancho chile powder",
+      "red chile powder",
+      "chili sauce",
+      "chipotle in adobo",
+      "bean sprouts",
+      "brioche",
+      "hoagie roll",
+      "oats",
+      "mexican cheese blend",
+      "shredded cheese"
     ]
 
     for name <- ingredients_to_remove do
@@ -220,6 +238,7 @@ defmodule Controlcopypasta.Repo.Migrations.AddMoreCanonicalIngredients do
   end
 
   defp format_array([]), do: ""
+
   defp format_array(items) do
     items
     |> Enum.map(&"'#{String.replace(&1, "'", "''")}'")

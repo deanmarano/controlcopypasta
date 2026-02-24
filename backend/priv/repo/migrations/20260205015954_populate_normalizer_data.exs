@@ -18,21 +18,25 @@ defmodule Controlcopypasta.Repo.Migrations.PopulateNormalizerData do
       # Skip identity mappings (where variant == canonical_form)
       if variant != canonical_form do
         # Try to set similarity_name on the variant if it exists as a canonical ingredient
-        {rows_updated, _} = repo().query!(
-          "UPDATE canonical_ingredients SET similarity_name = $1 WHERE name = $2 AND similarity_name IS NULL",
-          [canonical_form, variant]
-        ) |> then(fn %{num_rows: n} -> {n, nil} end)
+        {rows_updated, _} =
+          repo().query!(
+            "UPDATE canonical_ingredients SET similarity_name = $1 WHERE name = $2 AND similarity_name IS NULL",
+            [canonical_form, variant]
+          )
+          |> then(fn %{num_rows: n} -> {n, nil} end)
 
         if rows_updated == 0 do
           # Check if variant is an existing alias
-          result = repo().query!(
-            "SELECT id FROM canonical_ingredients WHERE $1 = ANY(aliases) LIMIT 1",
-            [variant]
-          )
+          result =
+            repo().query!(
+              "SELECT id FROM canonical_ingredients WHERE $1 = ANY(aliases) LIMIT 1",
+              [variant]
+            )
 
           if result.num_rows > 0 do
             # Set similarity_name on the owning ingredient
             [[id]] = result.rows
+
             repo().query!(
               "UPDATE canonical_ingredients SET similarity_name = $1 WHERE id = $2 AND similarity_name IS NULL",
               [canonical_form, id]

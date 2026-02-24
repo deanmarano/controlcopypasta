@@ -239,21 +239,24 @@ defmodule ControlcopypastaWeb.RecipeController do
 
       recipe ->
         # Build decisions map from params or user's saved decisions
-        decisions = if map_size(decisions_params) > 0 do
-          decisions_params
-          |> Enum.map(fn {idx, canonical_id} ->
-            {parse_int(idx, 0), %{selected_canonical_id: canonical_id}}
-          end)
-          |> Map.new()
-        else
-          Recipes.get_decisions_map(id, user.id)
-        end
+        decisions =
+          if map_size(decisions_params) > 0 do
+            decisions_params
+            |> Enum.map(fn {idx, canonical_id} ->
+              {parse_int(idx, 0), %{selected_canonical_id: canonical_id}}
+            end)
+            |> Map.new()
+          else
+            Recipes.get_decisions_map(id, user.id)
+          end
 
-        opts = [
-          servings_override: if(servings_override, do: parse_int(servings_override, nil)),
-          decisions: decisions,
-          source: source
-        ] |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+        opts =
+          [
+            servings_override: if(servings_override, do: parse_int(servings_override, nil)),
+            decisions: decisions,
+            source: source
+          ]
+          |> Enum.reject(fn {_k, v} -> is_nil(v) end)
 
         nutrition = Calculator.calculate_recipe_nutrition(recipe, opts)
         render(conn, :nutrition, nutrition: nutrition, recipe: recipe)
@@ -262,6 +265,7 @@ defmodule ControlcopypastaWeb.RecipeController do
 
   # Parse source parameter into atom, default to :composite
   defp parse_source_param(nil), do: :composite
+
   defp parse_source_param(source) when is_binary(source) do
     valid_sources = Calculator.valid_sources() |> Enum.map(&Atom.to_string/1)
 
@@ -271,6 +275,7 @@ defmodule ControlcopypastaWeb.RecipeController do
       :composite
     end
   end
+
   defp parse_source_param(_), do: :composite
 
   defp parse_int(val, default) when is_binary(val) do

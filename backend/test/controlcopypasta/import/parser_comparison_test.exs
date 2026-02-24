@@ -148,8 +148,7 @@ defmodule Controlcopypasta.Import.ParserComparisonTest do
         "name" => "Pasta Carbonara",
         "description" => "Classic Italian pasta",
         "ingredients" => ["400g spaghetti", "200g guanciale", "4 eggs"],
-        "instructions" =>
-          "Cook pasta\nFry guanciale\nMix eggs and cheese\nCombine all",
+        "instructions" => "Cook pasta\nFry guanciale\nMix eggs and cheese\nCombine all",
         "prepTime" => "10 mins",
         "cookTime" => "20 mins"
       }

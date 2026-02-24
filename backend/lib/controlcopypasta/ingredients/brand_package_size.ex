@@ -87,6 +87,7 @@ defmodule Controlcopypasta.Ingredients.BrandPackageSize do
   defp format_size_value(decimal) do
     # Convert to float and format nicely (no trailing zeros)
     float = Decimal.to_float(decimal)
+
     if float == trunc(float) do
       Integer.to_string(trunc(float))
     else

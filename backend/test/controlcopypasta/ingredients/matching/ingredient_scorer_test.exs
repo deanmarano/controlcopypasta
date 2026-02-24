@@ -46,7 +46,8 @@ defmodule Controlcopypasta.Ingredients.Matching.IngredientScorerTest do
 
       result = IngredientScorer.score("boneless skinless chicken breast", rules, 0.9)
 
-      assert_in_delta result.score, 1.0, @epsilon  # clamped to max 1.0
+      # clamped to max 1.0
+      assert_in_delta result.score, 1.0, @epsilon
       assert result.details.boost_count == 2
       assert_in_delta result.details.boost_adjustment, 0.1, @epsilon
     end
@@ -231,10 +232,12 @@ defmodule Controlcopypasta.Ingredients.Matching.IngredientScorerTest do
       [{first_id, first_result}, {second_id, second_result}] = results
 
       assert first_id == "tomato_sauce_id"
-      assert_in_delta first_result.score, 1.0, @epsilon  # 0.9 + 0.1
+      # 0.9 + 0.1
+      assert_in_delta first_result.score, 1.0, @epsilon
 
       assert second_id == "tomato_id"
-      assert_in_delta second_result.score, 0.75, @epsilon  # 0.9 - 0.15
+      # 0.9 - 0.15
+      assert_in_delta second_result.score, 0.75, @epsilon
     end
 
     test "accepts a function for base score" do

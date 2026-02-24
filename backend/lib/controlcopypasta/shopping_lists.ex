@@ -259,6 +259,7 @@ defmodule Controlcopypasta.ShoppingLists do
     |> Decimal.to_string(:normal)
     |> String.replace(~r/\.0+$/, "")
   end
+
   defp format_qty(n), do: to_string(n)
 
   # Ingredient categorization
@@ -273,6 +274,7 @@ defmodule Controlcopypasta.ShoppingLists do
   @beverages_keywords ~w(juice soda water coffee tea wine beer)
 
   defp categorize_ingredient(nil), do: "other"
+
   defp categorize_ingredient(name) do
     name_lower = String.downcase(name)
 

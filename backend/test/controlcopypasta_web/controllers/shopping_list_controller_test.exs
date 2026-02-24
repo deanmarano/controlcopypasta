@@ -142,13 +142,15 @@ defmodule ControlcopypastaWeb.ShoppingListControllerTest do
   describe "POST /api/shopping-lists/:id/add-recipe" do
     test "adds recipe ingredients to list", %{conn: conn, user: user} do
       list = shopping_list_fixture(%{user: user})
-      recipe = recipe_fixture(%{
-        user: user,
-        ingredients: [
-          %{"text" => "2 cups flour"},
-          %{"text" => "1 cup sugar"}
-        ]
-      })
+
+      recipe =
+        recipe_fixture(%{
+          user: user,
+          ingredients: [
+            %{"text" => "2 cups flour"},
+            %{"text" => "1 cup sugar"}
+          ]
+        })
 
       conn = post(conn, ~p"/api/shopping-lists/#{list.id}/add-recipe", %{recipe_id: recipe.id})
       response = json_response(conn, 200)
@@ -158,15 +160,19 @@ defmodule ControlcopypastaWeb.ShoppingListControllerTest do
 
     test "applies scale factor", %{conn: conn, user: user} do
       list = shopping_list_fixture(%{user: user})
-      recipe = recipe_fixture(%{
-        user: user,
-        ingredients: [%{"text" => "1 cup flour"}]
-      })
 
-      conn = post(conn, ~p"/api/shopping-lists/#{list.id}/add-recipe", %{
-        recipe_id: recipe.id,
-        scale: 2.0
-      })
+      recipe =
+        recipe_fixture(%{
+          user: user,
+          ingredients: [%{"text" => "1 cup flour"}]
+        })
+
+      conn =
+        post(conn, ~p"/api/shopping-lists/#{list.id}/add-recipe", %{
+          recipe_id: recipe.id,
+          scale: 2.0
+        })
+
       response = json_response(conn, 200)
 
       item = hd(response["data"]["items"])
@@ -176,9 +182,11 @@ defmodule ControlcopypastaWeb.ShoppingListControllerTest do
     test "returns 404 for non-existent recipe", %{conn: conn, user: user} do
       list = shopping_list_fixture(%{user: user})
 
-      conn = post(conn, ~p"/api/shopping-lists/#{list.id}/add-recipe", %{
-        recipe_id: Ecto.UUID.generate()
-      })
+      conn =
+        post(conn, ~p"/api/shopping-lists/#{list.id}/add-recipe", %{
+          recipe_id: Ecto.UUID.generate()
+        })
+
       assert json_response(conn, 404)
     end
   end
@@ -187,9 +195,11 @@ defmodule ControlcopypastaWeb.ShoppingListControllerTest do
     test "creates item manually", %{conn: conn, user: user} do
       list = shopping_list_fixture(%{user: user})
 
-      conn = post(conn, ~p"/api/shopping-lists/#{list.id}/items", %{
-        item: %{display_text: "2 avocados", category: "produce"}
-      })
+      conn =
+        post(conn, ~p"/api/shopping-lists/#{list.id}/items", %{
+          item: %{display_text: "2 avocados", category: "produce"}
+        })
+
       response = json_response(conn, 201)
 
       assert response["data"]["display_text"] == "2 avocados"
@@ -202,9 +212,11 @@ defmodule ControlcopypastaWeb.ShoppingListControllerTest do
       list = shopping_list_fixture(%{user: user})
       item = shopping_list_item_fixture(%{shopping_list: list})
 
-      conn = put(conn, ~p"/api/shopping-lists/#{list.id}/items/#{item.id}", %{
-        item: %{notes: "Get organic if available"}
-      })
+      conn =
+        put(conn, ~p"/api/shopping-lists/#{list.id}/items/#{item.id}", %{
+          item: %{notes: "Get organic if available"}
+        })
+
       response = json_response(conn, 200)
 
       assert response["data"]["notes"] == "Get organic if available"

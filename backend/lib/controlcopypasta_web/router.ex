@@ -95,11 +95,17 @@ defmodule ControlcopypastaWeb.Router do
 
     # Avoided ingredients
     post "/avoided-ingredients/bulk", AvoidedIngredientController, :bulk_create
-    resources "/avoided-ingredients", AvoidedIngredientController, only: [:index, :create, :delete]
+
+    resources "/avoided-ingredients", AvoidedIngredientController,
+      only: [:index, :create, :delete]
+
     get "/avoided-ingredients/options", AvoidedIngredientController, :options
     get "/avoided-ingredients/:id/ingredients", AvoidedIngredientController, :show_ingredients
     post "/avoided-ingredients/:id/exceptions", AvoidedIngredientController, :add_exception
-    delete "/avoided-ingredients/:id/exceptions/:canonical_ingredient_id", AvoidedIngredientController, :remove_exception
+
+    delete "/avoided-ingredients/:id/exceptions/:canonical_ingredient_id",
+           AvoidedIngredientController,
+           :remove_exception
 
     # Settings / Preferences
     get "/settings/preferences", SettingsController, :show_preferences
@@ -173,7 +179,11 @@ defmodule ControlcopypastaWeb.Router do
     post "/admin/pending-ingredients/:id/approve", Admin.PendingIngredientController, :approve
     post "/admin/pending-ingredients/:id/reject", Admin.PendingIngredientController, :reject
     post "/admin/pending-ingredients/:id/merge", Admin.PendingIngredientController, :merge
-    post "/admin/pending-ingredients/:id/preparation", Admin.PendingIngredientController, :mark_as_preparation
+
+    post "/admin/pending-ingredients/:id/preparation",
+         Admin.PendingIngredientController,
+         :mark_as_preparation
+
     post "/admin/pending-ingredients/:id/tool", Admin.PendingIngredientController, :mark_as_tool
   end
 

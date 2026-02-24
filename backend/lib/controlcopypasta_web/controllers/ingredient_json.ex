@@ -11,8 +11,14 @@ defmodule ControlcopypastaWeb.IngredientJSON do
   @doc """
   Renders a single ingredient with package sizes and nutrition.
   """
-  def show(%{ingredient: ingredient, package_sizes: package_sizes, nutrition: nutrition, all_nutrition: all_nutrition}) do
-    data = ingredient_data(ingredient)
+  def show(%{
+        ingredient: ingredient,
+        package_sizes: package_sizes,
+        nutrition: nutrition,
+        all_nutrition: all_nutrition
+      }) do
+    data =
+      ingredient_data(ingredient)
       |> Map.put(:package_sizes, Enum.map(package_sizes, &package_size_data/1))
       |> Map.put(:nutrition, if(nutrition, do: nutrition_data(nutrition), else: nil))
       |> Map.put(:all_nutrition, Enum.map(all_nutrition, &nutrition_data/1))
@@ -21,7 +27,8 @@ defmodule ControlcopypastaWeb.IngredientJSON do
   end
 
   def show(%{ingredient: ingredient, package_sizes: package_sizes, nutrition: nutrition}) do
-    data = ingredient_data(ingredient)
+    data =
+      ingredient_data(ingredient)
       |> Map.put(:package_sizes, Enum.map(package_sizes, &package_size_data/1))
       |> Map.put(:nutrition, if(nutrition, do: nutrition_data(nutrition), else: nil))
       |> Map.put(:all_nutrition, [])
@@ -31,10 +38,11 @@ defmodule ControlcopypastaWeb.IngredientJSON do
 
   def show(%{ingredient: ingredient, package_sizes: package_sizes}) do
     %{
-      data: ingredient_data(ingredient)
-      |> Map.put(:package_sizes, Enum.map(package_sizes, &package_size_data/1))
-      |> Map.put(:nutrition, nil)
-      |> Map.put(:all_nutrition, [])
+      data:
+        ingredient_data(ingredient)
+        |> Map.put(:package_sizes, Enum.map(package_sizes, &package_size_data/1))
+        |> Map.put(:nutrition, nil)
+        |> Map.put(:all_nutrition, [])
     }
   end
 
@@ -70,14 +78,21 @@ defmodule ControlcopypastaWeb.IngredientJSON do
     # Get best nutrition from preloaded association:
     # - Primary (is_primary=true) if available
     # - Otherwise highest confidence
-    nutrition = case ingredient.nutrition_sources do
-      %Ecto.Association.NotLoaded{} -> nil
-      [] -> nil
-      sources ->
-        best = Enum.find(sources, fn n -> n.is_primary end) ||
-               Enum.max_by(sources, fn n -> n.confidence || 0 end, fn -> nil end)
-        if best, do: nutrition_data(best), else: nil
-    end
+    nutrition =
+      case ingredient.nutrition_sources do
+        %Ecto.Association.NotLoaded{} ->
+          nil
+
+        [] ->
+          nil
+
+        sources ->
+          best =
+            Enum.find(sources, fn n -> n.is_primary end) ||
+              Enum.max_by(sources, fn n -> n.confidence || 0 end, fn -> nil end)
+
+          if best, do: nutrition_data(best), else: nil
+      end
 
     %{
       id: ingredient.id,

@@ -126,7 +126,11 @@ defmodule Controlcopypasta.Ingredients do
       [i],
       ilike(i.name, ^pattern) or
         ilike(i.display_name, ^pattern) or
-        fragment("EXISTS (SELECT 1 FROM unnest(?) alias WHERE alias ILIKE ?)", i.aliases, ^pattern)
+        fragment(
+          "EXISTS (SELECT 1 FROM unnest(?) alias WHERE alias ILIKE ?)",
+          i.aliases,
+          ^pattern
+        )
     )
     |> apply_filters(rest)
   end
@@ -251,13 +255,15 @@ defmodule Controlcopypasta.Ingredients do
 
   defp apply_preparation_filters(query, []), do: query
 
-  defp apply_preparation_filters(query, [{:category, category} | rest]) when is_binary(category) and category != "" do
+  defp apply_preparation_filters(query, [{:category, category} | rest])
+       when is_binary(category) and category != "" do
     query
     |> where([p], p.category == ^category)
     |> apply_preparation_filters(rest)
   end
 
-  defp apply_preparation_filters(query, [{:search, term} | rest]) when is_binary(term) and term != "" do
+  defp apply_preparation_filters(query, [{:search, term} | rest])
+       when is_binary(term) and term != "" do
     like_term = "%#{term}%"
 
     query
@@ -375,13 +381,15 @@ defmodule Controlcopypasta.Ingredients do
 
   defp apply_kitchen_tool_filters(query, []), do: query
 
-  defp apply_kitchen_tool_filters(query, [{:category, category} | rest]) when is_binary(category) and category != "" do
+  defp apply_kitchen_tool_filters(query, [{:category, category} | rest])
+       when is_binary(category) and category != "" do
     query
     |> where([t], t.category == ^category)
     |> apply_kitchen_tool_filters(rest)
   end
 
-  defp apply_kitchen_tool_filters(query, [{:search, term} | rest]) when is_binary(term) and term != "" do
+  defp apply_kitchen_tool_filters(query, [{:search, term} | rest])
+       when is_binary(term) and term != "" do
     like_term = "%#{term}%"
 
     query
@@ -529,8 +537,10 @@ defmodule Controlcopypasta.Ingredients do
     |> Enum.flat_map(fn {id, name, aliases} ->
       # Map both the canonical name and all aliases to {canonical_name, id}
       # Lowercase keys for case-insensitive matching (Matcher normalizes input to lowercase)
-      [{String.downcase(name), {name, id}} |
-       Enum.map(aliases || [], &{String.downcase(&1), {name, id}})]
+      [
+        {String.downcase(name), {name, id}}
+        | Enum.map(aliases || [], &{String.downcase(&1), {name, id}})
+      ]
     end)
     |> Map.new()
   end
@@ -782,7 +792,7 @@ defmodule Controlcopypasta.Ingredients do
   def list_package_sizes(canonical_ingredient_id) do
     BrandPackageSize
     |> where([p], p.canonical_ingredient_id == ^canonical_ingredient_id)
-    |> order_by([p], [asc: p.sort_order, asc: p.size_value])
+    |> order_by([p], asc: p.sort_order, asc: p.size_value)
     |> Repo.all()
   end
 
@@ -856,7 +866,8 @@ defmodule Controlcopypasta.Ingredients do
       # Has package sizes - calculate suggestions
       true ->
         # Find matching package type or use default
-        matching_package = find_matching_package(packages, unit) || default_package || hd(packages)
+        matching_package =
+          find_matching_package(packages, unit) || default_package || hd(packages)
 
         if matching_package do
           calculate_package_suggestion(scaled_qty, unit, matching_package, packages)
@@ -875,6 +886,7 @@ defmodule Controlcopypasta.Ingredients do
   defp find_matching_package(packages, unit) do
     # Try to find a package that matches the unit (e.g., "can" -> package_type: "can")
     normalized_unit = String.downcase(unit || "")
+
     Enum.find(packages, fn p ->
       String.downcase(p.package_type) == normalized_unit ||
         String.downcase(p.package_type) == String.replace(normalized_unit, ~r/s$/, "")
@@ -890,13 +902,14 @@ defmodule Controlcopypasta.Ingredients do
     total_volume_bought = packages_needed * size_value
     extra_volume = total_volume_bought - total_volume_needed
 
-    suggestion = if extra_volume > 0 do
-      "Buy #{format_count(packages_needed)} #{pluralize(package.package_type, packages_needed)} " <>
-        "(#{format_volume(total_volume_bought, package.size_unit)} total, " <>
-        "#{format_volume(extra_volume, package.size_unit)} extra)"
-    else
-      "Buy #{format_count(packages_needed)} #{pluralize(package.package_type, packages_needed)}"
-    end
+    suggestion =
+      if extra_volume > 0 do
+        "Buy #{format_count(packages_needed)} #{pluralize(package.package_type, packages_needed)} " <>
+          "(#{format_volume(total_volume_bought, package.size_unit)} total, " <>
+          "#{format_volume(extra_volume, package.size_unit)} extra)"
+      else
+        "Buy #{format_count(packages_needed)} #{pluralize(package.package_type, packages_needed)}"
+      end
 
     %{
       scaled_quantity: scaled_qty,
@@ -965,7 +978,11 @@ defmodule Controlcopypasta.Ingredients do
           from(n in IngredientNutrition,
             where: n.canonical_ingredient_id == ^canonical_ingredient_id,
             order_by: [
-              asc: fragment("array_position(ARRAY['usda','manual','fatsecret','open_food_facts','nutritionix','estimated']::nutrition_source[], ?)", n.source),
+              asc:
+                fragment(
+                  "array_position(ARRAY['usda','manual','fatsecret','open_food_facts','nutritionix','estimated']::nutrition_source[], ?)",
+                  n.source
+                ),
               desc: n.confidence
             ],
             limit: 1
@@ -985,7 +1002,11 @@ defmodule Controlcopypasta.Ingredients do
     from(n in IngredientNutrition,
       where: n.canonical_ingredient_id == ^canonical_ingredient_id,
       order_by: [
-        asc: fragment("array_position(ARRAY['usda','manual','fatsecret','open_food_facts','nutritionix','estimated']::nutrition_source[], ?)", n.source),
+        asc:
+          fragment(
+            "array_position(ARRAY['usda','manual','fatsecret','open_food_facts','nutritionix','estimated']::nutrition_source[], ?)",
+            n.source
+          ),
         desc: n.confidence
       ]
     )
@@ -1027,11 +1048,13 @@ defmodule Controlcopypasta.Ingredients do
 
   # Recalculate confidence if nutrient or source fields changed
   defp maybe_recalculate_confidence(changeset) do
-    nutrient_fields = IngredientNutrition.macro_fields() ++ [:source, :verified_at, :last_checked_at]
+    nutrient_fields =
+      IngredientNutrition.macro_fields() ++ [:source, :verified_at, :last_checked_at]
 
-    has_nutrient_changes = Enum.any?(nutrient_fields, fn field ->
-      Ecto.Changeset.get_change(changeset, field) != nil
-    end)
+    has_nutrient_changes =
+      Enum.any?(nutrient_fields, fn field ->
+        Ecto.Changeset.get_change(changeset, field) != nil
+      end)
 
     if has_nutrient_changes do
       IngredientNutrition.with_calculated_confidence(changeset)
@@ -1049,7 +1072,8 @@ defmodule Controlcopypasta.Ingredients do
     Repo.transaction(fn ->
       # Unset existing primary
       from(n in IngredientNutrition,
-        where: n.canonical_ingredient_id == ^nutrition.canonical_ingredient_id and n.is_primary == true
+        where:
+          n.canonical_ingredient_id == ^nutrition.canonical_ingredient_id and n.is_primary == true
       )
       |> Repo.update_all(set: [is_primary: false])
 
@@ -1078,19 +1102,51 @@ defmodule Controlcopypasta.Ingredients do
     |> IngredientNutrition.changeset(attrs)
     |> maybe_calculate_confidence()
     |> Repo.insert(
-      on_conflict: {:replace, [
-        :source_name, :source_url, :serving_size_value, :serving_size_unit, :serving_description,
-        :calories, :protein_g, :fat_total_g, :fat_saturated_g, :fat_trans_g,
-        :fat_polyunsaturated_g, :fat_monounsaturated_g, :carbohydrates_g,
-        :fiber_g, :sugar_g, :sugar_added_g,
-        :sodium_mg, :potassium_mg, :calcium_mg, :iron_mg, :magnesium_mg,
-        :phosphorus_mg, :zinc_mg,
-        :vitamin_a_mcg, :vitamin_c_mg, :vitamin_d_mcg, :vitamin_e_mg, :vitamin_k_mcg,
-        :vitamin_b6_mg, :vitamin_b12_mcg, :folate_mcg, :thiamin_mg, :riboflavin_mg, :niacin_mg,
-        :cholesterol_mg, :water_g,
-        :confidence, :confidence_factors, :retrieved_at, :last_checked_at,
-        :updated_at
-      ]},
+      on_conflict:
+        {:replace,
+         [
+           :source_name,
+           :source_url,
+           :serving_size_value,
+           :serving_size_unit,
+           :serving_description,
+           :calories,
+           :protein_g,
+           :fat_total_g,
+           :fat_saturated_g,
+           :fat_trans_g,
+           :fat_polyunsaturated_g,
+           :fat_monounsaturated_g,
+           :carbohydrates_g,
+           :fiber_g,
+           :sugar_g,
+           :sugar_added_g,
+           :sodium_mg,
+           :potassium_mg,
+           :calcium_mg,
+           :iron_mg,
+           :magnesium_mg,
+           :phosphorus_mg,
+           :zinc_mg,
+           :vitamin_a_mcg,
+           :vitamin_c_mg,
+           :vitamin_d_mcg,
+           :vitamin_e_mg,
+           :vitamin_k_mcg,
+           :vitamin_b6_mg,
+           :vitamin_b12_mcg,
+           :folate_mcg,
+           :thiamin_mg,
+           :riboflavin_mg,
+           :niacin_mg,
+           :cholesterol_mg,
+           :water_g,
+           :confidence,
+           :confidence_factors,
+           :retrieved_at,
+           :last_checked_at,
+           :updated_at
+         ]},
       conflict_target: [:canonical_ingredient_id, :source, :source_id]
     )
   end
@@ -1244,7 +1300,9 @@ defmodule Controlcopypasta.Ingredients do
           |> String.downcase()
           |> String.replace(~r/[^\w\s]/, " ")
           |> String.split(~r/\s+/, trim: true)
-          |> Enum.reject(&(&1 in ~w(a an the of to for with and or in on at cup cups tablespoon tablespoons teaspoon teaspoons oz ounce ounces lb lbs pound pounds g gram grams kg ml l)))
+          |> Enum.reject(
+            &(&1 in ~w(a an the of to for with and or in on at cup cups tablespoon tablespoons teaspoon teaspoons oz ounce ounces lb lbs pound pounds g gram grams kg ml l))
+          )
 
         # Try matching 3-word, 2-word, and 1-word combinations
         matched_id = find_ingredient_match(words, name_to_id)
@@ -1313,7 +1371,9 @@ defmodule Controlcopypasta.Ingredients do
           |> String.downcase()
           |> String.replace(~r/[^\w\s]/, " ")
           |> String.split(~r/\s+/, trim: true)
-          |> Enum.reject(&(&1 in ~w(a an the of to for with and or in on at cup cups tablespoon tablespoons teaspoon teaspoons oz ounce ounces lb lbs pound pounds g gram grams kg ml l)))
+          |> Enum.reject(
+            &(&1 in ~w(a an the of to for with and or in on at cup cups tablespoon tablespoons teaspoon teaspoons oz ounce ounces lb lbs pound pounds g gram grams kg ml l))
+          )
 
         case find_ingredient_match(words, name_to_id) do
           nil -> acc
@@ -1567,10 +1627,22 @@ defmodule Controlcopypasta.Ingredients do
     %IngredientDensity{}
     |> IngredientDensity.changeset(attrs)
     |> Repo.insert(
-      on_conflict: {:replace, [:grams_per_unit, :notes, :source_id, :source_url,
-                               :confidence, :data_points, :retrieved_at, :last_checked_at,
-                               :updated_at]},
-      conflict_target: {:unsafe_fragment, ~s|(canonical_ingredient_id, volume_unit, COALESCE(preparation, ''), source) |}
+      on_conflict:
+        {:replace,
+         [
+           :grams_per_unit,
+           :notes,
+           :source_id,
+           :source_url,
+           :confidence,
+           :data_points,
+           :retrieved_at,
+           :last_checked_at,
+           :updated_at
+         ]},
+      conflict_target:
+        {:unsafe_fragment,
+         ~s|(canonical_ingredient_id, volume_unit, COALESCE(preparation, ''), source) |}
     )
   end
 
@@ -1593,7 +1665,9 @@ defmodule Controlcopypasta.Ingredients do
 
     Repo.insert_all(IngredientDensity, entries,
       on_conflict: :nothing,
-      conflict_target: {:unsafe_fragment, ~s|(canonical_ingredient_id, volume_unit, COALESCE(preparation, ''), source) |}
+      conflict_target:
+        {:unsafe_fragment,
+         ~s|(canonical_ingredient_id, volume_unit, COALESCE(preparation, ''), source) |}
     )
   end
 
@@ -1662,12 +1736,13 @@ defmodule Controlcopypasta.Ingredients do
     offset = Keyword.get(opts, :offset, 0)
     min_occurrences = Keyword.get(opts, :min_occurrences, 0)
 
-    query = from(p in PendingIngredient,
-      where: p.status == ^status,
-      where: p.occurrence_count >= ^min_occurrences,
-      order_by: [desc: p.occurrence_count],
-      offset: ^offset
-    )
+    query =
+      from(p in PendingIngredient,
+        where: p.status == ^status,
+        where: p.occurrence_count >= ^min_occurrences,
+        order_by: [desc: p.occurrence_count],
+        offset: ^offset
+      )
 
     query = if limit, do: limit(query, ^limit), else: query
 
@@ -1693,12 +1768,22 @@ defmodule Controlcopypasta.Ingredients do
   Gets pending ingredient stats.
   """
   def pending_ingredient_stats do
-    pending = Repo.aggregate(from(p in PendingIngredient, where: p.status == "pending"), :count, :id)
-    approved = Repo.aggregate(from(p in PendingIngredient, where: p.status == "approved"), :count, :id)
-    rejected = Repo.aggregate(from(p in PendingIngredient, where: p.status == "rejected"), :count, :id)
-    merged = Repo.aggregate(from(p in PendingIngredient, where: p.status == "merged"), :count, :id)
+    pending =
+      Repo.aggregate(from(p in PendingIngredient, where: p.status == "pending"), :count, :id)
+
+    approved =
+      Repo.aggregate(from(p in PendingIngredient, where: p.status == "approved"), :count, :id)
+
+    rejected =
+      Repo.aggregate(from(p in PendingIngredient, where: p.status == "rejected"), :count, :id)
+
+    merged =
+      Repo.aggregate(from(p in PendingIngredient, where: p.status == "merged"), :count, :id)
+
     tool = Repo.aggregate(from(p in PendingIngredient, where: p.status == "tool"), :count, :id)
-    preparation = Repo.aggregate(from(p in PendingIngredient, where: p.status == "preparation"), :count, :id)
+
+    preparation =
+      Repo.aggregate(from(p in PendingIngredient, where: p.status == "preparation"), :count, :id)
 
     %{
       pending: pending,
@@ -1720,7 +1805,8 @@ defmodule Controlcopypasta.Ingredients do
     # Build canonical ingredient attrs
     canonical_attrs = %{
       name: pending.name,
-      display_name: attrs[:display_name] || pending.suggested_display_name || titlecase(pending.name),
+      display_name:
+        attrs[:display_name] || pending.suggested_display_name || titlecase(pending.name),
       category: attrs[:category] || pending.suggested_category,
       aliases: attrs[:aliases] || pending.suggested_aliases || []
     }
@@ -1854,7 +1940,11 @@ defmodule Controlcopypasta.Ingredients do
       from(n in IngredientNutrition,
         where: n.is_primary == false or is_nil(n.is_primary),
         group_by: n.canonical_ingredient_id,
-        having: fragment("NOT EXISTS (SELECT 1 FROM ingredient_nutrition n2 WHERE n2.canonical_ingredient_id = ? AND n2.is_primary = true)", n.canonical_ingredient_id),
+        having:
+          fragment(
+            "NOT EXISTS (SELECT 1 FROM ingredient_nutrition n2 WHERE n2.canonical_ingredient_id = ? AND n2.is_primary = true)",
+            n.canonical_ingredient_id
+          ),
         select: n.canonical_ingredient_id
       )
       |> Repo.all()
@@ -1989,7 +2079,13 @@ defmodule Controlcopypasta.Ingredients do
       Enum.filter(primary_records, fn r ->
         r.confidence && Decimal.compare(r.confidence, Decimal.new("0.5")) == :lt
       end)
-      |> Enum.map(fn r -> %{id: r.ingredient_id, name: r.ingredient_name, confidence: Decimal.to_float(r.confidence)} end)
+      |> Enum.map(fn r ->
+        %{
+          id: r.ingredient_id,
+          name: r.ingredient_name,
+          confidence: Decimal.to_float(r.confidence)
+        }
+      end)
 
     # Check for potentially mismatched source names (different from ingredient name)
     suspicious_matches =
@@ -2020,7 +2116,9 @@ defmodule Controlcopypasta.Ingredients do
       },
       suspicious_matches: suspicious_matches,
       summary: %{
-        has_issues: length(missing_calories) > 0 or length(missing_all_macros) > 0 or length(ingredients_without_nutrition) > 0,
+        has_issues:
+          length(missing_calories) > 0 or length(missing_all_macros) > 0 or
+            length(ingredients_without_nutrition) > 0,
         missing_calories_count: length(missing_calories),
         missing_all_macros_count: length(missing_all_macros),
         missing_nutrition_count: length(ingredients_without_nutrition)

@@ -18,15 +18,24 @@ defmodule Controlcopypasta.Ingredients.PreStepGenerator do
     @moduledoc "A single preparation step to be done before cooking."
 
     defstruct [
-      :action,              # Verb: "dice", "mince", "bring to room temperature"
-      :target,              # Ingredient: "carrots", "butter"
-      :quantity,            # Amount: 2.0
-      :unit,                # Unit: "cup", "tbsp"
-      :category,            # :cut, :cook, :temperature, :process
-      :estimated_time_min,  # Time estimate in minutes
-      :tool,                # Optional tool needed: "knife", "grater"
-      :order_hint,          # Suggested order (lower = do first)
-      :original_prep        # Original prep string from parsing
+      # Verb: "dice", "mince", "bring to room temperature"
+      :action,
+      # Ingredient: "carrots", "butter"
+      :target,
+      # Amount: 2.0
+      :quantity,
+      # Unit: "cup", "tbsp"
+      :unit,
+      # :cut, :cook, :temperature, :process
+      :category,
+      # Time estimate in minutes
+      :estimated_time_min,
+      # Optional tool needed: "knife", "grater"
+      :tool,
+      # Suggested order (lower = do first)
+      :order_hint,
+      # Original prep string from parsing
+      :original_prep
     ]
 
     @type t :: %__MODULE__{
@@ -100,7 +109,8 @@ defmodule Controlcopypasta.Ingredients.PreStepGenerator do
 
       meta ->
         %PreStep{
-          action: meta[:verb] || prep,  # Fall back to prep string if verb missing
+          # Fall back to prep string if verb missing
+          action: meta[:verb] || prep,
           target: get_target_name(ingredient),
           quantity: ingredient.quantity,
           unit: ingredient.unit,
@@ -112,7 +122,9 @@ defmodule Controlcopypasta.Ingredients.PreStepGenerator do
     end
   end
 
-  defp get_target_name(%{primary_ingredient: %{canonical_name: name}}) when is_binary(name), do: name
+  defp get_target_name(%{primary_ingredient: %{canonical_name: name}}) when is_binary(name),
+    do: name
+
   defp get_target_name(%{primary_ingredient: %{name: name}}) when is_binary(name), do: name
   defp get_target_name(_), do: nil
 
@@ -122,14 +134,17 @@ defmodule Controlcopypasta.Ingredients.PreStepGenerator do
   defp estimate_time(%{time_per_cup: time_per_cup}, %{quantity: qty, unit: unit})
        when is_number(qty) do
     # Convert to cups for estimation (rough conversion)
-    cups = case unit do
-      "cup" -> qty
-      "tbsp" -> qty / 16
-      "tsp" -> qty / 48
-      "oz" -> qty / 8
-      "lb" -> qty * 2  # Rough: 1 lb ~ 2 cups for most vegetables
-      _ -> qty  # Assume 1:1 for unknown units
-    end
+    cups =
+      case unit do
+        "cup" -> qty
+        "tbsp" -> qty / 16
+        "tsp" -> qty / 48
+        "oz" -> qty / 8
+        # Rough: 1 lb ~ 2 cups for most vegetables
+        "lb" -> qty * 2
+        # Assume 1:1 for unknown units
+        _ -> qty
+      end
 
     max(1, round(cups * time_per_cup))
   end
@@ -151,10 +166,14 @@ defmodule Controlcopypasta.Ingredients.PreStepGenerator do
     |> Enum.map(fn {step, idx} -> %{step | order_hint: idx} end)
   end
 
-  defp category_order(:temperature), do: 0  # Room temp butter, thaw frozen items
-  defp category_order(:cook), do: 1         # Pre-cook components
-  defp category_order(:process), do: 2      # Drain, rinse, soak
-  defp category_order(:cut), do: 3          # Chopping can happen during cooking
+  # Room temp butter, thaw frozen items
+  defp category_order(:temperature), do: 0
+  # Pre-cook components
+  defp category_order(:cook), do: 1
+  # Drain, rinse, soak
+  defp category_order(:process), do: 2
+  # Chopping can happen during cooking
+  defp category_order(:cut), do: 3
   defp category_order(_), do: 4
 
   @doc """

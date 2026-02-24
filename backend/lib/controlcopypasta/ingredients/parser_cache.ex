@@ -248,11 +248,13 @@ defmodule Controlcopypasta.Ingredients.ParserCache do
   """
   def is_known_ingredient?(word) when is_binary(word) do
     normalized = String.downcase(word)
-    ingredient_names = try do
-      :persistent_term.get(:parser_ingredient_names)
-    rescue
-      ArgumentError -> MapSet.new()
-    end
+
+    ingredient_names =
+      try do
+        :persistent_term.get(:parser_ingredient_names)
+      rescue
+        ArgumentError -> MapSet.new()
+      end
 
     MapSet.member?(ingredient_names, normalized)
   end
@@ -283,7 +285,10 @@ defmodule Controlcopypasta.Ingredients.ParserCache do
   defp load_all do
     load_preparations()
     load_normalizer()
-    Logger.info("ParserCache loaded: #{MapSet.size(preparations())} preparations, #{map_size(normalizer_map())} normalizer entries")
+
+    Logger.info(
+      "ParserCache loaded: #{MapSet.size(preparations())} preparations, #{map_size(normalizer_map())} normalizer entries"
+    )
   rescue
     e ->
       Logger.warning("ParserCache failed to load from DB, using defaults: #{inspect(e)}")

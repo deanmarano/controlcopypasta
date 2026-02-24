@@ -172,10 +172,21 @@ defmodule Controlcopypasta.Repo.Migrations.AddMorePantryStaples do
 
   def down do
     ingredients_to_remove = [
-      "grapeseed oil", "flax meal", "za'atar", "creole seasoning",
-      "chinese five spice", "garam masala", "barley malt syrup",
-      "turbinado sugar", "brioche bun", "hoagie roll", "sprouts",
-      "gochujang", "paneer", "granola", "sunflower seeds"
+      "grapeseed oil",
+      "flax meal",
+      "za'atar",
+      "creole seasoning",
+      "chinese five spice",
+      "garam masala",
+      "barley malt syrup",
+      "turbinado sugar",
+      "brioche bun",
+      "hoagie roll",
+      "sprouts",
+      "gochujang",
+      "paneer",
+      "granola",
+      "sunflower seeds"
     ]
 
     for name <- ingredients_to_remove do
@@ -184,6 +195,7 @@ defmodule Controlcopypasta.Repo.Migrations.AddMorePantryStaples do
   end
 
   defp format_array([]), do: ""
+
   defp format_array(items) do
     items
     |> Enum.map(&"'#{escape_sql(&1)}'")

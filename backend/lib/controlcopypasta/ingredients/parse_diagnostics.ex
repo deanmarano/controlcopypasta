@@ -14,14 +14,22 @@ defmodule Controlcopypasta.Ingredients.ParseDiagnostics do
   """
 
   defstruct [
-    :tokens,              # List of Token structs
-    :token_string,        # Formatted: "[1:qty] [cup:unit] [flour:word]"
-    :parser_used,         # :standard | :garlic | :citrus | :egg
-    :match_candidates,    # List of top match candidates considered
-    :selected_match,      # The chosen match with reason
-    :match_strategy,      # How the match was found (exact, singularized, partial, etc.)
-    :warnings,            # Any parsing anomalies detected
-    :parse_time_us        # Microseconds to parse
+    # List of Token structs
+    :tokens,
+    # Formatted: "[1:qty] [cup:unit] [flour:word]"
+    :token_string,
+    # :standard | :garlic | :citrus | :egg
+    :parser_used,
+    # List of top match candidates considered
+    :match_candidates,
+    # The chosen match with reason
+    :selected_match,
+    # How the match was found (exact, singularized, partial, etc.)
+    :match_strategy,
+    # Any parsing anomalies detected
+    :warnings,
+    # Microseconds to parse
+    :parse_time_us
   ]
 
   @type match_candidate :: %{
@@ -59,6 +67,7 @@ defmodule Controlcopypasta.Ingredients.ParseDiagnostics do
   end
 
   defp format_candidates(nil), do: []
+
   defp format_candidates(candidates) do
     candidates
     |> Enum.take(3)
@@ -72,33 +81,41 @@ defmodule Controlcopypasta.Ingredients.ParseDiagnostics do
     warnings = []
 
     # Warning: No canonical match found
-    warnings = if result.primary_ingredient && is_nil(result.primary_ingredient.canonical_id) do
-      ["No canonical match found" | warnings]
-    else
-      warnings
-    end
+    warnings =
+      if result.primary_ingredient && is_nil(result.primary_ingredient.canonical_id) do
+        ["No canonical match found" | warnings]
+      else
+        warnings
+      end
 
     # Warning: Low confidence match
-    warnings = if result.primary_ingredient && result.primary_ingredient.confidence < 0.8 do
-      ["Low confidence match (#{Float.round(result.primary_ingredient.confidence, 2)})" | warnings]
-    else
-      warnings
-    end
+    warnings =
+      if result.primary_ingredient && result.primary_ingredient.confidence < 0.8 do
+        [
+          "Low confidence match (#{Float.round(result.primary_ingredient.confidence, 2)})"
+          | warnings
+        ]
+      else
+        warnings
+      end
 
     # Warning: Multiple word tokens but no match
     word_count = Enum.count(tokens, &(&1.label == :word))
-    warnings = if word_count > 2 && is_nil(result.primary_ingredient.canonical_id) do
-      ["Complex ingredient phrase (#{word_count} words) with no match" | warnings]
-    else
-      warnings
-    end
+
+    warnings =
+      if word_count > 2 && is_nil(result.primary_ingredient.canonical_id) do
+        ["Complex ingredient phrase (#{word_count} words) with no match" | warnings]
+      else
+        warnings
+      end
 
     # Warning: Has alternatives (or pattern)
-    warnings = if result.is_alternative do
-      ["Has alternatives (or pattern detected)" | warnings]
-    else
-      warnings
-    end
+    warnings =
+      if result.is_alternative do
+        ["Has alternatives (or pattern detected)" | warnings]
+      else
+        warnings
+      end
 
     Enum.reverse(warnings)
   end

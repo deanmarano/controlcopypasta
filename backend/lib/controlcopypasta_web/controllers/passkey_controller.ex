@@ -20,14 +20,18 @@ defmodule ControlcopypastaWeb.PasskeyController do
       challenge: :erlang.term_to_binary(challenge) |> Base.encode64(),
       user_id: user_id
     }
+
     Phoenix.Token.sign(ControlcopypastaWeb.Endpoint, "webauthn_challenge", data)
   end
 
   defp verify_challenge_token(token) do
-    case Phoenix.Token.verify(ControlcopypastaWeb.Endpoint, "webauthn_challenge", token, max_age: @challenge_ttl) do
+    case Phoenix.Token.verify(ControlcopypastaWeb.Endpoint, "webauthn_challenge", token,
+           max_age: @challenge_ttl
+         ) do
       {:ok, data} ->
         challenge = data.challenge |> Base.decode64!() |> :erlang.binary_to_term()
         {:ok, challenge, data.user_id}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -43,23 +47,26 @@ defmodule ControlcopypastaWeb.PasskeyController do
     config = webauthn_config()
 
     # Create the Wax challenge with registration options
-    challenge = Wax.new_registration_challenge(
-      origin: config[:origin],
-      rp_id: config[:rp_id],
-      attestation: "none"
-    )
+    challenge =
+      Wax.new_registration_challenge(
+        origin: config[:origin],
+        rp_id: config[:rp_id],
+        attestation: "none"
+      )
 
     challenge_token = sign_challenge(challenge, user.id)
 
     # Get existing credentials to exclude
     existing_passkeys = Accounts.list_passkeys(user.id)
-    exclude_credentials = Enum.map(existing_passkeys, fn passkey ->
-      %{
-        id: Base.url_encode64(passkey.credential_id, padding: false),
-        type: "public-key",
-        transports: passkey.transports || []
-      }
-    end)
+
+    exclude_credentials =
+      Enum.map(existing_passkeys, fn passkey ->
+        %{
+          id: Base.url_encode64(passkey.credential_id, padding: false),
+          type: "public-key",
+          transports: passkey.transports || []
+        }
+      end)
 
     options = %{
       challenge: Base.url_encode64(challenge.bytes, padding: false),
@@ -73,8 +80,10 @@ defmodule ControlcopypastaWeb.PasskeyController do
         displayName: user.email
       },
       pubKeyCredParams: [
-        %{alg: -7, type: "public-key"},   # ES256
-        %{alg: -257, type: "public-key"}  # RS256
+        # ES256
+        %{alg: -7, type: "public-key"},
+        # RS256
+        %{alg: -257, type: "public-key"}
       ],
       timeout: 60000,
       attestation: "none",
@@ -101,7 +110,6 @@ defmodule ControlcopypastaWeb.PasskeyController do
 
     with {:ok, challenge, ^user_id} <- verify_challenge_token(params["challengeToken"]),
          {:ok, {auth_data, _attestation_result}} <- verify_attestation(params, challenge) do
-
       credential_id = auth_data.attested_credential_data.credential_id
       cose_key = auth_data.attested_credential_data.credential_public_key
       aaguid = auth_data.attested_credential_data.aaguid
@@ -143,12 +151,14 @@ defmodule ControlcopypastaWeb.PasskeyController do
 
       {:error, reason} ->
         Logger.error("Passkey registration failed: #{inspect(reason)}")
+
         conn
         |> put_status(:bad_request)
         |> json(%{error: "Registration failed: #{inspect(reason)}"})
 
       other ->
         Logger.error("Passkey registration unexpected result: #{inspect(other)}")
+
         conn
         |> put_status(:bad_request)
         |> json(%{error: "Invalid registration data."})
@@ -157,6 +167,7 @@ defmodule ControlcopypastaWeb.PasskeyController do
     e ->
       Logger.error("Passkey registration exception: #{Exception.message(e)}")
       Logger.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
+
       conn
       |> put_status(:internal_server_error)
       |> json(%{error: "Internal error during passkey registration"})
@@ -165,7 +176,8 @@ defmodule ControlcopypastaWeb.PasskeyController do
   defp verify_attestation(params, challenge) do
     response = params["response"]
 
-    if is_nil(response) or is_nil(response["clientDataJSON"]) or is_nil(response["attestationObject"]) do
+    if is_nil(response) or is_nil(response["clientDataJSON"]) or
+         is_nil(response["attestationObject"]) do
       {:error, :missing_response_data}
     else
       try do
@@ -196,33 +208,37 @@ defmodule ControlcopypastaWeb.PasskeyController do
       case Accounts.get_user_by_email(email) do
         nil ->
           {[], []}
+
         user ->
           passkeys = Accounts.list_passkeys(user.id)
 
           # Format for frontend (base64url encoded)
-          frontend_creds = Enum.map(passkeys, fn passkey ->
-            %{
-              id: Base.url_encode64(passkey.credential_id, padding: false),
-              type: "public-key",
-              transports: passkey.transports || []
-            }
-          end)
+          frontend_creds =
+            Enum.map(passkeys, fn passkey ->
+              %{
+                id: Base.url_encode64(passkey.credential_id, padding: false),
+                type: "public-key",
+                transports: passkey.transports || []
+              }
+            end)
 
           # Format for Wax challenge (binary credential_id + cose_key)
-          wax_creds = Enum.map(passkeys, fn passkey ->
-            cose_key = :erlang.binary_to_term(passkey.public_key)
-            {passkey.credential_id, cose_key}
-          end)
+          wax_creds =
+            Enum.map(passkeys, fn passkey ->
+              cose_key = :erlang.binary_to_term(passkey.public_key)
+              {passkey.credential_id, cose_key}
+            end)
 
           {frontend_creds, wax_creds}
       end
 
     # Create the Wax challenge with authentication options
-    challenge = Wax.new_authentication_challenge(
-      origin: config[:origin],
-      rp_id: config[:rp_id],
-      allow_credentials: allow_credentials_for_challenge
-    )
+    challenge =
+      Wax.new_authentication_challenge(
+        origin: config[:origin],
+        rp_id: config[:rp_id],
+        allow_credentials: allow_credentials_for_challenge
+      )
 
     challenge_token = sign_challenge(challenge)
 
@@ -254,7 +270,6 @@ defmodule ControlcopypastaWeb.PasskeyController do
          {:ok, passkey, auth_data} <- verify_assertion(params, challenge),
          {:ok, _} <- Accounts.update_passkey_sign_count(passkey, auth_data.sign_count),
          {:ok, jwt, _claims} <- Guardian.encode_and_sign(passkey.user) do
-
       alias ControlcopypastaWeb.Plugs.AdminAuth
 
       json(conn, %{
@@ -298,17 +313,21 @@ defmodule ControlcopypastaWeb.PasskeyController do
 
       passkey ->
         # SimpleWebAuthn sends data as base64url encoded without padding
-        client_data_json = Base.url_decode64!(params["response"]["clientDataJSON"], padding: false)
-        authenticator_data = Base.url_decode64!(params["response"]["authenticatorData"], padding: false)
+        client_data_json =
+          Base.url_decode64!(params["response"]["clientDataJSON"], padding: false)
+
+        authenticator_data =
+          Base.url_decode64!(params["response"]["authenticatorData"], padding: false)
+
         signature = Base.url_decode64!(params["response"]["signature"], padding: false)
 
         case Wax.authenticate(
-          credential_id,
-          authenticator_data,
-          signature,
-          client_data_json,
-          challenge
-        ) do
+               credential_id,
+               authenticator_data,
+               signature,
+               client_data_json,
+               challenge
+             ) do
           {:ok, auth_data} ->
             {:ok, passkey, auth_data}
 

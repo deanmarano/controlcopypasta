@@ -12,7 +12,12 @@ defmodule Controlcopypasta.Ingredients.PreStepGeneratorTest do
         quantity: 2.0,
         unit: "cup",
         preparations: ["peeled", "diced"],
-        primary_ingredient: %{name: "carrots", canonical_name: "carrot", canonical_id: "123", confidence: 1.0}
+        primary_ingredient: %{
+          name: "carrots",
+          canonical_name: "carrot",
+          canonical_id: "123",
+          confidence: 1.0
+        }
       }
 
       steps = PreStepGenerator.generate_pre_steps(parsed)
@@ -36,7 +41,12 @@ defmodule Controlcopypasta.Ingredients.PreStepGeneratorTest do
         quantity: 1.0,
         unit: "lb",
         preparations: ["cubed", "softened"],
-        primary_ingredient: %{name: "butter", canonical_name: "butter", canonical_id: "456", confidence: 1.0}
+        primary_ingredient: %{
+          name: "butter",
+          canonical_name: "butter",
+          canonical_id: "456",
+          confidence: 1.0
+        }
       }
 
       steps = PreStepGenerator.generate_pre_steps(parsed)
@@ -58,7 +68,12 @@ defmodule Controlcopypasta.Ingredients.PreStepGeneratorTest do
         quantity: 4.0,
         unit: "cup",
         preparations: ["diced"],
-        primary_ingredient: %{name: "onions", canonical_name: "onion", canonical_id: "789", confidence: 1.0}
+        primary_ingredient: %{
+          name: "onions",
+          canonical_name: "onion",
+          canonical_id: "789",
+          confidence: 1.0
+        }
       }
 
       [step] = PreStepGenerator.generate_pre_steps(parsed)
@@ -73,7 +88,12 @@ defmodule Controlcopypasta.Ingredients.PreStepGeneratorTest do
         quantity: 1.0,
         unit: "cup",
         preparations: ["grated"],
-        primary_ingredient: %{name: "cheese", canonical_name: "cheese", canonical_id: "abc", confidence: 1.0}
+        primary_ingredient: %{
+          name: "cheese",
+          canonical_name: "cheese",
+          canonical_id: "abc",
+          confidence: 1.0
+        }
       }
 
       [step] = PreStepGenerator.generate_pre_steps(parsed)
@@ -87,7 +107,12 @@ defmodule Controlcopypasta.Ingredients.PreStepGeneratorTest do
         quantity: 2.0,
         unit: nil,
         preparations: ["room temperature"],
-        primary_ingredient: %{name: "eggs", canonical_name: "egg", canonical_id: "def", confidence: 1.0}
+        primary_ingredient: %{
+          name: "eggs",
+          canonical_name: "egg",
+          canonical_id: "def",
+          confidence: 1.0
+        }
       }
 
       [step] = PreStepGenerator.generate_pre_steps(parsed)
@@ -103,7 +128,12 @@ defmodule Controlcopypasta.Ingredients.PreStepGeneratorTest do
         quantity: 1.0,
         unit: "cup",
         preparations: ["flambéed"],
-        primary_ingredient: %{name: "weird ingredient", canonical_name: nil, canonical_id: nil, confidence: 0.5}
+        primary_ingredient: %{
+          name: "weird ingredient",
+          canonical_name: nil,
+          canonical_id: nil,
+          confidence: 0.5
+        }
       }
 
       [step] = PreStepGenerator.generate_pre_steps(parsed)
@@ -119,7 +149,12 @@ defmodule Controlcopypasta.Ingredients.PreStepGeneratorTest do
         quantity: 1.0,
         unit: "cup",
         preparations: [],
-        primary_ingredient: %{name: "flour", canonical_name: "flour", canonical_id: "ghi", confidence: 1.0}
+        primary_ingredient: %{
+          name: "flour",
+          canonical_name: "flour",
+          canonical_id: "ghi",
+          confidence: 1.0
+        }
       }
 
       assert PreStepGenerator.generate_pre_steps(parsed) == []
@@ -147,15 +182,15 @@ defmodule Controlcopypasta.Ingredients.PreStepGeneratorTest do
       map = PreStepGenerator.to_map(step)
 
       assert map == %{
-        "action" => "dice",
-        "target" => "carrots",
-        "quantity" => 2.0,
-        "unit" => "cup",
-        "category" => "cut",
-        "estimated_time_min" => 4,
-        "tool" => "knife",
-        "order_hint" => 1
-      }
+               "action" => "dice",
+               "target" => "carrots",
+               "quantity" => 2.0,
+               "unit" => "cup",
+               "category" => "cut",
+               "estimated_time_min" => 4,
+               "tool" => "knife",
+               "order_hint" => 1
+             }
     end
 
     test "omits nil values from map" do

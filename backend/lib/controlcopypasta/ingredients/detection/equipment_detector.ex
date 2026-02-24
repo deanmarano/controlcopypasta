@@ -140,23 +140,34 @@ defmodule Controlcopypasta.Ingredients.Detection.EquipmentDetector do
       false
   """
   def is_equipment?(nil), do: false
+
   def is_equipment?(text) when is_binary(text) do
     normalized = String.downcase(text)
 
     cond do
       # Pattern 0: "Special Equipment:" prefix - entire line is equipment
-      Regex.match?(~r/^\s*special\s+equipment\s*:/i, text) -> true
+      Regex.match?(~r/^\s*special\s+equipment\s*:/i, text) ->
+        true
+
       # Pattern 0b: "Two/Three/Four N-inch" + equipment word (e.g., "Two 8-inch cake pans")
       Regex.match?(~r/^\s*(?:two|three|four|five|six)\s+\d+[- ]inch/i, text) and
-        contains_equipment_word?(normalized) -> true
+          contains_equipment_word?(normalized) ->
+        true
+
       # Pattern 1: Starts with "a" or "an" followed by equipment word/phrase
       Regex.match?(~r/^an?\s+/i, text) ->
         contains_equipment_word?(normalized) or contains_equipment_phrase?(normalized)
+
       # Pattern 2: Contains a known equipment phrase
-      contains_equipment_phrase?(normalized) -> true
+      contains_equipment_phrase?(normalized) ->
+        true
+
       # Pattern 3: Just an equipment word by itself (no quantity)
-      not Regex.match?(~r/^\d/, text) and pure_equipment_word?(normalized) -> true
-      true -> false
+      not Regex.match?(~r/^\d/, text) and pure_equipment_word?(normalized) ->
+        true
+
+      true ->
+        false
     end
   end
 

@@ -56,6 +56,7 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
     case find_canonical_match(normalized, lookup) do
       nil ->
         dehyphenated = String.replace(normalized, "-", " ")
+
         if dehyphenated != normalized do
           case find_canonical_match(dehyphenated, lookup) do
             nil -> %{name: name, canonical_name: nil, canonical_id: nil, confidence: 0.5}
@@ -64,7 +65,9 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
         else
           %{name: name, canonical_name: nil, canonical_id: nil, confidence: 0.5}
         end
-      result -> format_match_result(name, result)
+
+      result ->
+        format_match_result(name, result)
     end
   end
 
@@ -231,9 +234,12 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
       spaced = "#{left} #{right}"
 
       case lookup_get(lookup, spaced) do
-        {:found, result, _} -> with_confidence(result, 0.85)
+        {:found, result, _} ->
+          with_confidence(result, 0.85)
+
         :not_found ->
           singular = singularize_phrase(spaced)
+
           if singular != spaced do
             case lookup_get(lookup, singular) do
               {:found, result, _} -> with_confidence(result, 0.83)
@@ -282,8 +288,12 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
     words = String.split(phrase, " ")
 
     case words do
-      [] -> phrase
-      [single] -> Singularizer.singularize(single)
+      [] ->
+        phrase
+
+      [single] ->
+        Singularizer.singularize(single)
+
       multiple ->
         last = List.last(multiple)
         rest = Enum.take(multiple, length(multiple) - 1)

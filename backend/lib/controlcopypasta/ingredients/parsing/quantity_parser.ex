@@ -35,19 +35,23 @@ defmodule Controlcopypasta.Ingredients.Parsing.QuantityParser do
       {nil, nil, nil}
   """
   def parse([]), do: {nil, nil, nil}
+
   def parse(qty_list) when is_list(qty_list) do
     # Find if any quantity token contains a range (e.g., "1-2")
-    range_token = Enum.find(qty_list, fn qty_str ->
-      String.contains?(qty_str, "-") and not String.starts_with?(qty_str, "-")
-    end)
+    range_token =
+      Enum.find(qty_list, fn qty_str ->
+        String.contains?(qty_str, "-") and not String.starts_with?(qty_str, "-")
+      end)
 
     case range_token do
       nil ->
         # No range - sum all quantities (handles compound like "1 1/2" = 1.5)
-        total = qty_list
+        total =
+          qty_list
           |> Enum.map(&parse_single/1)
           |> Enum.reject(&is_nil/1)
           |> Enum.sum()
+
         total = if total == 0, do: nil, else: total
         {total, total, total}
 
@@ -62,7 +66,9 @@ defmodule Controlcopypasta.Ingredients.Parsing.QuantityParser do
             # Get any additional quantities (fractions) after the range token
             # For "1-1 1/2", qty_list is ["1-1", "1/2"], so we add "1/2" to the upper bound
             idx = Enum.find_index(qty_list, &(&1 == range_str))
-            additional = qty_list
+
+            additional =
+              qty_list
               |> Enum.drop(idx + 1)
               |> Enum.map(&parse_single/1)
               |> Enum.reject(&is_nil/1)
@@ -104,6 +110,7 @@ defmodule Controlcopypasta.Ingredients.Parsing.QuantityParser do
   """
   def parse_single(str) when is_binary(str) do
     str = String.trim(str)
+
     cond do
       # Written number: "one", "two", etc.
       written_val = Tokenizer.written_number_value(str) ->
@@ -120,7 +127,9 @@ defmodule Controlcopypasta.Ingredients.Parsing.QuantityParser do
             else
               _ -> nil
             end
-          _ -> nil
+
+          _ ->
+            nil
         end
 
       # Decimal or integer

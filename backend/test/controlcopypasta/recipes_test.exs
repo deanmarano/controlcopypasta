@@ -113,10 +113,12 @@ defmodule Controlcopypasta.RecipesTest do
 
     test "create_recipe/1 extracts domain from source_url" do
       user = user_fixture()
-      attrs = valid_recipe_attributes(%{
-        user_id: user.id,
-        source_url: "https://www.example.com/recipe/123"
-      })
+
+      attrs =
+        valid_recipe_attributes(%{
+          user_id: user.id,
+          source_url: "https://www.example.com/recipe/123"
+        })
 
       assert {:ok, %Recipe{} = recipe} = Recipes.create_recipe(attrs)
       assert recipe.source_domain == "example.com"

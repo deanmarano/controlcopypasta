@@ -39,13 +39,14 @@ defmodule Controlcopypasta.Nutrition.RecipeNutritionCompletenessTest do
     ~r/\bbig bunch of\b/i,
     ~r/\bwhatever\b/i,
     # Extremely complex ingredient strings that can't be reasonably parsed
-    ~r/^\d+\s+ounces?\s+\(\d/i,  # "8 ounces (1 1/2 cups; 225g) pineapple..." multi-measurement
+    # "8 ounces (1 1/2 cups; 225g) pineapple..." multi-measurement
+    ~r/^\d+\s+ounces?\s+\(\d/i,
     ~r/squeeze of/i,
     ~r/freeze-dried strawberry powder/i,
     ~r/100ml Liquid/i,
     ~r/\bhealthy pinch\b/i,
     # "Salt and pepper to taste" - parser skips these (no quantity)
-    ~r/\bsalt\s+and\s+(?:freshly\s+ground\s+)?(?:black\s+)?pepper\b/i,
+    ~r/\bsalt\s+and\s+(?:freshly\s+ground\s+)?(?:black\s+)?pepper\b/i
   ]
 
   defp skip_ingredient?(text) do
@@ -64,6 +65,7 @@ defmodule Controlcopypasta.Nutrition.RecipeNutritionCompletenessTest do
   defp to_decimal(val) when is_float(val), do: Decimal.from_float(val)
 
   defp uuid_to_binary(nil), do: nil
+
   defp uuid_to_binary(uuid_string) do
     {:ok, binary} = Ecto.UUID.dump(uuid_string)
     binary
@@ -241,9 +243,10 @@ defmodule Controlcopypasta.Nutrition.RecipeNutritionCompletenessTest do
           total_calories = get_best_value(result.total.calories)
 
           # Skip recipes where ALL ingredients have no quantity (e.g., just ingredient names)
-          all_no_quantity = Enum.all?(result.ingredients, fn ing ->
-            ing.status == :no_quantity
-          end)
+          all_no_quantity =
+            Enum.all?(result.ingredients, fn ing ->
+              ing.status == :no_quantity
+            end)
 
           if not all_no_quantity and (is_nil(total_calories) or total_calories <= 0) do
             ["#{recipe.title}: calories=#{inspect(total_calories)}" | acc]
@@ -253,7 +256,9 @@ defmodule Controlcopypasta.Nutrition.RecipeNutritionCompletenessTest do
         end)
 
       if failures != [] do
-        flunk("#{length(failures)} recipe(s) have zero/nil calories:\n#{Enum.join(Enum.reverse(failures), "\n")}")
+        flunk(
+          "#{length(failures)} recipe(s) have zero/nil calories:\n#{Enum.join(Enum.reverse(failures), "\n")}"
+        )
       end
     end
   end

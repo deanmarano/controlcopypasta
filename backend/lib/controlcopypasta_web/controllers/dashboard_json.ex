@@ -14,7 +14,8 @@ defmodule ControlcopypastaWeb.DashboardJSON do
       data: %{
         dinner_ideas: Enum.map(dinner_ideas, &summary_with_avoided(&1, avoided_set, user_id)),
         recently_added: Enum.map(recently_added, &summary_with_avoided(&1, avoided_set, user_id)),
-        this_time_last_year: Enum.map(this_time_last_year, &summary_with_avoided(&1, avoided_set, user_id)),
+        this_time_last_year:
+          Enum.map(this_time_last_year, &summary_with_avoided(&1, avoided_set, user_id)),
         maybe_count: maybe_count
       }
     }

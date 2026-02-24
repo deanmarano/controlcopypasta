@@ -185,7 +185,9 @@ defmodule ControlcopypastaWeb.PasskeyControllerTest do
       passkey_fixture(user)
 
       # First get valid options to get a real challenge token
-      options_conn = post(conn, ~p"/api/auth/passkeys/authenticate/options", %{"email" => user.email})
+      options_conn =
+        post(conn, ~p"/api/auth/passkeys/authenticate/options", %{"email" => user.email})
+
       options = json_response(options_conn, 200)
 
       # Try to authenticate with a different credential_id

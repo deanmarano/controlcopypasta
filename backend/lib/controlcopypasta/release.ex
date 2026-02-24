@@ -66,16 +66,17 @@ defmodule Controlcopypasta.Release do
 
   defp infer_animal_type(ingredient, valid_animal_types) do
     # First try subcategory
-    result = case ingredient.subcategory do
-      "beef" -> "beef"
-      "pork" -> "pork"
-      "lamb" -> "lamb"
-      "eggs" -> "egg"
-      "poultry" -> infer_poultry_type(ingredient)
-      "fish" -> infer_fish_type(ingredient, valid_animal_types)
-      "shellfish" -> infer_shellfish_type(ingredient, valid_animal_types)
-      _ -> nil
-    end
+    result =
+      case ingredient.subcategory do
+        "beef" -> "beef"
+        "pork" -> "pork"
+        "lamb" -> "lamb"
+        "eggs" -> "egg"
+        "poultry" -> infer_poultry_type(ingredient)
+        "fish" -> infer_fish_type(ingredient, valid_animal_types)
+        "shellfish" -> infer_shellfish_type(ingredient, valid_animal_types)
+        _ -> nil
+      end
 
     # If subcategory didn't match, try name and tags
     result || infer_from_name_and_tags(ingredient, valid_animal_types)
@@ -100,7 +101,9 @@ defmodule Controlcopypasta.Release do
           "anchovy" in tags -> "anchovy"
           true -> nil
         end
-      match -> match
+
+      match ->
+        match
     end
   end
 
@@ -218,7 +221,16 @@ defmodule Controlcopypasta.Release do
       },
       "tomato" => %{
         "boost_words" => ["fresh", "ripe", "roma", "cherry", "grape", "heirloom", "vine"],
-        "anti_patterns" => ["sauce", "paste", "puree", "canned", "diced", "crushed", "sun-dried", "juice"],
+        "anti_patterns" => [
+          "sauce",
+          "paste",
+          "puree",
+          "canned",
+          "diced",
+          "crushed",
+          "sun-dried",
+          "juice"
+        ],
         "exclude_patterns" => ["\\btomato\\s+sauce\\b", "\\btomato\\s+paste\\b"]
       },
       "garlic" => %{
@@ -248,7 +260,16 @@ defmodule Controlcopypasta.Release do
       },
       "flour" => %{
         "boost_words" => ["all-purpose", "white", "wheat"],
-        "anti_patterns" => ["almond", "coconut", "rice", "oat", "self-rising", "bread", "cake", "pastry"]
+        "anti_patterns" => [
+          "almond",
+          "coconut",
+          "rice",
+          "oat",
+          "self-rising",
+          "bread",
+          "cake",
+          "pastry"
+        ]
       },
       "sugar" => %{
         "boost_words" => ["white", "granulated", "cane"],
@@ -264,7 +285,15 @@ defmodule Controlcopypasta.Release do
       },
       "milk" => %{
         "boost_words" => ["whole", "2%", "skim", "fresh"],
-        "anti_patterns" => ["coconut", "almond", "oat", "soy", "condensed", "evaporated", "buttermilk"]
+        "anti_patterns" => [
+          "coconut",
+          "almond",
+          "oat",
+          "soy",
+          "condensed",
+          "evaporated",
+          "buttermilk"
+        ]
       },
       "parsley" => %{
         "boost_words" => ["fresh", "flat-leaf", "italian", "curly"],
@@ -294,15 +323,18 @@ defmodule Controlcopypasta.Release do
     updates =
       ingredients
       |> Enum.map(fn ing ->
-        rules = case Map.get(ingredient_overrides, ing.name) do
-          nil ->
-            case Map.get(category_rules, ing.category) do
-              nil -> nil
-              template -> add_defaults(template)
-            end
-          override ->
-            add_defaults(override)
-        end
+        rules =
+          case Map.get(ingredient_overrides, ing.name) do
+            nil ->
+              case Map.get(category_rules, ing.category) do
+                nil -> nil
+                template -> add_defaults(template)
+              end
+
+            override ->
+              add_defaults(override)
+          end
+
         {ing, rules}
       end)
       |> Enum.filter(fn {_ing, rules} -> rules != nil and map_size(rules) > 0 end)
@@ -529,16 +561,23 @@ defmodule Controlcopypasta.Release do
 
   defp get_string_or_list(map, key) do
     case Map.get(map, key) do
-      nil -> []
+      nil ->
+        []
+
       value when is_binary(value) ->
         value |> String.split(",") |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
+
       values when is_list(values) ->
         Enum.flat_map(values, fn
           v when is_binary(v) ->
             v |> String.split(",") |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
-          _ -> []
+
+          _ ->
+            []
         end)
-      _ -> []
+
+      _ ->
+        []
     end
   end
 
@@ -610,12 +649,14 @@ defmodule Controlcopypasta.Release do
 
     # Process in batches to avoid memory issues
     batch_size = 200
+
     {success, failed} =
       recipe_ids
       |> Enum.chunk_every(batch_size)
       |> Enum.with_index()
       |> Enum.reduce({0, 0}, fn {batch_ids, batch_idx}, {s_acc, f_acc} ->
-        recipes = Repo.all(from r in Recipe, where: r.id in ^batch_ids, select: [:id, :ingredients])
+        recipes =
+          Repo.all(from r in Recipe, where: r.id in ^batch_ids, select: [:id, :ingredients])
 
         {batch_s, batch_f} =
           Enum.reduce(recipes, {0, 0}, fn recipe, {s, f} ->
@@ -643,10 +684,10 @@ defmodule Controlcopypasta.Release do
 
               all_parsed =
                 length(parsed_ingredients) > 0 and
-                Enum.all?(parsed_ingredients, fn ing ->
-                  (ing["canonical_id"] != nil and ing["canonical_id"] != "") or
-                  ing["skipped"] == true
-                end)
+                  Enum.all?(parsed_ingredients, fn ing ->
+                    (ing["canonical_id"] != nil and ing["canonical_id"] != "") or
+                      ing["skipped"] == true
+                  end)
 
               recipe
               |> Ecto.Changeset.change(%{
@@ -666,6 +707,7 @@ defmodule Controlcopypasta.Release do
           end)
 
         done = s_acc + batch_s + f_acc + batch_f
+
         if rem(batch_idx + 1, 5) == 0 or done == total do
           IO.puts("Progress: #{done}/#{total} (#{s_acc + batch_s} ok, #{f_acc + batch_f} failed)")
         end

@@ -34,7 +34,8 @@ defmodule ControlcopypastaWeb.IngredientController do
         package_sizes = Ingredients.list_package_sizes(id)
         all_nutrition = Ingredients.list_nutrition_sources(id)
         # Primary nutrition for backwards compatibility
-        primary_nutrition = Enum.find(all_nutrition, &(&1.is_primary)) || List.first(all_nutrition)
+        primary_nutrition = Enum.find(all_nutrition, & &1.is_primary) || List.first(all_nutrition)
+
         render(conn, :show,
           ingredient: ingredient,
           package_sizes: package_sizes,
@@ -55,7 +56,8 @@ defmodule ControlcopypastaWeb.IngredientController do
       {:ok, ingredient} ->
         package_sizes = Ingredients.list_package_sizes(ingredient.id)
         all_nutrition = Ingredients.list_nutrition_sources(ingredient.id)
-        primary_nutrition = Enum.find(all_nutrition, &(&1.is_primary)) || List.first(all_nutrition)
+        primary_nutrition = Enum.find(all_nutrition, & &1.is_primary) || List.first(all_nutrition)
+
         render(conn, :show,
           ingredient: ingredient,
           package_sizes: package_sizes,
@@ -89,7 +91,12 @@ defmodule ControlcopypastaWeb.IngredientController do
     "scale_factor": 2.5
   }
   """
-  def scale(conn, %{"canonical_ingredient_id" => id, "quantity" => qty, "unit" => unit, "scale_factor" => factor}) do
+  def scale(conn, %{
+        "canonical_ingredient_id" => id,
+        "quantity" => qty,
+        "unit" => unit,
+        "scale_factor" => factor
+      }) do
     result = Ingredients.scale_with_package_context(id, qty, unit, factor)
     render(conn, :scale_result, result: result)
   end
@@ -102,13 +109,15 @@ defmodule ControlcopypastaWeb.IngredientController do
 
       {:error, :not_found} ->
         # No canonical match - return basic scaling without package context
-        render(conn, :scale_result, result: %{
-          scaled_quantity: qty * factor,
-          scaled_unit: unit,
-          total_volume: nil,
-          package_suggestion: nil,
-          available_packages: []
-        })
+        render(conn, :scale_result,
+          result: %{
+            scaled_quantity: qty * factor,
+            scaled_unit: unit,
+            total_volume: nil,
+            package_suggestion: nil,
+            available_packages: []
+          }
+        )
     end
   end
 
@@ -125,27 +134,28 @@ defmodule ControlcopypastaWeb.IngredientController do
   }
   """
   def scale_bulk(conn, %{"scale_factor" => factor, "ingredients" => ingredients}) do
-    results = Enum.map(ingredients, fn ing ->
-      name = ing["name"]
-      qty = ing["quantity"]
-      unit = ing["unit"]
+    results =
+      Enum.map(ingredients, fn ing ->
+        name = ing["name"]
+        qty = ing["quantity"]
+        unit = ing["unit"]
 
-      case Ingredients.find_canonical_ingredient(name) do
-        {:ok, %CanonicalIngredient{id: id}} ->
-          result = Ingredients.scale_with_package_context(id, qty, unit, factor)
-          Map.put(result, :original_name, name)
+        case Ingredients.find_canonical_ingredient(name) do
+          {:ok, %CanonicalIngredient{id: id}} ->
+            result = Ingredients.scale_with_package_context(id, qty, unit, factor)
+            Map.put(result, :original_name, name)
 
-        {:error, :not_found} ->
-          %{
-            original_name: name,
-            scaled_quantity: qty * factor,
-            scaled_unit: unit,
-            total_volume: nil,
-            package_suggestion: nil,
-            available_packages: []
-          }
-      end
-    end)
+          {:error, :not_found} ->
+            %{
+              original_name: name,
+              scaled_quantity: qty * factor,
+              scaled_unit: unit,
+              total_volume: nil,
+              package_suggestion: nil,
+              available_packages: []
+            }
+        end
+      end)
 
     render(conn, :scale_bulk_result, results: results, scale_factor: factor)
   end
@@ -180,7 +190,10 @@ defmodule ControlcopypastaWeb.IngredientController do
   defp maybe_add_filter(filters, _key, ""), do: filters
   defp maybe_add_filter(filters, :is_branded, "true"), do: [{:is_branded, true} | filters]
   defp maybe_add_filter(filters, :is_branded, "false"), do: [{:is_branded, false} | filters]
-  defp maybe_add_filter(filters, :order_by, "popularity"), do: [{:order_by, :popularity} | filters]
+
+  defp maybe_add_filter(filters, :order_by, "popularity"),
+    do: [{:order_by, :popularity} | filters]
+
   defp maybe_add_filter(filters, :order_by, "name"), do: [{:order_by, :name} | filters]
   defp maybe_add_filter(filters, key, value), do: [{key, value} | filters]
 end

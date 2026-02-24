@@ -33,7 +33,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   alias Controlcopypasta.Ingredients.Matching.Matcher
 
   @sub_parsers [
-    SubParsers.RecipeReference,  # Check for recipe references first
+    # Check for recipe references first
+    SubParsers.RecipeReference,
     SubParsers.Garlic,
     SubParsers.Citrus,
     SubParsers.Egg
@@ -49,16 +50,22 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       :quantity_max,
       :unit,
       :container,
-      :ingredients,      # List of matched ingredients (for alternatives)
-      :primary_ingredient,  # The first/main ingredient
+      # List of matched ingredients (for alternatives)
+      :ingredients,
+      # The first/main ingredient
+      :primary_ingredient,
       :preparations,
       :modifiers,
       :storage_medium,
       :notes,
-      :is_alternative,    # true if "or" pattern detected
-      :choices,           # "such as X, Y, or Z" - specific options to choose from
-      :recipe_reference,  # Reference to another recipe (sub-recipe)
-      :diagnostics        # ParseDiagnostics struct when enabled
+      # true if "or" pattern detected
+      :is_alternative,
+      # "such as X, Y, or Z" - specific options to choose from
+      :choices,
+      # Reference to another recipe (sub-recipe)
+      :recipe_reference,
+      # ParseDiagnostics struct when enabled
+      :diagnostics
     ]
 
     @type recipe_reference :: %{
@@ -154,11 +161,12 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     tokens = Tokenizer.tokenize(preprocessed_text)
     lookup = Keyword.get_lazy(opts, :lookup, fn -> Ingredients.build_ingredient_lookup() end)
 
-    {result, parser_used} = case try_sub_parsers(tokens, original_text, lookup) do
-      {:ok, parsed, parser_name} -> {parsed, parser_name}
-      {:ok, parsed} -> {parsed, :sub_parser}
-      :skip -> {parse_standard(tokens, original_text, lookup), :standard}
-    end
+    {result, parser_used} =
+      case try_sub_parsers(tokens, original_text, lookup) do
+        {:ok, parsed, parser_name} -> {parsed, parser_name}
+        {:ok, parsed} -> {parsed, :sub_parser}
+        :skip -> {parse_standard(tokens, original_text, lookup), :standard}
+      end
 
     if include_diagnostics do
       diagnostics = build_diagnostics(tokens, parser_used, result, start_time)
@@ -173,13 +181,19 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   defp preprocess_text(text) do
     cond do
       # Filter out kitchen equipment (using centralized detector)
-      EquipmentDetector.is_equipment?(text) -> :skip
+      EquipmentDetector.is_equipment?(text) ->
+        :skip
 
       # Filter out section headers (FILLING, For the pastry:, etc.)
-      is_section_header?(text) -> :skip
+      is_section_header?(text) ->
+        :skip
 
       # "Salt and pepper" / "Kosher salt and freshly ground black pepper, to taste" - skip
-      Regex.match?(~r/^\s*(?:kosher\s+|sea\s+)?salt\s+and\s+(?:freshly\s+ground\s+)?(?:black\s+)?pepper\b/i, text) -> :skip
+      Regex.match?(
+        ~r/^\s*(?:kosher\s+|sea\s+)?salt\s+and\s+(?:freshly\s+ground\s+)?(?:black\s+)?pepper\b/i,
+        text
+      ) ->
+        :skip
 
       true ->
         text
@@ -210,7 +224,10 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     # Match: unit/number followed by grams/g
     # E.g., "cup/100 grams", "cups/256 grams", "cup/100g"
     text
-    |> String.replace(~r/(\b(?:cups?|tablespoons?|tbsp?|teaspoons?|tsp)\s*)\/\s*\d+\s*(?:grams?|g)\b/i, "\\1")
+    |> String.replace(
+      ~r/(\b(?:cups?|tablespoons?|tbsp?|teaspoons?|tsp)\s*)\/\s*\d+\s*(?:grams?|g)\b/i,
+      "\\1"
+    )
   end
 
   # Normalize gram measurements in parentheses: "1 cup (200g) flour" -> "1 cup flour"
@@ -228,8 +245,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   # "1 stick (8 tablespoons) salted butter" -> "8 tablespoons salted butter"
   defp normalize_stick_butter(text) do
     if String.contains?(String.downcase(text), "butter") and
-       String.contains?(String.downcase(text), "stick") do
-
+         String.contains?(String.downcase(text), "stick") do
       text
       # Pattern: "X sticks (Y unit)" -> "Y unit"
       |> String.replace(~r/\d+\s*(?:1\/2\s+)?sticks?\s*\(([^)]+)\)/i, "\\1")
@@ -249,12 +265,11 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   # "1 inch piece fresh ginger" -> "1 piece fresh ginger"
   defp normalize_ginger_size(text) do
     if String.contains?(String.downcase(text), "ginger") and
-       (String.contains?(String.downcase(text), "inch") or
-        String.contains?(text, "\"") or
-        String.contains?(String.downcase(text), "piece") or
-        Regex.match?(~r/\d+\s*cm\b/i, text) or
-        String.contains?(String.downcase(text), "thumb")) do
-
+         (String.contains?(String.downcase(text), "inch") or
+            String.contains?(text, "\"") or
+            String.contains?(String.downcase(text), "piece") or
+            Regex.match?(~r/\d+\s*cm\b/i, text) or
+            String.contains?(String.downcase(text), "thumb")) do
       text
       # Pattern: X (size") piece -> X piece (with parenthesized inch notation)
       |> String.replace(~r/(\d+)\s*\(\s*\d+(?:\/\d+)?["″]\s*\)\s*piece/i, "\\1 piece")
@@ -288,24 +303,43 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   # "1 (1\u201D) piece" -> "1 (1\") piece"
   # Non-breaking spaces (\u00A0) -> regular spaces
   @unicode_fractions %{
-    "½" => "1/2", "⅓" => "1/3", "⅔" => "2/3",
-    "¼" => "1/4", "¾" => "3/4",
-    "⅕" => "1/5", "⅖" => "2/5", "⅗" => "3/5", "⅘" => "4/5",
-    "⅙" => "1/6", "⅚" => "5/6",
-    "⅛" => "1/8", "⅜" => "3/8", "⅝" => "5/8", "⅞" => "7/8"
+    "½" => "1/2",
+    "⅓" => "1/3",
+    "⅔" => "2/3",
+    "¼" => "1/4",
+    "¾" => "3/4",
+    "⅕" => "1/5",
+    "⅖" => "2/5",
+    "⅗" => "3/5",
+    "⅘" => "4/5",
+    "⅙" => "1/6",
+    "⅚" => "5/6",
+    "⅛" => "1/8",
+    "⅜" => "3/8",
+    "⅝" => "5/8",
+    "⅞" => "7/8"
   }
 
   defp normalize_smart_quotes(text) do
     text
-    |> String.replace("\u00A0", " ")   # non-breaking space
-    |> String.replace("\u2044", "/")   # unicode fraction slash
-    |> String.replace("\u201C", "\"")  # left double smart quote
-    |> String.replace("\u201D", "\"")  # right double smart quote
-    |> String.replace("\u2018", "'")   # left single smart quote
-    |> String.replace("\u2019", "'")   # right single smart quote
-    |> String.replace("\u2033", "\"")  # double prime
-    |> String.replace("\u2013", "-")   # en-dash (used in ranges: "1–2")
-    |> String.replace("\u2014", "-")   # em-dash
+    # non-breaking space
+    |> String.replace("\u00A0", " ")
+    # unicode fraction slash
+    |> String.replace("\u2044", "/")
+    # left double smart quote
+    |> String.replace("\u201C", "\"")
+    # right double smart quote
+    |> String.replace("\u201D", "\"")
+    # left single smart quote
+    |> String.replace("\u2018", "'")
+    # right single smart quote
+    |> String.replace("\u2019", "'")
+    # double prime
+    |> String.replace("\u2033", "\"")
+    # en-dash (used in ranges: "1–2")
+    |> String.replace("\u2013", "-")
+    # em-dash
+    |> String.replace("\u2014", "-")
     |> normalize_superscript_subscript_digits()
     |> normalize_unicode_fraction_chars()
   end
@@ -313,16 +347,33 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   # Normalize Unicode superscript/subscript digits to ASCII
   # ²/₃ → 2/3, ¹/₄ → 1/4, etc.
   @superscript_digits %{
-    "⁰" => "0", "¹" => "1", "²" => "2", "³" => "3", "⁴" => "4",
-    "⁵" => "5", "⁶" => "6", "⁷" => "7", "⁸" => "8", "⁹" => "9"
+    "⁰" => "0",
+    "¹" => "1",
+    "²" => "2",
+    "³" => "3",
+    "⁴" => "4",
+    "⁵" => "5",
+    "⁶" => "6",
+    "⁷" => "7",
+    "⁸" => "8",
+    "⁹" => "9"
   }
   @subscript_digits %{
-    "₀" => "0", "₁" => "1", "₂" => "2", "₃" => "3", "₄" => "4",
-    "₅" => "5", "₆" => "6", "₇" => "7", "₈" => "8", "₉" => "9"
+    "₀" => "0",
+    "₁" => "1",
+    "₂" => "2",
+    "₃" => "3",
+    "₄" => "4",
+    "₅" => "5",
+    "₆" => "6",
+    "₇" => "7",
+    "₈" => "8",
+    "₉" => "9"
   }
 
   defp normalize_superscript_subscript_digits(text) do
-    Enum.reduce(Map.merge(@superscript_digits, @subscript_digits), text, fn {char, replacement}, acc ->
+    Enum.reduce(Map.merge(@superscript_digits, @subscript_digits), text, fn {char, replacement},
+                                                                            acc ->
       String.replace(acc, char, replacement)
     end)
   end
@@ -353,16 +404,28 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     |> String.replace(~r/\((\d+(?:\.\d+)?)(oz|ounces?|g|grams?|ml|l)\)/i, "(\\1-\\2)")
     # "1 can (28 oz crushed tomatoes)" -> "1 (28-oz) can crushed tomatoes"
     # Rearrange: container (size unit ingredients) -> (size-unit) container ingredients
-    |> String.replace(~r/(\d+)\s+(cans?|tins?|jars?|bottles?|cartons?)\s+\(\s*(\d+(?:\.\d+)?)\s*(oz|ounces?|g|grams?|ml|l)\s+/i, "\\1 (\\3-\\4) \\2 ")
+    |> String.replace(
+      ~r/(\d+)\s+(cans?|tins?|jars?|bottles?|cartons?)\s+\(\s*(\d+(?:\.\d+)?)\s*(oz|ounces?|g|grams?|ml|l)\s+/i,
+      "\\1 (\\3-\\4) \\2 "
+    )
     # "(10 ounces/283 grams)" weight conversions after standard units (cups, tbsp, etc.)
     # Only strip when preceded by a standard measurement, NOT after "can/tin" (which need the size)
     # Number pattern allows fractions: "8 3/4", "1.5", "10"
     # Allow modifiers like "packed" between unit and parens: "1 cup packed (7 oz/198g)"
-    |> String.replace(~r/(\d+(?:\s+\d+\/\d+)?\s+(?:cups?|tablespoons?|tbsp|teaspoons?|tsp)(?:\s+packed)?)\s*\(\s*\d+(?:\s+\d+\/\d+)?(?:\.\d+)?\s*(?:ounces?|oz)\s*\/\s*\d+\s*(?:grams?|g)\s*\)/i, "\\1")
+    |> String.replace(
+      ~r/(\d+(?:\s+\d+\/\d+)?\s+(?:cups?|tablespoons?|tbsp|teaspoons?|tsp)(?:\s+packed)?)\s*\(\s*\d+(?:\s+\d+\/\d+)?(?:\.\d+)?\s*(?:ounces?|oz)\s*\/\s*\d+\s*(?:grams?|g)\s*\)/i,
+      "\\1"
+    )
     # "(283 grams/10 ounces)" metric-first variant, same restriction
-    |> String.replace(~r/(\d+(?:\s+\d+\/\d+)?\s+(?:cups?|tablespoons?|tbsp|teaspoons?|tsp)(?:\s+packed)?)\s*\(\s*\d+(?:\s+\d+\/\d+)?(?:\.\d+)?\s*(?:grams?|g)\s*\/\s*\d+(?:\s+\d+\/\d+)?(?:\.\d+)?\s*(?:ounces?|oz)\s*\)/i, "\\1")
+    |> String.replace(
+      ~r/(\d+(?:\s+\d+\/\d+)?\s+(?:cups?|tablespoons?|tbsp|teaspoons?|tsp)(?:\s+packed)?)\s*\(\s*\d+(?:\s+\d+\/\d+)?(?:\.\d+)?\s*(?:grams?|g)\s*\/\s*\d+(?:\s+\d+\/\d+)?(?:\.\d+)?\s*(?:ounces?|oz)\s*\)/i,
+      "\\1"
+    )
     # Parens containing "store bought", "homemade", "or sub", "see note", "if needed"
-    |> String.replace(~r/\(\s*(?:store\s*bought|homemade|or\s+sub|see\s+note|if\s+needed|approximately|about\s+\d)[^)]*\)/i, "")
+    |> String.replace(
+      ~r/\(\s*(?:store\s*bought|homemade|or\s+sub|see\s+note|if\s+needed|approximately|about\s+\d)[^)]*\)/i,
+      ""
+    )
     # Parens starting with "or" suggesting alternatives we don't parse: "(or other protein)"
     |> String.replace(~r/\(\s*or\s+(?:other|sub|substitute|[\d])[^)]*\)/i, "")
     # Parens containing recipe instructions: "(no curry powder // ...)"
@@ -377,10 +440,14 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   # We take the first ingredient since the parser handles one ingredient per line
   defp normalize_each_and_pattern(text) do
     # Pattern: "each X and Y" where X and Y are ingredient names after a unit
-    case Regex.run(~r/^(.+?\b(?:teaspoons?|tsp|tablespoons?|tbsp|cups?|oz|ounces?|pounds?|lb)\s+)each\s+(.+?)\s+and\s+(.+)$/i, text) do
+    case Regex.run(
+           ~r/^(.+?\b(?:teaspoons?|tsp|tablespoons?|tbsp|cups?|oz|ounces?|pounds?|lb)\s+)each\s+(.+?)\s+and\s+(.+)$/i,
+           text
+         ) do
       [_, prefix, first_ingredient, _second_ingredient] ->
         # Return just the first ingredient (both get the same amount)
         String.trim(prefix <> first_ingredient)
+
       _ ->
         text
     end
@@ -392,15 +459,30 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     text
     # "200ml/7fl oz double cream" -> "7 fl oz double cream" (metric-first dual: keep imperial)
     # Unicode fractions already normalized: "100ml/3½fl oz" -> "100ml/3 1/2fl oz"
-    |> String.replace(~r/^\s*\d+(?:\.\d+)?\s*(?:ml|g|kg|l)\s*\/\s*(\d+(?:\s+\d+\/\d+)?(?:\.\d+)?)\s*(fl\s*oz|fluid\s+ounces?|ounces?|oz|cups?|tablespoons?|tbsp|teaspoons?|tsp)\b/i, "\\1 \\2")
+    |> String.replace(
+      ~r/^\s*\d+(?:\.\d+)?\s*(?:ml|g|kg|l)\s*\/\s*(\d+(?:\s+\d+\/\d+)?(?:\.\d+)?)\s*(fl\s*oz|fluid\s+ounces?|ounces?|oz|cups?|tablespoons?|tbsp|teaspoons?|tsp)\b/i,
+      "\\1 \\2"
+    )
     # "8.5 fluid ounces/250 ml water" -> "8.5 fluid ounces water"
-    |> String.replace(~r/(\b\d+(?:\.\d+)?\s+(?:fluid\s+)?(?:ounces?|oz|cups?|tablespoons?|tbsp|teaspoons?|tsp))\s*\/\s*\d+(?:\.\d+)?\s*(?:ml|g|l|kg)\b/i, "\\1")
+    |> String.replace(
+      ~r/(\b\d+(?:\.\d+)?\s+(?:fluid\s+)?(?:ounces?|oz|cups?|tablespoons?|tbsp|teaspoons?|tsp))\s*\/\s*\d+(?:\.\d+)?\s*(?:ml|g|l|kg)\b/i,
+      "\\1"
+    )
     # "1 cup/8 ounces (226 grams) ricotta" -> "1 cup ricotta"
-    |> String.replace(~r/(\b\d+(?:[\/\.]\d+)?\s+(?:cups?|c)\s*)\/\s*\d+\s+(?:ounces?|oz)\b/i, "\\1")
+    |> String.replace(
+      ~r/(\b\d+(?:[\/\.]\d+)?\s+(?:cups?|c)\s*)\/\s*\d+\s+(?:ounces?|oz)\b/i,
+      "\\1"
+    )
     # "8 ounces (1 cup; 225g) X" -> "8 ounces X" (strip parenthetical with cup;g alternative)
-    |> String.replace(~r/\(\s*\d+(?:[\/\.]\d+)?\s+(?:cups?|c)\s*;\s*\d+(?:\.\d+)?\s*(?:g|grams?)\s*\)/i, "")
+    |> String.replace(
+      ~r/\(\s*\d+(?:[\/\.]\d+)?\s+(?:cups?|c)\s*;\s*\d+(?:\.\d+)?\s*(?:g|grams?)\s*\)/i,
+      ""
+    )
     # "7/8 cup to 1 cup (198g to 227g)" → "7/8 cup" (strip range and gram parens)
-    |> String.replace(~r/(\b\d+(?:\/\d+)?\s+(?:cups?|c))\s+to\s+\d+(?:\/\d+)?\s+(?:cups?|c)\s*\([^)]*\)/i, "\\1")
+    |> String.replace(
+      ~r/(\b\d+(?:\/\d+)?\s+(?:cups?|c))\s+to\s+\d+(?:\/\d+)?\s+(?:cups?|c)\s*\([^)]*\)/i,
+      "\\1"
+    )
     |> String.replace(~r/\s+/, " ")
     |> String.trim()
   end
@@ -437,7 +519,10 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     # "oil for deep-frying" -> "oil", "vegetable oil for frying" -> "vegetable oil"
     |> String.replace(~r/,?\s+for\s+(?:deep[- ]?)?frying\b.*$/i, "")
     # "mint for serving" -> "mint", "parsley for garnish" -> "parsley"
-    |> String.replace(~r/,?\s+for\s+(?:serving|garnish|garnishing|topping|drizzling|dipping|finishing)\b.*$/i, "")
+    |> String.replace(
+      ~r/,?\s+for\s+(?:serving|garnish|garnishing|topping|drizzling|dipping|finishing)\b.*$/i,
+      ""
+    )
     # "dill and/or thinly sliced chives" -> "dill" (take first before and/or)
     |> normalize_and_or()
   end
@@ -491,18 +576,30 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   # Returns true for: ALL CAPS single words, "For the X:", "Dry ingredients:", advertising, etc.
   defp is_section_header?(text) do
     trimmed = String.trim(text)
+
     cond do
       # Blank or whitespace-only
-      trimmed == "" -> true
+      trimmed == "" ->
+        true
+
       # Ends with colon (section labels): "For the pastry:", "Dry ingredients:", "FILLING:"
-      String.ends_with?(trimmed, ":") -> true
+      String.ends_with?(trimmed, ":") ->
+        true
+
       # "For the X" section headers: "For the Toast", "For the Poolish", "For the Dough"
-      Regex.match?(~r/^for\s+the\s+\w/i, trimmed) -> true
+      Regex.match?(~r/^for\s+the\s+\w/i, trimmed) ->
+        true
+
       # ALL CAPS single or two words with no digits: "FILLING", "TO SERVE", "GARNISH"
-      Regex.match?(~r/^[A-Z][A-Z\s]{0,30}$/, trimmed) and not Regex.match?(~r/\d/, trimmed) -> true
+      Regex.match?(~r/^[A-Z][A-Z\s]{0,30}$/, trimmed) and not Regex.match?(~r/\d/, trimmed) ->
+        true
+
       # Advertising / non-ingredient lines
-      Regex.match?(~r/^\s*(?:SHOP|BUY|ORDER|SPONSORED|ADVERTISEMENT|AD)\b/i, trimmed) -> true
-      true -> false
+      Regex.match?(~r/^\s*(?:SHOP|BUY|ORDER|SPONSORED|ADVERTISEMENT|AD)\b/i, trimmed) ->
+        true
+
+      true ->
+        false
     end
   end
 
@@ -539,16 +636,24 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   # "1 medium red or orange bell pepper" -> "1 medium bell pepper"
   # Strips the color modifiers entirely so the ingredient name (onion, bell pepper) matches
   defp normalize_multi_or_adjective(text) do
-    case Regex.run(~r/^(.+?\s)(white|yellow|red|orange|green|purple|black|brown)\s+or\s+(white|yellow|red|orange|green|purple|black|brown)\s+(.+)$/i, text) do
+    case Regex.run(
+           ~r/^(.+?\s)(white|yellow|red|orange|green|purple|black|brown)\s+or\s+(white|yellow|red|orange|green|purple|black|brown)\s+(.+)$/i,
+           text
+         ) do
       [_, prefix, _first_adj, _second_adj, rest] ->
         String.trim(prefix <> rest)
+
       _ ->
         # Also handle comma-separated lists ending in "chiles/peppers"
         # "green Indian, Thai, or serrano chiles" -> "serrano chiles"
         # Take the last alternative before the shared noun
-        case Regex.run(~r/^(\d\S*)\s+(?:\w+\s+)?(?:\w+,\s*)+(?:or\s+)?(\w+\s+(?:chiles?|peppers?|chilis?|chilies?))\b(.*)$/i, text) do
+        case Regex.run(
+               ~r/^(\d\S*)\s+(?:\w+\s+)?(?:\w+,\s*)+(?:or\s+)?(\w+\s+(?:chiles?|peppers?|chilis?|chilies?))\b(.*)$/i,
+               text
+             ) do
           [_, qty, last_alternative, rest] ->
             String.trim("#{qty} #{last_alternative}#{rest}")
+
           _ ->
             text
         end
@@ -559,15 +664,16 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     parse_time = System.monotonic_time(:microsecond) - start_time
 
     # Determine match strategy from confidence
-    match_strategy = if result.primary_ingredient do
-      case result.primary_ingredient.confidence do
-        1.0 -> :exact
-        c when c >= 0.95 -> :partial
-        c when c >= 0.9 -> :stripped
-        c when c >= 0.8 -> :shortened
-        _ -> :fuzzy
+    match_strategy =
+      if result.primary_ingredient do
+        case result.primary_ingredient.confidence do
+          1.0 -> :exact
+          c when c >= 0.95 -> :partial
+          c when c >= 0.9 -> :stripped
+          c when c >= 0.8 -> :shortened
+          _ -> :fuzzy
+        end
       end
-    end
 
     %ParseDiagnostics{
       tokens: tokens,
@@ -606,6 +712,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   end
 
   defp summarize_selected_match(nil), do: nil
+
   defp summarize_selected_match(primary) do
     %{
       name: primary.name,
@@ -620,13 +727,17 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
         case parser.parse(tokens, original, lookup) do
           {:ok, parsed} ->
             # Extract parser name from module (e.g., SubParsers.Garlic -> :garlic)
-            parser_name = parser
+            parser_name =
+              parser
               |> Module.split()
               |> List.last()
               |> String.downcase()
               |> String.to_atom()
+
             {:ok, parsed, parser_name}
-          :skip -> nil
+
+          :skip ->
+            nil
         end
       end
     end)
@@ -647,16 +758,20 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
 
     # Get ingredient names, applying juice/zest transformations
     raw_ingredient_names = clean_ingredient_names(analysis.ingredients)
-    ingredient_names = transform_juice_zest_patterns(raw_ingredient_names, analysis.preparations, tokens)
-    matched_ingredients = Enum.map(ingredient_names, fn name ->
-      match = match_ingredient(name, lookup)
-      # If no match, retry with prep words prepended (e.g., "sauce" -> "hot sauce")
-      if is_nil(match.canonical_id) and length(analysis.preparations) > 0 do
-        retry_with_preps(name, analysis.preparations, lookup) || match
-      else
-        match
-      end
-    end)
+
+    ingredient_names =
+      transform_juice_zest_patterns(raw_ingredient_names, analysis.preparations, tokens)
+
+    matched_ingredients =
+      Enum.map(ingredient_names, fn name ->
+        match = match_ingredient(name, lookup)
+        # If no match, retry with prep words prepended (e.g., "sauce" -> "hot sauce")
+        if is_nil(match.canonical_id) and length(analysis.preparations) > 0 do
+          retry_with_preps(name, analysis.preparations, lookup) || match
+        else
+          match
+        end
+      end)
 
     # Get primary ingredient (prefer canonical match over measurement fragments)
     primary = select_primary_ingredient(matched_ingredients)
@@ -688,15 +803,16 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   # Select the best primary ingredient from matched_ingredients.
   # Prefers an ingredient with a canonical match over one that looks like a measurement fragment.
   defp select_primary_ingredient([]), do: nil
+
   defp select_primary_ingredient(ingredients) do
     # Prefer ingredient with canonical match that isn't a measurement fragment
-    Enum.find(ingredients, fn i -> i.canonical_id != nil and not measurement_fragment?(i.name) end)
     # Then any canonical match
-    || Enum.find(ingredients, fn i -> i.canonical_id != nil end)
     # Then prefer ingredient that doesn't look like a measurement fragment
-    || Enum.find(ingredients, fn i -> not measurement_fragment?(i.name) end)
     # Fall back to first
-    || List.first(ingredients)
+    Enum.find(ingredients, fn i -> i.canonical_id != nil and not measurement_fragment?(i.name) end) ||
+      Enum.find(ingredients, fn i -> i.canonical_id != nil end) ||
+      Enum.find(ingredients, fn i -> not measurement_fragment?(i.name) end) ||
+      List.first(ingredients)
   end
 
   defp measurement_fragment?(name) do
@@ -708,7 +824,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   Uses the primary ingredient for backward compatibility.
   """
   def to_jsonb_map(%ParsedIngredient{} = parsed) do
-    primary = parsed.primary_ingredient || %{canonical_name: nil, canonical_id: nil, confidence: 0.5}
+    primary =
+      parsed.primary_ingredient || %{canonical_name: nil, canonical_id: nil, confidence: 0.5}
 
     base = %{
       "text" => parsed.original,
@@ -726,83 +843,97 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     }
 
     # Mark skipped ingredients (equipment, section headers, salt-and-pepper, etc.)
-    base = if is_nil(parsed.primary_ingredient) and parsed.ingredients == [] do
-      Map.put(base, "skipped", true)
-    else
-      base
-    end
+    base =
+      if is_nil(parsed.primary_ingredient) and parsed.ingredients == [] do
+        Map.put(base, "skipped", true)
+      else
+        base
+      end
 
     # Add container if present
-    base = if parsed.container do
-      container = %{
-        "size_value" => parsed.container.size_value,
-        "size_unit" => parsed.container.size_unit,
-        "container_type" => parsed.container.container_type
-      }
-      Map.put(base, "container", container)
-    else
-      base
-    end
+    base =
+      if parsed.container do
+        container = %{
+          "size_value" => parsed.container.size_value,
+          "size_unit" => parsed.container.size_unit,
+          "container_type" => parsed.container.container_type
+        }
+
+        Map.put(base, "container", container)
+      else
+        base
+      end
 
     # Add storage medium if present
-    base = if parsed.storage_medium do
-      Map.put(base, "storage_medium", parsed.storage_medium)
-    else
-      base
-    end
+    base =
+      if parsed.storage_medium do
+        Map.put(base, "storage_medium", parsed.storage_medium)
+      else
+        base
+      end
 
     # Add alternatives if present
-    base = if parsed.is_alternative and length(parsed.ingredients) > 1 do
-      alternatives = parsed.ingredients
-        |> Enum.drop(1)
-        |> Enum.map(fn ing ->
-          %{
-            "name" => ing.name,
-            "canonical_name" => ing.canonical_name,
-            "canonical_id" => ing.canonical_id
-          }
-        end)
-      base
-      |> Map.put("alternatives", alternatives)
-      |> Map.put("is_alternative", true)
-    else
-      base
-    end
+    base =
+      if parsed.is_alternative and length(parsed.ingredients) > 1 do
+        alternatives =
+          parsed.ingredients
+          |> Enum.drop(1)
+          |> Enum.map(fn ing ->
+            %{
+              "name" => ing.name,
+              "canonical_name" => ing.canonical_name,
+              "canonical_id" => ing.canonical_id
+            }
+          end)
+
+        base
+        |> Map.put("alternatives", alternatives)
+        |> Map.put("is_alternative", true)
+      else
+        base
+      end
 
     # Add recipe reference if present
-    base = if parsed.recipe_reference do
-      ref = parsed.recipe_reference
-      Map.put(base, "recipe_reference", %{
-        "type" => Atom.to_string(ref.type),
-        "text" => ref.text,
-        "name" => ref.name,
-        "is_optional" => ref.is_optional
-      })
-    else
-      base
-    end
+    base =
+      if parsed.recipe_reference do
+        ref = parsed.recipe_reference
+
+        Map.put(base, "recipe_reference", %{
+          "type" => Atom.to_string(ref.type),
+          "text" => ref.text,
+          "name" => ref.name,
+          "is_optional" => ref.is_optional
+        })
+      else
+        base
+      end
 
     # Add choices if present (from "such as X, Y, or Z" patterns)
-    base = if parsed.choices && parsed.choices != [] do
-      choices = Enum.map(parsed.choices, fn choice ->
-        %{
-          "name" => choice.name,
-          "canonical_name" => choice.canonical_name,
-          "canonical_id" => choice.canonical_id
-        }
-      end)
-      Map.put(base, "choices", choices)
-    else
-      base
-    end
+    base =
+      if parsed.choices && parsed.choices != [] do
+        choices =
+          Enum.map(parsed.choices, fn choice ->
+            %{
+              "name" => choice.name,
+              "canonical_name" => choice.canonical_name,
+              "canonical_id" => choice.canonical_id
+            }
+          end)
+
+        Map.put(base, "choices", choices)
+      else
+        base
+      end
 
     # Add pre_steps generated from preparations
     pre_steps = PreStepGenerator.generate_pre_steps(parsed)
-    base = if pre_steps != [] do
-      Map.put(base, "pre_steps", Enum.map(pre_steps, &PreStepGenerator.to_map/1))
-    else
-      base
-    end
+
+    base =
+      if pre_steps != [] do
+        Map.put(base, "pre_steps", Enum.map(pre_steps, &PreStepGenerator.to_map/1))
+      else
+        base
+      end
 
     # Add diagnostics if present (prefixed with _ to indicate internal/debug)
     if parsed.diagnostics do
@@ -848,35 +979,39 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       rest = Enum.drop(tokens, paren_start + 1)
 
       # Try (qty unit) container first
-      result = with [%{label: :qty, text: qty_text} | rest] <- rest,
-           [%{label: :unit, text: unit_text} | rest] <- rest,
-           [%{text: ")"} | rest] <- rest,
-           [%{label: :container, text: container_text} | _] <- rest do
-        %{
-          size_value: parse_single_quantity(qty_text),
-          size_unit: normalize_unit(unit_text),
-          container_type: container_text
-        }
-      else
-        _ -> nil
-      end
+      result =
+        with [%{label: :qty, text: qty_text} | rest] <- rest,
+             [%{label: :unit, text: unit_text} | rest] <- rest,
+             [%{text: ")"} | rest] <- rest,
+             [%{label: :container, text: container_text} | _] <- rest do
+          %{
+            size_value: parse_single_quantity(qty_text),
+            size_unit: normalize_unit(unit_text),
+            container_type: container_text
+          }
+        else
+          _ -> nil
+        end
 
       # Fallback: try (size) container - e.g., "(15-ounce) cans"
-      result || with [%{label: :size, text: size_text} | rest] <- rest,
-           [%{text: ")"} | rest] <- rest,
-           [%{label: :container, text: container_text} | _] <- rest do
-        case parse_size_string(size_text) do
-          {value, unit} ->
-            %{
-              size_value: value,
-              size_unit: unit,
-              container_type: container_text
-            }
-          nil -> nil
+      result ||
+        with [%{label: :size, text: size_text} | rest] <- rest,
+             [%{text: ")"} | rest] <- rest,
+             [%{label: :container, text: container_text} | _] <- rest do
+          case parse_size_string(size_text) do
+            {value, unit} ->
+              %{
+                size_value: value,
+                size_unit: unit,
+                container_type: container_text
+              }
+
+            nil ->
+              nil
+          end
+        else
+          _ -> nil
         end
-      else
-        _ -> nil
-      end
     else
       nil
     end
@@ -896,9 +1031,13 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
               size_unit: unit,
               container_type: container_text
             }
-          nil -> nil
+
+          nil ->
+            nil
         end
-      _ -> nil
+
+      _ ->
+        nil
     end)
   end
 
@@ -909,7 +1048,11 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     tokens
     |> Enum.chunk_every(3, 1, :discard)
     |> Enum.find_value(fn
-      [%{label: :qty, text: qty_text}, %{label: :unit, text: unit_text}, %{label: :container, text: container_text}] ->
+      [
+        %{label: :qty, text: qty_text},
+        %{label: :unit, text: unit_text},
+        %{label: :container, text: container_text}
+      ] ->
         normalized_unit = normalize_unit(unit_text)
 
         if normalized_unit in ~w(g kg ml l) do
@@ -939,7 +1082,9 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
           size_unit: nil,
           container_type: container_text
         }
-      _ -> nil
+
+      _ ->
+        nil
     end)
   end
 
@@ -951,7 +1096,9 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
           {value, _} -> {value, normalize_unit(unit)}
           :error -> nil
         end
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
@@ -968,16 +1115,18 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       after_intro = Enum.drop(tokens, example_idx + 1)
 
       # Skip "as" if present (for "such as")
-      after_intro = case after_intro do
-        [%{text: "as"} | rest] -> rest
-        other -> other
-      end
+      after_intro =
+        case after_intro do
+          [%{text: "as"} | rest] -> rest
+          other -> other
+        end
 
       # Extract choices and preparations
       {choice_names, prep_names} = parse_choices_and_preps(after_intro)
 
       # Match choices to canonical ingredients
-      matched_choices = choice_names
+      matched_choices =
+        choice_names
         |> Enum.map(&match_ingredient(&1, lookup))
         |> Enum.reject(&is_nil/1)
 
@@ -1010,9 +1159,11 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
         case token.label do
           :word ->
             {Enum.reverse(choices), collect_preps([token | rest])}
+
           :conj ->
             # "and" in prep section continues preps
             parse_choices_and_preps(rest, [], choices, true)
+
           _ ->
             parse_choices_and_preps(rest, [], choices, true)
         end
@@ -1021,7 +1172,9 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       token.label == :punct and token.text == "," ->
         # Check if next word is a prep indicator
         next_word = Enum.find(rest, &(&1.label == :word))
-        if next_word && MapSet.member?(ParserCache.preparations(), String.downcase(next_word.text)) do
+
+        if next_word &&
+             MapSet.member?(ParserCache.preparations(), String.downcase(next_word.text)) do
           choices = finalize_choice(current_choice, choices)
           {Enum.reverse(choices), collect_preps(rest)}
         else
@@ -1053,6 +1206,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   end
 
   defp finalize_choice([], choices), do: choices
+
   defp finalize_choice(words, choices) do
     name = words |> Enum.reverse() |> Enum.join(" ") |> String.trim()
     if name == "", do: choices, else: [name | choices]
@@ -1094,9 +1248,12 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
 
   defp clean_name(name) do
     name
-    |> String.replace(~r/\*+$/, "")  # Remove trailing asterisks
-    |> String.replace(~r/^\*+/, "")  # Remove leading asterisks
-    |> String.replace(~r/\s+/, " ")  # Normalize whitespace
+    # Remove trailing asterisks
+    |> String.replace(~r/\*+$/, "")
+    # Remove leading asterisks
+    |> String.replace(~r/^\*+/, "")
+    # Normalize whitespace
+    |> String.replace(~r/\s+/, " ")
     |> String.trim()
   end
 
@@ -1169,10 +1326,11 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     has_zest_of = String.contains?(text, "zest of") or String.contains?(text, "zest from")
 
     # Also check for "juice and zest" or "zest + juice" patterns
-    has_juice_and_zest = String.contains?(text, "juice and zest") or
-                         String.contains?(text, "zest and juice") or
-                         String.contains?(text, "juice + zest") or
-                         String.contains?(text, "zest + juice")
+    has_juice_and_zest =
+      String.contains?(text, "juice and zest") or
+        String.contains?(text, "zest and juice") or
+        String.contains?(text, "juice + zest") or
+        String.contains?(text, "zest + juice")
 
     cond do
       has_juice_and_zest -> :both

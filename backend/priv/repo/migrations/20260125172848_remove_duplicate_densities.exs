@@ -14,20 +14,32 @@ defmodule Controlcopypasta.Repo.Migrations.RemoveDuplicateDensities do
     """
 
     # Drop the old unique constraint that doesn't handle NULLs properly
-    drop_if_exists unique_index(:ingredient_densities, [:canonical_ingredient_id, :volume_unit, :preparation])
+    drop_if_exists unique_index(:ingredient_densities, [
+                     :canonical_ingredient_id,
+                     :volume_unit,
+                     :preparation
+                   ])
 
     # Create a new unique index that treats NULL preparation as a single value
     # Using COALESCE to convert NULL to empty string for uniqueness check
     create unique_index(
-      :ingredient_densities,
-      ["canonical_ingredient_id", "volume_unit", "COALESCE(preparation, '')"],
-      name: :ingredient_densities_unique_idx
-    )
+             :ingredient_densities,
+             ["canonical_ingredient_id", "volume_unit", "COALESCE(preparation, '')"],
+             name: :ingredient_densities_unique_idx
+           )
   end
 
   def down do
-    drop_if_exists index(:ingredient_densities, [:canonical_ingredient_id, :volume_unit, :preparation], name: :ingredient_densities_unique_idx)
+    drop_if_exists index(
+                     :ingredient_densities,
+                     [:canonical_ingredient_id, :volume_unit, :preparation],
+                     name: :ingredient_densities_unique_idx
+                   )
 
-    create unique_index(:ingredient_densities, [:canonical_ingredient_id, :volume_unit, :preparation])
+    create unique_index(:ingredient_densities, [
+             :canonical_ingredient_id,
+             :volume_unit,
+             :preparation
+           ])
   end
 end

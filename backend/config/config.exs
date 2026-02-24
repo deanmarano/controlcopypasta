@@ -36,8 +36,7 @@ config :controlcopypasta, Controlcopypasta.Accounts.Guardian,
   secret_key: System.get_env("GUARDIAN_SECRET_KEY") || "dev_secret_key_change_in_production"
 
 # Swoosh email configuration (adapter set per environment)
-config :controlcopypasta, Controlcopypasta.Mailer,
-  adapter: Swoosh.Adapters.Local
+config :controlcopypasta, Controlcopypasta.Mailer, adapter: Swoosh.Adapters.Local
 
 # Disable Swoosh API client (we use SMTP adapter in dev)
 config :swoosh, :api_client, false

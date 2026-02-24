@@ -247,7 +247,10 @@ defmodule ControlcopypastaWeb.AvoidedIngredientController do
     Ingredients.list_canonical_ingredients(category: category)
   end
 
-  defp get_ingredients_for_avoidance(%{avoidance_type: "allergen", allergen_group: allergen_group}) do
+  defp get_ingredients_for_avoidance(%{
+         avoidance_type: "allergen",
+         allergen_group: allergen_group
+       }) do
     Ingredients.list_canonical_ingredients(allergen_group: allergen_group)
   end
 

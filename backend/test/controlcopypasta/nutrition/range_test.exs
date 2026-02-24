@@ -246,11 +246,11 @@ defmodule Controlcopypasta.Nutrition.RangeTest do
       result = Range.to_map(range)
 
       assert result == %{
-        min: 90.0,
-        best: 100.0,
-        max: 110.0,
-        confidence: 0.9
-      }
+               min: 90.0,
+               best: 100.0,
+               max: 110.0,
+               confidence: 0.9
+             }
     end
   end
 end

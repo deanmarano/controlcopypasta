@@ -54,21 +54,26 @@ defmodule Controlcopypasta.Repo.Migrations.SeedPreparationsAndAddMetadata do
   end
 
   defp escape(nil), do: "NULL"
+
   defp escape(str) when is_binary(str) do
     "'#{String.replace(str, "'", "''")}'"
   end
 
   defp escape_json(nil), do: "'{}'"
+
   defp escape_json(map) when is_map(map) do
     "'#{String.replace(Jason.encode!(map), "'", "''")}'"
   end
 
   defp escape_array(nil), do: "ARRAY[]::varchar[]"
   defp escape_array([]), do: "ARRAY[]::varchar[]"
+
   defp escape_array(list) when is_list(list) do
-    items = Enum.map_join(list, ", ", fn item ->
-      "'#{String.replace(item, "'", "''")}'"
-    end)
+    items =
+      Enum.map_join(list, ", ", fn item ->
+        "'#{String.replace(item, "'", "''")}'"
+      end)
+
     "ARRAY[#{items}]::varchar[]"
   end
 
@@ -81,7 +86,12 @@ defmodule Controlcopypasta.Repo.Migrations.SeedPreparationsAndAddMetadata do
       "julienned" => %{verb: "julienne", category: "cut", tool: "knife", time_per_cup: 5},
       "chopped" => %{verb: "chop", category: "cut", tool: "knife", time_per_cup: 1},
       "finely chopped" => %{verb: "finely chop", category: "cut", tool: "knife", time_per_cup: 2},
-      "roughly chopped" => %{verb: "roughly chop", category: "cut", tool: "knife", time_per_cup: 1},
+      "roughly chopped" => %{
+        verb: "roughly chop",
+        category: "cut",
+        tool: "knife",
+        time_per_cup: 1
+      },
       "sliced" => %{verb: "slice", category: "cut", tool: "knife", time_per_cup: 1},
       "thinly sliced" => %{verb: "thinly slice", category: "cut", tool: "knife", time_per_cup: 2},
       "grated" => %{verb: "grate", category: "cut", tool: "grater", time_per_cup: 2},
@@ -94,7 +104,11 @@ defmodule Controlcopypasta.Repo.Migrations.SeedPreparationsAndAddMetadata do
       "crumbled" => %{verb: "crumble", category: "cut", time_per_cup: 1},
       "torn" => %{verb: "tear", category: "cut", time_per_cup: 1},
       # Temperature/State
-      "room temperature" => %{verb: "bring to room temperature", category: "temperature", time_min: 30},
+      "room temperature" => %{
+        verb: "bring to room temperature",
+        category: "temperature",
+        time_min: 30
+      },
       "softened" => %{verb: "soften", category: "temperature", time_min: 30},
       "melted" => %{verb: "melt", category: "temperature", time_min: 2},
       "chilled" => %{verb: "chill", category: "temperature", time_min: 60},

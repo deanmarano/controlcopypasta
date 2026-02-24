@@ -37,7 +37,11 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Preparations do
     "torn" => %{verb: "tear", category: :cut, tool: nil, time_per_cup: 1},
 
     # Temperature/State preparations
-    "room temperature" => %{verb: "bring to room temperature", category: :temperature, time_min: 30},
+    "room temperature" => %{
+      verb: "bring to room temperature",
+      category: :temperature,
+      time_min: 30
+    },
     "softened" => %{verb: "soften", category: :temperature, time_min: 30},
     "melted" => %{verb: "melt", category: :temperature, time_min: 2},
     "chilled" => %{verb: "chill", category: :temperature, time_min: 60},
@@ -118,6 +122,7 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Preparations do
   Checks if a word is a known preparation.
   """
   def is_preparation?(nil), do: false
+
   def is_preparation?(word) when is_binary(word) do
     MapSet.member?(ParserCache.preparations(), String.downcase(word))
   end
@@ -138,6 +143,7 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Preparations do
   def get_metadata(prep) when is_binary(prep) do
     Map.get(ParserCache.preparation_metadata(), String.downcase(prep))
   end
+
   def get_metadata(_), do: nil
 
   @doc """
