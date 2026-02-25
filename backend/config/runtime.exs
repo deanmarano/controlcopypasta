@@ -26,6 +26,11 @@ admin_emails =
 
 config :controlcopypasta, :admin_emails, admin_emails
 
+# Account linking secret (shared with admin app for HMAC verification)
+if account_linking_secret = System.get_env("ACCOUNT_LINKING_SECRET") do
+  config :controlcopypasta, :account_linking_secret, account_linking_secret
+end
+
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
 # system starts, so it is typically used to load production configuration

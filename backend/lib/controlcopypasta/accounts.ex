@@ -5,7 +5,7 @@ defmodule Controlcopypasta.Accounts do
 
   import Ecto.Query, warn: false
   alias Controlcopypasta.Repo
-  alias Controlcopypasta.Accounts.{User, AvoidedIngredient, Passkey}
+  alias Controlcopypasta.Accounts.{User, AvoidedIngredient, Passkey, ConnectedAccount}
   alias Controlcopypasta.Ingredients
 
   def get_user(id), do: Repo.get(User, id)
@@ -28,6 +28,69 @@ defmodule Controlcopypasta.Accounts do
     case get_user_by_email(email) do
       nil -> create_user(%{email: email})
       user -> {:ok, user}
+    end
+  end
+
+  # Connected Accounts
+
+  @doc """
+  Links a social account to a user after verifying the HMAC token.
+  """
+  def link_account(user_id, provider, provider_username, token) do
+    secret = Application.get_env(:controlcopypasta, :account_linking_secret)
+
+    if is_nil(secret) or secret == "" do
+      {:error, :linking_not_configured}
+    else
+      expected = :crypto.mac(:hmac, :sha256, secret, "#{provider}:#{provider_username}")
+                 |> Base.url_encode64(padding: false)
+
+      if Plug.Crypto.secure_compare(expected, token) do
+        %ConnectedAccount{}
+        |> ConnectedAccount.changeset(%{
+          user_id: user_id,
+          provider: provider,
+          provider_username: provider_username,
+          linked_at: DateTime.utc_now()
+        })
+        |> Repo.insert()
+      else
+        {:error, :invalid_token}
+      end
+    end
+  end
+
+  @doc """
+  Lists all connected accounts for a user.
+  """
+  def list_connected_accounts(user_id) do
+    ConnectedAccount
+    |> where([c], c.user_id == ^user_id)
+    |> order_by(:inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Unlinks a connected account owned by the given user.
+  """
+  def unlink_account(user_id, id) do
+    case Repo.get_by(ConnectedAccount, id: id, user_id: user_id) do
+      nil -> {:error, :not_found}
+      account -> Repo.delete(account)
+    end
+  end
+
+  @doc """
+  Looks up a user by their connected social account.
+  """
+  def get_user_by_connected_account(provider, provider_username) do
+    ConnectedAccount
+    |> where([c], c.provider == ^provider and c.provider_username == ^provider_username)
+    |> preload(:user)
+    |> Repo.one()
+    |> case do
+      nil -> nil
+      connected -> connected.user
     end
   end
 

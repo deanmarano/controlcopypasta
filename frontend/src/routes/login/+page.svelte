@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 
 	// Check for WebAuthn support natively (requires secure context)
 	function browserSupportsWebAuthn(): boolean {
@@ -29,7 +30,8 @@
 	// Redirect if already authenticated
 	$effect(() => {
 		if ($isAuthenticated) {
-			goto('/home');
+			const returnUrl = $page.url.searchParams.get('return');
+			goto(returnUrl || '/home');
 		}
 	});
 
@@ -62,7 +64,8 @@
 
 		try {
 			const result = await authStore.authenticateWithPasskey(email.trim());
-			const destination = result.user.onboarding_completed === false ? '/setup' : '/home';
+			const returnUrl = $page.url.searchParams.get('return');
+			const destination = result.user.onboarding_completed === false ? '/setup' : (returnUrl || '/home');
 			goto(destination);
 		} catch (err: unknown) {
 			if (err instanceof Error) {

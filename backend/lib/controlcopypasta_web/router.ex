@@ -107,6 +107,11 @@ defmodule ControlcopypastaWeb.Router do
            AvoidedIngredientController,
            :remove_exception
 
+    # Connected accounts
+    get "/connected-accounts", ConnectedAccountController, :index
+    post "/connected-accounts/link", ConnectedAccountController, :link
+    delete "/connected-accounts/:id", ConnectedAccountController, :delete
+
     # Settings / Preferences
     get "/settings/preferences", SettingsController, :show_preferences
     put "/settings/preferences", SettingsController, :update_preferences
