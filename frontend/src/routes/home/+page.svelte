@@ -125,14 +125,6 @@
 				<h1>{getGreeting()}</h1>
 				<p>What's cooking?</p>
 			</div>
-			<div class="header-actions">
-				<a href="/quicklist" class="find-dinner-btn">Find Dinner</a>
-				{#if data.maybe_count > 0}
-					<a href="/quicklist/maybe" class="maybe-list-btn">
-						Maybe List ({data.maybe_count})
-					</a>
-				{/if}
-			</div>
 			<form class="add-recipe-form" onsubmit={handleAddRecipe}>
 				<input
 					type="url"
@@ -361,49 +353,7 @@
 		font-size: var(--text-base);
 	}
 
-	.header-actions {
-		display: flex;
-		gap: var(--space-3);
-		align-items: center;
-	}
-
-	.find-dinner-btn {
-		display: inline-block;
-		padding: var(--space-2) var(--space-5);
-		background: var(--color-basil-600);
-		color: var(--color-white);
-		text-decoration: none;
-		border-radius: var(--radius-md);
-		font-weight: var(--font-medium);
-		font-size: var(--text-sm);
-		transition: all var(--transition-fast);
-		white-space: nowrap;
-	}
-
-	.find-dinner-btn:hover {
-		background: var(--color-basil-700);
-		box-shadow: var(--shadow-basil);
-	}
-
-	.maybe-list-btn {
-		display: inline-block;
-		padding: var(--space-2) var(--space-5);
-		background: var(--bg-card);
-		color: var(--color-basil-700);
-		text-decoration: none;
-		border: var(--border-width-thin) solid var(--color-basil-500);
-		border-radius: var(--radius-md);
-		font-weight: var(--font-medium);
-		font-size: var(--text-sm);
-		transition: all var(--transition-fast);
-		white-space: nowrap;
-	}
-
-	.maybe-list-btn:hover {
-		background: var(--color-basil-50);
-	}
-
-	.add-recipe-form {
+.add-recipe-form {
 		display: flex;
 		gap: var(--space-2);
 		max-width: 600px;
@@ -698,7 +648,35 @@
 		}
 
 		.hero-card {
-			aspect-ratio: 16/9;
+			aspect-ratio: auto;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.hero-card-img {
+			height: 200px;
+			width: 100%;
+			object-fit: cover;
+		}
+
+		.hero-card-img.placeholder {
+			height: 200px;
+		}
+
+		.hero-card-overlay {
+			position: static;
+			background: var(--color-marinara-800);
+			padding: var(--space-4);
+		}
+
+		.hero-card-overlay h3 {
+			font-size: var(--text-xl);
+		}
+
+		.hero-avoided {
+			position: static;
+			margin-top: 0;
+			border-radius: 0;
 		}
 	}
 
