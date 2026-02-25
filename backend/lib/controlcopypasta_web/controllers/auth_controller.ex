@@ -16,6 +16,7 @@ defmodule ControlcopypastaWeb.AuthController do
     # Always return success to prevent email enumeration
     email = String.trim(email) |> String.downcase()
     return_url = params["return_url"]
+    Logger.info("Magic link request: email=#{email}, return_url=#{inspect(return_url)}")
 
     if valid_email?(email) do
       token = MagicLink.generate_token(email)
