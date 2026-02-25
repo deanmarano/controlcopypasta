@@ -17,8 +17,6 @@ defmodule ControlcopypastaWeb.AuthController do
     email = String.trim(email) |> String.downcase()
     return_url = params["return_url"]
 
-    Logger.info("Magic link request: email=#{email}, return_url=#{inspect(return_url)}, all_params=#{inspect(Map.keys(params))}, referer=#{inspect(get_req_header(conn, "referer"))}")
-
     if valid_email?(email) do
       token = MagicLink.generate_token(email)
       base_url = get_client_base_url(conn)
