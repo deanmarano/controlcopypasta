@@ -719,6 +719,33 @@ export const settings = {
     })
 };
 
+// Connected Accounts API
+export interface ConnectedAccount {
+  id: string;
+  provider: string;
+  provider_username: string;
+  linked_at: string;
+  inserted_at: string;
+}
+
+export const connectedAccounts = {
+  list: (token: string) =>
+    request<{ data: ConnectedAccount[] }>('/connected-accounts', { token }),
+
+  link: (token: string, provider: string, username: string, linkToken: string) =>
+    request<{ data: ConnectedAccount }>('/connected-accounts/link', {
+      method: 'POST',
+      token,
+      body: { provider, username, token: linkToken }
+    }),
+
+  unlink: (token: string, id: string) =>
+    request<null>(`/connected-accounts/${id}`, {
+      method: 'DELETE',
+      token
+    })
+};
+
 // Dashboard API
 export interface DashboardRecipe {
   id: string;

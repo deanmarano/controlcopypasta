@@ -13,6 +13,7 @@ defmodule Controlcopypasta.Accounts.User do
     has_many :recipes, Controlcopypasta.Recipes.Recipe
     has_many :avoided_ingredients, Controlcopypasta.Accounts.AvoidedIngredient
     has_many :passkeys, Controlcopypasta.Accounts.Passkey
+    has_many :connected_accounts, Controlcopypasta.Accounts.ConnectedAccount
 
     timestamps()
   end

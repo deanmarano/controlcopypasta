@@ -4,9 +4,11 @@
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import {
 		avoidedIngredients,
+		connectedAccounts,
 		settings,
 		ingredients,
 		type AvoidedIngredient,
+		type ConnectedAccount,
 		type AvoidanceOptions,
 		type UserPreferences,
 		type CanonicalIngredient,
@@ -14,6 +16,8 @@
 	} from '$lib/api/client';
 
 	let items = $state<AvoidedIngredient[]>([]);
+	let linkedAccounts = $state<ConnectedAccount[]>([]);
+	let linkedLoading = $state(true);
 	let options = $state<AvoidanceOptions | null>(null);
 	let preferences = $state<UserPreferences | null>(null);
 	let loading = $state(true);
@@ -51,7 +55,7 @@
 	});
 
 	onMount(async () => {
-		await Promise.all([loadItems(), loadOptions(), loadPreferences()]);
+		await Promise.all([loadItems(), loadOptions(), loadPreferences(), loadLinkedAccounts()]);
 	});
 
 	async function loadItems() {
@@ -87,6 +91,40 @@
 			preferences = result.data;
 		} catch {
 			// Preferences are optional, fail silently
+		}
+	}
+
+	async function loadLinkedAccounts() {
+		const token = authStore.getToken();
+		if (!token) return;
+		linkedLoading = true;
+		try {
+			const result = await connectedAccounts.list(token);
+			linkedAccounts = result.data;
+		} catch {
+			// Linked accounts are optional, fail silently
+		} finally {
+			linkedLoading = false;
+		}
+	}
+
+	async function unlinkAccount(id: string) {
+		const token = authStore.getToken();
+		if (!token) return;
+		error = '';
+		try {
+			await connectedAccounts.unlink(token, id);
+			linkedAccounts = linkedAccounts.filter((a) => a.id !== id);
+		} catch {
+			error = 'Failed to unlink account';
+		}
+	}
+
+	function providerLabel(provider: string): string {
+		switch (provider) {
+			case 'instagram': return 'Instagram';
+			case 'tiktok': return 'TikTok';
+			default: return provider;
 		}
 	}
 
@@ -468,6 +506,27 @@
 			<span class="link-title">Passkeys</span>
 			<span class="link-description">Manage passkeys for quick, secure sign-in</span>
 		</a>
+	</section>
+
+	<section class="settings-section">
+		<h2>Connected Accounts</h2>
+		{#if linkedLoading}
+			<p class="loading">Loading...</p>
+		{:else if linkedAccounts.length === 0}
+			<p class="empty-linked">No social accounts linked yet. Follow @controlcopypasta on Instagram to get a linking invitation.</p>
+		{:else}
+			<ul class="linked-list">
+				{#each linkedAccounts as account}
+					<li class="linked-item">
+						<div class="linked-info">
+							<span class="provider-badge">{providerLabel(account.provider)}</span>
+							<span class="linked-username">@{account.provider_username}</span>
+						</div>
+						<button onclick={() => unlinkAccount(account.id)} class="unlink-btn">Unlink</button>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</section>
 
 	<section class="avoided-section">
@@ -1216,5 +1275,68 @@
 
 	.ingredient-name {
 		font-size: var(--text-sm);
+	}
+
+	/* Connected Accounts */
+	.empty-linked {
+		color: var(--text-muted);
+		font-size: var(--text-sm);
+		padding: var(--space-4);
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+	}
+
+	.linked-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.linked-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: var(--space-3) var(--space-4);
+		background: var(--bg-surface);
+		border-radius: var(--radius-md);
+		margin-bottom: var(--space-2);
+	}
+
+	.linked-item:last-child {
+		margin-bottom: 0;
+	}
+
+	.linked-info {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.provider-badge {
+		font-size: var(--text-xs);
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		font-weight: var(--font-medium);
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		background: var(--color-pasta-100);
+		color: var(--color-pasta-700);
+	}
+
+	.linked-username {
+		font-weight: var(--font-medium);
+	}
+
+	.unlink-btn {
+		background: none;
+		border: none;
+		color: var(--color-marinara-600);
+		cursor: pointer;
+		font-size: var(--text-sm);
+		padding: var(--space-1) var(--space-2);
+	}
+
+	.unlink-btn:hover {
+		text-decoration: underline;
 	}
 </style>
