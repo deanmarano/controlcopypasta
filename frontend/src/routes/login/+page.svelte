@@ -42,12 +42,8 @@
 		loading = true;
 
 		try {
-			// Persist return URL so /auth/verify can redirect back after magic link login
 			const returnUrl = $page.url.searchParams.get('return');
-			if (returnUrl) {
-				localStorage.setItem('controlcopypasta_return_url', returnUrl);
-			}
-			await authStore.requestMagicLink(email);
+			await authStore.requestMagicLink(email, returnUrl || undefined);
 			message = 'Check your email for a magic link to sign in.';
 			email = '';
 		} catch (err) {

@@ -94,8 +94,8 @@ function createAuthStore() {
       }
     },
 
-    async requestMagicLink(email: string) {
-      return authApi.requestMagicLink(email);
+    async requestMagicLink(email: string, returnUrl?: string) {
+      return authApi.requestMagicLink(email, returnUrl);
     },
 
     async verifyMagicLink(token: string) {

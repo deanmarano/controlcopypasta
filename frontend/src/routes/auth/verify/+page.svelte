@@ -19,12 +19,9 @@
 		try {
 			const result = await authStore.verifyMagicLink(token);
 			status = 'success';
-			// Check for a stored return URL (e.g. from /link-account flow)
-			const returnUrl = localStorage.getItem('controlcopypasta_return_url');
-			if (returnUrl) {
-				localStorage.removeItem('controlcopypasta_return_url');
-			}
-			// Redirect to setup wizard for new users, stored return URL, or home
+			// Check for return URL in query params (e.g. from /link-account flow)
+			const returnUrl = $page.url.searchParams.get('return');
+			// Redirect to setup wizard for new users, return URL, or home
 			const destination = result.user.onboarding_completed === false ? '/setup' : (returnUrl || '/home');
 			setTimeout(() => goto(destination), 1500);
 		} catch (err: unknown) {

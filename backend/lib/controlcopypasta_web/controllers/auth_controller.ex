@@ -12,15 +12,16 @@ defmodule ControlcopypastaWeb.AuthController do
   POST /api/auth/magic-link
   Body: {"email": "user@example.com"}
   """
-  def request_magic_link(conn, %{"email" => email}) when is_binary(email) do
+  def request_magic_link(conn, %{"email" => email} = params) when is_binary(email) do
     # Always return success to prevent email enumeration
     email = String.trim(email) |> String.downcase()
+    return_url = params["return_url"]
 
     if valid_email?(email) do
       token = MagicLink.generate_token(email)
       base_url = get_client_base_url(conn)
 
-      case Email.send_magic_link(email, token, base_url) do
+      case Email.send_magic_link(email, token, base_url, return_url) do
         {:ok, _} ->
           :ok
 

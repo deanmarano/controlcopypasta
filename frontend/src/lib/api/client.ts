@@ -51,10 +51,10 @@ async function request<T>(endpoint: string, options: ApiOptions = {}): Promise<T
 
 // Auth API
 export const auth = {
-  requestMagicLink: (email: string) =>
+  requestMagicLink: (email: string, returnUrl?: string) =>
     request<{ message: string }>('/auth/magic-link', {
       method: 'POST',
-      body: { email }
+      body: { email, return_url: returnUrl }
     }),
 
   verifyMagicLink: (token: string) =>

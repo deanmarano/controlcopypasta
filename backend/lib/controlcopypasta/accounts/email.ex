@@ -5,8 +5,8 @@ defmodule Controlcopypasta.Accounts.Email do
 
   @from_name "ControlCopyPasta"
 
-  def send_magic_link(email, token, base_url \\ nil) do
-    magic_link_url = build_magic_link_url(token, base_url)
+  def send_magic_link(email, token, base_url \\ nil, return_url \\ nil) do
+    magic_link_url = build_magic_link_url(token, base_url, return_url)
 
     new()
     |> to(email)
@@ -32,11 +32,17 @@ defmodule Controlcopypasta.Accounts.Email do
     |> Mailer.deliver()
   end
 
-  defp build_magic_link_url(token, base_url) do
+  defp build_magic_link_url(token, base_url, return_url) do
     frontend_url =
       base_url || Application.get_env(:controlcopypasta, :frontend_url, "http://localhost:5173")
 
-    "#{frontend_url}/auth/verify?token=#{token}"
+    url = "#{frontend_url}/auth/verify?token=#{token}"
+
+    if return_url && return_url != "" do
+      url <> "&return=#{URI.encode_www_form(return_url)}"
+    else
+      url
+    end
   end
 
   defp from_email do
