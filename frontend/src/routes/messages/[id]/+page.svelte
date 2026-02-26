@@ -109,6 +109,15 @@
 						{/if}
 					</div>
 
+					{#if message.shared_content.video_path}
+						{@const videoFilename = message.shared_content.video_path.split('/').pop()}
+						<div class="video-block">
+							<video controls preload="metadata" src="/api/videos/{videoFilename}">
+								<track kind="captions" />
+							</video>
+						</div>
+					{/if}
+
 					{#if message.shared_content.caption}
 						<div class="caption-block">
 							<p class="caption-text">{message.shared_content.caption}</p>
@@ -291,6 +300,17 @@
 
 	.view-on-ig:hover {
 		text-decoration: underline;
+	}
+
+	.video-block {
+		padding: var(--space-4);
+		border-bottom: var(--border-width-thin) solid var(--border-default);
+	}
+
+	.video-block video {
+		width: 100%;
+		max-height: 600px;
+		border-radius: var(--radius-sm);
 	}
 
 	.caption-block {
