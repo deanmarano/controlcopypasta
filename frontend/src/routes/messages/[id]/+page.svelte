@@ -161,11 +161,10 @@
 								<span class="url-source">from {eu.source.replace('_', ' ')}</span>
 							</div>
 
-							{@const euEmbedUrl = getInstagramEmbedUrl(eu.url)}
-							{#if euEmbedUrl}
+							{#if getInstagramEmbedUrl(eu.url)}
 								<div class="instagram-embed">
 									<iframe
-										src={euEmbedUrl}
+										src={getInstagramEmbedUrl(eu.url) ?? ''}
 										title="Instagram embed"
 										frameborder="0"
 										scrolling="no"
