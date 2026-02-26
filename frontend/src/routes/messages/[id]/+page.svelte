@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -58,40 +58,6 @@
 		}
 	}
 
-	function isInstagramUrl(url: string): boolean {
-		return /instagram\.com\/(p|reel|reels)\/[A-Za-z0-9_-]+/.test(url);
-	}
-
-	function getInstagramPermalink(url: string): string {
-		const match = url.match(/instagram\.com\/(p|reel|reels)\/([A-Za-z0-9_-]+)/);
-		if (!match) return url;
-		const type = match[1] === 'reels' ? 'reel' : match[1];
-		return `https://www.instagram.com/${type}/${match[2]}/`;
-	}
-
-	function processInstagramEmbeds() {
-		if (typeof window !== 'undefined' && (window as any).instgrm?.Embeds) {
-			(window as any).instgrm.Embeds.process();
-		}
-	}
-
-	$effect(() => {
-		if (message && typeof window !== 'undefined') {
-			// Load Instagram embed.js if not already loaded
-			tick().then(() => {
-				if (!(window as any).instgrm) {
-					const script = document.createElement('script');
-					script.src = 'https://www.instagram.com/embed.js';
-					script.async = true;
-					script.onload = () => processInstagramEmbeds();
-					document.body.appendChild(script);
-				} else {
-					processInstagramEmbeds();
-				}
-			});
-		}
-	});
-
 	async function handleSaveRecipe(urlId: string) {
 		const token = authStore.getToken();
 		if (!token || !message) return;
@@ -133,25 +99,34 @@
 			{/if}
 
 			{#if message.shared_content}
-				<div class="content-block">
-					<h3>Shared Content</h3>
-					{#if message.shared_content.original_author}
-						<p class="meta">From: @{message.shared_content.original_author}</p>
-					{/if}
+				<div class="shared-content-card">
+					<div class="shared-content-header">
+						{#if message.shared_content.original_author}
+							<span class="author">@{message.shared_content.original_author}</span>
+						{/if}
+						{#if message.shared_content.url}
+							<a href={message.shared_content.url} target="_blank" rel="noopener" class="view-on-ig">View on Instagram</a>
+						{/if}
+					</div>
+
 					{#if message.shared_content.caption}
-						<p class="caption">{message.shared_content.caption}</p>
+						<div class="caption-block">
+							<p class="caption-text">{message.shared_content.caption}</p>
+						</div>
 					{/if}
-					{#if message.shared_content.url}
-						{#if isInstagramUrl(message.shared_content.url)}
-							<blockquote
-								class="instagram-media"
-								data-instgrm-permalink={getInstagramPermalink(message.shared_content.url)}
-								data-instgrm-version="14"
-								style="max-width:540px; width:100%;"
-							>
-								<a href={getInstagramPermalink(message.shared_content.url)} target="_blank" rel="noopener">View on Instagram</a>
-							</blockquote>
-						{:else}
+
+					{#if message.shared_content.comments?.length > 0}
+						<div class="comments-section">
+							<h3>Comments ({message.shared_content.comments.length}{#if message.shared_content.comment_count && message.shared_content.comment_count > message.shared_content.comments.length} of {message.shared_content.comment_count}{/if})</h3>
+							{#each message.shared_content.comments as comment}
+								<div class="comment">
+									<span class="comment-author">@{comment.username}</span>
+									<p class="comment-text">{comment.text}</p>
+								</div>
+							{/each}
+						</div>
+					{:else if !message.shared_content.caption}
+						{#if message.shared_content.url}
 							<a href={message.shared_content.url} target="_blank" rel="noopener" class="external-link">{message.shared_content.url}</a>
 						{/if}
 					{/if}
@@ -165,7 +140,7 @@
 						<p class="meta">Originally from: @{message.forwarded_content.original_sender}</p>
 					{/if}
 					{#if message.forwarded_content.original_text}
-						<p class="caption">{message.forwarded_content.original_text}</p>
+						<p class="caption-text">{message.forwarded_content.original_text}</p>
 					{/if}
 					{#if message.forwarded_content.original_url}
 						<a href={message.forwarded_content.original_url} target="_blank" rel="noopener" class="external-link">{message.forwarded_content.original_url}</a>
@@ -185,18 +160,7 @@
 								<span class="url-source">from {eu.source.replace('_', ' ')}</span>
 							</div>
 
-							{#if isInstagramUrl(eu.url)}
-								<blockquote
-									class="instagram-media"
-									data-instgrm-permalink={getInstagramPermalink(eu.url)}
-									data-instgrm-version="14"
-									style="max-width:540px; width:100%;"
-								>
-									<a href={getInstagramPermalink(eu.url)} target="_blank" rel="noopener">View on Instagram</a>
-								</blockquote>
-							{:else}
-								<a href={eu.url} target="_blank" rel="noopener" class="url-link">{eu.url}</a>
-							{/if}
+							<a href={eu.url} target="_blank" rel="noopener" class="url-link">{eu.url}</a>
 
 							{#if eu.recipe_title}
 								<p class="recipe-title">{eu.recipe_title}</p>
@@ -298,6 +262,81 @@
 		line-height: var(--leading-relaxed);
 	}
 
+	.shared-content-card {
+		border: var(--border-width-thin) solid var(--border-default);
+		border-radius: var(--radius-md);
+		overflow: hidden;
+		margin-bottom: var(--space-4);
+	}
+
+	.shared-content-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: var(--space-3) var(--space-4);
+		background: var(--bg-muted);
+		border-bottom: var(--border-width-thin) solid var(--border-default);
+	}
+
+	.author {
+		font-weight: var(--font-semibold);
+		font-size: var(--text-sm);
+	}
+
+	.view-on-ig {
+		font-size: var(--text-xs);
+		color: var(--color-primary);
+		text-decoration: none;
+	}
+
+	.view-on-ig:hover {
+		text-decoration: underline;
+	}
+
+	.caption-block {
+		padding: var(--space-4);
+		border-bottom: var(--border-width-thin) solid var(--border-default);
+	}
+
+	.caption-text {
+		font-size: var(--text-sm);
+		line-height: var(--leading-relaxed);
+		white-space: pre-wrap;
+	}
+
+	.comments-section {
+		padding: var(--space-4);
+	}
+
+	.comments-section h3 {
+		font-size: var(--text-sm);
+		font-weight: var(--font-semibold);
+		color: var(--text-tertiary);
+		margin-bottom: var(--space-3);
+	}
+
+	.comment {
+		padding: var(--space-2) 0;
+		border-bottom: var(--border-width-thin) solid var(--border-default);
+	}
+
+	.comment:last-child {
+		border-bottom: none;
+	}
+
+	.comment-author {
+		font-weight: var(--font-semibold);
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+	}
+
+	.comment-text {
+		font-size: var(--text-sm);
+		line-height: var(--leading-relaxed);
+		margin-top: var(--space-1);
+		white-space: pre-wrap;
+	}
+
 	.content-block {
 		background: var(--bg-muted);
 		border-radius: var(--radius-md);
@@ -318,11 +357,6 @@
 		font-size: var(--text-sm);
 		color: var(--text-secondary);
 		margin-bottom: var(--space-1);
-	}
-
-	.caption {
-		color: var(--text-primary);
-		margin-bottom: var(--space-2);
 	}
 
 	.external-link {

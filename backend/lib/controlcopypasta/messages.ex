@@ -117,6 +117,21 @@ defmodule Controlcopypasta.Messages do
   @doc """
   Checks if a message with the given platform_message_id already exists.
   """
+  @doc """
+  Updates a direct message's shared_content field.
+  """
+  def update_shared_content(message_id, shared_content) when is_map(shared_content) do
+    DirectMessage
+    |> Repo.get(message_id)
+    |> case do
+      nil -> {:error, :not_found}
+      message ->
+        message
+        |> DirectMessage.changeset(%{shared_content: shared_content})
+        |> Repo.update()
+    end
+  end
+
   def message_exists?(platform_message_id) when is_binary(platform_message_id) do
     DirectMessage
     |> where([dm], dm.platform_message_id == ^platform_message_id)
