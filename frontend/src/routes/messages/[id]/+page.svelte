@@ -58,6 +58,13 @@
 		}
 	}
 
+	function getInstagramEmbedUrl(url: string): string | null {
+		const match = url.match(/instagram\.com\/(p|reel|reels)\/([A-Za-z0-9_-]+)/);
+		if (!match) return null;
+		const type = match[1] === 'reels' ? 'reel' : match[1];
+		return `https://www.instagram.com/${type}/${match[2]}/embed/`;
+	}
+
 	async function handleSaveRecipe(urlId: string) {
 		const token = authStore.getToken();
 		if (!token || !message) return;
@@ -108,7 +115,21 @@
 						<p class="caption">{message.shared_content.caption}</p>
 					{/if}
 					{#if message.shared_content.url}
-						<a href={message.shared_content.url} target="_blank" rel="noopener" class="external-link">{message.shared_content.url}</a>
+						{@const embedUrl = getInstagramEmbedUrl(message.shared_content.url)}
+						{#if embedUrl}
+							<div class="instagram-embed">
+								<iframe
+									src={embedUrl}
+									title="Instagram embed"
+									frameborder="0"
+									scrolling="no"
+									allowtransparency="true"
+									allowfullscreen
+								></iframe>
+							</div>
+						{:else}
+							<a href={message.shared_content.url} target="_blank" rel="noopener" class="external-link">{message.shared_content.url}</a>
+						{/if}
 					{/if}
 				</div>
 			{/if}
@@ -140,7 +161,21 @@
 								<span class="url-source">from {eu.source.replace('_', ' ')}</span>
 							</div>
 
-							<a href={eu.url} target="_blank" rel="noopener" class="url-link">{eu.url}</a>
+							{@const euEmbedUrl = getInstagramEmbedUrl(eu.url)}
+							{#if euEmbedUrl}
+								<div class="instagram-embed">
+									<iframe
+										src={euEmbedUrl}
+										title="Instagram embed"
+										frameborder="0"
+										scrolling="no"
+										allowtransparency="true"
+										allowfullscreen
+									></iframe>
+								</div>
+							{:else}
+								<a href={eu.url} target="_blank" rel="noopener" class="url-link">{eu.url}</a>
+							{/if}
 
 							{#if eu.recipe_title}
 								<p class="recipe-title">{eu.recipe_title}</p>
@@ -267,6 +302,19 @@
 	.caption {
 		color: var(--text-primary);
 		margin-bottom: var(--space-2);
+	}
+
+	.instagram-embed {
+		margin-top: var(--space-2);
+		max-width: 540px;
+	}
+
+	.instagram-embed iframe {
+		width: 100%;
+		min-height: 600px;
+		border: none;
+		border-radius: var(--radius-md);
+		overflow: hidden;
 	}
 
 	.external-link {
