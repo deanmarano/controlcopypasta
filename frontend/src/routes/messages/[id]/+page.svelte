@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, afterUpdate } from 'svelte';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -58,12 +58,37 @@
 		}
 	}
 
-	function getInstagramEmbedUrl(url: string): string | null {
-		const match = url.match(/instagram\.com\/(p|reel|reels)\/([A-Za-z0-9_-]+)/);
-		if (!match) return null;
-		const type = match[1] === 'reels' ? 'reel' : match[1];
-		return `https://www.instagram.com/${type}/${match[2]}/embed/`;
+	function isInstagramUrl(url: string): boolean {
+		return /instagram\.com\/(p|reel|reels)\/[A-Za-z0-9_-]+/.test(url);
 	}
+
+	function getInstagramPermalink(url: string): string {
+		const match = url.match(/instagram\.com\/(p|reel|reels)\/([A-Za-z0-9_-]+)/);
+		if (!match) return url;
+		const type = match[1] === 'reels' ? 'reel' : match[1];
+		return `https://www.instagram.com/${type}/${match[2]}/`;
+	}
+
+	function processInstagramEmbeds() {
+		if (typeof window !== 'undefined' && (window as any).instgrm?.Embeds) {
+			(window as any).instgrm.Embeds.process();
+		}
+	}
+
+	afterUpdate(() => {
+		if (message && typeof window !== 'undefined') {
+			// Load Instagram embed.js if not already loaded
+			if (!(window as any).instgrm) {
+				const script = document.createElement('script');
+				script.src = 'https://www.instagram.com/embed.js';
+				script.async = true;
+				script.onload = () => processInstagramEmbeds();
+				document.body.appendChild(script);
+			} else {
+				processInstagramEmbeds();
+			}
+		}
+	});
 
 	async function handleSaveRecipe(urlId: string) {
 		const token = authStore.getToken();
@@ -115,18 +140,15 @@
 						<p class="caption">{message.shared_content.caption}</p>
 					{/if}
 					{#if message.shared_content.url}
-						{@const embedUrl = getInstagramEmbedUrl(message.shared_content.url)}
-						{#if embedUrl}
-							<div class="instagram-embed">
-								<iframe
-									src={embedUrl}
-									title="Instagram embed"
-									frameborder="0"
-									scrolling="no"
-									allowtransparency="true"
-									allowfullscreen
-								></iframe>
-							</div>
+						{#if isInstagramUrl(message.shared_content.url)}
+							<blockquote
+								class="instagram-media"
+								data-instgrm-permalink={getInstagramPermalink(message.shared_content.url)}
+								data-instgrm-version="14"
+								style="max-width:540px; width:100%;"
+							>
+								<a href={getInstagramPermalink(message.shared_content.url)} target="_blank" rel="noopener">View on Instagram</a>
+							</blockquote>
 						{:else}
 							<a href={message.shared_content.url} target="_blank" rel="noopener" class="external-link">{message.shared_content.url}</a>
 						{/if}
@@ -161,17 +183,15 @@
 								<span class="url-source">from {eu.source.replace('_', ' ')}</span>
 							</div>
 
-							{#if getInstagramEmbedUrl(eu.url)}
-								<div class="instagram-embed">
-									<iframe
-										src={getInstagramEmbedUrl(eu.url) ?? ''}
-										title="Instagram embed"
-										frameborder="0"
-										scrolling="no"
-										allowtransparency="true"
-										allowfullscreen
-									></iframe>
-								</div>
+							{#if isInstagramUrl(eu.url)}
+								<blockquote
+									class="instagram-media"
+									data-instgrm-permalink={getInstagramPermalink(eu.url)}
+									data-instgrm-version="14"
+									style="max-width:540px; width:100%;"
+								>
+									<a href={getInstagramPermalink(eu.url)} target="_blank" rel="noopener">View on Instagram</a>
+								</blockquote>
 							{:else}
 								<a href={eu.url} target="_blank" rel="noopener" class="url-link">{eu.url}</a>
 							{/if}
@@ -301,19 +321,6 @@
 	.caption {
 		color: var(--text-primary);
 		margin-bottom: var(--space-2);
-	}
-
-	.instagram-embed {
-		margin-top: var(--space-2);
-		max-width: 540px;
-	}
-
-	.instagram-embed iframe {
-		width: 100%;
-		min-height: 600px;
-		border: none;
-		border-radius: var(--radius-md);
-		overflow: hidden;
 	}
 
 	.external-link {
