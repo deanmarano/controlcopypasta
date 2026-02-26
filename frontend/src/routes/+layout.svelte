@@ -49,6 +49,7 @@
 					<div class="nav-links desktop-only">
 						<a href="/recipes">My Recipes</a>
 						<a href="/browse">Browse</a>
+						<a href="/messages">Messages</a>
 						<a href="/shopping-lists">Shopping Lists</a>
 						<a href="/settings">Settings</a>
 						{#if $isAdmin}
@@ -86,6 +87,7 @@
 				<nav class="mobile-nav">
 					<a href="/recipes" onclick={closeMobileMenu}>My Recipes</a>
 					<a href="/browse" onclick={closeMobileMenu}>Browse</a>
+					<a href="/messages" onclick={closeMobileMenu}>Messages</a>
 					<a href="/shopping-lists" onclick={closeMobileMenu}>Shopping List</a>
 					<a href="/settings" onclick={closeMobileMenu}>Settings</a>
 					{#if $isAdmin}

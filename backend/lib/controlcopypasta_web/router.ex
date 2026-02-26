@@ -35,6 +35,18 @@ defmodule ControlcopypastaWeb.Router do
 
   defp require_auth(conn, _opts), do: Auth.require_auth(conn, [])
 
+  # Bot ingestion endpoints (HMAC-authenticated)
+  pipeline :bot_auth do
+    plug :accepts, ["json"]
+    plug ControlcopypastaWeb.Plugs.BotAuth
+  end
+
+  scope "/api/bot", ControlcopypastaWeb do
+    pipe_through :bot_auth
+
+    post "/messages", BotMessageController, :create
+  end
+
   # Public auth endpoints
   scope "/api/auth", ControlcopypastaWeb do
     pipe_through :api
@@ -106,6 +118,11 @@ defmodule ControlcopypastaWeb.Router do
     delete "/avoided-ingredients/:id/exceptions/:canonical_ingredient_id",
            AvoidedIngredientController,
            :remove_exception
+
+    # Direct messages
+    get "/messages", MessageController, :index
+    get "/messages/:id", MessageController, :show
+    post "/messages/:message_id/urls/:url_id/save", MessageController, :save_recipe
 
     # Connected accounts
     get "/connected-accounts", ConnectedAccountController, :index

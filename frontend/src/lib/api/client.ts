@@ -1425,4 +1425,60 @@ export interface PendingIngredientStats {
   total: number;
 }
 
+// Direct Message types
+export interface ExtractedUrl {
+  id: string;
+  url: string;
+  source: 'message_text' | 'shared_content' | 'forwarded_content';
+  parse_status: 'pending' | 'success' | 'failed';
+  parse_error: string | null;
+  recipe_title: string | null;
+  recipe_id: string | null;
+  inserted_at: string;
+}
+
+export interface DirectMessage {
+  id: string;
+  message_text: string | null;
+  message_type: 'text' | 'shared_post' | 'shared_reel' | 'forwarded';
+  sender_username: string;
+  platform_message_id: string | null;
+  platform_timestamp: string | null;
+  shared_content: {
+    url?: string;
+    caption?: string;
+    media_type?: string;
+    thumbnail_url?: string;
+    original_author?: string;
+  } | null;
+  forwarded_content: {
+    original_sender?: string;
+    original_text?: string;
+    original_url?: string;
+  } | null;
+  processed_at: string | null;
+  inserted_at: string;
+  extracted_urls: ExtractedUrl[];
+}
+
+// Messages API
+export const messages = {
+  list: (token: string, params?: { limit?: number; offset?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.offset) query.set('offset', String(params.offset));
+    const qs = query.toString();
+    return request<{ data: DirectMessage[] }>(`/messages${qs ? `?${qs}` : ''}`, { token });
+  },
+
+  get: (token: string, id: string) =>
+    request<{ data: DirectMessage }>(`/messages/${id}`, { token }),
+
+  saveRecipe: (token: string, messageId: string, urlId: string) =>
+    request<{ data: { recipe_id: string; title: string } }>(
+      `/messages/${messageId}/urls/${urlId}/save`,
+      { method: 'POST', token }
+    )
+};
+
 export { ApiError };

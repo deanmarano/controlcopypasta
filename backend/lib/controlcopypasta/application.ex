@@ -16,6 +16,8 @@ defmodule Controlcopypasta.Application do
       Controlcopypasta.Ingredients.ParserCache,
       # Per-user avoided ingredient cache (ETS with 5-min TTL)
       Controlcopypasta.Quicklist.AvoidedCache,
+      # Task supervisor for background jobs (e.g., DM URL parsing)
+      {Task.Supervisor, name: Controlcopypasta.TaskSupervisor},
       # Start to serve requests, typically the last entry
       ControlcopypastaWeb.Endpoint
     ]
