@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, afterUpdate } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -75,18 +75,20 @@
 		}
 	}
 
-	afterUpdate(() => {
+	$effect(() => {
 		if (message && typeof window !== 'undefined') {
 			// Load Instagram embed.js if not already loaded
-			if (!(window as any).instgrm) {
-				const script = document.createElement('script');
-				script.src = 'https://www.instagram.com/embed.js';
-				script.async = true;
-				script.onload = () => processInstagramEmbeds();
-				document.body.appendChild(script);
-			} else {
-				processInstagramEmbeds();
-			}
+			tick().then(() => {
+				if (!(window as any).instgrm) {
+					const script = document.createElement('script');
+					script.src = 'https://www.instagram.com/embed.js';
+					script.async = true;
+					script.onload = () => processInstagramEmbeds();
+					document.body.appendChild(script);
+				} else {
+					processInstagramEmbeds();
+				}
+			});
 		}
 	});
 
