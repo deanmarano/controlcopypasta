@@ -126,6 +126,52 @@ defmodule Controlcopypasta.Messages do
   def message_exists?(_), do: false
 
   @doc """
+  Extracts URLs from text and creates ExtractedUrl records for a message.
+  Skips URLs that already have an ExtractedUrl record for this message.
+  Triggers background parsing for any new URLs.
+  """
+  def extract_urls_from_text(message_id, text, source) when is_binary(text) do
+    urls =
+      @url_regex
+      |> Regex.scan(text)
+      |> Enum.map(fn [url] -> url end)
+      |> Enum.uniq()
+
+    existing =
+      ExtractedUrl
+      |> where([eu], eu.direct_message_id == ^message_id)
+      |> select([eu], eu.url)
+      |> Repo.all()
+      |> MapSet.new()
+
+    new_urls = Enum.reject(urls, &MapSet.member?(existing, &1))
+
+    extracted =
+      Enum.map(new_urls, fn url ->
+        {:ok, eu} =
+          %ExtractedUrl{}
+          |> ExtractedUrl.changeset(%{
+            direct_message_id: message_id,
+            url: url,
+            source: source
+          })
+          |> Repo.insert()
+
+        eu
+      end)
+
+    if Enum.any?(extracted) do
+      Task.Supervisor.start_child(Controlcopypasta.TaskSupervisor, fn ->
+        process_extracted_urls(message_id)
+      end)
+    end
+
+    {:ok, extracted}
+  end
+
+  def extract_urls_from_text(_message_id, _text, _source), do: {:ok, []}
+
+  @doc """
   Updates a direct message's shared_content field.
   """
   def update_shared_content(message_id, shared_content) when is_map(shared_content) do
