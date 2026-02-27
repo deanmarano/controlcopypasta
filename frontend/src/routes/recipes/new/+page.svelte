@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { recipes, tags as tagsApi, type RecipeInput, type Tag } from '$lib/api/client';
+	import { recipes, tags as tagsApi, inbox, type RecipeInput, type Tag, type DirectMessage } from '$lib/api/client';
 
 	let title = $state('');
 	let description = $state('');
@@ -23,6 +23,8 @@
 	let parsing = $state(false);
 	let error = $state('');
 	let parseUrl = $state('');
+	let sourceMessage = $state<DirectMessage | null>(null);
+	let messageLoading = $state(false);
 
 	let autoParseTriggered = false;
 
@@ -31,12 +33,16 @@
 			goto('/login');
 		} else {
 			const urlParam = $page.url.searchParams.get('url');
+			const fromMessageParam = $page.url.searchParams.get('from_message');
 			if (urlParam && !autoParseTriggered) {
 				autoParseTriggered = true;
 				parseUrl = urlParam;
 				loadTags().then(() => handleParse());
 			} else {
 				loadTags();
+			}
+			if (fromMessageParam && !sourceMessage && !messageLoading) {
+				loadSourceMessage(fromMessageParam);
 			}
 		}
 	});
@@ -50,6 +56,22 @@
 			availableTags = result.data;
 		} catch {
 			// Ignore tag loading errors
+		}
+	}
+
+	async function loadSourceMessage(messageId: string) {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		try {
+			messageLoading = true;
+			const result = await inbox.get(token, messageId);
+			sourceMessage = result.data;
+			description = `From Instagram DM by @${result.data.sender_username}`;
+		} catch {
+			// Ignore - message reference panel just won't show
+		} finally {
+			messageLoading = false;
 		}
 	}
 
@@ -164,6 +186,51 @@
 			</button>
 		</div>
 	</section>
+
+	{#if sourceMessage}
+		<section class="message-reference">
+			<div class="message-reference-header">
+				<h2>Message from @{sourceMessage.sender_username}</h2>
+				<a href="/inbox/{sourceMessage.id}" class="back-to-message">View Message</a>
+			</div>
+			<p class="message-reference-hint">Copy and paste the relevant content into the form fields below.</p>
+
+			{#if sourceMessage.shared_content?.caption}
+				<div class="reference-block">
+					<h3>Caption</h3>
+					<pre class="reference-text">{sourceMessage.shared_content.caption}</pre>
+				</div>
+			{/if}
+
+			{#if sourceMessage.shared_content?.transcription}
+				<div class="reference-block">
+					<h3>Transcription</h3>
+					<pre class="reference-text">{sourceMessage.shared_content.transcription}</pre>
+				</div>
+			{/if}
+
+			{#if sourceMessage.message_text}
+				<div class="reference-block">
+					<h3>Message Text</h3>
+					<pre class="reference-text">{sourceMessage.message_text}</pre>
+				</div>
+			{/if}
+
+			{#if sourceMessage.shared_content?.comments?.length > 0}
+				<div class="reference-block">
+					<h3>Comments</h3>
+					{#each sourceMessage.shared_content.comments as comment}
+						<div class="reference-comment">
+							<strong>@{comment.username}:</strong>
+							<pre class="reference-text">{comment.text}</pre>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</section>
+	{:else if messageLoading}
+		<div class="message-reference-loading">Loading message content...</div>
+	{/if}
 
 	{#if error}
 		<div class="error">{error}</div>
@@ -334,6 +401,95 @@
 
 	.parse-form button:disabled {
 		background: var(--color-gray-400);
+	}
+
+	.message-reference {
+		background: var(--color-pasta-100);
+		padding: var(--space-6);
+		border-radius: var(--radius-lg);
+		margin-bottom: var(--space-8);
+		border: var(--border-width-thin) solid var(--border-default);
+	}
+
+	.message-reference-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: var(--space-2);
+	}
+
+	.message-reference-header h2 {
+		margin: 0;
+		font-size: var(--text-lg);
+		color: var(--color-marinara-700);
+	}
+
+	.back-to-message {
+		font-size: var(--text-sm);
+		color: var(--color-primary);
+		text-decoration: none;
+	}
+
+	.back-to-message:hover {
+		text-decoration: underline;
+	}
+
+	.message-reference-hint {
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+		margin-bottom: var(--space-4);
+	}
+
+	.message-reference-loading {
+		text-align: center;
+		padding: var(--space-4);
+		color: var(--text-secondary);
+		margin-bottom: var(--space-8);
+	}
+
+	.reference-block {
+		margin-bottom: var(--space-4);
+	}
+
+	.reference-block:last-child {
+		margin-bottom: 0;
+	}
+
+	.reference-block h3 {
+		font-size: var(--text-sm);
+		font-weight: var(--font-semibold);
+		color: var(--text-tertiary);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin-bottom: var(--space-2);
+	}
+
+	.reference-text {
+		font-family: inherit;
+		font-size: var(--text-sm);
+		line-height: var(--leading-relaxed);
+		white-space: pre-wrap;
+		word-wrap: break-word;
+		background: var(--bg-card);
+		padding: var(--space-3);
+		border-radius: var(--radius-md);
+		border: var(--border-width-thin) solid var(--border-default);
+		margin: 0;
+		user-select: text;
+		cursor: text;
+	}
+
+	.reference-comment {
+		margin-bottom: var(--space-2);
+	}
+
+	.reference-comment:last-child {
+		margin-bottom: 0;
+	}
+
+	.reference-comment strong {
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
 	}
 
 	.error {

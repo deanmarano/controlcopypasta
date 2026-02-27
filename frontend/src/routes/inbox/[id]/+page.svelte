@@ -92,6 +92,10 @@
 				<span class="timestamp">{formatTimestamp(message.platform_timestamp || message.inserted_at)}</span>
 			</div>
 
+			<div class="message-actions">
+				<a href="/recipes/new?from_message={message.id}" class="btn btn-primary">Create Recipe</a>
+			</div>
+
 			{#if message.message_text}
 				<div class="message-body">
 					<p>{message.message_text}</p>
@@ -271,6 +275,10 @@
 		margin-left: auto;
 		font-size: var(--text-sm);
 		color: var(--text-tertiary);
+	}
+
+	.message-actions {
+		margin-bottom: var(--space-4);
 	}
 
 	.message-body {
