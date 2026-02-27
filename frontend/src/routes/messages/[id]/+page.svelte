@@ -124,7 +124,14 @@
 						</div>
 					{/if}
 
-					{#if message.shared_content.comments?.length > 0}
+					{#if message.shared_content.transcription}
+						<div class="transcription-block">
+							<h3>Transcription</h3>
+							<p class="transcription-text">{message.shared_content.transcription}</p>
+						</div>
+					{/if}
+
+				{#if message.shared_content.comments?.length > 0}
 						<div class="comments-section">
 							<h3>Comments ({message.shared_content.comments.length}{#if message.shared_content.comment_count && message.shared_content.comment_count > message.shared_content.comments.length} of {message.shared_content.comment_count}{/if})</h3>
 							{#each message.shared_content.comments as comment}
@@ -322,6 +329,25 @@
 		font-size: var(--text-sm);
 		line-height: var(--leading-relaxed);
 		white-space: pre-wrap;
+	}
+
+	.transcription-block {
+		padding: var(--space-4);
+		border-bottom: var(--border-width-thin) solid var(--border-default);
+	}
+
+	.transcription-block h3 {
+		font-size: var(--text-sm);
+		font-weight: var(--font-semibold);
+		color: var(--text-tertiary);
+		margin-bottom: var(--space-2);
+	}
+
+	.transcription-text {
+		font-size: var(--text-sm);
+		line-height: var(--leading-relaxed);
+		white-space: pre-wrap;
+		font-style: italic;
 	}
 
 	.comments-section {
