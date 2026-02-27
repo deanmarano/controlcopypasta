@@ -12,6 +12,7 @@ defmodule ControlcopypastaWeb.Router do
     pipe_through :api
 
     get "/health", HealthController, :index
+    get "/videos/:filename", VideoController, :show
     get "/browse/domains/:domain/screenshot", BrowseController, :screenshot
   end
 
