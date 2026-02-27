@@ -1,4 +1,4 @@
-defmodule ControlcopypastaWeb.MessageJSON do
+defmodule ControlcopypastaWeb.InboxJSON do
   alias Controlcopypasta.Messages.{DirectMessage, ExtractedUrl}
 
   def index(%{messages: messages}) do

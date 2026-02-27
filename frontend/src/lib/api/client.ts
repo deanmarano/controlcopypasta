@@ -1461,22 +1461,22 @@ export interface DirectMessage {
   extracted_urls: ExtractedUrl[];
 }
 
-// Messages API
-export const messages = {
+// Inbox API
+export const inbox = {
   list: (token: string, params?: { limit?: number; offset?: number }) => {
     const query = new URLSearchParams();
     if (params?.limit) query.set('limit', String(params.limit));
     if (params?.offset) query.set('offset', String(params.offset));
     const qs = query.toString();
-    return request<{ data: DirectMessage[] }>(`/messages${qs ? `?${qs}` : ''}`, { token });
+    return request<{ data: DirectMessage[] }>(`/inbox${qs ? `?${qs}` : ''}`, { token });
   },
 
   get: (token: string, id: string) =>
-    request<{ data: DirectMessage }>(`/messages/${id}`, { token }),
+    request<{ data: DirectMessage }>(`/inbox/${id}`, { token }),
 
   saveRecipe: (token: string, messageId: string, urlId: string) =>
     request<{ data: { recipe_id: string; title: string } }>(
-      `/messages/${messageId}/urls/${urlId}/save`,
+      `/inbox/${messageId}/urls/${urlId}/save`,
       { method: 'POST', token }
     )
 };

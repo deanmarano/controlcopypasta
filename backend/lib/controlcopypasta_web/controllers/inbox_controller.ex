@@ -1,4 +1,4 @@
-defmodule ControlcopypastaWeb.MessageController do
+defmodule ControlcopypastaWeb.InboxController do
   use ControlcopypastaWeb, :controller
 
   alias Controlcopypasta.Messages

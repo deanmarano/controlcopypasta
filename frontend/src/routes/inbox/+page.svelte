@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
-	import { messages, type DirectMessage } from '$lib/api/client';
+	import { inbox, type DirectMessage } from '$lib/api/client';
 
 	let messageList = $state<DirectMessage[]>([]);
 	let loading = $state(true);
@@ -23,7 +23,7 @@
 		try {
 			loading = true;
 			error = null;
-			const result = await messages.list(token);
+			const result = await inbox.list(token);
 			messageList = result.data;
 		} catch (e) {
 			error = 'Failed to load messages';
@@ -66,7 +66,7 @@
 		if (!token) return;
 
 		try {
-			const result = await messages.saveRecipe(token, messageId, urlId);
+			const result = await inbox.saveRecipe(token, messageId, urlId);
 			goto(`/recipes/${result.data.recipe_id}`);
 		} catch (e) {
 			console.error('Failed to save recipe:', e);
@@ -75,11 +75,11 @@
 </script>
 
 <svelte:head>
-	<title>Messages - ControlCopyPasta</title>
+	<title>Inbox - ControlCopyPasta</title>
 </svelte:head>
 
-<div class="messages-page">
-	<h1>Messages</h1>
+<div class="inbox-page">
+	<h1>Inbox</h1>
 	<p class="subtitle">Recipes shared with you via Instagram DMs</p>
 
 	{#if loading}
@@ -95,7 +95,7 @@
 	{:else}
 		<div class="message-list">
 			{#each messageList as message}
-				<a href="/messages/{message.id}" class="message-card">
+				<a href="/inbox/{message.id}" class="message-card">
 					<div class="message-header">
 						<span class="sender">@{message.sender_username}</span>
 						<span class="type-badge">{messageTypeLabel(message.message_type)}</span>
@@ -141,7 +141,7 @@
 </div>
 
 <style>
-	.messages-page {
+	.inbox-page {
 		max-width: 800px;
 		margin: 0 auto;
 	}

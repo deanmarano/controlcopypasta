@@ -120,10 +120,10 @@ defmodule ControlcopypastaWeb.Router do
            AvoidedIngredientController,
            :remove_exception
 
-    # Direct messages
-    get "/messages", MessageController, :index
-    get "/messages/:id", MessageController, :show
-    post "/messages/:message_id/urls/:url_id/save", MessageController, :save_recipe
+    # Inbox (direct messages)
+    get "/inbox", InboxController, :index
+    get "/inbox/:id", InboxController, :show
+    post "/inbox/:message_id/urls/:url_id/save", InboxController, :save_recipe
 
     # Connected accounts
     get "/connected-accounts", ConnectedAccountController, :index

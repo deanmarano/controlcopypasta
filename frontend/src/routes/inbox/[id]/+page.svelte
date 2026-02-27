@@ -3,7 +3,7 @@
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { messages, type DirectMessage } from '$lib/api/client';
+	import { inbox, type DirectMessage } from '$lib/api/client';
 
 	let message = $state<DirectMessage | null>(null);
 	let loading = $state(true);
@@ -27,7 +27,7 @@
 		try {
 			loading = true;
 			error = null;
-			const result = await messages.get(token, id);
+			const result = await inbox.get(token, id);
 			message = result.data;
 		} catch (e) {
 			error = 'Failed to load message';
@@ -64,7 +64,7 @@
 
 		try {
 			savingUrlId = urlId;
-			const result = await messages.saveRecipe(token, message.id, urlId);
+			const result = await inbox.saveRecipe(token, message.id, urlId);
 			goto(`/recipes/${result.data.recipe_id}`);
 		} catch (e) {
 			console.error('Failed to save recipe:', e);
@@ -78,7 +78,7 @@
 </svelte:head>
 
 <div class="message-detail">
-	<a href="/messages" class="back-link">Back to Messages</a>
+	<a href="/inbox" class="back-link">Back to Inbox</a>
 
 	{#if loading}
 		<div class="loading">Loading message...</div>
