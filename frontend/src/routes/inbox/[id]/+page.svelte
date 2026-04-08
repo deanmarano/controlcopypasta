@@ -135,6 +135,13 @@
 						</div>
 					{/if}
 
+				{#if message.shared_content.ocr_text}
+						<div class="ocr-block">
+							<h3>On-Screen Text (OCR)</h3>
+							<p class="ocr-text">{message.shared_content.ocr_text}</p>
+						</div>
+					{/if}
+
 				{#if message.shared_content.comments?.length > 0}
 						<div class="comments-section">
 							<h3>Comments ({message.shared_content.comments.length}{#if message.shared_content.comment_count && message.shared_content.comment_count > message.shared_content.comments.length} of {message.shared_content.comment_count}{/if})</h3>
@@ -356,6 +363,24 @@
 		line-height: var(--leading-relaxed);
 		white-space: pre-wrap;
 		font-style: italic;
+	}
+
+	.ocr-block {
+		padding: var(--space-4);
+		border-bottom: var(--border-width-thin) solid var(--border-default);
+	}
+
+	.ocr-block h3 {
+		font-size: var(--text-sm);
+		font-weight: var(--font-semibold);
+		color: var(--text-tertiary);
+		margin-bottom: var(--space-2);
+	}
+
+	.ocr-text {
+		font-size: var(--text-sm);
+		line-height: var(--leading-relaxed);
+		white-space: pre-wrap;
 	}
 
 	.comments-section {

@@ -209,6 +209,13 @@
 				</div>
 			{/if}
 
+			{#if sourceMessage.shared_content?.ocr_text}
+				<div class="reference-block">
+					<h3>On-Screen Text (OCR)</h3>
+					<pre class="reference-text">{sourceMessage.shared_content.ocr_text}</pre>
+				</div>
+			{/if}
+
 			{#if sourceMessage.message_text}
 				<div class="reference-block">
 					<h3>Message Text</h3>
