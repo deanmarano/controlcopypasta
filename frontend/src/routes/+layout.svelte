@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { authStore, isAuthenticated, currentUser, isLoading, isAdmin } from '$lib/stores/auth';
+	import { authStore, isAuthenticated, currentUser, isLoading, isUnreachable, isAdmin } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 
@@ -39,7 +39,7 @@
 {#if $page.url.pathname.startsWith('/mockups')}
 	{@render children()}
 {:else if $isLoading}
-	<div class="loading">Loading...</div>
+	<div class="loading">{$isUnreachable ? "Can't reach the server. Retrying..." : 'Loading...'}</div>
 {:else}
 	<div class="app">
 		<header>

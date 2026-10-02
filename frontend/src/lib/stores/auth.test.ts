@@ -1,10 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { get } from 'svelte/store';
 
 // Mock the API client
 vi.mock('$lib/api/client', () => ({
+  ApiError: class ApiError extends Error {
+    constructor(
+      public status: number,
+      public data: unknown
+    ) {
+      super(`API Error: ${status}`);
+    }
+  },
   auth: {
     me: vi.fn(),
+    refresh: vi.fn(),
     requestMagicLink: vi.fn(),
     verifyMagicLink: vi.fn(),
     logout: vi.fn()
@@ -31,8 +40,13 @@ Object.defineProperty(globalThis, 'navigator', {
   writable: true
 });
 
-import { auth as authApi, passkeys as passkeysApi } from '$lib/api/client';
-import { authStore, isAuthenticated, currentUser, isLoading } from './auth';
+import { auth as authApi, passkeys as passkeysApi, ApiError } from '$lib/api/client';
+import { authStore, isAuthenticated, currentUser, isLoading, isUnreachable } from './auth';
+
+function jwtIssuedSecondsAgo(seconds: number): string {
+  const payload = btoa(JSON.stringify({ iat: Math.floor(Date.now() / 1000) - seconds }));
+  return `header.${payload.replace(/=/g, '')}.signature`;
+}
 
 describe('Auth Store', () => {
   beforeEach(() => {
@@ -65,13 +79,89 @@ describe('Auth Store', () => {
 
     it('clears invalid token from storage', async () => {
       localStorage.setItem('controlcopypasta_token', 'invalid-token');
-      vi.mocked(authApi.me).mockRejectedValueOnce(new Error('Invalid token'));
+      vi.mocked(authApi.me).mockRejectedValueOnce(new ApiError(401, {}));
 
       await authStore.initialize();
 
       expect(localStorage.getItem('controlcopypasta_token')).toBeNull();
       expect(get(isAuthenticated)).toBe(false);
       expect(get(isLoading)).toBe(false);
+    });
+
+    describe('when the server cannot answer', () => {
+      beforeEach(() => {
+        vi.useFakeTimers();
+      });
+
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it.each([
+        ['a network error', new TypeError('Failed to fetch')],
+        ['a 502', new ApiError(502, {})]
+      ])('keeps the token on %s and retries until it answers', async (_name, error) => {
+        localStorage.setItem('controlcopypasta_token', 'valid-token');
+        vi.mocked(authApi.me)
+          .mockRejectedValueOnce(error)
+          .mockResolvedValueOnce({
+            user: { id: '123', email: 'test@example.com', inserted_at: '2024-01-01' }
+          });
+
+        await authStore.initialize();
+
+        expect(localStorage.getItem('controlcopypasta_token')).toBe('valid-token');
+        expect(get(isUnreachable)).toBe(true);
+        expect(get(isLoading)).toBe(true);
+
+        await vi.advanceTimersByTimeAsync(2000);
+
+        expect(authApi.me).toHaveBeenCalledTimes(2);
+        expect(get(isAuthenticated)).toBe(true);
+        expect(get(isUnreachable)).toBe(false);
+        expect(get(isLoading)).toBe(false);
+      });
+    });
+
+    describe('token refresh', () => {
+      const user = { id: '123', email: 'test@example.com', inserted_at: '2024-01-01' };
+
+      it('exchanges a token more than a day old for a fresh one', async () => {
+        const old = jwtIssuedSecondsAgo(2 * 24 * 60 * 60);
+        localStorage.setItem('controlcopypasta_token', old);
+        vi.mocked(authApi.me).mockResolvedValueOnce({ user });
+        vi.mocked(authApi.refresh).mockResolvedValueOnce({ token: 'fresh-token' });
+
+        await authStore.initialize();
+
+        expect(authApi.refresh).toHaveBeenCalledWith(old);
+        expect(localStorage.getItem('controlcopypasta_token')).toBe('fresh-token');
+        expect(authStore.getToken()).toBe('fresh-token');
+        expect(get(isAuthenticated)).toBe(true);
+      });
+
+      it('leaves a recent token alone', async () => {
+        const recent = jwtIssuedSecondsAgo(60);
+        localStorage.setItem('controlcopypasta_token', recent);
+        vi.mocked(authApi.me).mockResolvedValueOnce({ user });
+
+        await authStore.initialize();
+
+        expect(authApi.refresh).not.toHaveBeenCalled();
+        expect(localStorage.getItem('controlcopypasta_token')).toBe(recent);
+      });
+
+      it('keeps the current token when the refresh fails', async () => {
+        const old = jwtIssuedSecondsAgo(2 * 24 * 60 * 60);
+        localStorage.setItem('controlcopypasta_token', old);
+        vi.mocked(authApi.me).mockResolvedValueOnce({ user });
+        vi.mocked(authApi.refresh).mockRejectedValueOnce(new ApiError(500, {}));
+
+        await authStore.initialize();
+
+        expect(localStorage.getItem('controlcopypasta_token')).toBe(old);
+        expect(get(isAuthenticated)).toBe(true);
+      });
     });
   });
 
@@ -83,7 +173,7 @@ describe('Auth Store', () => {
 
       const result = await authStore.requestMagicLink('test@example.com');
 
-      expect(authApi.requestMagicLink).toHaveBeenCalledWith('test@example.com');
+      expect(authApi.requestMagicLink).toHaveBeenCalledWith('test@example.com', undefined);
       expect(result.message).toBe('Check your email');
     });
   });

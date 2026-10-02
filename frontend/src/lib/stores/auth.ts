@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import { browser } from '$app/environment';
-import { auth as authApi, passkeys as passkeysApi } from '$lib/api/client';
+import { auth as authApi, passkeys as passkeysApi, ApiError } from '$lib/api/client';
 
 // Helper: Convert base64url string to ArrayBuffer
 function base64urlToBuffer(base64url: string): ArrayBuffer {
@@ -36,6 +36,7 @@ interface AuthState {
   token: string | null;
   user: User | null;
   loading: boolean;
+  unreachable?: boolean;
 }
 
 const TOKEN_KEY = 'controlcopypasta_token';
@@ -63,7 +64,24 @@ function clearSharedCookie() {
   document.cookie = `${TOKEN_COOKIE}=; domain=${domain}; path=/; max-age=0`;
 }
 
+// A token older than this is exchanged for a fresh one on load, so the
+// 4-week lifetime restarts on every visit instead of ending the session.
+const REFRESH_AFTER_SECONDS = 24 * 60 * 60;
+const RETRY_DELAYS_MS = [2000, 5000, 15000, 30000];
+
+function tokenIssuedAt(token: string): number | null {
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const { iat } = JSON.parse(atob(payload));
+    return typeof iat === 'number' ? iat : null;
+  } catch {
+    return null;
+  }
+}
+
 function createAuthStore() {
+  let retries = 0;
+
   const initialState: AuthState = {
     token: browser ? localStorage.getItem(TOKEN_KEY) : null,
     user: null,
@@ -84,13 +102,36 @@ function createAuthStore() {
 
       try {
         const { user } = await authApi.me(token);
+        retries = 0;
         setSharedCookie(token);
-        update((s) => ({ ...s, token, user, loading: false }));
-      } catch {
-        // Token is invalid, clear it
-        if (browser) localStorage.removeItem(TOKEN_KEY);
-        clearSharedCookie();
-        update((s) => ({ ...s, token: null, user: null, loading: false }));
+        update((s) => ({ ...s, token, user, loading: false, unreachable: false }));
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          // Token is invalid, clear it
+          if (browser) localStorage.removeItem(TOKEN_KEY);
+          clearSharedCookie();
+          update((s) => ({ ...s, token: null, user: null, loading: false, unreachable: false }));
+        } else {
+          // The server could not answer (network error, restart, 5xx). That says
+          // nothing about the token, so keep it and try again.
+          const delay = RETRY_DELAYS_MS[Math.min(retries, RETRY_DELAYS_MS.length - 1)];
+          retries += 1;
+          update((s) => ({ ...s, loading: true, unreachable: true }));
+          setTimeout(() => this.initialize(), delay);
+        }
+        return;
+      }
+
+      const issuedAt = tokenIssuedAt(token);
+      if (issuedAt !== null && Date.now() / 1000 - issuedAt > REFRESH_AFTER_SECONDS) {
+        try {
+          const { token: fresh } = await authApi.refresh(token);
+          if (browser) localStorage.setItem(TOKEN_KEY, fresh);
+          setSharedCookie(fresh);
+          update((s) => ({ ...s, token: fresh }));
+        } catch {
+          // The current token still works; the next load tries again
+        }
       }
     },
 
@@ -317,5 +358,6 @@ export const authStore = createAuthStore();
 export const isAuthenticated = derived(authStore, ($auth) => !!$auth.user);
 export const currentUser = derived(authStore, ($auth) => $auth.user);
 export const isLoading = derived(authStore, ($auth) => $auth.loading);
+export const isUnreachable = derived(authStore, ($auth) => !!$auth.unreachable);
 export const isAdmin = derived(authStore, ($auth) => $auth.user?.is_admin ?? false);
 export const needsOnboarding = derived(authStore, ($auth) => !!$auth.user && $auth.user.onboarding_completed === false);
