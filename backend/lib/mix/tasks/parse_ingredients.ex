@@ -11,6 +11,22 @@ defmodule Mix.Tasks.ParseIngredients do
       mix parse_ingredients           # Parse all unparsed recipes
       mix parse_ingredients --limit 100  # Parse up to 100 recipes
       mix parse_ingredients --dry-run    # Show what would be parsed without saving
+
+  ## Re-parsing already-parsed recipes
+
+  By default this task only visits recipes that still have an ingredient without
+  a `canonical_id`. That skips recipes parsed by an older version of the parser
+  which forced a low-confidence match onto every line instead of leaving nulls —
+  those recipes look fully parsed but hold stale, often wrong, matches.
+
+      # Re-parse everything parsed before a given date
+      mix parse_ingredients --parsed-before 2026-03-01
+
+      # Re-parse every recipe, regardless of current parse state
+      mix parse_ingredients --force
+
+  Re-parsing is idempotent: it rewrites the ingredients JSONB from the current
+  parser and refreshes `ingredients_parsed_at`. Start with `--dry-run --limit`.
   """
   use Mix.Task
 
@@ -27,32 +43,33 @@ defmodule Mix.Tasks.ParseIngredients do
   def run(args) do
     Mix.Task.run("app.start")
 
-    {opts, _, _} = OptionParser.parse(args, strict: [limit: :integer, dry_run: :boolean])
+    {opts, _, _} =
+      OptionParser.parse(args,
+        strict: [
+          limit: :integer,
+          dry_run: :boolean,
+          force: :boolean,
+          parsed_before: :string
+        ]
+      )
+
     limit = Keyword.get(opts, :limit)
     dry_run = Keyword.get(opts, :dry_run, false)
+    force = Keyword.get(opts, :force, false)
+    parsed_before = parse_date_opt(Keyword.get(opts, :parsed_before))
 
     # Build lookup once (expensive)
     IO.puts("Building ingredient lookup...")
     lookup = Ingredients.build_ingredient_lookup()
 
-    # Find recipes with unparsed ingredients
-    query =
-      from r in Recipe,
-        where:
-          fragment(
-            "jsonb_array_length(?) > 0 AND EXISTS (SELECT 1 FROM jsonb_array_elements(?) AS elem WHERE elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = '')",
-            r.ingredients,
-            r.ingredients
-          ),
-        select: [:id, :ingredients, :ingredients_parsed_at]
-
+    query = build_query(force, parsed_before)
     query = if limit, do: Ecto.Query.limit(query, ^limit), else: query
 
     recipes = Repo.all(query)
     total = length(recipes)
 
     IO.puts(
-      "Found #{total} recipes with unparsed ingredients#{if limit, do: " (limited to #{limit})", else: ""}"
+      "Found #{total} #{describe_selection(force, parsed_before)}#{if limit, do: " (limited to #{limit})", else: ""}"
     )
 
     if dry_run do
@@ -74,6 +91,58 @@ defmodule Mix.Tasks.ParseIngredients do
       end)
 
     IO.puts("\nDone! #{success} parsed, #{failed} failed")
+  end
+
+  # Recipes with at least one ingredient lacking a canonical_id (the default).
+  defp build_query(false, nil) do
+    from r in Recipe,
+      where:
+        fragment(
+          "jsonb_array_length(?) > 0 AND EXISTS (SELECT 1 FROM jsonb_array_elements(?) AS elem WHERE elem->>'canonical_id' IS NULL OR elem->>'canonical_id' = '')",
+          r.ingredients,
+          r.ingredients
+        ),
+      select: [:id, :ingredients, :ingredients_parsed_at]
+  end
+
+  # Every recipe that has ingredients, whatever its current parse state.
+  defp build_query(true, nil) do
+    from r in Recipe,
+      where: fragment("jsonb_array_length(?) > 0", r.ingredients),
+      select: [:id, :ingredients, :ingredients_parsed_at]
+  end
+
+  # Recipes last parsed before a cutoff, including ones that look fully parsed.
+  defp build_query(_force, %DateTime{} = cutoff) do
+    from r in Recipe,
+      where:
+        fragment("jsonb_array_length(?) > 0", r.ingredients) and
+          (is_nil(r.ingredients_parsed_at) or r.ingredients_parsed_at < ^cutoff),
+      select: [:id, :ingredients, :ingredients_parsed_at]
+  end
+
+  defp describe_selection(_force, %DateTime{} = cutoff),
+    do: "recipes parsed before #{DateTime.to_date(cutoff)} (or never parsed)"
+
+  defp describe_selection(true, nil), do: "recipes with ingredients (full re-parse)"
+  defp describe_selection(false, nil), do: "recipes with unparsed ingredients"
+
+  defp parse_date_opt(nil), do: nil
+
+  defp parse_date_opt(value) do
+    case DateTime.from_iso8601(value) do
+      {:ok, dt, _} ->
+        dt
+
+      {:error, _} ->
+        case Date.from_iso8601(value) do
+          {:ok, date} ->
+            DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
+
+          {:error, _} ->
+            Mix.raise("--parsed-before expects an ISO8601 date, e.g. 2026-03-01, got: #{value}")
+        end
+    end
   end
 
   defp parse_recipe_ingredients(recipe, lookup, dry_run) do
