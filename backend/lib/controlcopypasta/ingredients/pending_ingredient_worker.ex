@@ -6,7 +6,14 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
   2. Parses each ingredient using TokenParser
   3. Identifies ingredients that don't match any canonical
   4. Tracks frequency and sample texts
-  5. Queues ingredients appearing 5+ times for admin review
+  5. Queues every unmatched ingredient for admin review, ordered by frequency
+  6. Records blacklist-rejected names as `rejected` with the rule that fired
+
+  Every unmatched name is recorded. An earlier version only queued names seen
+  5+ times and dropped everything a blacklist rule matched, which hid 61% of
+  unmatched volume from review and left the `rejected` label with no rows at
+  all -- so there was no way to tell a filtered parsing artifact from a real
+  ingredient nobody had got to yet.
   """
 
   alias Controlcopypasta.Repo
@@ -17,7 +24,6 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
 
   require Logger
 
-  @min_occurrences 5
   @max_sample_texts 5
 
   # Single words that should never be queued as ingredients
@@ -213,16 +219,21 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
             end)
           end)
 
-        # Upsert candidates that meet threshold so far
-        candidates =
+        # Record every unmatched name, not just the frequent ones. Names a
+        # blacklist rule rejects are stored as "rejected" with the rule that
+        # fired, so the filter's decisions become reviewable training labels
+        # instead of being dropped silently.
+        {rejected, candidates} =
           acc
-          |> Enum.filter(fn {name, %{count: count}} ->
-            count >= @min_occurrences and not blacklisted?(name)
-          end)
           |> Enum.sort_by(fn {_, %{count: count}} -> -count end)
+          |> Enum.split_with(fn {name, _} -> blacklisted?(name) end)
 
         inserted = upsert_pending(candidates)
-        Logger.info("Chunk #{chunk_num}: #{inserted} candidates upserted so far")
+        auto_rejected = upsert_rejected(rejected)
+
+        Logger.info(
+          "Chunk #{chunk_num}: #{inserted} candidates, #{auto_rejected} auto-rejected so far"
+        )
 
         {inserted, acc}
       end)
@@ -270,51 +281,56 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
     end)
   end
 
-  @doc false
-  def blacklisted?(name) do
+  @doc """
+  Returns true when a name is filtered out by a blacklist rule.
+  """
+  def blacklisted?(name), do: rejection_rule(name) != nil
+
+  @doc """
+  Returns the name of the blacklist rule that rejects this ingredient name, or
+  nil when nothing rejects it.
+
+  The rule name is stored on the rejected record so that an auto-rejection is
+  both attributable and reviewable: the rule that fired is the most useful
+  feature for deciding whether the rule itself is wrong.
+  """
+  def rejection_rule(name) do
     normalized = String.downcase(String.trim(name))
 
-    # Too short (likely parsing artifact)
-    # Contains only numbers
-    # Metric weights like "113g", "30ml", "1.5kg" (parenthetical equivalents)
-    # Metric weight ranges like "28g to 43g"
-    # Looks like a measurement or metric conversion
-    # Starts with articles
-    # Starts with a unit word (parsing artifact, e.g. "teaspoon salt")
-    # Equipment words
-    # Contains slash with numbers (metric conversions like "cup/240")
-    # Measurement patterns like "1/2-inch", "1/2" thick", abbreviations like "oz.", "lb."
-    # Ends with "only" or "size" (usually prep descriptions)
-    # Contains "online" (recipe references)
-    # Unicode fractions (parsing artifacts)
-    # Contains instruction/description words
-    # Contains "-oz." or similar unit abbreviations with numbers
-    normalized in @blacklist_words or
-      normalized in @blacklist_phrases or
-      Enum.any?(@blacklist_prefixes, &String.starts_with?(normalized, &1)) or
-      String.length(normalized) < 3 or
-      Regex.match?(~r/^\d+$/, normalized) or
-      Regex.match?(~r/^\d+([.,]\d+)?(g|kg|ml|l)$/i, normalized) or
-      Regex.match?(~r/^\d+g\s+to\s+\d+g$/i, normalized) or
-      Regex.match?(~r/^\d+["'-]/, normalized) or
-      Regex.match?(~r/^cups?\/\d+/, normalized) or
-      String.starts_with?(normalized, ["a ", "an ", "the "]) or
-      starts_with_unit?(normalized) or
-      String.contains?(normalized, ["springform", "thermometer", "skillet"]) or
-      Regex.match?(~r/\/\d+$/, normalized) or
-      Regex.match?(~r/^\d+\/?\d*-inch/, normalized) or
-      Regex.match?(~r/^\d+\/?\d*"/, normalized) or
-      Regex.match?(~r/^\d+%/, normalized) or
-      Regex.match?(~r/^[a-z]{1,3}\.$/, normalized) or
-      String.ends_with?(normalized, " only") or
-      String.ends_with?(normalized, " size") or
-      String.contains?(normalized, "online") or
-      Regex.match?(~r/^[²³⁄₁₂₃₄₅₆₇₈₉₀]+$/, normalized) or
-      String.contains?(normalized, "depending") or
-      String.contains?(normalized, "and/or") or
-      String.contains?(normalized, "diameter") or
-      Regex.match?(~r/\d+-?oz\./, normalized) or
-      Regex.match?(~r/\d+-?lb\./, normalized)
+    Enum.find_value(rejection_rules(), fn {rule, matches?} ->
+      if matches?.(normalized), do: rule
+    end)
+  end
+
+  defp rejection_rules do
+    [
+      {"blacklist_word", &(&1 in @blacklist_words)},
+      {"blacklist_phrase", &(&1 in @blacklist_phrases)},
+      {"blacklist_prefix", fn n -> Enum.any?(@blacklist_prefixes, &String.starts_with?(n, &1)) end},
+      {"too_short", &(String.length(&1) < 3)},
+      {"numeric_only", &Regex.match?(~r/^\d+$/, &1)},
+      {"metric_weight", &Regex.match?(~r/^\d+([.,]\d+)?(g|kg|ml|l)$/i, &1)},
+      {"metric_range", &Regex.match?(~r/^\d+g\s+to\s+\d+g$/i, &1)},
+      {"leading_measurement", &Regex.match?(~r/^\d+["\'-]/, &1)},
+      {"cup_conversion", &Regex.match?(~r/^cups?\/\d+/, &1)},
+      {"leading_article", &String.starts_with?(&1, ["a ", "an ", "the "])},
+      {"leading_unit", &starts_with_unit?(&1)},
+      {"equipment_word", &String.contains?(&1, ["springform", "thermometer", "skillet"])},
+      {"trailing_conversion", &Regex.match?(~r/\/\d+$/, &1)},
+      {"inch_measurement", &Regex.match?(~r/^\d+\/?\d*-inch/, &1)},
+      {"quote_measurement", &Regex.match?(~r/^\d+\/?\d*"/, &1)},
+      {"percentage", &Regex.match?(~r/^\d+%/, &1)},
+      {"abbreviation", &Regex.match?(~r/^[a-z]{1,3}\.$/, &1)},
+      {"trailing_only", &String.ends_with?(&1, " only")},
+      {"trailing_size", &String.ends_with?(&1, " size")},
+      {"recipe_reference", &String.contains?(&1, "online")},
+      {"unicode_fraction", &Regex.match?(~r/^[\x{00B2}\x{00B3}\x{2044}\x{2081}\x{2082}\x{2083}\x{2084}\x{2085}\x{2086}\x{2087}\x{2088}\x{2089}\x{2080}]+$/u, &1)},
+      {"conditional_note", &String.contains?(&1, "depending")},
+      {"and_or", &String.contains?(&1, "and/or")},
+      {"diameter_note", &String.contains?(&1, "diameter")},
+      {"oz_abbreviation", &Regex.match?(~r/\d+-?oz\./, &1)},
+      {"lb_abbreviation", &Regex.match?(~r/\d+-?lb\./, &1)}
+    ]
   end
 
   @unit_words ~w(
@@ -365,6 +381,43 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
             |> Repo.update()
           end
 
+          acc
+      end
+    end)
+  end
+
+  # Store blacklisted names as auto-rejected, tagged with the rule that fired.
+  # Human decisions are never overwritten: only rows that are still pending, or
+  # that a previous scan auto-rejected, are touched.
+  defp upsert_rejected(rejected) do
+    Enum.reduce(rejected, 0, fn {name, %{count: count, samples: samples}}, acc ->
+      rule = rejection_rule(name)
+
+      attrs = %{
+        name: name,
+        occurrence_count: count,
+        sample_texts: samples,
+        status: "rejected",
+        rejected_by_rule: rule
+      }
+
+      case Repo.get_by(PendingIngredient, name: name) do
+        nil ->
+          %PendingIngredient{}
+          |> PendingIngredient.changeset(attrs)
+          |> Repo.insert()
+
+          acc + 1
+
+        %{status: "pending"} = existing ->
+          existing |> PendingIngredient.changeset(attrs) |> Repo.update()
+          acc + 1
+
+        %{status: "rejected", reviewed_at: nil} = existing ->
+          existing |> PendingIngredient.changeset(attrs) |> Repo.update()
+          acc + 1
+
+        _human_reviewed ->
           acc
       end
     end)

@@ -9,7 +9,9 @@ defmodule Controlcopypasta.Ingredients.PendingIngredient do
 
   - `pending` - Awaiting admin review
   - `approved` - Approved and converted to canonical ingredient
-  - `rejected` - Rejected (not a real ingredient, parsing error, etc.)
+  - `rejected` - Rejected (not a real ingredient, parsing error, etc.). When
+    `rejected_by_rule` is set the rejection came from a blacklist rule rather
+    than a person, which keeps machine labels separable from human ones.
   - `merged` - Merged into an existing canonical as an alias
   - `tool` - Marked as a kitchen tool/utensil (not a real ingredient)
   - `preparation` - Marked as a preparation method (not a real ingredient)
@@ -26,6 +28,8 @@ defmodule Controlcopypasta.Ingredients.PendingIngredient do
     field :occurrence_count, :integer, default: 1
     field :sample_texts, {:array, :string}, default: []
     field :status, :string, default: "pending"
+    # Blacklist rule that auto-rejected this name; nil for human decisions.
+    field :rejected_by_rule, :string
 
     # FatSecret data
     field :fatsecret_id, :string
@@ -56,6 +60,7 @@ defmodule Controlcopypasta.Ingredients.PendingIngredient do
       :occurrence_count,
       :sample_texts,
       :status,
+      :rejected_by_rule,
       :fatsecret_id,
       :fatsecret_name,
       :fatsecret_data,
