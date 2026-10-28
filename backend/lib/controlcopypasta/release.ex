@@ -584,9 +584,23 @@ defmodule Controlcopypasta.Release do
   @doc """
   Parses all unparsed recipe ingredients using TokenParser.
 
+  Options:
+  - `:limit` - maximum number of recipes to process
+  - `:recipe_id` - parse a single recipe
+  - `:force` - re-parse every recipe that has ingredients
+  - `:parsed_before` - re-parse recipes last parsed before this date (an ISO8601
+    string or a DateTime), including ones that currently look fully parsed
+
+  By default only recipes holding an ingredient without a `canonical_id` are
+  visited. Recipes parsed by an older parser forced a low-confidence match onto
+  every line instead of leaving nulls, so they have no nulls and the default
+  selection can never reach them; `:parsed_before` is how to re-parse those.
+
   Example:
     ./bin/controlcopypasta eval "Controlcopypasta.Release.parse_ingredients()"
     ./bin/controlcopypasta eval "Controlcopypasta.Release.parse_ingredients(limit: 100)"
+    ./bin/controlcopypasta eval "Controlcopypasta.Release.parse_ingredients(parsed_before: \"2026-03-01\")"
+    ./bin/controlcopypasta eval "Controlcopypasta.Release.parse_ingredients(parsed_before: \"2026-03-01\", limit: 100)"
   """
   def parse_ingredients(opts \\ []) do
     load_app()
@@ -612,11 +626,25 @@ defmodule Controlcopypasta.Release do
     lookup = Ingredients.build_ingredient_lookup()
 
     force = Keyword.get(opts, :force, false)
+    parsed_before = normalize_cutoff(Keyword.get(opts, :parsed_before))
 
     recipe_ids =
       cond do
         recipe_id ->
           [recipe_id]
+
+        parsed_before ->
+          # Recipes last parsed before the cutoff, including ones that look
+          # fully parsed because an older parser left no nulls behind.
+          id_query =
+            from r in Recipe,
+              where:
+                fragment("jsonb_array_length(?) > 0", r.ingredients) and
+                  (is_nil(r.ingredients_parsed_at) or r.ingredients_parsed_at < ^parsed_before),
+              select: r.id
+
+          id_query = if limit, do: Ecto.Query.limit(id_query, ^limit), else: id_query
+          Repo.all(id_query, timeout: 120_000)
 
         force ->
           # Re-parse ALL recipes with ingredients
@@ -716,6 +744,27 @@ defmodule Controlcopypasta.Release do
       end)
 
     IO.puts("\nDone! #{success} parsed, #{failed} failed")
+  end
+
+  # Accepts an ISO8601 date or datetime string, or a DateTime.
+  defp normalize_cutoff(nil), do: nil
+  defp normalize_cutoff(%DateTime{} = dt), do: dt
+
+  defp normalize_cutoff(value) when is_binary(value) do
+    case DateTime.from_iso8601(value) do
+      {:ok, dt, _} ->
+        dt
+
+      {:error, _} ->
+        case Date.from_iso8601(value) do
+          {:ok, date} ->
+            DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
+
+          {:error, _} ->
+            raise ArgumentError,
+                  "parsed_before expects an ISO8601 date, e.g. \"2026-03-01\", got: #{inspect(value)}"
+        end
+    end
   end
 
   defp repos do
