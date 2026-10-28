@@ -42,8 +42,9 @@ defmodule Controlcopypasta.Accounts do
     if is_nil(secret) or secret == "" do
       {:error, :linking_not_configured}
     else
-      expected = :crypto.mac(:hmac, :sha256, secret, "#{provider}:#{provider_username}")
-                 |> Base.url_encode64(padding: false)
+      expected =
+        :crypto.mac(:hmac, :sha256, secret, "#{provider}:#{provider_username}")
+        |> Base.url_encode64(padding: false)
 
       if Plug.Crypto.secure_compare(expected, token) do
         %ConnectedAccount{}

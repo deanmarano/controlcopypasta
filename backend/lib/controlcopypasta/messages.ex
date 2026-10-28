@@ -178,7 +178,9 @@ defmodule Controlcopypasta.Messages do
     DirectMessage
     |> Repo.get(message_id)
     |> case do
-      nil -> {:error, :not_found}
+      nil ->
+        {:error, :not_found}
+
       message ->
         message
         |> DirectMessage.changeset(%{shared_content: shared_content})
