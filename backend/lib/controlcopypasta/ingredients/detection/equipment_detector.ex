@@ -93,9 +93,6 @@ defmodule Controlcopypasta.Ingredients.Detection.EquipmentDetector do
     "deep fry thermometer",
     "barbecue tongs",
     "barbecue kit",
-    "baking spray",
-    "cooking spray",
-    "nonstick spray",
     "spice mill",
     "mortar and pestle",
     "weber barbecue",
@@ -139,12 +136,20 @@ defmodule Controlcopypasta.Ingredients.Detection.EquipmentDetector do
       iex> EquipmentDetector.is_equipment?("1 lb chicken breast")
       false
   """
-  def is_equipment?(nil), do: false
+  def is_equipment?(text, opts \\ [])
 
-  def is_equipment?(text) when is_binary(text) do
+  def is_equipment?(nil, _opts), do: false
+
+  def is_equipment?(text, opts) when is_binary(text) do
     normalized = String.downcase(text)
 
     cond do
+      # The canonical catalog wins over every heuristic below. Without this,
+      # foods whose names end in an equipment word ("lasagna sheets", "string
+      # beans", "pan spray") are silently dropped before matching ever runs.
+      known_ingredient?(normalized, opts) ->
+        false
+
       # Pattern 0: "Special Equipment:" prefix - entire line is equipment
       Regex.match?(~r/^\s*special\s+equipment\s*:/i, text) ->
         true
@@ -180,6 +185,16 @@ defmodule Controlcopypasta.Ingredients.Detection.EquipmentDetector do
   Returns all equipment phrases (for external use if needed).
   """
   def equipment_phrases, do: @equipment_phrases
+
+  # Is this text a known food? Callers that have the ingredient lookup pass it as
+  # `:lookup` so the catalog can override the heuristics; without it we fall back
+  # to heuristics alone and callers keep the previous behaviour.
+  defp known_ingredient?(normalized, opts) do
+    case Keyword.get(opts, :lookup) do
+      nil -> false
+      lookup -> Map.has_key?(lookup, String.trim(normalized))
+    end
+  end
 
   # Check if text contains any equipment word
   defp contains_equipment_word?(text) do

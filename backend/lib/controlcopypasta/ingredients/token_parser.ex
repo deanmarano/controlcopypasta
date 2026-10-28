@@ -131,8 +131,11 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     start_time = System.monotonic_time(:microsecond)
     include_diagnostics = Keyword.get(opts, :diagnostics, false)
 
+    lookup = Keyword.get_lazy(opts, :lookup, fn -> Ingredients.build_ingredient_lookup() end)
+    opts = Keyword.put(opts, :lookup, lookup)
+
     # Preprocess text to normalize problematic patterns
-    case preprocess_text(text) do
+    case preprocess_text(text, lookup) do
       :skip ->
         # Non-ingredient (equipment) - return empty result
         %ParsedIngredient{
@@ -178,10 +181,11 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
 
   # Preprocess ingredient text to normalize problematic patterns
   # Returns :skip for non-ingredients, or the preprocessed text
-  defp preprocess_text(text) do
+  defp preprocess_text(text, lookup) do
     cond do
-      # Filter out kitchen equipment (using centralized detector)
-      EquipmentDetector.is_equipment?(text) ->
+      # Filter out kitchen equipment (using centralized detector). The lookup
+      # lets a canonical ingredient override the equipment heuristics.
+      EquipmentDetector.is_equipment?(text, lookup: lookup) ->
         :skip
 
       # Filter out section headers (FILLING, For the pastry:, etc.)
