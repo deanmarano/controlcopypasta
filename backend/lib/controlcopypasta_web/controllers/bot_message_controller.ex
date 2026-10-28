@@ -3,7 +3,11 @@ defmodule ControlcopypastaWeb.BotMessageController do
 
   alias Controlcopypasta.Messages
 
-  def create(conn, %{"provider" => provider, "provider_username" => provider_username, "message" => message_params}) do
+  def create(conn, %{
+        "provider" => provider,
+        "provider_username" => provider_username,
+        "message" => message_params
+      }) do
     # Check for duplicate
     platform_message_id = message_params["platform_message_id"]
 

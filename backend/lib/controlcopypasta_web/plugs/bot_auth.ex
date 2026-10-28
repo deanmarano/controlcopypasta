@@ -26,7 +26,8 @@ defmodule ControlcopypastaWeb.Plugs.BotAuth do
     with [signature] <- get_req_header(conn, "x-bot-signature"),
          raw_body when is_list(raw_body) <- conn.assigns[:raw_body],
          body = IO.iodata_to_binary(raw_body),
-         expected = :crypto.mac(:hmac, :sha256, secret, body) |> Base.url_encode64(padding: false),
+         expected =
+           :crypto.mac(:hmac, :sha256, secret, body) |> Base.url_encode64(padding: false),
          true <- Plug.Crypto.secure_compare(expected, signature) do
       conn
     else
