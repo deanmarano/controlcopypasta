@@ -306,7 +306,8 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
     [
       {"blacklist_word", &(&1 in @blacklist_words)},
       {"blacklist_phrase", &(&1 in @blacklist_phrases)},
-      {"blacklist_prefix", fn n -> Enum.any?(@blacklist_prefixes, &String.starts_with?(n, &1)) end},
+      {"blacklist_prefix",
+       fn n -> Enum.any?(@blacklist_prefixes, &String.starts_with?(n, &1)) end},
       {"too_short", &(String.length(&1) < 3)},
       {"numeric_only", &Regex.match?(~r/^\d+$/, &1)},
       {"metric_weight", &Regex.match?(~r/^\d+([.,]\d+)?(g|kg|ml|l)$/i, &1)},
@@ -324,7 +325,11 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
       {"trailing_only", &String.ends_with?(&1, " only")},
       {"trailing_size", &String.ends_with?(&1, " size")},
       {"recipe_reference", &String.contains?(&1, "online")},
-      {"unicode_fraction", &Regex.match?(~r/^[\x{00B2}\x{00B3}\x{2044}\x{2081}\x{2082}\x{2083}\x{2084}\x{2085}\x{2086}\x{2087}\x{2088}\x{2089}\x{2080}]+$/u, &1)},
+      {"unicode_fraction",
+       &Regex.match?(
+         ~r/^[\x{00B2}\x{00B3}\x{2044}\x{2081}\x{2082}\x{2083}\x{2084}\x{2085}\x{2086}\x{2087}\x{2088}\x{2089}\x{2080}]+$/u,
+         &1
+       )},
       {"conditional_note", &String.contains?(&1, "depending")},
       {"and_or", &String.contains?(&1, "and/or")},
       {"diameter_note", &String.contains?(&1, "diameter")},
