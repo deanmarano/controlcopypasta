@@ -45,6 +45,11 @@ defmodule Controlcopypasta.Nutrition.RecipeNutritionCompletenessTest do
     ~r/freeze-dried strawberry powder/i,
     ~r/100ml Liquid/i,
     ~r/\bhealthy pinch\b/i,
+    # Red salsa has no canonical ingredient yet (only "salsa verde" exists), so it
+    # cannot have nutrition data. Until a "salsa" canonical is added with sourced
+    # nutrition and density rows, this line has no correct answer. It previously
+    # passed only because the fuzzy prefix matcher guessed a wrong canonical.
+    ~r/\bsalsa\b/i,
     # "Salt and pepper to taste" - parser skips these (no quantity)
     ~r/\bsalt\s+and\s+(?:freshly\s+ground\s+)?(?:black\s+)?pepper\b/i
   ]

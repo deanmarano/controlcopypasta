@@ -11,11 +11,16 @@ Code.eval_file("priv/repo/seeds/ingredients.exs")
 # 2. Additional ingredients for recipe nutrition completeness
 Code.eval_file("priv/repo/seeds/recipe_nutrition_completeness.exs")
 
-# 3. Ingredient densities (depends on canonical ingredients)
+# 3. Expanded aliases for the canonical ingredients seeded above. This was a
+# manual one-off script and so never ran during setup, which meant none of its
+# aliases were present on a fresh database.
+Code.eval_file("priv/repo/seeds/expanded_aliases.exs")
+
+# 4. Ingredient densities (depends on canonical ingredients)
 Code.eval_file("priv/repo/seeds/ingredient_densities.exs")
 
-# 4. Expanded densities (depends on canonical ingredients)
+# 5. Expanded densities (depends on canonical ingredients)
 Code.eval_file("priv/repo/seeds/ingredient_densities_expanded.exs")
 
-# 5. Brand package sizes (depends on canonical ingredients)
+# 6. Brand package sizes (depends on canonical ingredients)
 Code.eval_file("priv/repo/seeds/brand_package_sizes.exs")

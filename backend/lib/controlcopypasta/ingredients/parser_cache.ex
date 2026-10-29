@@ -105,6 +105,13 @@ defmodule Controlcopypasta.Ingredients.ParserCache do
   }
 
   @default_normalizer_map %{
+    # Normalized as a phrase, not an alias: "shredded" is labelled a preparation
+    # and stripped, so by the time the matcher runs only "coconut" is left -- and
+    # bare "coconut" cannot be aliased to the flakes, because in
+    # "grapeseed, coconut, or avocado oil" it means the oil.
+    "shredded coconut" => "coconut flakes",
+    "desiccated coconut" => "coconut flakes",
+    "flaked coconut" => "coconut flakes",
     "all-purpose flour" => "flour",
     "all purpose flour" => "flour",
     "ap flour" => "flour",
