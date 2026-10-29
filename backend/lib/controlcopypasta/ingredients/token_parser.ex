@@ -426,12 +426,18 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       "\\1"
     )
     # Parens containing "store bought", "homemade", "or sub", "see note", "if needed"
+    # and aliasing lead-ins like "(also called quick-rising ...)", which only give
+    # the ingredient another name -- left in place, the "or" inside them gets read
+    # as an ingredient alternative and the real head noun is lost.
     |> String.replace(
-      ~r/\(\s*(?:store\s*bought|homemade|or\s+sub|see\s+note|if\s+needed|approximately|about\s+\d)[^)]*\)/i,
+      ~r/\(\s*(?:store\s*bought|homemade|or\s+sub|see\s+note|if\s+needed|approximately|about\s+\d|also\s+called|also\s+known\s+as|a\.?k\.?a\.?|sometimes\s+called|labell?ed)[^)]*\)/i,
       ""
     )
     # Parens starting with "or" suggesting alternatives we don't parse: "(or other protein)"
     |> String.replace(~r/\(\s*or\s+(?:other|sub|substitute|[\d])[^)]*\)/i, "")
+    # Cost annotations from budget-recipe sites: "salsa ($0.50)" -> "salsa".
+    # Left in, the "$0.50" becomes its own ingredient group.
+    |> String.replace(~r/\(\s*[$£€]\s*\d[^)]*\)/, "")
     # Parens containing recipe instructions: "(no curry powder // ...)"
     |> String.replace(~r/\(\s*no\s+[^)]*\)/i, "")
     # Parens with just descriptive text after main content: "(such as ...)" already handled by choices

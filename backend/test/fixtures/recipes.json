@@ -2384,7 +2384,9 @@
       "aliases": [
         "country-style bread",
         "rustic bread",
-        "peasant bread"
+        "peasant bread",
+        "crusty bread",
+        "artisan bread"
       ],
       "category": "grain",
       "display_name": "Country Bread",
@@ -3295,7 +3297,10 @@
     {
       "id": "9a0c575c-3b1e-4f7a-80d2-48c39dd7b610",
       "name": "coconut flakes",
-      "aliases": [],
+      "aliases": [
+        "shredded coconut",
+        "desiccated coconut"
+      ],
       "category": null,
       "display_name": "Coconut Flakes",
       "matching_rules": null,
@@ -6439,7 +6444,10 @@
       "aliases": [
         "heavy whipping cream",
         "whipping cream",
-        "double cream"
+        "double cream",
+        "cream",
+        "single cream",
+        "pouring cream"
       ],
       "category": "dairy",
       "display_name": "Heavy Cream",
