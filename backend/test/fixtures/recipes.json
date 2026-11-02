@@ -11018,6 +11018,22 @@
       "matching_rules": null,
       "measurement_type": "weight_primary",
       "skip_nutrition": false
+    },
+    {
+      "id": "7f3a1c20-4b6e-4d8a-9c21-5e0f8a1b2c34",
+      "name": "salsa",
+      "aliases": [
+        "tomato salsa",
+        "red salsa",
+        "chunky salsa",
+        "restaurant-style salsa",
+        "jarred salsa"
+      ],
+      "category": "condiment",
+      "display_name": "Salsa",
+      "matching_rules": null,
+      "measurement_type": "standard",
+      "skip_nutrition": false
     }
   ],
   "densities": [
@@ -14443,6 +14459,22 @@
       "canonical_ingredient_id": "78f7c166-ae76-410a-836b-fdcdad4c966d",
       "volume_unit": "pinch",
       "grams_per_unit": "0.3",
+      "preparation": null
+    },
+    {
+      "id": "c1b5afca-2b9b-5ebc-8c28-98077adf75a4",
+      "source": "manual",
+      "canonical_ingredient_id": "7f3a1c20-4b6e-4d8a-9c21-5e0f8a1b2c34",
+      "volume_unit": "cup",
+      "grams_per_unit": "240",
+      "preparation": null
+    },
+    {
+      "id": "ae5f8c37-e089-57fd-aaed-fc73f1d6b2a2",
+      "source": "manual",
+      "canonical_ingredient_id": "7f3a1c20-4b6e-4d8a-9c21-5e0f8a1b2c34",
+      "volume_unit": "tbsp",
+      "grams_per_unit": "15",
       "preparation": null
     }
   ],
@@ -29271,6 +29303,31 @@
       "vitamin_d_mcg": null,
       "is_primary": true,
       "confidence": "0.71"
+    },
+    {
+      "id": "b1d2e3f4-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
+      "source": "estimated",
+      "canonical_ingredient_id": "7f3a1c20-4b6e-4d8a-9c21-5e0f8a1b2c34",
+      "source_id": null,
+      "serving_size_value": "100",
+      "serving_size_unit": "g",
+      "calories": "36",
+      "protein_g": "1.5",
+      "fat_total_g": "0.2",
+      "fat_saturated_g": null,
+      "carbohydrates_g": "7.0",
+      "fiber_g": "1.8",
+      "sugar_g": "3.6",
+      "sodium_mg": "430",
+      "cholesterol_mg": "0",
+      "potassium_mg": null,
+      "calcium_mg": null,
+      "iron_mg": null,
+      "vitamin_a_mcg": null,
+      "vitamin_c_mg": null,
+      "vitamin_d_mcg": null,
+      "is_primary": true,
+      "confidence": "0.30"
     }
   ],
   "recipes": [

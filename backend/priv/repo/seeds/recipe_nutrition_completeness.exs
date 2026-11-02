@@ -12,6 +12,18 @@ IO.puts("Seeding recipe nutrition completeness data...")
 
 new_ingredients = [
   %{
+    # Salsa is a composite, but so are the ~85 other prepared condiments already
+    # in the catalog (guacamole, hummus, pesto, ketchup, marinara sauce, and
+    # salsa verde in particular). Jarred salsa is bought as an ingredient, so it
+    # is treated as one; the nutrition below is an estimate for a standard
+    # restaurant-style red salsa and is recorded as `:estimated` accordingly.
+    name: "salsa",
+    display_name: "Salsa",
+    category: "condiment",
+    aliases: ["tomato salsa", "red salsa", "chunky salsa", "restaurant-style salsa", "jarred salsa"],
+    dietary_flags: ["vegetarian", "vegan", "gluten_free"]
+  },
+  %{
     name: "cottage cheese",
     display_name: "Cottage Cheese",
     category: "dairy",
@@ -236,6 +248,7 @@ IO.puts("  Inserted #{count} new canonical ingredients")
 
 # Map of ingredient name -> nutrition values per 100g
 nutrition_data = [
+  {"salsa", 36, 1.5, 0.2, 7.0, 1.8, 3.6, 430, 0},
   {"lemon juice", 22, 0.35, 0.24, 6.9, 0.3, 2.5, 1, 0},
   {"peas", 81, 5.42, 0.4, 14.45, 5.7, 5.67, 5, 0},
   {"sesame seeds", 573, 17.73, 49.67, 23.45, 11.8, 0.3, 11, 0},
@@ -432,6 +445,9 @@ density_data = [
   {"kosher salt", "pinch", 0.36, nil},
   {"sea salt", "pinch", 0.36, nil},
   {"asafoetida", "pinch", 0.3, nil},
+  # Salsa: 1 cup of a chunky jarred salsa is about 240g
+  {"salsa", "cup", 240.0, nil},
+  {"salsa", "tbsp", 15.0, nil},
 ]
 
 for {name, unit, grams, prep} <- density_data do
