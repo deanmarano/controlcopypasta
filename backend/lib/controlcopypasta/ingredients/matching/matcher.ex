@@ -252,26 +252,63 @@ defmodule Controlcopypasta.Ingredients.Matching.Matcher do
 
   defp try_compound_split(_word, _lookup), do: nil
 
-  # Conservative fuzzy matching
-  defp try_fuzzy_match(name, lookup) do
-    # Only try prefix matching for longer names
-    if String.length(name) >= 4 do
-      # Find canonical that starts with this name or vice versa
-      match =
-        Enum.find(lookup, fn {key, _} ->
-          String.starts_with?(key, name <> " ") or
-            String.starts_with?(name, key <> " ")
-        end)
+  # Words that can never be a head noun on their own. The tokenizer can orphan
+  # one of these into its own ingredient group (splitting "freshly grated nutmeg"
+  # on the prep verb leaves a bare "freshly"), and without this guard the prefix
+  # search below happily resolves the orphan to whatever canonical shares its
+  # prefix -- "freshly" became "freshly ground black pepper" on ~1,000 lines.
+  @never_head_nouns ~w(freshly finely thinly coarsely roughly lightly thickly
+                       evenly firmly loosely very extra more less about
+                       plus optional divided reserved)
 
-      case match do
-        {_key, {canonical_name, id}} -> {canonical_name, id, 0.7, nil}
-        {_key, {canonical_name, id, rules}} -> {canonical_name, id, 0.7, rules}
-        nil -> nil
-      end
-    else
-      nil
+  # Conservative fuzzy matching.
+  #
+  # This is the last resort in the cascade, so it must decline rather than guess:
+  # a wrong answer here outranks a correct 1.0 match elsewhere in the same line
+  # when the bogus group happens to come first. It therefore matches only when
+  # the input can plausibly be a food and exactly one canonical is a prefix
+  # neighbour. Anything ambiguous returns nil and surfaces for review instead.
+  defp try_fuzzy_match(name, lookup) do
+    if fuzzy_candidate?(name) do
+      lookup
+      # Only the direction where a canonical is a leading fragment of the input
+      # ("olive oil" inside "olive oil blend"). The reverse -- treating the input
+      # as the first word of a longer canonical -- is not evidence: it turned
+      # "cream" into "cream cheese", "short" into "short rib" and "chilli" into
+      # "chilli sauce" across ~41,000 lines.
+      |> Enum.filter(fn {key, _} -> String.starts_with?(name, key <> " ") end)
+      # Sorted so the result never depends on map iteration order.
+      |> Enum.sort_by(fn {key, _} -> {String.length(key), key} end)
+      |> unique_fuzzy_match()
     end
   end
+
+  defp fuzzy_candidate?(name) do
+    String.length(name) >= 4 and
+      name not in @never_head_nouns and
+      name not in @leading_modifiers and
+      not String.ends_with?(name, "ly")
+  end
+
+  # Only a single, unambiguous neighbour is accepted. Several candidates means we
+  # cannot tell "cream" -> "cream cheese" from "cream" -> "heavy cream", and
+  # picking either one invents data.
+  defp unique_fuzzy_match([{_key, value}]), do: fuzzy_result(value)
+
+  defp unique_fuzzy_match([{_key, value} | [_ | _] = rest]) do
+    if Enum.all?(rest, fn {_, other} -> canonical_id(other) == canonical_id(value) end) do
+      # Every candidate is an alias of the same canonical, so there is no ambiguity.
+      fuzzy_result(value)
+    end
+  end
+
+  defp unique_fuzzy_match([]), do: nil
+
+  defp fuzzy_result({canonical_name, id}), do: {canonical_name, id, 0.7, nil}
+  defp fuzzy_result({canonical_name, id, rules}), do: {canonical_name, id, 0.7, rules}
+
+  defp canonical_id({_name, id}), do: id
+  defp canonical_id({_name, id, _rules}), do: id
 
   @doc """
   Singularize a multi-word phrase by singularizing the last word.

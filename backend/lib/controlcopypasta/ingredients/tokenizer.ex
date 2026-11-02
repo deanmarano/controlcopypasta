@@ -124,7 +124,17 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
     "any color",
     "any kind",
     "shaken well",
-    "well shaken"
+    "well shaken",
+    # Purpose phrases describing what the ingredient does rather than what it is.
+    # Without these, "water to thin" is carried into the name and never matches
+    # the "water" canonical that is right there in the catalog.
+    "to thin",
+    "to thicken",
+    "to loosen",
+    "to serve",
+    "to finish",
+    "to garnish",
+    "to top"
   ]
 
   # Parts of ingredients that are often removed (seeds, ribs, stems, etc.)
