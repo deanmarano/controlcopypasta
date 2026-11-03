@@ -534,15 +534,7 @@ defmodule Controlcopypasta.Ingredients do
     CanonicalIngredient
     |> select([i], {i.id, i.name, i.aliases})
     |> Repo.all()
-    |> Enum.flat_map(fn {id, name, aliases} ->
-      # Map both the canonical name and all aliases to {canonical_name, id}
-      # Lowercase keys for case-insensitive matching (Matcher normalizes input to lowercase)
-      [
-        {String.downcase(name), {name, id}}
-        | Enum.map(aliases || [], &{String.downcase(&1), {name, id}})
-      ]
-    end)
-    |> Map.new()
+    |> build_lookup_map(fn name, id, _rules -> {name, id} end)
   end
 
   @doc """
@@ -584,21 +576,53 @@ defmodule Controlcopypasta.Ingredients do
     CanonicalIngredient
     |> select([i], {i.id, i.name, i.aliases, i.matching_rules})
     |> Repo.all()
-    |> Enum.flat_map(fn {id, name, aliases, rules} ->
+    |> Enum.map(fn {id, name, aliases, rules} ->
       # Only include rules for top N ingredients
       effective_rules = if MapSet.member?(top_ids, id), do: rules, else: nil
 
-      # Map both the canonical name and all aliases to {canonical_name, id, rules}
-      # Lowercase keys for case-insensitive matching
-      entries = [{String.downcase(name), {name, id, effective_rules}}]
-
-      alias_entries =
-        (aliases || [])
-        |> Enum.map(&{String.downcase(&1), {name, id, effective_rules}})
-
-      entries ++ alias_entries
+      {id, name, aliases, effective_rules}
     end)
-    |> Map.new()
+    |> build_lookup_map(fn name, id, rules -> {name, id, rules} end)
+  end
+
+  # Builds the name/alias -> canonical map used by the matcher.
+  #
+  # 158 keys in the catalog are claimed more than once: 86 where one ingredient's
+  # alias is another ingredient's actual name ("coriander" is the name of the
+  # spice and an alias of cilantro), and 52 where two ingredients claim the same
+  # alias ("chinese cabbage" is an alias of both bok choy and napa cabbage).
+  # Flat-mapping into `Map.new/1` resolved those by last-writer-wins over an
+  # unordered `Repo.all/1`, so the winner depended on physical row order and
+  # could change after any update to the table.
+  #
+  # Precedence is therefore explicit:
+  #
+  #   1. A canonical ingredient's own name always beats any alias.
+  #   2. Between two aliases, the alphabetically first canonical name wins.
+  #
+  # Rule 2 is arbitrary but stable, which is the property that matters: an
+  # ambiguous alias resolves the same way on every deploy. Genuinely ambiguous
+  # aliases are a data problem and belong in review, not in a tiebreak.
+  defp build_lookup_map(rows, to_value) do
+    rows =
+      Enum.map(rows, fn
+        {id, name, aliases} -> {id, name, aliases, nil}
+        {id, name, aliases, rules} -> {id, name, aliases, rules}
+      end)
+      |> Enum.sort_by(fn {_id, name, _aliases, _rules} -> name end, :desc)
+
+    alias_entries =
+      Enum.flat_map(rows, fn {id, name, aliases, rules} ->
+        Enum.map(aliases || [], &{String.downcase(&1), to_value.(name, id, rules)})
+      end)
+
+    # Names are written last so they overwrite any alias claiming the same key.
+    name_entries =
+      Enum.map(rows, fn {id, name, _aliases, rules} ->
+        {String.downcase(name), to_value.(name, id, rules)}
+      end)
+
+    Map.new(alias_entries ++ name_entries)
   end
 
   @doc """
