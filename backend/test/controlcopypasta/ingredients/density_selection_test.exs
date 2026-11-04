@@ -11,7 +11,10 @@ defmodule Controlcopypasta.Ingredients.DensitySelectionTest do
   setup do
     ingredient =
       %CanonicalIngredient{}
-      |> CanonicalIngredient.changeset(%{name: "density-selection-fixture", display_name: "Density Selection Fixture"})
+      |> CanonicalIngredient.changeset(%{
+        name: "density-selection-fixture",
+        display_name: "Density Selection Fixture"
+      })
       |> Repo.insert!()
 
     for {source, grams} <- [{"fatsecret", "40.0"}, {"usda", "255.0"}, {"openfoodfacts", "90.0"}] do
@@ -44,7 +47,9 @@ defmodule Controlcopypasta.Ingredients.DensitySelectionTest do
 
     # Rewriting the rows changes their physical order, which is what an
     # unordered `limit: 1` was sensitive to.
-    Repo.update_all(Controlcopypasta.Ingredients.IngredientDensity, set: [updated_at: DateTime.utc_now()])
+    Repo.update_all(Controlcopypasta.Ingredients.IngredientDensity,
+      set: [updated_at: DateTime.utc_now()]
+    )
 
     {:ok, again} = Ingredients.get_density(ingredient.id, "cup")
     assert again.id == first.id
