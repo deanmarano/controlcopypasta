@@ -1552,6 +1552,40 @@ defmodule Controlcopypasta.Ingredients do
   # Ingredient Densities
   # =============================================================================
 
+  # 342 (ingredient, unit, preparation) groups in the production catalog hold
+  # more than one density row, and in 214 of them the values disagree -- by up
+  # to 40x. These queries took `limit: 1` with no `order_by`, so which gram
+  # weight a recipe was costed with came down to physical row order and could
+  # change after any write to the table.
+  #
+  # Rows are ranked by source trust (mirroring the nutrition schema's
+  # `@source_trust_order`; densities keep the source as a string, and production
+  # also holds "openfoodfacts" and "standard estimate"), then by the lower gram
+  # weight, then by id. One of two conflicting rows therefore always wins, and
+  # always the same one. Conflicting densities remain a data problem worth
+  # resolving; this only stops the choice being arbitrary.
+  @density_source_order """
+  CASE ?
+    WHEN 'usda' THEN 0
+    WHEN 'manual' THEN 1
+    WHEN 'fatsecret' THEN 2
+    WHEN 'openfoodfacts' THEN 3
+    WHEN 'open_food_facts' THEN 3
+    WHEN 'nutritionix' THEN 4
+    WHEN 'standard estimate' THEN 5
+    WHEN 'estimated' THEN 5
+    ELSE 6
+  END
+  """
+
+  defp order_by_source_trust(query) do
+    order_by(query, [d],
+      asc: fragment(@density_source_order, d.source),
+      asc: d.grams_per_unit,
+      asc: d.id
+    )
+  end
+
   @doc """
   Gets the density for an ingredient/unit/preparation combination.
 
@@ -1565,6 +1599,7 @@ defmodule Controlcopypasta.Ingredients do
             d.volume_unit == ^volume_unit,
         limit: 1
       )
+      |> order_by_source_trust()
 
     query =
       if preparation do
@@ -1600,6 +1635,7 @@ defmodule Controlcopypasta.Ingredients do
                 d.volume_unit == ^volume_unit,
             limit: 1
           )
+          |> order_by_source_trust()
 
         case Repo.one(query) do
           %IngredientDensity{} = density -> {:ok, density}
