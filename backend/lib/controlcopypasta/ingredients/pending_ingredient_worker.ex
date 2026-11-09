@@ -368,27 +368,57 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
 
       case Repo.get_by(PendingIngredient, name: name) do
         nil ->
-          %PendingIngredient{}
-          |> PendingIngredient.changeset(attrs)
-          |> Repo.insert()
-
-          acc + 1
+          acc + save(%PendingIngredient{}, attrs, name)
 
         existing ->
           # Only update if still pending
           if existing.status == "pending" do
-            existing
-            |> PendingIngredient.changeset(%{
-              occurrence_count: count,
-              sample_texts:
-                Enum.take(Enum.uniq(samples ++ existing.sample_texts), @max_sample_texts)
-            })
-            |> Repo.update()
+            save(
+              existing,
+              %{
+                occurrence_count: count,
+                sample_texts:
+                  Enum.take(Enum.uniq(samples ++ existing.sample_texts), @max_sample_texts)
+              },
+              name
+            )
           end
 
           acc
       end
     end)
+  end
+
+  # Writes one row and returns 1 only if it actually landed. Previously the
+  # result of Repo.insert/Repo.update was discarded and the counter incremented
+  # regardless, so the per-chunk totals in the log counted attempts, not saves,
+  # and a rejected changeset was indistinguishable from a successful write.
+  #
+  # The rescue keeps one unwritable row from aborting a scan that takes ~35
+  # minutes: a database-level failure is logged with the name that caused it
+  # and the scan goes on.
+  defp save(record, attrs, name) do
+    record
+    |> PendingIngredient.changeset(attrs)
+    |> Repo.insert_or_update()
+    |> case do
+      {:ok, _} ->
+        1
+
+      {:error, changeset} ->
+        Logger.warning(
+          "Could not save pending ingredient #{inspect(name)}: #{inspect(changeset.errors)}"
+        )
+
+        0
+    end
+  rescue
+    error ->
+      Logger.warning(
+        "Database error saving pending ingredient #{inspect(name)}: #{Exception.message(error)}"
+      )
+
+      0
   end
 
   # Store blacklisted names as auto-rejected, tagged with the rule that fired.
@@ -408,19 +438,13 @@ defmodule Controlcopypasta.Ingredients.PendingIngredientWorker do
 
       case Repo.get_by(PendingIngredient, name: name) do
         nil ->
-          %PendingIngredient{}
-          |> PendingIngredient.changeset(attrs)
-          |> Repo.insert()
-
-          acc + 1
+          acc + save(%PendingIngredient{}, attrs, name)
 
         %{status: "pending"} = existing ->
-          existing |> PendingIngredient.changeset(attrs) |> Repo.update()
-          acc + 1
+          acc + save(existing, attrs, name)
 
         %{status: "rejected", reviewed_at: nil} = existing ->
-          existing |> PendingIngredient.changeset(attrs) |> Repo.update()
-          acc + 1
+          acc + save(existing, attrs, name)
 
         _human_reviewed ->
           acc
