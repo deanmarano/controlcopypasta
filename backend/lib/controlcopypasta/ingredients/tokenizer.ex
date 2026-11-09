@@ -539,11 +539,21 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
 
   # Replace multi-word note phrases with a single marker token
   # The marker format is __NOTE_n__ where n is the phrase index
+  #
+  # The match is anchored to word boundaries. A plain substring replace found
+  # these phrases inside longer words, and because label_token/2 only restores
+  # a token that is *exactly* a marker, the mangled remainder was carried into
+  # the ingredient name instead:
+  #
+  #   "cut into thin strips"  -> "in__NOTE_44__ strips"   ("to thin" inside "into thin")
+  #   "seeded for less heat"  -> "f__NOTE_16__ heat"      ("or less" inside "for less")
+  #
+  # That produced 250 junk pending names across 1,956 recipe lines.
   defp mark_note_phrases(text) do
     @note_phrases
     |> Enum.with_index()
     |> Enum.reduce(text, fn {phrase, idx}, acc ->
-      String.replace(acc, phrase, "__NOTE_#{idx}__")
+      String.replace(acc, ~r/\b#{Regex.escape(phrase)}\b/, "__NOTE_#{idx}__")
     end)
   end
 
