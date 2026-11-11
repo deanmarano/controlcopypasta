@@ -75,6 +75,22 @@ defmodule Controlcopypasta.Ingredients.ReferenceData.Preparations do
     "dried" => %{verb: "dry", category: :process, time_min: 5},
     "peeled" => %{verb: "peel", category: :process, time_per_item: 0.5},
     "seeded" => %{verb: "seed", category: :process, time_per_item: 1},
+    # British and other forms the catalog lacked. Without these the words stay
+    # in the ingredient name: "1 red chilli deseeded and finely chopped" was
+    # recorded as the name "red chili deseeded", which matches nothing. These
+    # eleven account for roughly 3,700 unmatched production lines.
+    "deseeded" => %{verb: "deseed", category: :process, time_per_item: 1},
+    "de-seeded" => %{verb: "deseed", category: :process, time_per_item: 1},
+    "destoned" => %{verb: "destone", category: :process, time_per_item: 0.5},
+    "stoned" => %{verb: "stone", category: :process, time_per_item: 0.5},
+    "podded" => %{verb: "pod", category: :process, time_per_item: 0.5},
+    "shelled" => %{verb: "shell", category: :process, time_per_item: 0.5},
+    "scraped" => %{verb: "scrape", category: :process, time_per_item: 0.5},
+    "scraped out" => %{verb: "scrape out", category: :process, time_per_item: 0.5},
+    "discarded" => %{verb: "discard", category: :process, time_min: 1},
+    "undrained" => %{verb: "leave undrained", category: :process, time_min: 0},
+    "lengthways" => %{verb: "cut lengthways", category: :cut, tool: "knife", time_per_item: 1},
+    "lengthwise" => %{verb: "cut lengthwise", category: :cut, tool: "knife", time_per_item: 1},
     "cored" => %{verb: "core", category: :process, time_per_item: 0.5},
     "deveined" => %{verb: "devein", category: :process, time_per_item: 0.5},
     "pitted" => %{verb: "pit", category: :process, time_per_item: 0.25},
