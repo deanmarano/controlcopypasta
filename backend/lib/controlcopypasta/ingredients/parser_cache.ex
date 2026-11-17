@@ -20,89 +20,33 @@ defmodule Controlcopypasta.Ingredients.ParserCache do
 
   # ── Default Fallbacks (merged with DB data; also used before DB is available) ──
 
-  @default_preparations MapSet.new(~w(
-    chopped diced minced sliced cubed julienned shredded grated
-    crushed smashed halved quartered torn crumbled
-    melted softened chilled cooled thawed frozen
-    drained rinsed strained peeled seeded cored pitted trimmed deveined
-    mashed pureed beaten whisked sifted
-    toasted roasted
-    removed packed divided
-    lengthwise crosswise diagonally horizontally vertically
-    bruised separated
-    juiced zested
-    warmed heated pressed bundled dissolved segmented destemmed
-    blanched marinated brined deboned shucked
-    washed stemmed cleaned scrubbed patted scored
-    scaled gutted seasoned
-    baked fried sauteed braised steamed grilled
-    cut soaked boiled poached caramelized browned dried cooked
-  ))
+  # Words the tokenizer treats as preparations when the DB-backed cache has not
+  # been loaded. This list used to be maintained by hand alongside
+  # ReferenceData.Preparations, and the two drifted in both directions: the
+  # reference data gained 18 entries this list never got (including every
+  # British form added for the ~3,700 lines that recorded "deseeded" as part of
+  # the ingredient name), while this list held 11 words the reference data never
+  # had. Deriving the set from the reference data plus an explicit extras list
+  # makes that drift impossible.
+  #
+  # It matters only outside a running application -- `prep_set` below unions
+  # these with the DB, so a started ParserCache is unaffected -- but release
+  # `eval` scripts and tests that never start the cache parse with this set
+  # alone, and a word missing here is silently extracted as an ingredient name.
+  @tokenizer_only_preparations ~w(
+    baked braised cut gutted scaled seasoned patted
+    crosswise diagonally horizontally vertically
+  )
 
-  @default_preparation_metadata %{
-    "diced" => %{verb: "dice", category: :cut, tool: "knife", time_per_cup: 2},
-    "minced" => %{verb: "mince", category: :cut, tool: "knife", time_per_cup: 3},
-    "julienned" => %{verb: "julienne", category: :cut, tool: "knife", time_per_cup: 5},
-    "chopped" => %{verb: "chop", category: :cut, tool: "knife", time_per_cup: 1},
-    "sliced" => %{verb: "slice", category: :cut, tool: "knife", time_per_cup: 1},
-    "grated" => %{verb: "grate", category: :cut, tool: "grater", time_per_cup: 2},
-    "shredded" => %{verb: "shred", category: :cut, tool: "grater", time_per_cup: 3},
-    "cubed" => %{verb: "cube", category: :cut, tool: "knife", time_per_cup: 2},
-    "halved" => %{verb: "halve", category: :cut, tool: "knife", time_per_item: 0.25},
-    "quartered" => %{verb: "quarter", category: :cut, tool: "knife", time_per_item: 0.5},
-    "crushed" => %{verb: "crush", category: :cut, tool: "knife", time_per_item: 0.25},
-    "smashed" => %{verb: "smash", category: :cut, tool: "knife", time_per_item: 0.25},
-    "crumbled" => %{verb: "crumble", category: :cut, time_per_cup: 1},
-    "torn" => %{verb: "tear", category: :cut, time_per_cup: 1},
-    "softened" => %{verb: "soften", category: :temperature, time_min: 30},
-    "melted" => %{verb: "melt", category: :temperature, time_min: 2},
-    "chilled" => %{verb: "chill", category: :temperature, time_min: 60},
-    "cooled" => %{verb: "cool", category: :temperature, time_min: 15},
-    "thawed" => %{verb: "thaw", category: :temperature, time_min: 120},
-    "frozen" => %{verb: "freeze", category: :temperature, time_min: 120},
-    "warmed" => %{verb: "warm", category: :temperature, time_min: 2},
-    "heated" => %{verb: "heat", category: :temperature, time_min: 2},
-    "toasted" => %{verb: "toast", category: :cook, time_min: 5},
-    "roasted" => %{verb: "roast", category: :cook, time_min: 30},
-    "blanched" => %{verb: "blanch", category: :cook, time_min: 3},
-    "drained" => %{verb: "drain", category: :process, time_min: 1},
-    "rinsed" => %{verb: "rinse", category: :process, time_min: 1},
-    "strained" => %{verb: "strain", category: :process, time_min: 1},
-    "peeled" => %{verb: "peel", category: :process, time_per_item: 0.5},
-    "seeded" => %{verb: "seed", category: :process, time_per_item: 1},
-    "cored" => %{verb: "core", category: :process, time_per_item: 0.5},
-    "deveined" => %{verb: "devein", category: :process, time_per_item: 0.5},
-    "pitted" => %{verb: "pit", category: :process, time_per_item: 0.25},
-    "trimmed" => %{verb: "trim", category: :process, time_per_item: 0.25},
-    "mashed" => %{verb: "mash", category: :process, tool: "masher", time_min: 3},
-    "pureed" => %{verb: "puree", category: :process, tool: "blender", time_min: 2},
-    "beaten" => %{verb: "beat", category: :process, tool: "whisk", time_min: 2},
-    "whisked" => %{verb: "whisk", category: :process, tool: "whisk", time_min: 1},
-    "sifted" => %{verb: "sift", category: :process, tool: "sifter", time_min: 1},
-    "separated" => %{verb: "separate", category: :process, time_per_item: 0.5},
-    "pressed" => %{verb: "press", category: :process, time_min: 1},
-    "dissolved" => %{verb: "dissolve", category: :process, time_min: 1},
-    "marinated" => %{verb: "marinate", category: :process, time_min: 30},
-    "brined" => %{verb: "brine", category: :process, time_min: 60},
-    "deboned" => %{verb: "debone", category: :process, time_per_item: 2},
-    "shucked" => %{verb: "shuck", category: :process, time_per_item: 0.5},
-    "cleaned" => %{verb: "clean", category: :process, time_min: 2},
-    "washed" => %{verb: "wash", category: :process, time_min: 1},
-    "scrubbed" => %{verb: "scrub", category: :process, time_min: 2},
-    "zested" => %{verb: "zest", category: :process, tool: "zester", time_per_item: 1},
-    "juiced" => %{verb: "juice", category: :process, tool: "juicer", time_per_item: 0.5},
-    "removed" => %{verb: "remove", category: :process, time_min: 1},
-    "divided" => %{verb: "divide", category: :process, time_min: 1},
-    "packed" => %{verb: "pack", category: :process, time_min: 1},
-    "stemmed" => %{verb: "stem", category: :process, time_per_item: 0.25},
-    "destemmed" => %{verb: "destem", category: :process, time_per_item: 0.25},
-    "scored" => %{verb: "score", category: :process, tool: "knife", time_per_item: 0.5},
-    "segmented" => %{verb: "segment", category: :process, time_per_item: 2},
-    "bundled" => %{verb: "bundle", category: :process, time_min: 1},
-    "bruised" => %{verb: "bruise", category: :process, time_per_item: 0.25},
-    "soaked" => %{verb: "soak", category: :process, time_min: 30},
-    "dried" => %{verb: "dry", category: :process, time_min: 5}
-  }
+  @default_preparations Controlcopypasta.Ingredients.ReferenceData.Preparations.default_preparations()
+                        |> Map.keys()
+                        |> Enum.concat(@tokenizer_only_preparations)
+                        |> MapSet.new()
+  # Same drift as @default_preparations above: this map was a hand-maintained
+  # subset holding 62 of the reference data's 90 entries, with no keys of its
+  # own. Taking the reference data directly keeps the verbs and timings used by
+  # PreStepGenerator in step with the catalog.
+  @default_preparation_metadata Controlcopypasta.Ingredients.ReferenceData.Preparations.default_preparations()
 
   @default_normalizer_map %{
     # Normalized as a phrase, not an alias: "shredded" is labelled a preparation
@@ -208,6 +152,19 @@ defmodule Controlcopypasta.Ingredients.ParserCache do
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
+
+  @doc """
+  The compiled-in preparation vocabulary used when the cache has not loaded.
+
+  Exposed so the drift between this set and the reference data is testable
+  without stopping the cache, which would race every other async test.
+  """
+  def default_preparations, do: @default_preparations
+
+  @doc """
+  The compiled-in preparation metadata used when the cache has not loaded.
+  """
+  def default_preparation_metadata, do: @default_preparation_metadata
 
   @doc """
   Returns a MapSet of all preparation words (for tokenizer/token_parser).
