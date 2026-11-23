@@ -100,6 +100,32 @@
 											<code class="token-display">{ing._diagnostics.tokens}</code>
 										</div>
 
+										{#if ing._diagnostics.match_trail && ing._diagnostics.match_trail.length > 0}
+											<div class="detail-row">
+												<strong>Match Trail:</strong>
+												<ol class="trail">
+													{#each ing._diagnostics.match_trail as attempt}
+														<li class:hit={attempt.hit}>
+															<span class="trail-mark">{attempt.hit ? '✓' : '✗'}</span>
+															<code>{attempt.strategy}</code>
+															tried <code>{attempt.tried}</code>
+															{#if attempt.hit && attempt.canonical_name}
+																&rarr; <strong>{attempt.canonical_name}</strong>
+															{/if}
+															{#if attempt.declined}
+																<em class="declined">declined: {attempt.declined}</em>
+															{/if}
+															{#if attempt.prefix_neighbours && attempt.prefix_neighbours.length > 1}
+																<em class="declined">
+																	ambiguous between {attempt.prefix_neighbours.join(', ')}
+																</em>
+															{/if}
+														</li>
+													{/each}
+												</ol>
+											</div>
+										{/if}
+
 										{#if ing._diagnostics.match_strategy}
 											<div class="detail-row">
 												<strong>Match Strategy:</strong>
@@ -109,9 +135,20 @@
 
 										{#if ing._diagnostics.alternatives && ing._diagnostics.alternatives.length > 0}
 											<div class="detail-row">
-												<strong>Other Candidates:</strong>
+												<strong>Also On This Line:</strong>
 												<span class="alternatives">
 													{ing._diagnostics.alternatives.join(', ')}
+												</span>
+											</div>
+										{/if}
+
+										{#if ing._diagnostics.drifted}
+											<div class="detail-row">
+												<strong>Parser Drift:</strong>
+												<span class="drift">
+													stored <code>{ing.canonical_name ?? 'no match'}</code>,
+													parses now as
+													<code>{ing._diagnostics.reparsed_canonical_name ?? 'no match'}</code>
 												</span>
 											</div>
 										{/if}
@@ -286,6 +323,48 @@
 
 	.no-match {
 		background: rgba(255, 100, 100, 0.05);
+	}
+
+	.trail {
+		margin: 0.25rem 0 0;
+		padding-left: 1.25rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+	}
+
+	.trail li {
+		color: var(--text-secondary);
+	}
+
+	.trail li.hit {
+		color: var(--text-primary);
+		font-weight: 500;
+	}
+
+	.trail-mark {
+		display: inline-block;
+		width: 1rem;
+	}
+
+	.trail code {
+		background: var(--bg-card);
+		padding: 0.05rem 0.25rem;
+		border-radius: var(--radius-sm);
+		font-family: monospace;
+		font-size: 0.8125rem;
+	}
+
+	.declined {
+		color: var(--text-secondary);
+		font-size: 0.8125rem;
+	}
+
+	.drift code {
+		background: var(--bg-card);
+		padding: 0.1rem 0.3rem;
+		border-radius: var(--radius-sm);
+		font-family: monospace;
 	}
 
 	.diagnostics-detail td {

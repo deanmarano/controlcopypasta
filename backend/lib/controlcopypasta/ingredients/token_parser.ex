@@ -136,9 +136,12 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
 
     # Preprocess text to normalize problematic patterns
     case preprocess_text(text, lookup) do
-      :skip ->
-        # Non-ingredient (equipment) - return empty result
-        %ParsedIngredient{
+      {:skip, reason} ->
+        # Deliberately not an ingredient (equipment, a section header, or a
+        # bare "salt and pepper"). The line is dropped on purpose, so a nil
+        # canonical here is a decision rather than a parse failure -- record
+        # which rule dropped it so diagnostics can tell the two apart.
+        skipped = %ParsedIngredient{
           original: text,
           quantity: nil,
           quantity_min: nil,
@@ -154,6 +157,12 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
           is_alternative: false,
           choices: nil
         }
+
+        if include_diagnostics do
+          %{skipped | diagnostics: skip_diagnostics(text, reason, start_time)}
+        else
+          skipped
+        end
 
       preprocessed_text ->
         parse_preprocessed(preprocessed_text, text, opts, start_time, include_diagnostics)
@@ -172,7 +181,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       end
 
     if include_diagnostics do
-      diagnostics = build_diagnostics(tokens, parser_used, result, start_time)
+      diagnostics = build_diagnostics(tokens, parser_used, result, start_time, lookup)
       %{result | diagnostics: diagnostics}
     else
       result
@@ -186,18 +195,18 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       # Filter out kitchen equipment (using centralized detector). The lookup
       # lets a canonical ingredient override the equipment heuristics.
       EquipmentDetector.is_equipment?(text, lookup: lookup) ->
-        :skip
+        {:skip, :equipment}
 
       # Filter out section headers (FILLING, For the pastry:, etc.)
       is_section_header?(text) ->
-        :skip
+        {:skip, :section_header}
 
       # "Salt and pepper" / "Kosher salt and freshly ground black pepper, to taste" - skip
       Regex.match?(
         ~r/^\s*(?:kosher\s+|sea\s+)?salt\s+and\s+(?:freshly\s+ground\s+)?(?:black\s+)?pepper\b/i,
         text
       ) ->
-        :skip
+        {:skip, :salt_and_pepper}
 
       true ->
         text
@@ -670,26 +679,42 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     end
   end
 
-  defp build_diagnostics(tokens, parser_used, result, start_time) do
+  # Diagnostics for a line the preprocessor dropped before parsing began.
+  defp skip_diagnostics(text, reason, start_time) do
+    tokens = Tokenizer.tokenize(text)
+
+    %ParseDiagnostics{
+      tokens: tokens,
+      token_string: Tokenizer.format(tokens),
+      parser_used: :preprocessor_skip,
+      match_candidates: [],
+      selected_match: nil,
+      match_strategy: :skipped,
+      warnings: [skip_warning(reason)],
+      parse_time_us: System.monotonic_time(:microsecond) - start_time
+    }
+  end
+
+  defp skip_warning(:equipment), do: "Skipped: detected as kitchen equipment, not a food"
+  defp skip_warning(:section_header), do: "Skipped: detected as a section header"
+
+  defp skip_warning(:salt_and_pepper),
+    do: "Skipped: bare \"salt and pepper\" is dropped by design"
+
+  defp build_diagnostics(tokens, parser_used, result, start_time, lookup) do
     parse_time = System.monotonic_time(:microsecond) - start_time
 
-    # Determine match strategy from confidence
-    match_strategy =
-      if result.primary_ingredient do
-        case result.primary_ingredient.confidence do
-          1.0 -> :exact
-          c when c >= 0.95 -> :partial
-          c when c >= 0.9 -> :stripped
-          c when c >= 0.8 -> :shortened
-          _ -> :fuzzy
-        end
-      end
+    # The Matcher records which cascade branch produced the match. Never infer
+    # it from the confidence: two branches share 0.9, and the IngredientScorer
+    # overwrites the confidence with its own score afterwards.
+    match_strategy = match_strategy(result.primary_ingredient)
 
     %ParseDiagnostics{
       tokens: tokens,
       token_string: Tokenizer.format(tokens),
       parser_used: parser_used,
       match_candidates: build_match_candidates(result),
+      match_trail: build_match_trail(result.primary_ingredient, lookup),
       selected_match: summarize_selected_match(result.primary_ingredient),
       match_strategy: match_strategy,
       warnings: ParseDiagnostics.detect_warnings(tokens, result),
@@ -697,27 +722,45 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     }
   end
 
+  # NOTE: these are the other ingredients found on the *same line* (the "salt"
+  # and "pepper" of one entry), not near-miss canonicals that lost the match.
+  # Tracking rejected candidates needs the Matcher to report what it considered.
   defp build_match_candidates(result) do
-    # For now, just return the matched ingredients as candidates
-    # A more sophisticated implementation could track all candidates tried
     result.ingredients
     |> Enum.map(fn ing ->
       %{
         name: ing.name,
         canonical_name: ing.canonical_name,
         confidence: ing.confidence,
-        strategy: confidence_to_strategy(ing.confidence)
+        strategy: match_strategy(ing)
       }
     end)
   end
 
-  defp confidence_to_strategy(confidence) do
-    cond do
-      confidence >= 1.0 -> :exact
-      confidence >= 0.95 -> :partial
-      confidence >= 0.9 -> :stripped
-      confidence >= 0.8 -> :shortened
-      true -> :fuzzy
+  # Sub-parsers and the no-match fallback can build ingredient maps that never
+  # went through the Matcher, so the key is not guaranteed to be present.
+  defp match_strategy(nil), do: nil
+  defp match_strategy(ingredient), do: Map.get(ingredient, :strategy, :unknown)
+
+  # The attempt trail is obtained by re-running the match for the primary
+  # ingredient with tracing on, rather than threading a trace flag through
+  # every parsing path. `primary.name` is the exact string that was handed to
+  # the Matcher, and matching is pure, so the replay reproduces the original
+  # decision. If it somehow does not, the trail is dropped rather than shown
+  # next to a strategy it does not explain.
+  defp build_match_trail(nil, _lookup), do: nil
+
+  defp build_match_trail(primary, lookup) do
+    case Map.get(primary, :name) do
+      name when is_binary(name) ->
+        replay = Matcher.match(name, lookup, trace: true)
+
+        if Map.get(replay, :strategy) == Map.get(primary, :strategy) do
+          Map.get(replay, :match_trail)
+        end
+
+      _ ->
+        nil
     end
   end
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { authStore, isAuthenticated } from '$lib/stores/auth';
+	import { authStore, isAuthenticated, isAdmin } from '$lib/stores/auth';
 	import { recipes, ingredients as ingredientsApi, shoppingLists, type Recipe, type Ingredient, type SimilarRecipe, type ScaledIngredient, type ShoppingList, type RecipeNutrition, type IngredientDecision, type NutritionSource } from '$lib/api/client';
 	let savingCopy = $state(false);
 	import NutritionPanel from '$lib/components/NutritionPanel.svelte';
@@ -20,6 +20,12 @@
 	let loadingScaling = $state(false);
 	let showShoppingTips = $state(false);
 	let ingredientView = $state<'unified' | 'split'>('unified');
+
+	// ?diagnostics=1 asks the server to re-run the ingredient parser for this
+	// recipe and return how each line was tokenized and matched.
+	const diagnosticsRequested = $derived(
+		$isAdmin && ['1', 'true'].includes($page.url.searchParams.get('diagnostics') ?? '')
+	);
 
 	// Nutrition state
 	let nutrition = $state<RecipeNutrition | null>(null);
@@ -84,7 +90,11 @@
 		decisions = new Map();
 
 		try {
-			const result = await recipes.get(token, recipeId);
+			// Parse diagnostics are opt-in via ?diagnostics=1 and admin-only; the
+			// backend omits them for everyone else, so asking is harmless.
+			const result = await recipes.get(token, recipeId, {
+				includeDiagnostics: diagnosticsRequested
+			});
 			recipe = result.data;
 			// Load similar recipes, decisions, and nutrition in the background
 			loadSimilarRecipes();

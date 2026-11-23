@@ -23,6 +23,7 @@
 		if (!token) return;
 
 		const id = $page.params.id;
+		if (!id) return;
 
 		try {
 			loading = true;
@@ -142,10 +143,12 @@
 						</div>
 					{/if}
 
-				{#if message.shared_content.comments?.length > 0}
+				{#if (message.shared_content.comments?.length ?? 0) > 0}
+						{@const comments = message.shared_content.comments ?? []}
+						{@const totalComments = message.shared_content.comment_count ?? 0}
 						<div class="comments-section">
-							<h3>Comments ({message.shared_content.comments.length}{#if message.shared_content.comment_count && message.shared_content.comment_count > message.shared_content.comments.length} of {message.shared_content.comment_count}{/if})</h3>
-							{#each message.shared_content.comments as comment}
+							<h3>Comments ({comments.length}{#if totalComments > comments.length} of {totalComments}{/if})</h3>
+							{#each comments as comment}
 								<div class="comment">
 									<span class="comment-author">@{comment.username}</span>
 									<p class="comment-text">{comment.text}</p>

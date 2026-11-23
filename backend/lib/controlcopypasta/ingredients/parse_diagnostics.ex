@@ -20,8 +20,11 @@ defmodule Controlcopypasta.Ingredients.ParseDiagnostics do
     :token_string,
     # :standard | :garlic | :citrus | :egg
     :parser_used,
-    # List of top match candidates considered
+    # Other ingredients found on the same line (NOT rejected candidates)
     :match_candidates,
+    # Ordered record of every lookup the Matcher attempted for the primary
+    # ingredient, and whether each hit. This is what explains a match.
+    :match_trail,
     # The chosen match with reason
     :selected_match,
     # How the match was found (exact, singularized, partial, etc.)
@@ -39,11 +42,19 @@ defmodule Controlcopypasta.Ingredients.ParseDiagnostics do
           strategy: atom()
         }
 
+  @type attempt :: %{
+          strategy: atom(),
+          tried: String.t(),
+          hit: boolean(),
+          canonical_name: String.t() | nil
+        }
+
   @type t :: %__MODULE__{
           tokens: [Controlcopypasta.Ingredients.Tokenizer.Token.t()],
           token_string: String.t(),
           parser_used: atom(),
           match_candidates: [match_candidate()],
+          match_trail: [attempt()] | nil,
           selected_match: map() | nil,
           match_strategy: atom() | nil,
           warnings: [String.t()],
@@ -61,9 +72,25 @@ defmodule Controlcopypasta.Ingredients.ParseDiagnostics do
       "parser" => Atom.to_string(diag.parser_used),
       "match_strategy" => if(diag.match_strategy, do: Atom.to_string(diag.match_strategy)),
       "alternatives" => format_candidates(diag.match_candidates),
+      "match_trail" => format_trail(diag.match_trail),
       "warnings" => diag.warnings,
       "parse_time_us" => diag.parse_time_us
     }
+  end
+
+  defp format_trail(nil), do: []
+
+  defp format_trail(trail) do
+    Enum.map(trail, fn attempt ->
+      %{
+        "strategy" => to_string(attempt.strategy),
+        "tried" => attempt.tried,
+        "hit" => attempt.hit,
+        "canonical_name" => attempt[:canonical_name],
+        "declined" => attempt[:declined],
+        "prefix_neighbours" => attempt[:prefix_neighbours] || []
+      }
+    end)
   end
 
   defp format_candidates(nil), do: []
@@ -99,11 +126,16 @@ defmodule Controlcopypasta.Ingredients.ParseDiagnostics do
         warnings
       end
 
-    # Warning: Multiple word tokens but no match
+    # Warning: Multiple word tokens but no match.
+    # primary_ingredient can be nil (the two clauses above guard for it), so
+    # unmatched has to be derived without dereferencing it.
     word_count = Enum.count(tokens, &(&1.label == :word))
 
+    unmatched =
+      is_nil(result.primary_ingredient) or is_nil(result.primary_ingredient.canonical_id)
+
     warnings =
-      if word_count > 2 && is_nil(result.primary_ingredient.canonical_id) do
+      if word_count > 2 && unmatched do
         ["Complex ingredient phrase (#{word_count} words) with no match" | warnings]
       else
         warnings
