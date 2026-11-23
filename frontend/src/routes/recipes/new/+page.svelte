@@ -223,10 +223,11 @@
 				</div>
 			{/if}
 
-			{#if sourceMessage.shared_content?.comments?.length > 0}
+			{#if (sourceMessage.shared_content?.comments?.length ?? 0) > 0}
+				{@const comments = sourceMessage.shared_content?.comments ?? []}
 				<div class="reference-block">
 					<h3>Comments</h3>
-					{#each sourceMessage.shared_content.comments as comment}
+					{#each comments as comment}
 						<div class="reference-comment">
 							<strong>@{comment.username}:</strong>
 							<pre class="reference-text">{comment.text}</pre>

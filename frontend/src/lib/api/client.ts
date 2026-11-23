@@ -1459,6 +1459,11 @@ export interface ExtractedUrl {
   inserted_at: string;
 }
 
+export interface SharedPostComment {
+  username: string;
+  text: string;
+}
+
 export interface DirectMessage {
   id: string;
   message_text: string | null;
@@ -1466,12 +1471,20 @@ export interface DirectMessage {
   sender_username: string;
   platform_message_id: string | null;
   platform_timestamp: string | null;
+  // Free-form on the backend (`field :shared_content, :map`, populated
+  // verbatim from the bot payload), so this declaration is the only spec.
   shared_content: {
     url?: string;
     caption?: string;
     media_type?: string;
     thumbnail_url?: string;
     original_author?: string;
+    video_path?: string;
+    transcription?: string;
+    ocr_text?: string;
+    comments?: SharedPostComment[];
+    // Total on the source post, which can exceed the number fetched.
+    comment_count?: number;
   } | null;
   forwarded_content: {
     original_sender?: string;
