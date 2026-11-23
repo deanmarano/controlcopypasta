@@ -8,22 +8,110 @@ Enhance the ingredient parsing system to extract richer semantic information:
 |---------|-------------|--------|
 | [Nested Recipes](./nested-recipes.md) | Parse "see recipe below/above" and create parent-child relationships | Planned |
 | [Pre-Steps](./pre-steps.md) | Convert preparations into actionable prep instructions | Planned |
-| [Diagnostics](./diagnostics.md) | Visual representation of tokenization and matching | Planned |
+| [Diagnostics](./diagnostics.md) | Visual representation of tokenization and matching | Done |
 | [Simple Decisions](./simple-decisions.md) | Let users choose between alternatives, update nutrition | Planned |
 
 ---
 
 ## Implementation Order
 
-### Phase 1: Diagnostics (Foundation)
-1. Create `ParseDiagnostics` struct
-2. Add diagnostic capture to `TokenParser.parse/2`
-3. Update JSONB to include `_diagnostics` when enabled
-4. Build `IngredientDiagnostics.svelte` component
-5. Add to recipe display pages (collapsible, bottom of page)
-6. Admin toggle to enable/disable
+### Phase 1: Diagnostics (Foundation) — done
+
+1. ~~Create `ParseDiagnostics` struct~~
+2. ~~Add diagnostic capture to `TokenParser.parse/2`~~
+3. ~~Update JSONB to include `_diagnostics` when enabled~~ — **dropped.** Diagnostics
+   are computed on read, not stored. See below.
+4. ~~Build `IngredientDiagnostics.svelte` component~~
+5. ~~Add to recipe display pages (collapsible, bottom of page)~~
+6. ~~Admin toggle to enable/disable~~ — `?diagnostics=1` on the recipe page,
+   admin-only, served by `GET /api/recipes/:id?include_diagnostics=true`.
 
 **Why first:** Diagnostics help debug the other features during development.
+
+#### How it actually works
+
+`Ingredients.attach_parse_diagnostics/1` **re-parses** the recipe's ingredient
+text on every request, against the current canonicals and the current parser.
+Nothing is persisted. This was chosen over the JSONB design in step 3 because:
+
+- Stored diagnostics describe the parser as it was on the day the recipe was
+  saved, and go stale on the next parser change. Re-parsing always describes
+  the parser you are debugging.
+- No migration, no backfill of the existing corpus, no ~500 bytes per
+  ingredient of JSONB growth.
+- It makes **parser drift** visible: the stored `canonical_name` and the
+  freshly parsed one are both reported, with a `drifted` flag when they
+  disagree. That disagreement is the most useful single signal in the panel.
+
+The cost is a parse per ingredient per request, which is why it is opt-in and
+admin-gated rather than on by default.
+
+#### Two fields to be careful about
+
+- `match_strategy` is **recorded by the `Matcher` at the branch that matched**,
+  not inferred from the confidence. It cannot be inferred: `:dropped_leading_word`
+  and `:dropped_trailing_word` both use 0.9, and `IngredientScorer` overwrites
+  the confidence with its own score afterwards.
+- `alternatives` holds the other ingredients found on the **same line** (the
+  "salt" and "pepper" of one entry), *not* near-miss canonicals that lost the
+  match. The UI labels it "Also On This Line" to avoid implying otherwise.
+- `match_trail` is the field that actually explains a match. See below.
+
+#### Why there is a trail and not a candidate ranking
+
+The original design asked for the "top 3 canonical matches considered" with a
+confidence and a reason each. The `Matcher` cannot produce that, because it
+does not score candidates and pick a winner — it is a **short-circuiting
+cascade**. It rewrites the input (singularize, strip modifiers, drop a word,
+split a compound) and does an exact lookup of each rewrite in turn, returning
+the first one that resolves. Nothing is ever ranked, and no canonical is ever
+"considered and rejected" on quality.
+
+So the honest artifact is the **attempt trail**: every key the matcher looked
+up, under which strategy, in order, and whether it hit. Reading it top to
+bottom is the answer to "why did this line match that canonical", because each
+earlier line is a rewrite that found nothing.
+
+```
+"3 sprigs of lovage" -> no match
+  miss  exact                 "sprigs of lovage"
+  miss  stripped_modifiers    "sprigs of lovage"
+  miss  dropped_leading_word  "of lovage"
+  miss  dropped_trailing_word "sprigs of"
+  miss  dropped_leading_word  "lovage"
+  miss  single_word           "lovage"
+  miss  compound_split        "4 split positions of \"lovage\""
+  miss  fuzzy_prefix          "lovage"
+```
+
+Implementation notes:
+
+- The trail is collected by `Matcher.match/3` with `trace: true`. Without it
+  the accumulator is `nil` and every record is a no-op, so the bulk-scan path
+  (hundreds of thousands of lines) allocates nothing extra.
+- Attempts are recorded in `try_key/4`, the one place a lookup happens, so the
+  trail cannot drift out of step with the control flow that produced it.
+- `compound_split` probes every split position and `fuzzy_prefix` scans the
+  whole lookup; both are collapsed to a single summary entry so they do not
+  bury the rest of the trail.
+- Diagnostics get the trail by **replaying** the primary ingredient's match
+  with tracing on, rather than threading a trace flag through every parsing
+  path. Matching is pure and `primary.name` is the exact string the matcher was
+  given, so the replay reproduces the original decision; if the replayed
+  strategy disagrees, the trail is dropped rather than displayed next to a
+  strategy it does not explain.
+
+A genuine "what else was close" view is a different feature and already exists
+separately as `POST /admin/ingredients/test-scorer`, which scores the whole
+catalogue for one input.
+
+#### Also fixed here
+
+Lines dropped by `preprocess_text/2` (kitchen equipment, section headers, a
+bare "salt and pepper") previously returned before diagnostics were built, so
+the most interesting case — a line that silently vanished — produced nothing to
+look at. They now report which rule dropped them, so a nil canonical can be
+told apart from a parse failure.
 
 ### Phase 2: Pre-Steps
 1. Expand `Preparation` module with metadata

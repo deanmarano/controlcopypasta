@@ -23,6 +23,8 @@ defmodule Controlcopypasta.Ingredients do
     PendingIngredient
   }
 
+  alias Controlcopypasta.Ingredients.{ParseDiagnostics, TokenParser}
+
   # =============================================================================
   # Canonical Ingredients
   # =============================================================================
@@ -521,6 +523,60 @@ defmodule Controlcopypasta.Ingredients do
   # =============================================================================
   # Lookup Caches
   # =============================================================================
+
+  @doc """
+  Re-parses stored ingredient maps to attach parse diagnostics.
+
+  Diagnostics are a debugging view of the parser, not stored data: they are
+  computed on read by re-running `TokenParser.parse/2` against the *current*
+  canonicals and parser code. Nothing persists them, so this is the only way to
+  get them for a recipe that is already in the database.
+
+  Each ingredient map gains a `"_diagnostics"` key. The stored match is left
+  untouched, so when the parser has changed since the recipe was parsed the
+  diagnostics describe today's result while `"canonical_name"` still shows what
+  was stored. That disagreement is the useful signal -- it is parser drift on
+  that line -- so it is reported explicitly as `"drifted"` rather than hidden.
+
+  Ingredients without a `"text"` key are passed through unchanged.
+  """
+  def attach_parse_diagnostics(ingredients) when is_list(ingredients) do
+    lookup = build_ingredient_lookup_with_rules()
+
+    Enum.map(ingredients, &attach_one(&1, lookup))
+  end
+
+  def attach_parse_diagnostics(other), do: other
+
+  defp attach_one(%{"text" => text} = ingredient, lookup) when is_binary(text) do
+    parsed = TokenParser.parse(text, lookup: lookup, diagnostics: true)
+
+    diagnostics =
+      parsed.diagnostics
+      |> to_diagnostics_map()
+      |> Map.put("reparsed_canonical_name", current_canonical_name(parsed))
+      |> then(&Map.put(&1, "drifted", drifted?(ingredient, &1)))
+
+    Map.put(ingredient, "_diagnostics", diagnostics)
+  end
+
+  defp attach_one(ingredient, _lookup), do: ingredient
+
+  # parse/2 only builds diagnostics when it reaches a parsing path; guard
+  # against a future branch returning a result without them.
+  defp to_diagnostics_map(nil), do: %{"warnings" => ["No diagnostics captured"]}
+  defp to_diagnostics_map(diagnostics), do: ParseDiagnostics.to_map(diagnostics)
+
+  defp current_canonical_name(parsed) do
+    case parsed.primary_ingredient do
+      nil -> nil
+      primary -> primary.canonical_name
+    end
+  end
+
+  defp drifted?(ingredient, diagnostics) do
+    Map.get(ingredient, "canonical_name") != diagnostics["reparsed_canonical_name"]
+  end
 
   @doc """
   Builds a lookup map from all ingredient names and aliases to their canonical info.

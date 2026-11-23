@@ -2,6 +2,7 @@ defmodule ControlcopypastaWeb.RecipeController do
   use ControlcopypastaWeb, :controller
 
   alias Controlcopypasta.Accounts
+  alias Controlcopypasta.Ingredients
   alias Controlcopypasta.Recipes
   alias Controlcopypasta.Recipes.Recipe
   alias Controlcopypasta.Similarity
@@ -45,7 +46,7 @@ defmodule ControlcopypastaWeb.RecipeController do
     end
   end
 
-  def show(conn, %{"id" => id}) do
+  def show(conn, %{"id" => id} = params) do
     user = conn.assigns.current_user
     avoided_set = Accounts.get_avoided_canonical_names(user.id)
 
@@ -53,9 +54,28 @@ defmodule ControlcopypastaWeb.RecipeController do
     recipe = Recipes.get_recipe_for_user(user.id, id) || Recipes.get_recipe(id)
 
     case recipe do
-      nil -> {:error, :not_found}
-      recipe -> render(conn, :show, recipe: recipe, avoided_set: avoided_set, user_id: user.id)
+      nil ->
+        {:error, :not_found}
+
+      recipe ->
+        recipe = maybe_attach_diagnostics(recipe, user, params)
+        render(conn, :show, recipe: recipe, avoided_set: avoided_set, user_id: user.id)
     end
+  end
+
+  # Parse diagnostics are a debugging aid: they re-run the parser on every
+  # ingredient of the recipe, so they are opt-in per request and admin-only.
+  # The annotated recipe is never saved -- it exists only for this response.
+  defp maybe_attach_diagnostics(recipe, user, params) do
+    if diagnostics_requested?(params) and ControlcopypastaWeb.Plugs.AdminAuth.admin?(user.email) do
+      %{recipe | ingredients: Ingredients.attach_parse_diagnostics(recipe.ingredients)}
+    else
+      recipe
+    end
+  end
+
+  defp diagnostics_requested?(params) do
+    params["include_diagnostics"] in ["true", "1", true]
   end
 
   def update(conn, %{"id" => id, "recipe" => recipe_params}) do

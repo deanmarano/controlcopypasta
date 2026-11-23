@@ -155,13 +155,30 @@ export const passkeys = {
 };
 
 // Recipe types
+export interface MatchAttempt {
+  strategy: string;
+  tried: string;
+  hit: boolean;
+  canonical_name: string | null;
+  declined: string | null;
+  prefix_neighbours: string[];
+}
+
 export interface IngredientDiagnostics {
   tokens: string;
   parser: string;
   match_strategy: string | null;
+  // Other ingredients found on the same line, not rejected canonical matches.
   alternatives: string[];
+  // Every lookup the matcher attempted, in order. This is what explains why a
+  // given canonical won: each earlier entry is a key that was tried and missed.
+  match_trail: MatchAttempt[];
   warnings: string[];
   parse_time_us: number;
+  // What the parser produces for this line today, and whether that disagrees
+  // with the stored match (i.e. the parser has changed since it was saved).
+  reparsed_canonical_name: string | null;
+  drifted: boolean;
 }
 
 export interface PreStep {
@@ -439,8 +456,13 @@ export const recipes = {
     return request<{ data: Recipe[] }>(`/recipes${query ? `?${query}` : ''}`, { token });
   },
 
-  get: (token: string, id: string) =>
-    request<{ data: Recipe }>(`/recipes/${id}`, { token }),
+  // includeDiagnostics re-runs the ingredient parser server-side and is
+  // admin-only; non-admins get the recipe back without a _diagnostics key.
+  get: (token: string, id: string, opts?: { includeDiagnostics?: boolean }) =>
+    request<{ data: Recipe }>(
+      `/recipes/${id}${opts?.includeDiagnostics ? '?include_diagnostics=true' : ''}`,
+      { token }
+    ),
 
   create: (token: string, recipe: RecipeInput) =>
     request<{ data: Recipe }>('/recipes', {
