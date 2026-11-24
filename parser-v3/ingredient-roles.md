@@ -173,33 +173,92 @@ Role census over all 1,055,642 stored rows:
 
 | Role | Rows |
 |---|---|
-| `:ingredient` | 986,537 |
-| `:serving` | 62,703 |
-| `:cooking_medium` | 2,927 |
-| `:to_taste` | 2,848 |
-| `:garnish` | 627 |
+| `:ingredient` | 946,973 |
+| `:to_taste` | 51,678 |
+| `:serving` | 44,041 |
+| `:cooking_medium` | 12,442 |
+| `:garnish` | 508 |
 | optional (any role) | 22,418 |
 
-**42,431 of the 108,077 matched-but-quantity-less ingredients (39%) now come
-back `:not_counted` instead of `:no_quantity`** — excluded from the
-completeness denominator rather than counted as failures.
+**100,667 of the 108,077 matched-but-quantity-less ingredients (93%) come back
+`:not_counted` instead of `:no_quantity`** — excluded from the completeness
+denominator rather than counted as failures.
 
 Proof the change is additive: parsing all 36,374 distinct stored ingredient
-lines on this branch and on trunk produces **byte-identical**
+lines on this branch and on pre-roles trunk produces **byte-identical**
 `canonical_id`, `quantity`, `quantity_min`, `quantity_max`, `unit`,
 `container`, `preparations` and `is_alternative`.
+
+## Second pass: three patterns the first pass missed
+
+The first pass took the 108,077 figure from 108,077 to 42,431 excluded. Looking
+at what was left showed it was not a long tail — it was three more shapes of the
+same thing.
+
+### Cooking medium is also named by vessel
+
+The verb patterns (`for frying`, `for greasing`) missed the ~10,000 rows that
+name the *vessel* instead: `nonstick vegetable oil spray (for pan)`,
+`flour (for work surface)`, `vegetable oil (for grill)`,
+`butter, softened, for the pan`.
+
+The noun list is closed on purpose. `for the pan` is a vessel; `for the sauce`
+is a component of the dish, so this cannot generalise to `for the <anything>`.
+
+### A bare seasoning line is "to taste" without saying so
+
+`Kosher salt` on its own line is 16,368 stored rows. `Freshly ground pepper` is
+another 16,248. Both mean season to taste; the author omitted the words because
+the convention is understood. With the other bare forms it is ~48,000 rows,
+every one of which was reported as a nutrition failure.
+
+The rule requires the line to contain **no digits**, so `1 tsp. freshly ground
+pepper` is untouched. In the corpus this split is absolute: the bare forms have
+zero quantified occurrences and the measured forms always carry a number.
+
+It is checked last, so an explicit purpose always wins — `flaky sea salt, for
+serving` stays `:serving`.
+
+### "plus more for X" describes the top-up, not the line
+
+This one was a **bug in the first pass**, not a missing pattern.
+
+```
+2 cups buckwheat flour, plus more for surface   -> was :cooking_medium
+1 cup sugar, plus more for serving              -> was :serving
+```
+
+Both are ordinary ingredients with an unmeasured extra. 18,080 rows were
+labelled `:serving` this way and 5,665 `:cooking_medium`. It never affected
+nutrition — they all have a quantity, so the role never suppressed anything —
+but it put a wrong badge on an ordinary ingredient.
+
+The top-up tail is now removed before role detection, and **only** before role
+detection: `(optional)` can legitimately sit after a top-up clause, so
+optionality still reads the whole line.
+
+This is the same error as the `if desired` family one level up: a clause that
+qualifies part of a line, read as if it qualified the line.
+
+### What is still left
+
+7,410 rows. The bulk is `pinch` (4,505) — `pinch of kosher salt`, `generous
+pinch nutmeg` — which is a **quantity** problem rather than a role problem: a
+pinch is an amount the parser does not read, not a statement of purpose. The
+rest is bare ingredient names with no amount at all (`raisins`, `lemon zest`,
+`warm water`), where the author simply omitted the quantity and there is
+nothing to recover.
 
 ## Not built
 
 - **Shopping-list grouping.** Shopping lists read the *stored* maps, so this
   cannot work until `mix parse_ingredients --force` has run in production.
   Better as a follow-up behind the backfill than as dead code in this change.
-- **Tightening the completeness test to reject bare `:no_quantity`.** Tried it;
-  it surfaced a different cohort entirely — bare names with no amount
-  ("raisins", "lemon zest", "cinnamon") and amounts the parser does not read as
-  quantities ("pinch salt", "generous pinch nutmeg"). Real gaps, separate work.
-  A targeted test asserting no role-marked line is ever reported `:no_quantity`
-  holds the line for this change instead.
+- **Tightening the completeness test to reject bare `:no_quantity`.** Still not
+  done, but the remaining cohort is now small and well understood (see "What is
+  still left"). Worth revisiting once `pinch` is read as a quantity.
+- **`pinch` / `dash` / `handful` as quantities.** 4,505 rows. A quantity
+  feature, not a role one.
 
 ## Out of scope
 

@@ -68,6 +68,101 @@ defmodule Controlcopypasta.Ingredients.Detection.RoleDetectorTest do
     end
   end
 
+  describe "cooking medium named by vessel" do
+    test "for the pan, surface, grill, bowl" do
+      # The other half of cooking medium names the vessel, not the verb. The
+      # verb patterns missed ~10,000 stored rows of this shape.
+      assert %{role: :cooking_medium} =
+               RoleDetector.detect("Nonstick vegetable oil spray (for pan)")
+
+      assert %{role: :cooking_medium} = RoleDetector.detect("All-purpose flour (for surface)")
+      assert %{role: :cooking_medium} = RoleDetector.detect("Vegetable oil (for grill)")
+      assert %{role: :cooking_medium} = RoleDetector.detect("Butter, softened, for the pan")
+      assert %{role: :cooking_medium} = RoleDetector.detect("Rice flour (for work surface)")
+    end
+
+    test "the vessel list does not generalise to for-the-anything" do
+      # "for the pan" is a vessel; "for the sauce" is a component of the dish.
+      # The noun list is closed on purpose.
+      assert %{role: :ingredient} = RoleDetector.detect("1 cup cream, for the sauce")
+      assert %{role: :ingredient} = RoleDetector.detect("2 eggs, for the filling")
+    end
+  end
+
+  describe "bare seasoning lines" do
+    test "an unquantified seasoning is to-taste without saying so" do
+      # "Kosher salt" alone is 16,368 stored rows and "Freshly ground pepper"
+      # another 16,248. Both mean season to taste.
+      assert %{role: :to_taste} = RoleDetector.detect("Kosher salt")
+      assert %{role: :to_taste} = RoleDetector.detect("Freshly ground pepper")
+      assert %{role: :to_taste} = RoleDetector.detect("Flaky sea salt")
+      assert %{role: :to_taste} = RoleDetector.detect("Kosher salt, freshly ground pepper")
+      assert %{role: :to_taste} = RoleDetector.detect("Coarsely ground black pepper")
+    end
+
+    test "a measured seasoning is left alone" do
+      # The no-digits rule. In the corpus this split is absolute: the bare
+      # forms never carry a number and the measured forms always do.
+      assert %{role: :ingredient} = RoleDetector.detect("1 tsp. freshly ground pepper")
+      assert %{role: :ingredient} = RoleDetector.detect("2 teaspoons kosher salt")
+      assert %{role: :ingredient} = RoleDetector.detect("½ tsp. Morton kosher salt")
+    end
+
+    test "a seasoning that is part of a longer line is not a bare seasoning" do
+      refute RoleDetector.bare_seasoning?("chicken thighs, salt and pepper")
+      refute RoleDetector.bare_seasoning?("salted butter")
+      refute RoleDetector.bare_seasoning?("salt-cured anchovies")
+    end
+
+    test "an explicit purpose beats the bare-seasoning convention" do
+      # Checked last for exactly this reason.
+      assert %{role: :serving} = RoleDetector.detect("Flaky sea salt, for serving")
+      assert %{role: :garnish} = RoleDetector.detect("Flaky sea salt, for garnish")
+    end
+  end
+
+  describe "top-up clauses" do
+    test "plus-more describes the top-up, not the line" do
+      # "2 cups flour, plus more for surface" is two cups of flour you bake
+      # with, not a dusting agent. These were 18,080 rows labelled :serving and
+      # 5,665 labelled :cooking_medium.
+      assert %{role: :ingredient} =
+               RoleDetector.detect("2 cups buckwheat flour, plus more for surface")
+
+      assert %{role: :ingredient} = RoleDetector.detect("1 cup sugar, plus more for serving")
+
+      assert %{role: :ingredient} =
+               RoleDetector.detect(
+                 "1 cup (2 sticks) unsalted butter, room temperature, plus more for pan"
+               )
+    end
+
+    test "the bare more-for spelling counts too" do
+      assert %{role: :ingredient} =
+               RoleDetector.detect(
+                 "12 tablespoons unsalted butter, softened, more for greasing pan"
+               )
+    end
+
+    test "or-more quantities are not top-up clauses" do
+      # "or more water" is a quantity range, not a purpose clause. The bare
+      # spelling requires a following for/to precisely to leave these alone.
+      assert %{role: :cooking_medium} = RoleDetector.detect("1 cup or more oil, for frying")
+    end
+
+    test "a purpose before the top-up still counts" do
+      assert %{role: :serving} =
+               RoleDetector.detect("Hot sauce, for serving, plus more for the table")
+    end
+
+    test "optionality still reads the whole line" do
+      # The top-up tail is removed for role detection only: "(optional)" can
+      # legitimately sit after a top-up clause.
+      assert %{optional: true} =
+               RoleDetector.detect("1/2 cup nuts, plus more for serving (optional)")
+    end
+  end
+
   describe "optional" do
     test "parenthesised, trailing, and leading forms" do
       assert %{optional: true, role: :ingredient} =
