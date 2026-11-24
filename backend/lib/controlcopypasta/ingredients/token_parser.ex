@@ -834,6 +834,11 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     # Parse unit
     unit = normalize_unit(effective_unit(analysis, container))
 
+    # "Pinch of sugar" states an amount without a number. Supply the 1 the
+    # author elided -- "a pinch of sugar" already parses as 1.0, so this just
+    # covers the spelling where the article is dropped too.
+    quantity = implicit_quantity(quantity, unit)
+
     # Get ingredient names, applying juice/zest transformations
     raw_ingredient_names = clean_ingredient_names(analysis.ingredients)
 
@@ -877,6 +882,25 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       choices: choices
     }
   end
+
+  # Units whose bare appearance can only mean one of them.
+  #
+  # Deliberately NOT general. Measured over the stored corpus, the units that
+  # turn up with a unit but no number are: leaf (5,990), pinch (4,515), sprig
+  # (405), cup (95), slice (60), piece (47). Only the pinch family is safe:
+  #
+  #   - "leaf" is almost always "leaf lettuce" or "cilantro leaves with tender
+  #     stems", where the word is part of the ingredient, not a count of one.
+  #     Inventing "1 leaf" would report a confident, badly wrong weight in
+  #     place of an honest gap.
+  #   - a bare "cup" or "slice" is a parse artefact, and 1 is a guess.
+  #
+  # A pinch has no plausible reading other than one pinch, which is why it is
+  # the only family here.
+  @implicit_single_units ~w(pinch dash smidgen)
+
+  defp implicit_quantity(nil, unit) when unit in @implicit_single_units, do: 1.0
+  defp implicit_quantity(quantity, _unit), do: quantity
 
   # Select the best primary ingredient from matched_ingredients.
   # Prefers an ingredient with a canonical match over one that looks like a measurement fragment.
