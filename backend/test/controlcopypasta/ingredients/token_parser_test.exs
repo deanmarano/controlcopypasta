@@ -658,6 +658,78 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
     end
   end
 
+  describe "ingredient roles" do
+    test "the role survives the stripping that makes the match work" do
+      # Both halves matter: "for serving" still has to be stripped so the
+      # remainder is a clean ingredient name, AND the fact has to be kept.
+      result = TokenParser.parse("Flaky sea salt, for serving")
+
+      assert result.role == :serving
+      # The purpose phrase is gone from the name -- that is the strip doing its
+      # job -- while `role` and `notes` still carry it.
+      assert result.primary_ingredient.name == "flaky sea salt"
+      assert "for serving" in result.notes
+    end
+
+    test "optional survives the leading-prefix strip" do
+      result = TokenParser.parse("optional: 1/4 teaspoon cayenne")
+
+      assert result.optional
+      assert result.quantity == 0.25
+      assert result.unit == "tsp"
+    end
+
+    test "a quantified garnish keeps its quantity" do
+      # The role says nothing about whether there is an amount; a tablespoon of
+      # parsley has real calories whether or not it is decoration.
+      result = TokenParser.parse("1 tablespoon chopped parsley, for garnish")
+
+      assert result.role == :garnish
+      assert result.quantity == 1.0
+    end
+
+    test "ordinary ingredients get the defaults" do
+      result = TokenParser.parse("2 cups all-purpose flour")
+
+      assert result.role == :ingredient
+      refute result.optional
+      assert result.notes == []
+    end
+
+    test "a sub-parser result is given a role too" do
+      # Garlic/citrus/egg build their own structs. The role is applied after
+      # the branch, so they do not each need to know about it.
+      result = TokenParser.parse("2 cloves garlic, for garnish")
+
+      assert result.role == :garnish
+    end
+
+    test "a skipped line still reports its role" do
+      result = TokenParser.parse("For the Toast")
+
+      assert result.primary_ingredient == nil
+      assert result.role == :ingredient
+    end
+  end
+
+  describe "to_jsonb_map/1 roles" do
+    test "role and optional are emitted when they say something" do
+      json = TokenParser.to_jsonb_map(TokenParser.parse("Sherry (for serving; optional)"))
+
+      assert json["role"] == "serving"
+      assert json["optional"] == true
+      assert "for serving" in json["role_markers"]
+    end
+
+    test "the defaults are omitted rather than written a million times" do
+      json = TokenParser.to_jsonb_map(TokenParser.parse("2 cups all-purpose flour"))
+
+      refute Map.has_key?(json, "role")
+      refute Map.has_key?(json, "optional")
+      refute Map.has_key?(json, "role_markers")
+    end
+  end
+
   describe "section header filtering" do
     test "filters 'For the Toast' as section header" do
       result = TokenParser.parse("For the Toast")

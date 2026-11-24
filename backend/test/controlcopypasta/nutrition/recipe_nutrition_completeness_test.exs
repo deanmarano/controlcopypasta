@@ -1,6 +1,7 @@
 defmodule Controlcopypasta.Nutrition.RecipeNutritionCompletenessTest do
   use Controlcopypasta.DataCase
 
+  alias Controlcopypasta.Ingredients.Detection.RoleDetector
   alias Controlcopypasta.Nutrition.Calculator
   alias Controlcopypasta.Recipes
   alias Controlcopypasta.Repo
@@ -202,8 +203,17 @@ defmodule Controlcopypasta.Nutrition.RecipeNutritionCompletenessTest do
     test "all recipes have full nutrition coverage for real ingredients", %{recipes: recipes} do
       # Acceptable statuses:
       # - :calculated - fully computed
-      # - :no_quantity - ingredient has no specified amount (e.g. "salt to taste", garnishes)
-      acceptable_statuses = [:calculated, :no_quantity]
+      # - :not_counted - the line says it has no amount ("for serving", "to
+      #   taste"), so there is nothing to compute and nothing wrong
+      #
+      # - :no_quantity - still tolerated, but for a narrower reason than before.
+      #   With garnishes now reported as :not_counted, what is left under this
+      #   status is bare ingredient names with no amount at all ("raisins",
+      #   "lemon zest") and amounts the parser does not read as quantities
+      #   ("pinch salt", "generous pinch nutmeg"). Those are real gaps, but
+      #   they are a different piece of work from roles; the test below is what
+      #   holds the line for this change.
+      acceptable_statuses = [:calculated, :not_counted, :no_quantity]
 
       failures =
         Enum.reduce(recipes, [], fn recipe, acc ->
@@ -234,6 +244,35 @@ defmodule Controlcopypasta.Nutrition.RecipeNutritionCompletenessTest do
         #{failure_report}
         """)
       end
+    end
+
+    test "ingredients that state their own role are never reported as failures",
+         %{recipes: recipes} do
+      # The point of the role flag: a line that says "for serving" or "to
+      # taste" explains its own missing quantity, so it must come back
+      # :not_counted and never :no_quantity. This is the assertion that would
+      # catch the detector silently stopping work -- if its patterns stopped
+      # matching, these lines would fall back to :no_quantity, which the test
+      # above tolerates and this one does not.
+      failures =
+        Enum.flat_map(recipes, fn recipe ->
+          recipe
+          |> Calculator.calculate_recipe_nutrition()
+          |> Map.get(:ingredients)
+          |> Enum.filter(fn ing ->
+            ing.status == :no_quantity and
+              RoleDetector.quantity_optional?(RoleDetector.detect(ing.original).role)
+          end)
+          |> Enum.map(fn ing -> "#{recipe.title}: \"#{ing.original}\"" end)
+        end)
+
+      assert failures == [],
+             """
+             #{length(failures)} role-marked ingredient(s) were reported as missing a quantity
+             instead of being excluded from the count:
+
+             #{Enum.join(failures, "\n")}
+             """
     end
 
     test "all recipes have positive total calories", %{recipes: recipes} do
