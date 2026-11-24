@@ -142,6 +142,23 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
                   pinch pinches dash leaf leaves
                   fillet fillets filet filets)
 
+  # A pinch is not really a count -- it is a very small volume, and the only
+  # reason it lived with the count units is that salt has a curated
+  # grams-per-pinch record. Every other ingredient had none, so a correctly
+  # parsed "Pinch of ground cinnamon" failed with :no_count_density.
+  #
+  # These are the standard kitchen equivalences: a pinch is 1/16 tsp, a dash
+  # 1/8. They are used only as a FALLBACK, after the per-ingredient count
+  # density is tried, so salt keeps its curated 0.4 g rather than the 0.36 g
+  # the volume route computes.
+  @pinch_in_tsp %{
+    "pinch" => 1.0 / 16.0,
+    "pinches" => 1.0 / 16.0,
+    "dash" => 1.0 / 8.0,
+    "dashes" => 1.0 / 8.0,
+    "smidgen" => 1.0 / 32.0
+  }
+
   # Map plural/variant count units to the singular canonical form used in density records
   @count_unit_canonical %{
     "each" => "each",
@@ -234,11 +251,45 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
       # Count units (each, whole, etc.)
       count_unit?(normalized_unit) ->
         canonical_count_unit = Map.get(@count_unit_canonical, normalized_unit, "each")
-        convert_count_to_grams(canonical_id, quantity, canonical_count_unit, opts)
+
+        case convert_count_to_grams(canonical_id, quantity, canonical_count_unit, opts) do
+          {:error, :no_count_density} ->
+            # Handled here rather than inside convert_count_to_grams because
+            # @count_unit_canonical collapses "dash" to "pinch", and the two are
+            # not the same size.
+            pinch_volume_fallback(canonical_id, quantity, normalized_unit, opts)
+
+          result ->
+            result
+        end
 
       # Unknown unit
       true ->
         {:error, :invalid_unit}
+    end
+  end
+
+  defp pinch_volume_fallback_range(canonical_id, qty, qty_min, qty_max, unit, opts) do
+    case Map.get(@pinch_in_tsp, unit) do
+      nil ->
+        {:error, :no_count_density}
+
+      tsp ->
+        convert_volume_to_grams_range(
+          canonical_id,
+          to_float(qty) * tsp,
+          to_float(qty_min) * tsp,
+          to_float(qty_max) * tsp,
+          "tsp",
+          opts
+        )
+    end
+  end
+
+  defp pinch_volume_fallback(canonical_id, quantity, unit, opts) do
+    case Map.get(@pinch_in_tsp, unit) do
+      nil -> {:error, :no_count_density}
+      tsp -> convert_volume_to_grams(canonical_id, to_float(quantity) * tsp, "tsp", opts)
     end
   end
 
@@ -299,14 +350,27 @@ defmodule Controlcopypasta.Nutrition.DensityConverter do
       count_unit?(normalized_unit) ->
         canonical_count_unit = Map.get(@count_unit_canonical, normalized_unit, "each")
 
-        convert_count_to_grams_range(
-          canonical_id,
-          qty,
-          qty_min,
-          qty_max,
-          canonical_count_unit,
-          opts
-        )
+        case convert_count_to_grams_range(
+               canonical_id,
+               qty,
+               qty_min,
+               qty_max,
+               canonical_count_unit,
+               opts
+             ) do
+          {:error, :no_count_density} ->
+            pinch_volume_fallback_range(
+              canonical_id,
+              qty,
+              qty_min,
+              qty_max,
+              normalized_unit,
+              opts
+            )
+
+          result ->
+            result
+        end
 
       # Unknown unit
       true ->

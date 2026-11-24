@@ -658,6 +658,39 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
     end
   end
 
+  describe "implicit quantity for pinch-family units" do
+    test "a bare pinch means one pinch" do
+      # "a pinch of sugar" already parsed as 1.0; this is the same line with the
+      # article elided, which is how 4,524 stored rows are written.
+      assert %{quantity: 1.0, unit: "pinch"} = TokenParser.parse("Pinch of sugar")
+      assert %{quantity: 1.0, unit: "pinch"} = TokenParser.parse("pinch salt")
+      assert %{quantity: 1.0, unit: "pinch"} = TokenParser.parse("Pinch of ground cinnamon")
+      assert %{quantity: 1.0, unit: "dash"} = TokenParser.parse("Dash Angostura bitters")
+    end
+
+    test "an explicit quantity is never overwritten" do
+      assert %{quantity: 2.0, unit: "pinch"} = TokenParser.parse("2 pinches of salt")
+      assert %{quantity: 1.0, unit: "pinch"} = TokenParser.parse("1 pinch salt")
+    end
+
+    test "a modifier does not become a quantity" do
+      # "generous"/"big"/"healthy" are real and common. One pinch is the honest
+      # reading; guessing 1.5 would be inventing precision.
+      assert %{quantity: 1.0, unit: "pinch"} = TokenParser.parse("generous pinch nutmeg")
+      assert %{quantity: 1.0, unit: "pinch"} = TokenParser.parse("Big pinch of saffron threads")
+    end
+
+    test "the rule does NOT generalise to other unquantified units" do
+      # This is the point of the restriction. "leaf" is the most common unit to
+      # appear without a number (5,990 stored rows) and almost always means
+      # "cilantro leaves with tender stems" -- the word is part of the
+      # ingredient, not a count of one. Inventing "1 leaf" would report a
+      # confident, badly wrong weight in place of an honest gap.
+      assert %{quantity: nil} = TokenParser.parse("cilantro leaves with tender stems")
+      assert %{quantity: nil} = TokenParser.parse("leaf lettuce")
+    end
+  end
+
   describe "ingredient roles" do
     test "the role survives the stripping that makes the match work" do
       # Both halves matter: "for serving" still has to be stripped so the
