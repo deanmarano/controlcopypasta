@@ -1137,4 +1137,80 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
       assert Enum.any?(word_tokens, &(&1.text == "eggs"))
     end
   end
+
+  describe "semicolon parentheticals" do
+    # Every line here is a real stored one. Before this, the line was truncated
+    # at the first semicolon wherever it sat, so "(packed; 100 g)" cost the
+    # ingredient itself: "1/2 cup (packed" matched nothing at all.
+    test "keeps the ingredient after a semicolon inside a parenthetical" do
+      parsed = TokenParser.parse("½ cup (packed; 100 g) light brown sugar")
+
+      assert parsed.quantity == 0.5
+      assert parsed.unit == "cup"
+      assert parsed.primary_ingredient.name == "light brown sugar"
+    end
+
+    test "works whichever clause comes first" do
+      for text <- [
+            "1 cup (packed; 200 g) dark brown sugar",
+            "1 cup (200 g; packed) dark brown sugar"
+          ] do
+        parsed = TokenParser.parse(text)
+
+        assert parsed.quantity == 1.0, text
+        assert parsed.unit == "cup", text
+        assert parsed.primary_ingredient.name == "dark brown sugar", text
+      end
+    end
+
+    test "handles a gram figure beside an open-ended clause" do
+      parsed = TokenParser.parse("2 cups (240 g; or more) masa harina (such as Maseca)")
+
+      assert parsed.quantity == 2.0
+      assert parsed.unit == "cup"
+      assert parsed.primary_ingredient.name == "masa harina"
+    end
+
+    test "recovers preparations that sat after the semicolon" do
+      parsed = TokenParser.parse("1 cup (packed; 200 g) dark brown sugar, divided")
+
+      assert "packed" in parsed.preparations
+      assert "divided" in parsed.preparations
+    end
+
+    test "recovers an alternative that sat after the semicolon" do
+      parsed = TokenParser.parse("1 cup (packed; 200 g) dark brown sugar or jaggery powder")
+
+      assert parsed.is_alternative
+    end
+
+    test "a semicolon between clauses of the line still truncates" do
+      # The original behaviour, which is correct at the top level: the trailing
+      # clause is a note about the line, not part of it.
+      parsed = TokenParser.parse("2 cups flour; sifted before measuring")
+
+      assert parsed.quantity == 2.0
+      assert parsed.unit == "cup"
+    end
+
+    test "a dropped clause never becomes the line's unit" do
+      # "4 chicken legs (thigh and drumstick; 2-3 lb. total)" is four legs that
+      # weigh 2-3 lb between them. Reading the clause as the line's unit would
+      # say "4 lb." and overstate the line nearly 3x, so only the leading
+      # clause is kept.
+      parsed = TokenParser.parse("4 chicken legs (thigh and drumstick; 2–3 lb. total)")
+
+      assert parsed.quantity == 4.0
+      refute parsed.unit == "lb."
+    end
+
+    test "a can's size still sizes the can" do
+      # The guard above must not reach a weight that is doing real work.
+      parsed = TokenParser.parse("1 can (15 oz) black beans")
+
+      assert parsed.quantity == 1.0
+      assert parsed.unit == "oz"
+      assert parsed.container.container_type == "can"
+    end
+  end
 end

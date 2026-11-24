@@ -242,23 +242,44 @@ qualifies part of a line, read as if it qualified the line.
 
 ### What is still left
 
-7,410 rows. The bulk is `pinch` (4,505) — `pinch of kosher salt`, `generous
-pinch nutmeg` — which is a **quantity** problem rather than a role problem: a
-pinch is an amount the parser does not read, not a statement of purpose. The
-rest is bare ingredient names with no amount at all (`raisins`, `lemon zest`,
-`warm water`), where the author simply omitted the quantity and there is
-nothing to recover.
+Both follow-ups named below have since landed: `pinch` is read as a quantity
+and converts to grams, and the semicolon-parenthetical truncation that was
+eating ~6,300 rows of real ingredients is fixed.
+
+Measured over all 1,055,642 stored rows after those:
+
+| Outcome | Rows |
+|---|---|
+| quantity found | 932,123 |
+| `:not_counted` (role says so) | 98,633 |
+| no canonical match | 20,276 |
+| matched, no quantity | 4,610 |
+
+The remaining 20,276 no-match rows are **not** mostly a role problem. Ranked,
+they are kitchen equipment the detector misses (springform pans, thermometers,
+pastry bags, Bundt pans, skewers, mandolines — ~6,500 rows), blank lines
+(1,281), `Kosher salt and freshly ground black pepper` and its variants that
+the bare-seasoning rule catches but which never reach it because the calculator
+tests for a canonical match first (~1,250), and trailing prep phrases that name
+a tool (`patted dry with paper towels`, `ground with a mortar and pestle`).
+
+The equipment cohort is worth its own pass, and it is a reporting fix rather
+than a parsing one: `preprocess_text/2` already returns `{:skip, :equipment}`,
+but the reason lives only in diagnostics, so the calculator cannot tell a line
+dropped on purpose from one it failed to match. Both come out `:no_match`.
+
+The 4,610 matched-but-quantity-less rows are bare ingredient names with no
+amount at all (`raisins`, `lemon zest`, `warm water`), where the author simply
+omitted the quantity and there is nothing to recover.
 
 ## Not built
 
 - **Shopping-list grouping.** Shopping lists read the *stored* maps, so this
   cannot work until `mix parse_ingredients --force` has run in production.
   Better as a follow-up behind the backfill than as dead code in this change.
-- **Tightening the completeness test to reject bare `:no_quantity`.** Still not
-  done, but the remaining cohort is now small and well understood (see "What is
-  still left"). Worth revisiting once `pinch` is read as a quantity.
-- **`pinch` / `dash` / `handful` as quantities.** 4,505 rows. A quantity
-  feature, not a role one.
+- **Tightening the completeness test to reject bare `:no_quantity`.** The
+  cohort is down to 4,610 rows and well understood, but the equipment pass
+  above should land first -- it is the larger source of false failures.
 
 ## Out of scope
 
