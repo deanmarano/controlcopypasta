@@ -366,6 +366,7 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
       expanded_tokens: expanded_tokens,
       quantity: extract_quantity(tokens),
       unit: extract_unit(tokens),
+      unit_outside_parens: extract_unit_outside_parens(tokens),
       preparations: extract_preparations(tokens),
       modifiers: extract_modifiers(tokens),
       word_groups: extract_word_groups(main_tokens),
@@ -722,6 +723,34 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
       nil -> nil
       token -> token.text
     end
+  end
+
+  # The unit ignoring anything parenthesised. `extract_quantity/1` above stops
+  # at the first paren, so a unit found only inside one does not belong to the
+  # quantity it would be paired with -- in "1 (15 oz) can black beans" the line
+  # measures one *can*, and reading the "oz" as the quantity's unit turns it
+  # into one ounce of beans. The caller decides which reading to use, because
+  # sometimes the parenthesised weight is the only measurement on the line.
+  # (The hyphenated spelling "(15-ounce)" never had the problem: `is_size?/1`
+  # makes that a single :size token.)
+  defp extract_unit_outside_parens(tokens) do
+    tokens
+    |> reject_parenthesized()
+    |> extract_unit()
+  end
+
+  # Drop tokens enclosed in parentheses, at any nesting depth.
+  defp reject_parenthesized(tokens) do
+    {kept, _depth} =
+      Enum.reduce(tokens, {[], 0}, fn token, {kept, depth} ->
+        case token.text do
+          "(" -> {kept, depth + 1}
+          ")" -> {kept, max(depth - 1, 0)}
+          _ -> if depth > 0, do: {kept, depth}, else: {[token | kept], depth}
+        end
+      end)
+
+    Enum.reverse(kept)
   end
 
   defp extract_preparations(tokens) do

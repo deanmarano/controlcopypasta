@@ -803,11 +803,11 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     # Parse quantity (handle ranges)
     {quantity, quantity_min, quantity_max} = parse_quantity(analysis.quantity)
 
-    # Parse unit
-    unit = normalize_unit(analysis.unit)
-
     # Extract container info if present
     container = extract_container(tokens)
+
+    # Parse unit
+    unit = normalize_unit(effective_unit(analysis, container))
 
     # Get ingredient names, applying juice/zest transformations
     raw_ingredient_names = clean_ingredient_names(analysis.ingredients)
@@ -1006,6 +1006,24 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   @doc false
   # Delegate to centralized Units module
   def normalize_unit(unit), do: Units.normalize(unit)
+
+  # Choose between the unit as tokenized and the unit ignoring parentheticals.
+  #
+  # When the container already captured a size ("1 (15 oz) can black beans"),
+  # the parenthesised unit has been accounted for and must not be reused as the
+  # quantity's unit: Calculator.resolve_effective_unit/1 takes a present unit
+  # as-is and skips the container multiplication, so "1 (15 oz) can" would be
+  # costed as a single ounce instead of fifteen.
+  #
+  # When the container captured no size, the parenthesised weight is the only
+  # measurement on the line ("20 jumbo shells (6-7 ounces)"), and discarding it
+  # leaves a bare count with no density -- no nutrition at all.
+  defp effective_unit(analysis, %{size_value: size_value, size_unit: size_unit})
+       when not is_nil(size_value) and not is_nil(size_unit) do
+    Map.get(analysis, :unit_outside_parens)
+  end
+
+  defp effective_unit(analysis, _container), do: analysis.unit
 
   # Extract container info from tokens (e.g., "2 (14.5 oz) cans")
   defp extract_container(tokens) do
