@@ -10,6 +10,7 @@ Enhance the ingredient parsing system to extract richer semantic information:
 | [Pre-Steps](./pre-steps.md) | Convert preparations into actionable prep instructions | Planned |
 | [Diagnostics](./diagnostics.md) | Visual representation of tokenization and matching | Done |
 | [Simple Decisions](./simple-decisions.md) | Let users choose between alternatives, update nutrition | Planned |
+| [Ingredient Roles](./ingredient-roles.md) | Record what a line is *for* (garnish, to serve, optional) instead of only stripping it | Done (backend + display) |
 
 ---
 

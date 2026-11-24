@@ -233,6 +233,12 @@ export interface Ingredient {
   quantity_max?: number | null;
   unit?: string | null;
   preparations?: string[];
+  // What the line is for. Absent means the ordinary case (:ingredient) -- the
+  // backend omits defaults rather than writing them to every stored row.
+  role?: 'serving' | 'garnish' | 'to_taste' | 'cooking_medium';
+  optional?: boolean;
+  // The words that produced role/optional, so a badge can be explained.
+  role_markers?: string[];
   is_alternative?: boolean;
   alternatives?: IngredientAlternative[];
   recipe_reference?: RecipeReference;

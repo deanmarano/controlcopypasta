@@ -29,6 +29,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   alias Controlcopypasta.Ingredients.PreStepGenerator
   alias Controlcopypasta.Ingredients.ReferenceData.Units
   alias Controlcopypasta.Ingredients.Detection.EquipmentDetector
+  alias Controlcopypasta.Ingredients.Detection.RoleDetector
   alias Controlcopypasta.Ingredients.Parsing.{Singularizer, QuantityParser}
   alias Controlcopypasta.Ingredients.Matching.Matcher
 
@@ -57,7 +58,14 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       :preparations,
       :modifiers,
       :storage_medium,
+      # Role phrases matched on the ORIGINAL line ("for serving", "(optional)").
+      # Recorded rather than only stripped -- see RoleDetector.
       :notes,
+      # What the line is for: :ingredient | :serving | :garnish | :to_taste |
+      # :cooking_medium. Detected from the original text, never from the match.
+      :role,
+      # Orthogonal to role: "sherry (for serving; optional)" is both.
+      :optional,
       # true if "or" pattern detected
       :is_alternative,
       # "such as X, Y, or Z" - specific options to choose from
@@ -95,6 +103,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
             modifiers: [String.t()],
             storage_medium: String.t() | nil,
             notes: [String.t()],
+            role: RoleDetector.role(),
+            optional: boolean(),
             is_alternative: boolean(),
             choices: [ingredient_match()] | nil,
             recipe_reference: recipe_reference() | nil,
@@ -134,39 +144,54 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     lookup = Keyword.get_lazy(opts, :lookup, fn -> Ingredients.build_ingredient_lookup() end)
     opts = Keyword.put(opts, :lookup, lookup)
 
+    # The role is read from the ORIGINAL text, before preprocessing strips the
+    # phrases that carry it. Applied to whichever branch below produces the
+    # result, so the sub-parsers get it without each having to know about it.
+    role = RoleDetector.detect(text)
+
     # Preprocess text to normalize problematic patterns
-    case preprocess_text(text, lookup) do
-      {:skip, reason} ->
-        # Deliberately not an ingredient (equipment, a section header, or a
-        # bare "salt and pepper"). The line is dropped on purpose, so a nil
-        # canonical here is a decision rather than a parse failure -- record
-        # which rule dropped it so diagnostics can tell the two apart.
-        skipped = %ParsedIngredient{
-          original: text,
-          quantity: nil,
-          quantity_min: nil,
-          quantity_max: nil,
-          unit: nil,
-          container: nil,
-          ingredients: [],
-          primary_ingredient: nil,
-          preparations: [],
-          modifiers: [],
-          storage_medium: nil,
-          notes: [],
-          is_alternative: false,
-          choices: nil
-        }
+    parsed =
+      case preprocess_text(text, lookup) do
+        {:skip, reason} ->
+          # Deliberately not an ingredient (equipment, a section header, or a
+          # bare "salt and pepper"). The line is dropped on purpose, so a nil
+          # canonical here is a decision rather than a parse failure -- record
+          # which rule dropped it so diagnostics can tell the two apart.
+          skipped = %ParsedIngredient{
+            original: text,
+            quantity: nil,
+            quantity_min: nil,
+            quantity_max: nil,
+            unit: nil,
+            container: nil,
+            ingredients: [],
+            primary_ingredient: nil,
+            preparations: [],
+            modifiers: [],
+            storage_medium: nil,
+            notes: [],
+            is_alternative: false,
+            choices: nil
+          }
 
-        if include_diagnostics do
-          %{skipped | diagnostics: skip_diagnostics(text, reason, start_time)}
-        else
-          skipped
-        end
+          if include_diagnostics do
+            %{skipped | diagnostics: skip_diagnostics(text, reason, start_time)}
+          else
+            skipped
+          end
 
-      preprocessed_text ->
-        parse_preprocessed(preprocessed_text, text, opts, start_time, include_diagnostics)
-    end
+        preprocessed_text ->
+          parse_preprocessed(preprocessed_text, text, opts, start_time, include_diagnostics)
+      end
+
+    put_role(parsed, role)
+  end
+
+  # Role and optionality are additive: they never influence the match, the
+  # quantity or the unit, so they are stamped on at the end rather than threaded
+  # through the parse.
+  defp put_role(%ParsedIngredient{} = parsed, role) do
+    %{parsed | role: role.role, optional: role.optional, notes: role.markers}
   end
 
   defp parse_preprocessed(preprocessed_text, original_text, opts, start_time, include_diagnostics) do
@@ -894,6 +919,25 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       "preparations" => parsed.preparations,
       "modifiers" => parsed.modifiers
     }
+
+    # Role and optionality are only emitted when they say something. The corpus
+    # is over a million rows and the overwhelming majority are plain
+    # `:ingredient` / not-optional, so writing the defaults would grow every
+    # recipe's JSONB to record the absence of news.
+    base =
+      if parsed.role && parsed.role != :ingredient do
+        Map.put(base, "role", Atom.to_string(parsed.role))
+      else
+        base
+      end
+
+    base = if parsed.optional, do: Map.put(base, "optional", true), else: base
+
+    base =
+      case parsed.notes do
+        [_ | _] = markers -> Map.put(base, "role_markers", markers)
+        _ -> base
+      end
 
     # Mark skipped ingredients (equipment, section headers, salt-and-pepper, etc.)
     base =

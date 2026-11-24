@@ -30,6 +30,7 @@ defmodule Controlcopypasta.Nutrition.Calculator do
   """
 
   alias Controlcopypasta.{Ingredients, SafeDecimal}
+  alias Controlcopypasta.Ingredients.Detection.RoleDetector
   alias Controlcopypasta.Ingredients.{TokenParser, IngredientNutrition}
   alias Controlcopypasta.Nutrition.{DensityConverter, Range}
   alias Controlcopypasta.Recipes.Recipe
@@ -202,6 +203,13 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     cond do
       is_nil(canonical_id) ->
         %{result | status: :no_match, error: "Could not match to canonical ingredient"}
+
+      is_nil(parsed.quantity) and RoleDetector.quantity_optional?(parsed.role) ->
+        # A garnish or a to-taste line with no quantity is complete as written.
+        # "Cilantro, for serving" is not a parse failure, and reporting it as
+        # one made every recipe with a garnish look like it had a nutrition gap.
+        # There is nothing to count, so it is excluded rather than failed.
+        %{result | status: :not_counted, error: nil}
 
       is_nil(parsed.quantity) ->
         %{result | status: :no_quantity, error: "No quantity found"}
@@ -659,22 +667,29 @@ defmodule Controlcopypasta.Nutrition.Calculator do
     |> Map.new()
   end
 
+  # Completeness is "of the ingredients that have nutrition to contribute, how
+  # many did we manage to compute". An unquantified garnish has none to
+  # contribute, so it belongs in neither the numerator nor the denominator --
+  # counting it as a miss made the metric answer a question nobody asked.
   defp count_calculated(results) do
-    total = length(results)
+    countable = Enum.reject(results, fn r -> r.status == :not_counted end)
 
-    calculated =
-      results
-      |> Enum.count(fn r -> r.status == :calculated end)
+    calculated = Enum.count(countable, fn r -> r.status == :calculated end)
 
-    {calculated, total}
+    {calculated, length(countable)}
   end
 
   defp generate_warnings(results, completeness) do
     warnings = []
 
+    uncalculated =
+      Enum.count(results, fn r -> r.status not in [:calculated, :not_counted] end)
+
+    # Keyed on the count, not on completeness: a recipe of nothing but
+    # unquantified garnishes has completeness 0.0 with nothing actually wrong,
+    # and "0 ingredient(s) could not be calculated" is not a warning.
     warnings =
-      if completeness < 1.0 do
-        uncalculated = Enum.count(results, fn r -> r.status != :calculated end)
+      if completeness < 1.0 and uncalculated > 0 do
         ["#{uncalculated} ingredient(s) could not be calculated" | warnings]
       else
         warnings
