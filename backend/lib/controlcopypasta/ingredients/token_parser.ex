@@ -240,6 +240,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
         |> normalize_british_spelling()
         |> normalize_to_range()
         |> normalize_slash_measurements()
+        |> truncate_semicolon_parentheticals()
         |> normalize_gram_measurements()
         |> normalize_parenthetical_notes()
         |> normalize_stick_butter()
@@ -266,6 +267,36 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       ~r/(\b(?:cups?|tablespoons?|tbsp?|teaspoons?|tsp)\s*)\/\s*\d+\s*(?:grams?|g)\b/i,
       "\\1"
     )
+  end
+
+  # `normalize_semicolon_notes/1` truncates the line at its first semicolon, to
+  # drop a trailing note. That is right for a semicolon between clauses of the
+  # line, but destructive for one *inside* a parenthetical, because everything
+  # after it went too -- including the food:
+  #
+  #     "1/2 cup (packed; 100 g) light brown sugar"  ->  "1/2 cup (packed"
+  #
+  # So apply the same truncation one level down first: keep a parenthetical's
+  # leading clause and drop the rest, leaving a balanced paren the existing
+  # rules can recognise ("(packed)", "(2 sticks)", "(240 g)"). The dropped
+  # clauses are secondary either way -- a gram equivalent of the volume already
+  # given, a sleeve count, a "see Tip" pointer.
+  #
+  # Dropping them rather than re-parenthesising them also keeps a clause from
+  # being read as the line's unit: "4 chicken legs (thigh and drumstick; 2-3
+  # lb. total)" is four legs weighing 2-3 lb between them, and "4 lb." would
+  # overstate it nearly 3x.
+  defp truncate_semicolon_parentheticals(text) do
+    Regex.replace(~r/\(([^()]*;[^()]*)\)/, text, fn _full, inner ->
+      inner
+      |> String.split(";", parts: 2)
+      |> hd()
+      |> String.trim()
+      |> case do
+        "" -> ""
+        kept -> "(#{kept})"
+      end
+    end)
   end
 
   # Normalize gram measurements in parentheses: "1 cup (200g) flour" -> "1 cup flour"

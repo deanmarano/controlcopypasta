@@ -242,23 +242,22 @@ qualifies part of a line, read as if it qualified the line.
 
 ### What is still left
 
-7,410 rows. The bulk is `pinch` (4,505) — `pinch of kosher salt`, `generous
-pinch nutmeg` — which is a **quantity** problem rather than a role problem: a
-pinch is an amount the parser does not read, not a statement of purpose. The
-rest is bare ingredient names with no amount at all (`raisins`, `lemon zest`,
-`warm water`), where the author simply omitted the quantity and there is
-nothing to recover.
+Both follow-ups named below have since landed: `pinch` is read as a quantity
+and converts to grams, and a semicolon inside a parenthetical no longer
+truncates the line (which was costing ~6,300 rows the ingredient itself).
+
+The remaining cohorts are re-measured in the equipment pass that follows this
+one, which changes the picture enough that counting them twice here would only
+go stale.
 
 ## Not built
 
 - **Shopping-list grouping.** Shopping lists read the *stored* maps, so this
   cannot work until `mix parse_ingredients --force` has run in production.
   Better as a follow-up behind the backfill than as dead code in this change.
-- **Tightening the completeness test to reject bare `:no_quantity`.** Still not
-  done, but the remaining cohort is now small and well understood (see "What is
-  still left"). Worth revisiting once `pinch` is read as a quantity.
-- **`pinch` / `dash` / `handful` as quantities.** 4,505 rows. A quantity
-  feature, not a role one.
+- **Tightening the completeness test to reject bare `:no_quantity`.** The
+  cohort is down to 4,610 rows and well understood, but the equipment pass
+  above should land first -- it is the larger source of false failures.
 
 ## Out of scope
 
