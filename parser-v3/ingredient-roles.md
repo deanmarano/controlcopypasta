@@ -242,13 +242,37 @@ qualifies part of a line, read as if it qualified the line.
 
 ### What is still left
 
-Both follow-ups named below have since landed: `pinch` is read as a quantity
-and converts to grams, and a semicolon inside a parenthetical no longer
-truncates the line (which was costing ~6,300 rows the ingredient itself).
+Both earlier follow-ups have landed: `pinch` is read as a quantity and converts
+to grams, and a semicolon inside a parenthetical no longer truncates the line.
 
-The remaining cohorts are re-measured in the equipment pass that follows this
-one, which changes the picture enough that counting them twice here would only
-go stale.
+Measured over all 1,055,642 stored rows, by nutrition status:
+
+| Status | Rows | |
+|---|---|---|
+| `:calculated` | 856,195 | 81.1% |
+| `:not_counted` | 110,332 | 10.5% |
+| `:no_density` | 49,253 | 4.7% |
+| `:no_nutrition` | 25,320 | 2.4% |
+| `:no_match` | 8,577 | 0.8% |
+| `:no_quantity` | 4,610 | 0.4% |
+| `:error` | 1,355 | 0.1% |
+
+The role work and the equipment pass together account for the `:not_counted`
+column. **The largest remaining gap is no longer a parsing problem**: the
+`:no_density` rows parse correctly and match a canonical that has no density
+record, so there is no way to turn the stated volume into grams. With
+`:no_nutrition` that is 74,573 rows — nearly nine times the unmatched count —
+and it
+is seed data, not parser logic.
+
+The still-unmatched rows are a long tail: no single dominant shape, the bulk
+being multi-ingredient lines (`mixed hearty greens (such as escarole, mustard
+greens, and kale)`) and trailing prep phrases that name a tool (`patted dry
+with paper towels`).
+
+The matched-but-quantity-less rows are bare ingredient names with no amount at
+all (`raisins`, `lemon zest`, `warm water`), where the author simply omitted
+the quantity and there is nothing to recover.
 
 ## Not built
 
@@ -256,8 +280,10 @@ go stale.
   cannot work until `mix parse_ingredients --force` has run in production.
   Better as a follow-up behind the backfill than as dead code in this change.
 - **Tightening the completeness test to reject bare `:no_quantity`.** The
-  cohort is down to 4,610 rows and well understood, but the equipment pass
-  above should land first -- it is the larger source of false failures.
+  cohort is small and well understood. Still tolerated, but two narrower
+  assertions now cover the cases that used to hide in it: no role-marked line
+  may come back `:no_quantity`, and no deliberately skipped line may come back
+  `:no_match`.
 
 ## Out of scope
 

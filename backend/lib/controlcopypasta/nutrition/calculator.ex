@@ -201,6 +201,15 @@ defmodule Controlcopypasta.Nutrition.Calculator do
 
     # Check if we have a canonical match
     cond do
+      # Checked before the canonical test on purpose. Equipment, a section
+      # header and a bare "salt and pepper" are dropped by `preprocess_text/2`
+      # by design, so they never have a canonical -- but a nil canonical here
+      # is a decision, not a failure. Reporting them as unmatched made every
+      # recipe with a "Special Equipment" line look like it had a nutrition
+      # gap: 11,699 stored rows.
+      parsed && parsed.skip_reason ->
+        %{result | status: :not_counted, error: nil}
+
       is_nil(canonical_id) ->
         %{result | status: :no_match, error: "Could not match to canonical ingredient"}
 

@@ -1213,4 +1213,41 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
       assert parsed.container.container_type == "can"
     end
   end
+
+  describe "skip_reason" do
+    test "records which rule dropped the line" do
+      # All real stored lines. The reason was previously available only in
+      # diagnostics, which are off by default, so callers could not tell a
+      # deliberate drop from a parse failure -- both gave a nil canonical.
+      assert TokenParser.parse("A 12-cup Bundt pan").skip_reason == :equipment
+      assert TokenParser.parse("A deep-fry thermometer").skip_reason == :equipment
+      assert TokenParser.parse("Salt and pepper").skip_reason == :salt_and_pepper
+      assert TokenParser.parse("For the Toast").skip_reason == :section_header
+    end
+
+    test "is nil for a real ingredient" do
+      assert TokenParser.parse("2 cups flour").skip_reason == nil
+    end
+
+    test "is nil for a line that genuinely failed to match" do
+      # The distinction the field exists to draw.
+      parsed = TokenParser.parse("1 cup xyzzyplugh")
+
+      assert parsed.primary_ingredient.canonical_id == nil
+      assert parsed.skip_reason == nil
+    end
+
+    test "to_jsonb_map/1 emits the reason beside the skipped flag" do
+      map = TokenParser.parse("A 12-cup Bundt pan") |> TokenParser.to_jsonb_map()
+
+      assert map["skipped"] == true
+      assert map["skip_reason"] == "equipment"
+    end
+
+    test "to_jsonb_map/1 omits the key for a real ingredient" do
+      map = TokenParser.parse("2 cups flour") |> TokenParser.to_jsonb_map()
+
+      refute Map.has_key?(map, "skip_reason")
+    end
+  end
 end

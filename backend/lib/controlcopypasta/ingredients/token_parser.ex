@@ -72,6 +72,11 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       :choices,
       # Reference to another recipe (sub-recipe)
       :recipe_reference,
+      # Why the line was deliberately dropped: :equipment | :section_header |
+      # :salt_and_pepper, or nil when the line is a real ingredient. A nil
+      # canonical with a skip_reason set is a decision, not a parse failure --
+      # consumers must not report it as one.
+      :skip_reason,
       # ParseDiagnostics struct when enabled
       :diagnostics
     ]
@@ -82,6 +87,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
             name: String.t() | nil,
             is_optional: boolean()
           }
+
+    @type skip_reason :: :equipment | :section_header | :salt_and_pepper | nil
 
     @type ingredient_match :: %{
             name: String.t(),
@@ -108,6 +115,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
             is_alternative: boolean(),
             choices: [ingredient_match()] | nil,
             recipe_reference: recipe_reference() | nil,
+            skip_reason: skip_reason(),
             diagnostics: ParseDiagnostics.t() | nil
           }
   end
@@ -171,7 +179,8 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
             storage_medium: nil,
             notes: [],
             is_alternative: false,
-            choices: nil
+            choices: nil,
+            skip_reason: reason
           }
 
           if include_diagnostics do
@@ -998,6 +1007,15 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     base =
       if is_nil(parsed.primary_ingredient) and parsed.ingredients == [] do
         Map.put(base, "skipped", true)
+      else
+        base
+      end
+
+    # Which rule dropped it, so a stored line can be told apart from one that
+    # simply failed to match. "skipped" above is true for both.
+    base =
+      if parsed.skip_reason do
+        Map.put(base, "skip_reason", Atom.to_string(parsed.skip_reason))
       else
         base
       end

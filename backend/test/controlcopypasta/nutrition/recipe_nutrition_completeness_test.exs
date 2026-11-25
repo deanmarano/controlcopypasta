@@ -2,6 +2,7 @@ defmodule Controlcopypasta.Nutrition.RecipeNutritionCompletenessTest do
   use Controlcopypasta.DataCase
 
   alias Controlcopypasta.Ingredients.Detection.RoleDetector
+  alias Controlcopypasta.Ingredients.TokenParser
   alias Controlcopypasta.Nutrition.Calculator
   alias Controlcopypasta.Recipes
   alias Controlcopypasta.Repo
@@ -270,6 +271,32 @@ defmodule Controlcopypasta.Nutrition.RecipeNutritionCompletenessTest do
              """
              #{length(failures)} role-marked ingredient(s) were reported as missing a quantity
              instead of being excluded from the count:
+
+             #{Enum.join(failures, "\n")}
+             """
+    end
+
+    test "lines dropped on purpose are never reported as unmatched", %{recipes: recipes} do
+      # Equipment, section headers and a bare "salt and pepper" are dropped by
+      # the parser by design, so they never have a canonical. Keying the
+      # failure report off the missing canonical alone reported all of them as
+      # unmatched ingredients. This asserts the skip reason is what decides.
+      failures =
+        Enum.flat_map(recipes, fn recipe ->
+          recipe
+          |> Calculator.calculate_recipe_nutrition()
+          |> Map.get(:ingredients)
+          |> Enum.filter(fn ing ->
+            ing.status == :no_match and
+              not is_nil(TokenParser.parse(ing.original).skip_reason)
+          end)
+          |> Enum.map(fn ing -> "#{recipe.title}: \"#{ing.original}\"" end)
+        end)
+
+      assert failures == [],
+             """
+             #{length(failures)} deliberately skipped line(s) were reported as unmatched
+             rather than excluded from the count:
 
              #{Enum.join(failures, "\n")}
              """
