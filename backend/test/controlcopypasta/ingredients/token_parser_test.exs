@@ -1250,4 +1250,53 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
       refute Map.has_key?(map, "skip_reason")
     end
   end
+
+  describe "stated package weight" do
+    # All real stored lines. Each states its own weight and had it discarded,
+    # leaving a bare count with nothing to convert to grams.
+    test "a fractional package size is read" do
+      # ~1,990 rows. "1/4-oz." failed the size pattern, so the envelope became
+      # a plain count of 1 and the stated weight was lost.
+      parsed = TokenParser.parse("1 ¼-oz. envelope instant yeast (about 2¼ tsp.)")
+
+      assert parsed.quantity == 1.0
+      assert parsed.container.size_value == 0.25
+      assert parsed.container.size_unit == "oz"
+      assert parsed.container.container_type == "envelope"
+    end
+
+    test "pounds count as a package size" do
+      parsed = TokenParser.parse("1 1-lb. bag fresh or frozen cranberries")
+
+      assert parsed.container.size_value == 1.0
+      assert parsed.container.size_unit == "lb"
+    end
+
+    test "a parenthesised size before a package noun is read" do
+      parsed = TokenParser.parse("1 (4.5-oz.) tube double-concentrated tomato paste")
+
+      assert parsed.container.size_value == 4.5
+      assert parsed.container.container_type == "tube"
+    end
+
+    test "a package noun only counts directly after a size" do
+      # "tube" is also an ordinary descriptor. Labelling it a container
+      # everywhere cost this line its match, because "tube" stopped being part
+      # of the ingredient name.
+      parsed = TokenParser.parse("12 ounces tubetti or other short tube pasta")
+
+      assert parsed.container == nil
+      assert parsed.primary_ingredient.name =~ "tubetti"
+    end
+
+    test "the quantity is left alone" do
+      # The size sizes the package; the quantity still counts packages. The
+      # calculator multiplies them, so changing the quantity here would double
+      # count.
+      parsed = TokenParser.parse("2 1-lb. bags frozen peas")
+
+      assert parsed.quantity == 2.0
+      assert parsed.container.size_value == 1.0
+    end
+  end
 end
