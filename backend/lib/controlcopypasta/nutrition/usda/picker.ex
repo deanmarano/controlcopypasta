@@ -81,22 +81,32 @@ defmodule Controlcopypasta.Nutrition.Usda.Picker do
   # Words the description adds that change which food it is. FDC prefixes a
   # category ("Cheese, cheddar", "Spices, thyme") and appends preparation
   # qualifiers; those are benign. Anything else is a different food.
-  # Preparation qualifiers are benign on their own; when two candidates
-  # disagree on one, `first_conflict/2` is what holds the pick back.
-  @benign_extras ~w(raw fresh dried ground whole unprepared nfs ns includes commercially
-                    prepared cooked boiled roasted sweetened unsweetened salted unsalted
-                    canned frozen cheese cheeses spice spices sugar sugars pepper peppers
-                    seed seeds oil oils nut nuts bean beans leaf leaves powder)
+  #
+  # Kept deliberately short. An earlier version also treated "oil", "nut",
+  # "seed", "leaf" and "powder" as benign, on the theory that they were
+  # category prefixes too. They are not -- they name a different food made from
+  # the same plant, and the gate accepted "walnut" -> "Oil, walnut" (884
+  # kcal/100g against the nut's 654) as unambiguous. Both failures are tests.
+  # Words that do not change which food it is: FDC's category prefixes, and
+  # qualifiers that describe the plain, unmodified form.
+  @benign_extras ~w(raw unprepared nfs ns includes commercially prepared
+                    whole cheese cheeses spice spices)
+
+  # Everything else -- "dried", "ground", "cooked", "canned", "oil", "juice" --
+  # is left out on purpose, so it has to appear in our own name before a pick
+  # counts as unambiguous. "sage" returned "Spices, sage, ground": dried and
+  # ground, while the stored lines ask for sage by the leaf and the bunch,
+  # which is the fresh herb at roughly a third the calories per gram.
 
   defp unexpected_words(name, description) do
     wanted = MapSet.new(significant(name), &stem/1)
+    benign = MapSet.new(@benign_extras, &stem/1)
 
     extras =
       description
       |> words()
       |> Enum.reject(fn word ->
-        MapSet.member?(wanted, stem(word)) or word in @benign_extras or
-          stem(word) in Enum.map(@benign_extras, &stem/1)
+        MapSet.member?(wanted, stem(word)) or MapSet.member?(benign, stem(word))
       end)
 
     case extras do
