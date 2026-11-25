@@ -342,6 +342,33 @@ defmodule Controlcopypasta.Nutrition.CalculatorTest do
       assert result.status == :no_match
       assert result.error != nil
     end
+
+    test "a line dropped on purpose is not counted, not failed" do
+      # These are real stored lines. The parser drops each by design, so none
+      # has a canonical -- but that is a decision, and reporting it as an
+      # unmatched ingredient made a recipe with a "Special Equipment" line look
+      # like it had a nutrition gap.
+      for text <- [
+            "A 12-cup Bundt pan",
+            "A deep-fry thermometer",
+            "Salt and pepper",
+            "For the Toast"
+          ] do
+        result = Calculator.calculate_ingredient_nutrition(text)
+
+        assert result.status == :not_counted, "#{text} => #{result.status}"
+        assert result.error == nil, text
+      end
+    end
+
+    test "a genuine failure is still a failure" do
+      # The guard above keys off the skip reason, not off the missing canonical,
+      # so a line that really did fail to match must be unaffected.
+      result = Calculator.calculate_ingredient_nutrition("1 cup xyzzyplugh")
+
+      assert result.status == :no_match
+      assert result.parsed.skip_reason == nil
+    end
   end
 
   describe "DensityConverter" do
