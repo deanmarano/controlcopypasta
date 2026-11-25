@@ -693,8 +693,17 @@ defmodule Controlcopypasta.Ingredients.Tokenizer do
   end
 
   # Size detection (container size like "14-oz" or "14-oz.")
+  #
+  # The leading amount may be a vulgar fraction or a mixed number, because the
+  # single most common packaged size in the corpus is written that way:
+  # "1 1/4-oz. envelope instant yeast" (~1,990 rows). Pounds are included for
+  # "2 1-lb. pork tenderloins"; without them a stated weight was discarded and
+  # the line fell back to a count with no weight at all.
   defp is_size?(text) do
-    Regex.match?(~r/^\d+([.,]\d+)?-(oz|ounce|ounces|g|gram|grams|ml|l)\.?$/i, text)
+    Regex.match?(
+      ~r/^(?:\d+\s*)?(?:\d+([.,]\d+)?|\d+\/\d+|[¼½¾⅓⅔⅛⅜⅝⅞])-(oz|ounce|ounces|lb|lbs|pound|pounds|g|gram|grams|kg|ml|l)\.?$/i,
+      text
+    )
   end
 
   # Metric weight detection (like "113g", "30ml", "1.5kg")

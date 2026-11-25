@@ -1185,13 +1185,14 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
       result ||
         with [%{label: :size, text: size_text} | rest] <- rest,
              [%{text: ")"} | rest] <- rest,
-             [%{label: :container, text: container_text} | _] <- rest do
+             [%{label: label, text: container_text} | _] <- rest,
+             true <- container_noun?(label, container_text) do
           case parse_size_string(size_text) do
             {value, unit} ->
               %{
                 size_value: value,
                 size_unit: unit,
-                container_type: container_text
+                container_type: String.downcase(container_text)
               }
 
             nil ->
@@ -1205,12 +1206,38 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     end
   end
 
+  # Package nouns that are not in @containers, because the bare word is also an
+  # ordinary descriptor: "short tube pasta", "envelope" in a non-food sense.
+  # Matched only directly after a :size token, where it can only be a package:
+  # "1 (4.5-oz.) tube tomato paste", "1 1/4-oz. envelope instant yeast".
+  #
+  # Labelling them :container in the tokenizer instead would reach every
+  # occurrence, and it cost "12 ounces tubetti or other short tube pasta" its
+  # match -- "tube" stopped being part of the ingredient name.
+  @sized_package_nouns ~w(tube tubes envelope envelopes)
+
+  defp container_noun?(:container, _text), do: true
+  defp container_noun?(:word, text), do: String.downcase(text) in @sized_package_nouns
+  defp container_noun?(_label, _text), do: false
+
   # Pattern 2: size container - e.g., "15-ounce can", "14-oz jar"
   defp find_size_container_pattern(tokens) do
     # Find :size token followed by :container token
     tokens
     |> Enum.chunk_every(2, 1, :discard)
     |> Enum.find_value(fn
+      [%{label: :size, text: size_text}, %{label: label, text: word_text}]
+      when label == :word ->
+        if container_noun?(label, word_text) do
+          case parse_size_string(size_text) do
+            {value, unit} ->
+              %{size_value: value, size_unit: unit, container_type: String.downcase(word_text)}
+
+            nil ->
+              nil
+          end
+        end
+
       [%{label: :size, text: size_text}, %{label: :container, text: container_text}] ->
         case parse_size_string(size_text) do
           {value, unit} ->
@@ -1277,16 +1304,42 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   end
 
   # Parse size strings like "15-ounce", "14-oz" into {value, unit}
+  # Must stay in step with `Tokenizer.is_size?/1`: that decides what becomes a
+  # :size token, and this decides whether the token yields a usable value. A
+  # pattern accepted there but not here produces a :size token that silently
+  # drops the weight, which is how "1 1/4-oz. envelope instant yeast" ended up
+  # a bare count.
   defp parse_size_string(size_text) do
-    case Regex.run(~r/^(\d+(?:[.,]\d+)?)-?(oz|ounce|ounces|g|gram|grams|ml|l)\.?$/i, size_text) do
+    case Regex.run(
+           ~r/^(\d+(?:[.,]\d+)?|\d+\/\d+)-?(oz|ounce|ounces|lb|lbs|pound|pounds|g|gram|grams|kg|ml|l)\.?$/i,
+           size_text
+         ) do
       [_, value_str, unit] ->
-        case Float.parse(value_str) do
-          {value, _} -> {value, normalize_unit(unit)}
-          :error -> nil
+        case parse_size_value(value_str) do
+          nil -> nil
+          value -> {value, normalize_unit(unit)}
         end
 
       _ ->
         nil
+    end
+  end
+
+  defp parse_size_value(value_str) do
+    case String.split(value_str, "/") do
+      [num, denom] ->
+        with {n, _} <- Float.parse(num),
+             {d, _} when d != 0.0 <- Float.parse(denom) do
+          n / d
+        else
+          _ -> nil
+        end
+
+      _ ->
+        case Float.parse(String.replace(value_str, ",", ".")) do
+          {value, _} -> value
+          :error -> nil
+        end
     end
   end
 
