@@ -16,6 +16,10 @@
 
 	const dispatch = createEventDispatcher<{ sourceChange: NutritionSource }>();
 
+	// The per-ingredient table and parser warnings explain how the label was
+	// worked out. Most readers only want the label, so they are opt-in.
+	let showDetails = $state(false);
+
 	// Format source name for display
 	function formatSourceName(source: NutritionSource): string {
 		const names: Record<NutritionSource, string> = {
@@ -264,7 +268,7 @@
 	<div class="nutrition-error">{error}</div>
 {:else if nutrition}
 	<div class="nutrition-panel">
-		{#if nutrition.warnings.length > 0}
+		{#if showDetails && nutrition.warnings.length > 0}
 			<div class="warnings">
 				{#each nutrition.warnings as warning}
 					<div class="warning">{warning}</div>
@@ -272,7 +276,7 @@
 			</div>
 		{/if}
 
-		<div class="nutrition-layout">
+		<div class="nutrition-layout" class:with-breakdown={showDetails}>
 			<div class="facts-column">
 				<div class="nutrition-facts">
 					<div class="nutrition-header">
@@ -413,8 +417,12 @@
 						*The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.
 					</div>
 				</div>
+				<button class="details-toggle" onclick={() => (showDetails = !showDetails)} aria-expanded={showDetails}>
+					{showDetails ? 'Hide the calculation' : 'How this was calculated'}
+				</button>
 			</div>
 
+		{#if showDetails}
 		<div class="breakdown-column">
 			<div class="breakdown-header">
 				<h3>Ingredient Breakdown</h3>
@@ -519,6 +527,7 @@
 				<span class="legend-item" title="Per piece/unit">#️⃣ Count</span>
 			</div>
 		</div>
+		{/if}
 	</div>
 </div>
 {/if}
@@ -564,9 +573,26 @@
 
 	.nutrition-layout {
 		display: grid;
-		grid-template-columns: minmax(280px, 320px) 1fr;
+		grid-template-columns: minmax(280px, 320px);
 		gap: var(--space-6);
 		align-items: start;
+	}
+
+	@media (min-width: 901px) {
+		.nutrition-layout.with-breakdown {
+			grid-template-columns: minmax(280px, 320px) 1fr;
+		}
+	}
+
+	.details-toggle {
+		margin-top: var(--space-3);
+		padding: 0;
+		background: none;
+		border: none;
+		color: var(--color-marinara-600);
+		font-size: var(--text-sm);
+		cursor: pointer;
+		text-decoration: underline;
 	}
 
 	@media (max-width: 900px) {

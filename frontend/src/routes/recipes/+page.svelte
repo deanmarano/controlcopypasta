@@ -1,14 +1,25 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { recipes, type Recipe } from '$lib/api/client';
+	import { recipes, tags as tagsApi, type Recipe, type Tag } from '$lib/api/client';
+	import { truncate } from '$lib/text';
+
+	const PAGE_SIZE = 24;
 
 	let recipeList = $state<Recipe[]>([]);
+	let tagList = $state<Tag[]>([]);
 	let loading = $state(true);
+	let loadingMore = $state(false);
+	let hasMore = $state(false);
 	let error = $state('');
 	let searchQuery = $state('');
 	let showArchived = $state(false);
+
+	// The tag filter lives in the URL (/recipes?tag=dinner) so tag chips anywhere can link to it.
+	const activeTag = $derived($page.url.searchParams.get('tag') || '');
+	let loadedTag: string | null = null;
 
 	$effect(() => {
 		if (!$isAuthenticated) {
@@ -16,47 +27,54 @@
 		}
 	});
 
-	onMount(async () => {
-		await loadRecipes();
+	// Loads on first render and again whenever the tag in the URL changes.
+	$effect(() => {
+		const tag = activeTag;
+		if (!$isAuthenticated || tag === loadedTag) return;
+		loadedTag = tag;
+		untrack(() => loadRecipes());
 	});
 
-	async function loadRecipes() {
+	onMount(async () => {
+		const token = authStore.getToken();
+		if (!token) return;
+		try {
+			tagList = (await tagsApi.list(token)).data;
+		} catch {
+			// The tag filter is optional; the page works without it.
+		}
+	});
+
+	async function loadRecipes(append = false) {
 		const token = authStore.getToken();
 		if (!token) return;
 
-		loading = true;
+		if (append) loadingMore = true;
+		else loading = true;
 		error = '';
 
 		try {
-			const params: { q?: string; archived?: 'true' | 'all' } = {};
+			const params: { q?: string; tag?: string; archived?: 'true' | 'all'; limit: number; offset?: number } = {
+				limit: PAGE_SIZE
+			};
+			if (append) params.offset = recipeList.length;
 			if (searchQuery) params.q = searchQuery;
+			if (activeTag) params.tag = activeTag;
 			if (showArchived) params.archived = 'true';
-			const result = await recipes.list(token, Object.keys(params).length > 0 ? params : undefined);
-			recipeList = result.data;
+			const result = await recipes.list(token, params);
+			recipeList = append ? [...recipeList, ...result.data] : result.data;
+			hasMore = result.data.length === PAGE_SIZE;
 		} catch (err) {
 			error = 'Failed to load recipes';
 		} finally {
 			loading = false;
+			loadingMore = false;
 		}
 	}
 
 	async function handleSearch(e: Event) {
 		e.preventDefault();
 		await loadRecipes();
-	}
-
-	async function deleteRecipe(id: string) {
-		if (!confirm('Are you sure you want to delete this recipe?')) return;
-
-		const token = authStore.getToken();
-		if (!token) return;
-
-		try {
-			await recipes.delete(token, id);
-			recipeList = recipeList.filter((r) => r.id !== id);
-		} catch {
-			alert('Failed to delete recipe');
-		}
 	}
 
 	async function archiveRecipe(id: string) {
@@ -122,28 +140,49 @@
 		</button>
 	</div>
 
+	{#if tagList.length > 0}
+		<nav class="tag-filter" aria-label="Filter by tag">
+			<a href="/recipes" class="tag-chip" class:active={!activeTag}>All</a>
+			{#each tagList as tag}
+				<a
+					href="/recipes?tag={encodeURIComponent(tag.name)}"
+					class="tag-chip"
+					class:active={activeTag === tag.name}
+				>{tag.name}</a>
+			{/each}
+			<a href="/tags" class="manage-tags">Manage tags</a>
+		</nav>
+	{:else}
+		<p class="tag-filter-empty"><a href="/tags" class="manage-tags">Manage tags</a></p>
+	{/if}
+
 	{#if loading}
 		<div class="loading">Loading recipes...</div>
 	{:else if error}
 		<div class="error">{error}</div>
 	{:else if recipeList.length === 0}
 		<div class="empty">
-			<p>No recipes yet!</p>
-			<a href="/recipes/new">Add your first recipe</a>
+			{#if activeTag || searchQuery || showArchived}
+				<p>No recipes match{activeTag ? ` the tag "${activeTag}"` : ''}.</p>
+				{#if activeTag}<a href="/recipes">Show all recipes</a>{/if}
+			{:else}
+				<p>No recipes yet!</p>
+				<a href="/recipes/new">Add your first recipe</a>
+			{/if}
 		</div>
 	{:else}
 		<div class="recipe-grid">
 			{#each recipeList as recipe}
 				<div class="recipe-card">
 					{#if recipe.image_url}
-						<img src={recipe.image_url} alt={recipe.title} class="recipe-image" />
+						<img src={recipe.image_url} alt={recipe.title} class="recipe-image" loading="lazy" />
 					{:else}
 						<div class="recipe-image placeholder">No image</div>
 					{/if}
 					<div class="recipe-content">
 						<h2><a href="/recipes/{recipe.id}">{recipe.title}</a></h2>
 						{#if recipe.description}
-							<p class="description">{recipe.description.slice(0, 100)}...</p>
+							<p class="description">{truncate(recipe.description, 100)}</p>
 						{/if}
 						<div class="recipe-meta">
 							{#if recipe.total_time_minutes}
@@ -161,7 +200,7 @@
 						{#if recipe.tags.length > 0}
 							<div class="tags">
 								{#each recipe.tags as tag}
-									<span class="tag">{tag.name}</span>
+									<a href="/recipes?tag={encodeURIComponent(tag.name)}" class="tag">{tag.name}</a>
 								{/each}
 							</div>
 						{/if}
@@ -172,12 +211,18 @@
 							{:else}
 								<button onclick={() => archiveRecipe(recipe.id)} class="action-archive">Archive</button>
 							{/if}
-							<button onclick={() => deleteRecipe(recipe.id)}>Delete</button>
 						</div>
 					</div>
 				</div>
 			{/each}
 		</div>
+		{#if hasMore}
+			<div class="load-more">
+				<button onclick={() => loadRecipes(true)} disabled={loadingMore}>
+					{loadingMore ? 'Loading...' : 'Show more recipes'}
+				</button>
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -188,9 +233,88 @@
 
 	.page-header {
 		display: flex;
+		flex-wrap: wrap;
 		justify-content: space-between;
 		align-items: center;
+		gap: var(--space-3);
 		margin-bottom: var(--space-8);
+	}
+
+	@media (max-width: 640px) {
+		.page-header {
+			margin-bottom: var(--space-5);
+		}
+
+		.btn-primary,
+		.btn-secondary {
+			padding: var(--space-2) var(--space-4);
+			font-size: var(--text-sm);
+		}
+	}
+
+	.tag-filter {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+		margin-bottom: var(--space-6);
+	}
+
+	.tag-chip {
+		padding: var(--space-1) var(--space-3);
+		border: var(--border-width-thin) solid var(--border-default);
+		border-radius: var(--radius-full, 999px);
+		background: var(--bg-card);
+		color: var(--text-secondary);
+		font-size: var(--text-sm);
+		text-decoration: none;
+		transition: all var(--transition-fast);
+	}
+
+	.tag-chip:hover {
+		background: var(--bg-surface);
+	}
+
+	.tag-chip.active {
+		background: var(--color-marinara-500);
+		border-color: var(--color-marinara-500);
+		color: var(--color-white);
+	}
+
+	.manage-tags {
+		margin-left: auto;
+		font-size: var(--text-sm);
+		color: var(--color-marinara-600);
+	}
+
+	.tag-filter-empty {
+		margin: 0 0 var(--space-6);
+		text-align: right;
+	}
+
+	.load-more {
+		display: flex;
+		justify-content: center;
+		margin-top: var(--space-8);
+	}
+
+	.load-more button {
+		padding: var(--space-3) var(--space-6);
+		background: var(--bg-card);
+		color: var(--color-marinara-600);
+		border: var(--border-width-thin) solid var(--color-marinara-500);
+		border-radius: var(--radius-md);
+		font-weight: var(--font-medium);
+		cursor: pointer;
+	}
+
+	.load-more button:hover:not(:disabled) {
+		background: var(--color-marinara-50);
+	}
+
+	.load-more button:disabled {
+		opacity: 0.6;
+		cursor: default;
 	}
 
 	h1 {
@@ -236,7 +360,7 @@
 	.search-form {
 		display: flex;
 		gap: var(--space-2);
-		margin-bottom: var(--space-8);
+		margin-bottom: var(--space-5);
 	}
 
 	.search-form input {
@@ -272,7 +396,7 @@
 	.filter-bar {
 		display: flex;
 		gap: var(--space-2);
-		margin-bottom: var(--space-6);
+		margin-bottom: var(--space-4);
 	}
 
 	.filter-btn {
@@ -403,6 +527,12 @@
 		border-radius: var(--radius-sm);
 		font-size: var(--text-xs);
 		color: var(--text-secondary);
+		text-decoration: none;
+	}
+
+	a.tag:hover {
+		background: var(--color-gray-300);
+		color: var(--text-primary);
 	}
 
 	.actions {
