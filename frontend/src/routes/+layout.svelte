@@ -49,6 +49,7 @@
 					<div class="nav-links desktop-only">
 						<a href="/recipes">My Recipes</a>
 						<a href="/browse">Browse</a>
+						<a href="/ingredients">Ingredients</a>
 						<a href="/inbox">Inbox</a>
 						<a href="/shopping-lists">Shopping Lists</a>
 						<a href="/settings">Settings</a>
@@ -87,6 +88,7 @@
 				<nav class="mobile-nav">
 					<a href="/recipes" onclick={closeMobileMenu}>My Recipes</a>
 					<a href="/browse" onclick={closeMobileMenu}>Browse</a>
+					<a href="/ingredients" onclick={closeMobileMenu}>Ingredients</a>
 					<a href="/inbox" onclick={closeMobileMenu}>Inbox</a>
 					<a href="/shopping-lists" onclick={closeMobileMenu}>Shopping List</a>
 					<a href="/settings" onclick={closeMobileMenu}>Settings</a>
@@ -402,6 +404,14 @@
 		.mobile-only {
 			display: none !important;
 		}
+	}
+
+	/* Every page title uses the brand serif, whatever else the page sets on it. */
+	:global(main h1) {
+		font-family: var(--font-serif);
+		font-size: var(--text-3xl);
+		font-weight: var(--font-bold);
+		letter-spacing: var(--tracking-tight);
 	}
 
 	main {

@@ -197,6 +197,7 @@
 						<button class="shuffle-btn" onclick={shuffle} disabled={shuffling}>
 							{shuffling ? 'Shuffling...' : 'Shuffle'}
 						</button>
+						<a href="/quicklist" class="view-all">Swipe through ideas</a>
 						<a href="/browse" class="view-all">Browse all</a>
 					</div>
 				</div>

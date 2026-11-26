@@ -14,6 +14,11 @@
 	let prevSortBy = $state<'popularity' | 'name'>('popularity');
 	let categories = $state<string[]>([]);
 
+	// The catalog has hundreds of entries; draw them a screenful at a time.
+	const PAGE_SIZE = 60;
+	let visibleCount = $state(PAGE_SIZE);
+	const visibleList = $derived(filteredList.slice(0, visibleCount));
+
 	$effect(() => {
 		if (!$isAuthenticated) {
 			goto('/login');
@@ -73,6 +78,7 @@
 		}
 		// For popularity, keep API order (already sorted by usage_count desc)
 		filteredList = filtered;
+		visibleCount = PAGE_SIZE;
 	}
 
 	async function handleSortChange() {
@@ -144,11 +150,11 @@
 		</div>
 	{:else}
 		<div class="ingredients-grid">
-			{#each filteredList as ingredient}
+			{#each visibleList as ingredient}
 				<a href="/ingredients/{ingredient.id}" class="ingredient-card">
 					{#if ingredient.image_url}
 						<div class="ingredient-image">
-							<img src={ingredient.image_url} alt={ingredient.display_name} />
+							<img src={ingredient.image_url} alt={ingredient.display_name} loading="lazy" />
 						</div>
 					{/if}
 					<div class="ingredient-content">
@@ -192,6 +198,13 @@
 				</a>
 			{/each}
 		</div>
+		{#if filteredList.length > visibleCount}
+			<div class="load-more">
+				<button onclick={() => (visibleCount += PAGE_SIZE)}>
+					Show more ({(filteredList.length - visibleCount).toLocaleString()} remaining)
+				</button>
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -219,12 +232,55 @@
 
 	.filters {
 		display: flex;
+		flex-wrap: wrap;
 		gap: var(--space-4);
 		margin-bottom: var(--space-6);
 	}
 
+	@media (max-width: 640px) {
+		.ingredients-page {
+			padding: var(--space-4);
+		}
+
+		.filters {
+			gap: var(--space-2);
+		}
+
+		/* Two classes so this beats the base .search-input rule further down. */
+		.filters .search-input {
+			flex: 1 1 100%;
+		}
+
+		.category-select,
+		.sort-select {
+			flex: 1;
+			min-width: 0;
+		}
+	}
+
+	.load-more {
+		display: flex;
+		justify-content: center;
+		margin-top: var(--space-8);
+	}
+
+	.load-more button {
+		padding: var(--space-3) var(--space-6);
+		background: var(--bg-card);
+		color: var(--color-marinara-600);
+		border: var(--border-width-thin) solid var(--color-marinara-500);
+		border-radius: var(--radius-md);
+		font-weight: var(--font-medium);
+		cursor: pointer;
+	}
+
+	.load-more button:hover {
+		background: var(--color-marinara-50);
+	}
+
 	.search-input {
 		flex: 1;
+		min-width: 0;
 		padding: var(--space-3) var(--space-4);
 		border: var(--border-width-default) solid var(--border-default);
 		border-radius: var(--radius-md);

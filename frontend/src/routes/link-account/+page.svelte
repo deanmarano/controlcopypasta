@@ -64,6 +64,10 @@
 		{#if missingParams}
 			<h1>Invalid Link</h1>
 			<p class="message error-message">This linking URL is missing required parameters. Please use the link sent to you via DM.</p>
+			<div class="actions">
+				<a href="/settings" class="button">Connected accounts</a>
+				<a href="/" class="button secondary">Go to Home</a>
+			</div>
 		{:else if $isLoading}
 			<h1>Loading...</h1>
 			<p class="message">Checking your authentication status...</p>

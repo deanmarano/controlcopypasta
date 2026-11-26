@@ -79,6 +79,7 @@
 </script>
 
 <div class="tags-page">
+	<a href="/recipes" class="back-link">&larr; My Recipes</a>
 	<h1>Manage Tags</h1>
 
 	<form class="new-tag-form" onsubmit={createTag}>
@@ -107,7 +108,7 @@
 		<ul class="tag-list">
 			{#each tagList as tag}
 				<li>
-					<span class="tag-name">{tag.name}</span>
+					<a href="/recipes?tag={encodeURIComponent(tag.name)}" class="tag-name" title="Show recipes tagged {tag.name}">{tag.name}</a>
 					<button onclick={() => deleteTag(tag.id)} class="delete-btn" title="Delete tag">
 						&times;
 					</button>
@@ -202,6 +203,24 @@
 
 	.tag-list li:last-child {
 		border-bottom: none;
+	}
+
+	.back-link {
+		display: inline-block;
+		margin-bottom: var(--space-2);
+		font-size: var(--text-sm);
+		color: var(--color-marinara-600);
+		text-decoration: none;
+	}
+
+	.back-link:hover,
+	a.tag-name:hover {
+		text-decoration: underline;
+	}
+
+	a.tag-name {
+		color: inherit;
+		text-decoration: none;
 	}
 
 	.tag-name {
