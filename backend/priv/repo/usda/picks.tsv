@@ -1,0 +1,95 @@
+# Reviewed USDA FoodData Central picks.
+#
+# One line per canonical ingredient: name <TAB> fdcId <TAB> description.
+# `mix usda.migration --picks priv/repo/usda/picks.tsv` turns this into a
+# migration, and refuses to run if an id no longer returns the description
+# recorded here.
+#
+# This file is the decision log. `mix usda.candidates` proposes; a person
+# picks. That split exists because FoodData Central's search ranks by text
+# similarity, not identity -- left to its own devices it chose "Chewing gum"
+# for xanthan gum, "Oil, walnut" for walnut, and "Cabbage, kimchi" over
+# "Cabbage, raw". Every id below was read against the ingredient and the unit
+# the stored recipes actually use.
+#
+# Ingredients deliberately NOT here are listed at the bottom, with why.
+
+# --- Accepted by the picker and checked by hand -----------------------------
+cheddar	328637	Cheese, cheddar
+gruyere	171242	Cheese, gruyere
+cardamom	170919	Spices, cardamom
+whole milk ricotta	746766	Cheese, ricotta, whole milk
+ground cloves	171321	Spices, cloves, ground
+horseradish	173472	Horseradish, prepared
+radicchio	168564	Radicchio, raw
+tomatillo	168566	Tomatillos, raw
+poppy seeds	171330	Spices, poppy seed
+
+# --- Held by the picker, resolved by hand -----------------------------------
+
+# Brown sugar is brown sugar; FDC does not split light from dark, and the two
+# differ negligibly in nutrition. Carries cup packed = 220 g, which is the unit
+# 4,362 of these rows use.
+light brown sugar	168833	Sugars, brown
+
+# "Yogurt, plain, whole milk". The higher-ranked 2259793 has no calorie value.
+whole milk yogurt	171284	Yogurt, plain, whole milk
+
+# Search put peppercorn salad dressing and a Hormel pork tenderloin first.
+# This is the spice, with tbsp and tsp ground weights -- the units 984 of these
+# rows use.
+black peppercorns	170931	Spices, pepper, black
+peppercorns	170931	Spices, pepper, black
+
+# "Cabbage, kimchi" ranked above this. The raw record is the one carrying
+# head, medium = 908 g, which is what 900 rows ask for.
+cabbage	169975	Cabbage, raw
+# head, medium = 839 g. The higher-ranked 2346408 has the same description and
+# no calorie value, which is why the id is pinned alongside the description.
+red cabbage	169977	Cabbage, red, raw
+
+# Fresh herbs, not the dried spice. The stored lines count these by the sprig,
+# the bunch and the leaf, which is the fresh form; the dried spice records run
+# 6-12x the calories per gram.
+cilantro	169997	Coriander (cilantro) leaves, raw
+basil	172232	Basil, fresh
+parsley	170416	Parsley, fresh
+thyme	173470	Thyme, fresh
+
+# Raw, not frozen or cooked.
+asparagus	168389	Asparagus, raw
+
+# "Fennel, bulb, raw" -- bulb = 234 g, and 1,785 rows say "1 fennel bulb".
+# The higher-ranked 2747655 has the same description but no calorie value.
+fennel	169385	Fennel, bulb, raw
+
+# FDC has no Persian cucumber. Nutrition per 100 g is the same cucumber; the
+# per-cucumber weight is not taken, because a Persian cucumber is roughly a
+# third the size of the 8-1/4" one this record measures.
+persian cucumber	168409	Cucumber, with peel, raw
+
+# The zest, not the juice -- search offered bottled lemon juice first.
+lemon zest	167749	Lemon peel, raw
+
+# --- Not taken, and why -----------------------------------------------------
+#
+# fresno chile (1,705 rows)   FDC's best offer was sriracha. No fresh Fresno
+#                             record; a sibling copy from another fresh chile
+#                             is the better answer.
+# panko breadcrumbs (1,261)   No FoodData Central record at all.
+# xanthan gum (734)           No record. "Chewing gum" is not a substitute.
+# new mexico chile powder     No record; search returned baobab powder.
+# cinnamon (996)              Needs the weight of one cinnamon stick. FDC has
+#                             ground cinnamon only, and search returned
+#                             cinnamon bread and bagels.
+# sage (655)                  Needs fresh sage by the bunch; FDC surfaced only
+#                             the dried ground spice.
+# parmesan (1,030)            The 1,026 rows are "1 Parmesan rind", which is
+#                             simmered and removed rather than eaten. Probably
+#                             a role question, not a density one.
+# pullman bread (797)         Needs a plain white sandwich loaf slice; search
+#                             returned cheese, cinnamon and egg breads.
+# ham (803)                   Needs a sliced ham weight; the top record is
+#                             minced ham, a different product.
+# coconut flakes (670)        FDC has sweetened desiccated coconut; recipes
+#                             usually mean unsweetened. Genuinely ambiguous.
