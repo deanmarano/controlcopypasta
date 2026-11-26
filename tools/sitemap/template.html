@@ -300,7 +300,7 @@ const IMAGES = /*__IMAGES__*/null;
 
   function select(p, zoom) {
     S.sel = p && byPattern[p] ? p : null;
-    history.replaceState(null, '', S.sel ? '#' + S.sel : location.pathname + location.search);
+    try { history.replaceState(null, '', S.sel ? '#' + S.sel : location.pathname + location.search); } catch (e) { /* sandboxed viewers may refuse */ }
     document.querySelectorAll('.item').forEach((el) => el.classList.toggle('sel', el.dataset.p === S.sel));
     inspector(); decorate();
     if (S.sel && zoom) zoomTo(rects[S.sel], Math.max(S.k, .35));
