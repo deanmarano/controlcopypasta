@@ -9,6 +9,10 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = process.env.SITEMAP_OUT || join(HERE, 'out');
 const m = JSON.parse(readFileSync(join(OUT, 'manifest.json'), 'utf8'));
 
+// --standalone: a copy that works with nothing beside it (for hosting the one
+// file somewhere), so it leaves out the links to the saved pages in out/pages/.
+const standalone = process.argv.includes('--standalone');
+
 const isParam = (s) => /^\[.+\]$/.test(s);
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const matchers = m.routes
@@ -64,7 +68,7 @@ const routes = m.routes.map((r) => {
     ...rest,
     inNav: inNav.has(r.pattern),
     unmatchedLinks: [...(dead[r.pattern] || [])].slice(0, 10),
-    saved: r.saved?.file && existsSync(join(OUT, r.saved.file)) ? r.saved.file : null
+    saved: !standalone && r.saved?.file && existsSync(join(OUT, r.saved.file)) ? r.saved.file : null
   };
 });
 
@@ -75,6 +79,6 @@ const html = readFileSync(join(HERE, 'template.html'), 'utf8')
   .replace('/*__DATA__*/null', () => json(data))
   .replace('/*__IMAGES__*/null', () => json(images));
 
-const dest = join(OUT, 'sitemap.html');
+const dest = join(OUT, standalone ? 'sitemap-standalone.html' : 'sitemap.html');
 writeFileSync(dest, html);
 console.log(`${dest}  ${(html.length / 1048576).toFixed(1)} MB, ${routes.length} routes, ${Object.keys(images).length} screenshots, ${data.edges.length} links`);

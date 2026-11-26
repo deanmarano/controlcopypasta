@@ -34,6 +34,7 @@ node capture.mjs --only=/recipes        # recapture one area, keep the rest
 node capture.mjs --include=admin,design # also capture /admin and /mockups, /styleguide
 node capture.mjs --no-pages             # screenshots only
 node build.mjs                          # rebuild the HTML without recapturing
+node build.mjs --standalone             # out/sitemap-standalone.html: one file with no saved-page links, for hosting
 ```
 
 `config.mjs` holds the sections, viewports, which routes are logged-out, the
