@@ -56,6 +56,35 @@ defmodule ControlcopypastaWeb.InboxController do
     end
   end
 
+  def retry_url(conn, %{"message_id" => _message_id, "url_id" => url_id}) do
+    user = conn.assigns.current_user
+
+    case Messages.retry_extracted_url(user.id, url_id) do
+      {:ok, eu} ->
+        conn
+        |> put_status(:accepted)
+        |> json(%{data: %{id: eu.id, parse_status: eu.parse_status}})
+
+      {:error, :not_found} ->
+        {:error, :not_found}
+
+      {:error, :already_parsed} ->
+        conn
+        |> put_status(:conflict)
+        |> json(%{error: "URL has already been parsed"})
+    end
+  end
+
+  def delete(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+
+    case Messages.delete_message_for_user(user.id, id) do
+      {:ok, _message} -> send_resp(conn, :no_content, "")
+      {:error, :not_found} -> {:error, :not_found}
+      {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
+    end
+  end
+
   defp parse_int(nil, default), do: default
 
   defp parse_int(val, default) when is_binary(val) do
