@@ -357,4 +357,27 @@ defmodule Controlcopypasta.Parser.JsonLdTest do
       assert hd(recipe.instructions)["text"] == "Mix well"
     end
   end
+
+  describe "double-encoded text" do
+    test "decodes entities that the source site encoded twice" do
+      html = """
+      <html><head><script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Recipe",
+        "name": "Mac &amp;amp; Cheese",
+        "description": "This ensures there isn&amp;#039;t too much moisture.",
+        "recipeIngredient": ["1 cup rice that isn&amp;#039;t fresh"],
+        "recipeInstructions": [{"@type": "HowToStep", "text": "Don&amp;#039;t stir."}]
+      }
+      </script></head><body></body></html>
+      """
+
+      assert {:ok, recipe, _raw} = JsonLd.extract(html)
+      assert recipe.title == "Mac & Cheese"
+      assert recipe.description == "This ensures there isn't too much moisture."
+      assert hd(recipe.ingredients)["text"] == "1 cup rice that isn't fresh"
+      assert hd(recipe.instructions)["text"] == "Don't stir."
+    end
+  end
 end

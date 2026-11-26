@@ -10,6 +10,11 @@
 	import IngredientRoleBadge from '$lib/components/IngredientRoleBadge.svelte';
 	import PrepList from '$lib/components/PrepList.svelte';
 	import IngredientDecisionComponent from '$lib/components/IngredientDecision.svelte';
+	import { decodeEntities } from '$lib/text';
+
+	// Set when the reader arrived from a source's page in Browse (?from=foodnetwork.com),
+	// so they get a way back to that list rather than to their own recipes.
+	const fromDomain = $derived($page.url.searchParams.get('from') || '');
 
 	let recipe = $state<Recipe | null>(null);
 	let loading = $state(true);
@@ -595,6 +600,10 @@
 			</div>
 		{/if}
 
+		{#if fromDomain}
+			<a href="/browse/{encodeURIComponent(fromDomain)}" class="back-link no-print">&larr; Back to {fromDomain}</a>
+		{/if}
+
 		<!-- Hero image with overlay -->
 		<div class="recipe-hero" class:no-image={!recipe.image_url}>
 			{#if recipe.image_url}
@@ -604,11 +613,15 @@
 				{#if recipe.tags.length > 0}
 					<div class="hero-tags no-print">
 						{#each recipe.tags as tag}
-							<span class="hero-tag">{tag.name}</span>
+							{#if recipe.is_owned === false}
+								<span class="hero-tag">{tag.name}</span>
+							{:else}
+								<a href="/recipes?tag={encodeURIComponent(tag.name)}" class="hero-tag">{tag.name}</a>
+							{/if}
 						{/each}
 					</div>
 				{/if}
-				<h1>{recipe.title}</h1>
+				<h1>{decodeEntities(recipe.title)}</h1>
 				{#if recipe.source_url}
 					<a href={recipe.source_url} target="_blank" rel="noopener noreferrer" class="hero-source">
 						{recipe.source_domain}
@@ -647,7 +660,7 @@
 			</div>
 
 			{#if recipe.description}
-				<p class="description">{recipe.description}</p>
+				<p class="description">{decodeEntities(recipe.description)}</p>
 			{/if}
 
 			<!-- Action bar -->
@@ -656,6 +669,7 @@
 					<button onclick={handleSaveToMyRecipes} class="btn btn-primary" disabled={savingCopy}>
 						{savingCopy ? 'Saving...' : 'Save to My Recipes'}
 					</button>
+					<button onclick={openShoppingModal} class="btn btn-outline">Add to List</button>
 					<button onclick={handlePrint} class="btn btn-outline">Print</button>
 				{:else}
 					<button onclick={openShoppingModal} class="btn btn-primary">Add to List</button>
@@ -1047,6 +1061,27 @@
 		font-family: var(--font-serif);
 		color: white;
 		line-height: var(--leading-tight);
+	}
+
+	a.hero-tag {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	a.hero-tag:hover {
+		background: rgba(255, 255, 255, 0.35);
+	}
+
+	.back-link {
+		display: inline-block;
+		margin-bottom: var(--space-3);
+		font-size: var(--text-sm);
+		color: var(--color-marinara-600);
+		text-decoration: none;
+	}
+
+	.back-link:hover {
+		text-decoration: underline;
 	}
 
 	.hero-source {

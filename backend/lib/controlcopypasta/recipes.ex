@@ -104,6 +104,29 @@ defmodule Controlcopypasta.Recipes do
     |> Repo.aggregate(:count)
   end
 
+  @doc """
+  Searches every recipe that came from a website, across all domains. Recipes
+  typed in by hand have no source domain and stay private to their owner.
+  """
+  def search_sourced_recipes(params \\ %{}) do
+    sourced_search_query(params)
+    |> apply_pagination(params)
+    |> preload(:tags)
+    |> Repo.all()
+  end
+
+  def count_sourced_recipes(params \\ %{}) do
+    sourced_search_query(params) |> Repo.aggregate(:count)
+  end
+
+  defp sourced_search_query(params) do
+    Recipe
+    |> where([r], not is_nil(r.source_domain))
+    |> apply_archived_filter(params)
+    |> apply_search(params)
+    |> apply_avoided_filter(params)
+  end
+
   def get_recipe_by_domain(domain, id) do
     Recipe
     |> where([r], r.source_domain == ^domain or r.source_domain == ^"www.#{domain}")

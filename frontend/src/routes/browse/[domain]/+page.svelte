@@ -147,7 +147,7 @@
 
 		<div class="recipe-grid">
 			{#each recipeList as recipe}
-				<a href="/browse/{domain}/{recipe.id}" class="recipe-card">
+				<a href="/recipes/{recipe.id}?from={encodeURIComponent(domain ?? '')}" class="recipe-card">
 					{#if recipe.image_url}
 						<img src={recipe.image_url} alt={recipe.title} class="recipe-image" />
 					{:else}

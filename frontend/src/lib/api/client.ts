@@ -864,6 +864,14 @@ export const browse = {
     return request<{ data: Recipe[]; total: number }>(`/browse/domains/${encodeURIComponent(domain)}${query ? `?${query}` : ''}`, { token });
   },
 
+  // Search every sourced recipe, across all domains.
+  search: (token: string, params: { q: string; limit?: number; offset?: number }) => {
+    const searchParams = new URLSearchParams({ q: params.q });
+    if (params.limit) searchParams.set('limit', params.limit.toString());
+    if (params.offset) searchParams.set('offset', params.offset.toString());
+    return request<{ data: Recipe[]; total: number }>(`/browse/search?${searchParams}`, { token });
+  },
+
   getRecipe: (token: string, domain: string, id: string) =>
     request<{ data: Recipe }>(`/browse/domains/${encodeURIComponent(domain)}/recipes/${id}`, { token }),
 
