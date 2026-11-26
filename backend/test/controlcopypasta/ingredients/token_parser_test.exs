@@ -1299,4 +1299,62 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
       assert parsed.container.size_value == 1.0
     end
   end
+
+  describe "stated weight in a parenthetical" do
+    test "a counted line takes the weight the recipe states" do
+      parsed = TokenParser.parse("4 thin slices ham or prosciutto (about 4 oz. total)")
+
+      assert parsed.quantity == 4.0
+      assert parsed.unit == "oz"
+    end
+
+    test "the count is replaced, not multiplied" do
+      # 1.5 lb for the four breasts together. Multiplying by the count would
+      # say six pounds of chicken.
+      parsed = TokenParser.parse("4 skinless, boneless chicken breasts (about 1½ lb. total)")
+
+      assert parsed.quantity == 1.5
+      assert parsed.unit == "lb"
+    end
+
+    test "a count unit gives way to the weight" do
+      # "1 bunch asparagus" converts only for an ingredient with a per-bunch
+      # record; "1 lb." converts for anything with a density.
+      parsed = TokenParser.parse("1 bunch asparagus (about 1 lb.), trimmed")
+
+      assert parsed.quantity == 1.0
+      assert parsed.unit == "lb"
+    end
+
+    test "a line that already measures itself is untouched" do
+      for text <- [
+            "2 cups flour",
+            "8 ounces (1 1/2 cups; 225g) cubed fresh pineapple",
+            "2 pounds (907 g) potatoes"
+          ] do
+        parsed = TokenParser.parse(text)
+        refute parsed.unit in [nil], text
+      end
+
+      assert %{quantity: 2.0, unit: "lb"} = TokenParser.parse("2 pounds (907 g) potatoes")
+    end
+
+    test "a sized container is untouched" do
+      # The calculator multiplies quantity by the container size, so rewriting
+      # the quantity here would double count.
+      parsed = TokenParser.parse("2 (28-oz.) cans whole peeled tomatoes")
+
+      assert parsed.quantity == 2.0
+      assert parsed.container.size_value == 28.0
+    end
+
+    test "a per-item weight is deliberately left alone" do
+      # The detector reports :each correctly, but acting on it needs the count,
+      # and the count absorbs thicknesses: "2 1 1/4\"-thick steaks" parses as
+      # three. Multiplying a real weight by that is worse than not converting.
+      parsed = TokenParser.parse("2 thick-cut boneless rib-eye steaks (about 1 lb. each)")
+
+      assert parsed.unit != "lb"
+    end
+  end
 end

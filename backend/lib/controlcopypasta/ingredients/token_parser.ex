@@ -30,6 +30,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
   alias Controlcopypasta.Ingredients.ReferenceData.Units
   alias Controlcopypasta.Ingredients.Detection.EquipmentDetector
   alias Controlcopypasta.Ingredients.Detection.RoleDetector
+  alias Controlcopypasta.Ingredients.Detection.StatedWeight
   alias Controlcopypasta.Ingredients.Parsing.{Singularizer, QuantityParser}
   alias Controlcopypasta.Ingredients.Matching.Matcher
 
@@ -193,8 +194,75 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
           parse_preprocessed(preprocessed_text, text, opts, start_time, include_diagnostics)
       end
 
-    put_role(parsed, role)
+    parsed
+    |> put_role(role)
+    |> put_stated_weight(text)
   end
+
+  # A weight the recipe states in parentheses, when the parse found no weight
+  # or volume of its own.
+  #
+  # Read from the original line because preprocessing deletes the parenthetical
+  # before tokenizing -- `normalize_parenthetical_notes/1` strips "(about
+  # <number> ...)" as a descriptive note, and that has to keep happening for
+  # the remainder to match the catalog. See Detection.StatedWeight.
+  defp put_stated_weight(%ParsedIngredient{} = parsed, text) do
+    cond do
+      # The line already measures itself.
+      not is_nil(parsed.unit) and not count_unit?(parsed.unit) ->
+        parsed
+
+      # A sized container already accounts for the parenthetical, and
+      # Calculator.resolve_effective_unit/1 multiplies quantity by that size.
+      not is_nil(parsed.container) and not is_nil(parsed.container.size_value) ->
+        parsed
+
+      # Nothing was matched, so there is nothing to weigh.
+      is_nil(parsed.primary_ingredient) ->
+        parsed
+
+      true ->
+        apply_stated_weight(parsed, StatedWeight.detect(text))
+    end
+  end
+
+  defp apply_stated_weight(parsed, nil), do: parsed
+
+  defp apply_stated_weight(parsed, %{scope: :total} = weight) do
+    %{
+      parsed
+      | quantity: weight.quantity,
+        quantity_min: weight.quantity_min,
+        quantity_max: weight.quantity_max,
+        unit: weight.unit
+    }
+  end
+
+  # "2 rib-eye steaks (about 1 lb. each)" is 2 lb, and the detector reports the
+  # distinction correctly -- but acting on it is deliberately left out, because
+  # it is the one reading that depends on the count being right, and the count
+  # often is not:
+  #
+  #     2 1 1/4"-thick New York strip steaks (about 14 oz. each)  -> count 3
+  #     3 1 1/2-inch-thick boneless rib eyes (about 1 1/4 lb each) -> count 4
+  #     4 or 5 small red potatoes (about 3 ounces each)            -> count 9
+  #
+  # The leading number absorbs a thickness, or sums an "or" range. Today that is
+  # harmless, because a count with no unit just fails to convert. Multiplying a
+  # real weight by it would turn a gap into a confidently wrong number, which is
+  # worse. `:total` has no such dependency -- it replaces the count outright --
+  # so that half ships and this half waits on the count being fixed. 758 rows.
+  defp apply_stated_weight(parsed, %{scope: :each}), do: parsed
+
+  # Units that count things rather than measure them, so a stated weight is the
+  # only real measurement on the line: "4 thin slices ham (about 4 oz. total)"
+  # is 4 oz of ham, while "4 slice" converts to grams only for an ingredient
+  # that happens to have a per-slice record.
+  @counting_units ~w(each whole piece pieces slice slices head heads bunch
+                     bunches sprig sprigs stalk stalks leaf leaves clove cloves
+                     block blocks fillet fillets)
+
+  defp count_unit?(unit), do: String.downcase(unit) in @counting_units
 
   # Role and optionality are additive: they never influence the match, the
   # quantity or the unit, so they are stamped on at the end rather than threaded
