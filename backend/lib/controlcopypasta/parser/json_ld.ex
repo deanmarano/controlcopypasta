@@ -131,9 +131,21 @@ defmodule Controlcopypasta.Parser.JsonLd do
   defp sanitize_text(text) do
     text
     |> String.replace(~r/<[^>]*>/, "")
-    |> HtmlEntities.decode()
+    |> decode_entities()
     |> String.replace(~r/\s+/, " ")
     |> String.trim()
+  end
+
+  # Some sites encode their JSON-LD text twice ("isn&amp;#039;t"), so one pass
+  # leaves "isn&#039;t" behind. Decode until nothing changes, within reason.
+  defp decode_entities(text, passes \\ 3)
+  defp decode_entities(text, 0), do: text
+
+  defp decode_entities(text, passes) do
+    case HtmlEntities.decode(text) do
+      ^text -> text
+      decoded -> decode_entities(decoded, passes - 1)
+    end
   end
 
   defp get_image_url(%{"image" => image}) when is_binary(image), do: image
@@ -189,7 +201,7 @@ defmodule Controlcopypasta.Parser.JsonLd do
   defp normalize_text(text) when is_binary(text) do
     text
     |> String.replace(~r/<[^>]*>/, "")
-    |> HtmlEntities.decode()
+    |> decode_entities()
     |> String.replace(~r/\s+/, " ")
     |> String.trim()
   end

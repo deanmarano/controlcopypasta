@@ -35,6 +35,21 @@ defmodule ControlcopypastaWeb.BrowseController do
     render(conn, :recipes, recipes: recipes, total: total)
   end
 
+  def search(conn, params) do
+    user = conn.assigns.current_user
+
+    case String.trim(params["q"] || "") do
+      "" ->
+        render(conn, :recipes, recipes: [], total: 0)
+
+      q ->
+        params = params |> Map.put("q", q) |> maybe_add_avoided_filter(user)
+        recipes = Recipes.search_sourced_recipes(params)
+        total = Recipes.count_sourced_recipes(params)
+        render(conn, :recipes, recipes: recipes, total: total)
+    end
+  end
+
   def show_recipe(conn, %{"domain" => domain, "id" => id}) do
     case Recipes.get_recipe_by_domain(domain, id) do
       nil -> {:error, :not_found}
