@@ -1519,7 +1519,18 @@ export const inbox = {
     request<{ data: { recipe_id: string; title: string } }>(
       `/inbox/${messageId}/urls/${urlId}/save`,
       { method: 'POST', token }
-    )
+    ),
+
+  // Queue another parse attempt for a URL that failed or never finished.
+  retryUrl: (token: string, messageId: string, urlId: string) =>
+    request<{ data: { id: string; parse_status: ExtractedUrl['parse_status'] } }>(
+      `/inbox/${messageId}/urls/${urlId}/retry`,
+      { method: 'POST', token }
+    ),
+
+  // Remove a message from the inbox. Recipes already saved from it are kept.
+  delete: (token: string, id: string) =>
+    request<null>(`/inbox/${id}`, { method: 'DELETE', token })
 };
 
 export { ApiError };

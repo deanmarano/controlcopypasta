@@ -102,6 +102,49 @@ defmodule Controlcopypasta.Messages do
   end
 
   @doc """
+  Queues another parse attempt for an extracted URL that failed, or that has been
+  sitting in "pending" (the original parse task died with a deploy or restart).
+
+  Returns the URL reset to "pending"; the parse itself runs in the background.
+  A URL that already parsed is left alone.
+  """
+  def retry_extracted_url(user_id, extracted_url_id) do
+    with {:ok, eu} <- reset_extracted_url_for_retry(user_id, extracted_url_id) do
+      Task.Supervisor.start_child(Controlcopypasta.TaskSupervisor, fn ->
+        parse_extracted_url(eu)
+      end)
+
+      {:ok, eu}
+    end
+  end
+
+  @doc """
+  The bookkeeping half of `retry_extracted_url/2`: puts a failed or stuck URL
+  back to "pending" and clears its error, without starting the parse.
+  """
+  def reset_extracted_url_for_retry(user_id, extracted_url_id) do
+    with {:ok, eu} <- get_extracted_url_for_user(user_id, extracted_url_id) do
+      if eu.parse_status == "success" do
+        {:error, :already_parsed}
+      else
+        eu
+        |> ExtractedUrl.changeset(%{parse_status: "pending", parse_error: nil})
+        |> Repo.update()
+      end
+    end
+  end
+
+  @doc """
+  Deletes a message (and its extracted URLs) from the user's inbox. Recipes
+  already saved from it are kept.
+  """
+  def delete_message_for_user(user_id, message_id) do
+    with {:ok, message} <- get_message_for_user(user_id, message_id) do
+      Repo.delete(message)
+    end
+  end
+
+  @doc """
   Finds a connected account by provider and provider_username.
   """
   def find_connected_account(provider, provider_username) do
@@ -225,40 +268,43 @@ defmodule Controlcopypasta.Messages do
       |> where([eu], eu.direct_message_id == ^message_id and eu.parse_status == "pending")
       |> Repo.all()
 
-    Enum.each(extracted_urls, fn eu ->
-      task = Task.async(fn -> Controlcopypasta.Parser.parse_url(eu.url) end)
-
-      case Task.yield(task, 10_000) || Task.shutdown(task) do
-        {:ok, {:ok, recipe_data}} ->
-          eu
-          |> ExtractedUrl.changeset(%{
-            parse_status: "success",
-            parsed_recipe_data: stringify_keys(recipe_data)
-          })
-          |> Repo.update()
-
-        {:ok, {:error, reason}} ->
-          eu
-          |> ExtractedUrl.changeset(%{
-            parse_status: "failed",
-            parse_error: to_string(reason)
-          })
-          |> Repo.update()
-
-        nil ->
-          eu
-          |> ExtractedUrl.changeset(%{
-            parse_status: "failed",
-            parse_error: "Parsing timed out"
-          })
-          |> Repo.update()
-      end
-    end)
+    Enum.each(extracted_urls, &parse_extracted_url/1)
 
     # Mark the message as processed
     DirectMessage
     |> where([dm], dm.id == ^message_id)
     |> Repo.update_all(set: [processed_at: DateTime.utc_now()])
+  end
+
+  defp parse_extracted_url(%ExtractedUrl{} = eu) do
+    task = Task.async(fn -> Controlcopypasta.Parser.parse_url(eu.url) end)
+
+    case Task.yield(task, 10_000) || Task.shutdown(task) do
+      {:ok, {:ok, recipe_data}} ->
+        eu
+        |> ExtractedUrl.changeset(%{
+          parse_status: "success",
+          parse_error: nil,
+          parsed_recipe_data: stringify_keys(recipe_data)
+        })
+        |> Repo.update()
+
+      {:ok, {:error, reason}} ->
+        eu
+        |> ExtractedUrl.changeset(%{
+          parse_status: "failed",
+          parse_error: to_string(reason)
+        })
+        |> Repo.update()
+
+      nil ->
+        eu
+        |> ExtractedUrl.changeset(%{
+          parse_status: "failed",
+          parse_error: "Parsing timed out"
+        })
+        |> Repo.update()
+    end
   end
 
   defp stringify_keys(map) when is_map(map) do

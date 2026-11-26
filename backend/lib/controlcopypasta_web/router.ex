@@ -124,6 +124,8 @@ defmodule ControlcopypastaWeb.Router do
     get "/inbox", InboxController, :index
     get "/inbox/:id", InboxController, :show
     post "/inbox/:message_id/urls/:url_id/save", InboxController, :save_recipe
+    post "/inbox/:message_id/urls/:url_id/retry", InboxController, :retry_url
+    delete "/inbox/:id", InboxController, :delete
 
     # Connected accounts
     get "/connected-accounts", ConnectedAccountController, :index

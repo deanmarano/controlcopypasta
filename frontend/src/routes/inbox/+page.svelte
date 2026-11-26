@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
-	import { inbox, type DirectMessage } from '$lib/api/client';
+	import { inbox, type DirectMessage, type ExtractedUrl } from '$lib/api/client';
 
 	let messageList = $state<DirectMessage[]>([]);
 	let loading = $state(true);
@@ -61,6 +61,70 @@
 		}
 	}
 
+	// A URL still "pending" after a couple of minutes lost its parse task
+	// (a deploy or restart); offer to run it again rather than spin forever.
+	const STUCK_AFTER_MS = 2 * 60 * 1000;
+	let retrying = $state<Set<string>>(new Set());
+
+	function isStuck(eu: ExtractedUrl): boolean {
+		return eu.parse_status === 'pending' && !retrying.has(eu.id) && Date.now() - new Date(eu.inserted_at).getTime() > STUCK_AFTER_MS;
+	}
+
+	function canRetry(eu: ExtractedUrl): boolean {
+		return !eu.recipe_id && (eu.parse_status === 'failed' || isStuck(eu));
+	}
+
+	async function handleRetry(messageId: string, urlId: string) {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		try {
+			await inbox.retryUrl(token, messageId, urlId);
+			retrying = new Set([...retrying, urlId]);
+			messageList = messageList.map((m) =>
+				m.id !== messageId
+					? m
+					: { ...m, extracted_urls: m.extracted_urls.map((eu) => (eu.id === urlId ? { ...eu, parse_status: 'pending' as const, parse_error: null } : eu)) }
+			);
+			// Parsing takes a few seconds; pick up the result without a manual refresh.
+			setTimeout(() => refreshMessage(messageId, urlId), 6000);
+			setTimeout(() => refreshMessage(messageId, urlId), 14000);
+		} catch (e) {
+			console.error('Failed to retry:', e);
+			error = 'Could not retry that link. Please try again.';
+		}
+	}
+
+	async function refreshMessage(messageId: string, urlId: string) {
+		const token = authStore.getToken();
+		if (!token) return;
+
+		try {
+			const fresh = (await inbox.get(token, messageId)).data;
+			messageList = messageList.map((m) => (m.id === messageId ? fresh : m));
+			if (fresh.extracted_urls.find((eu) => eu.id === urlId)?.parse_status !== 'pending') {
+				retrying = new Set([...retrying].filter((id) => id !== urlId));
+			}
+		} catch {
+			// The message may have been dismissed in the meantime.
+		}
+	}
+
+	async function handleDismiss(messageId: string) {
+		if (!confirm('Remove this message from your inbox? Recipes you saved from it are kept.')) return;
+
+		const token = authStore.getToken();
+		if (!token) return;
+
+		try {
+			await inbox.delete(token, messageId);
+			messageList = messageList.filter((m) => m.id !== messageId);
+		} catch (e) {
+			console.error('Failed to dismiss message:', e);
+			error = 'Could not remove that message. Please try again.';
+		}
+	}
+
 	async function handleSaveRecipe(messageId: string, urlId: string) {
 		const token = authStore.getToken();
 		if (!token) return;
@@ -84,7 +148,7 @@
 
 	{#if loading}
 		<div class="loading">Loading messages...</div>
-	{:else if error}
+	{:else if error && messageList.length === 0}
 		<div class="error">{error}</div>
 	{:else if messageList.length === 0}
 		<div class="empty-state">
@@ -93,13 +157,22 @@
 			<a href="/settings" class="link-btn">Connect an account</a>
 		</div>
 	{:else}
+		{#if error}
+			<div class="error">{error}</div>
+		{/if}
 		<div class="message-list">
-			{#each messageList as message}
+			{#each messageList as message (message.id)}
 				<a href="/inbox/{message.id}" class="message-card">
 					<div class="message-header">
 						<span class="sender">@{message.sender_username}</span>
 						<span class="type-badge">{messageTypeLabel(message.message_type)}</span>
 						<span class="timestamp">{formatTimestamp(message.platform_timestamp || message.inserted_at)}</span>
+						<button
+							class="dismiss-btn"
+							title="Remove from inbox"
+							aria-label="Remove from inbox"
+							onclick={(e) => { e.preventDefault(); e.stopPropagation(); handleDismiss(message.id); }}
+						>&times;</button>
 					</div>
 
 					{#if message.message_text}
@@ -114,7 +187,7 @@
 						<div class="urls-section">
 							{#each message.extracted_urls as eu}
 								<div class="extracted-url">
-									<span class="parse-status {parseStatusClass(eu.parse_status)}">
+									<span class="parse-status {parseStatusClass(eu.parse_status)}" title={eu.parse_error || ''}>
 										{#if eu.parse_status === 'success'}Parsed{:else if eu.parse_status === 'failed'}Failed{:else}Parsing...{/if}
 									</span>
 									{#if eu.recipe_title}
@@ -129,6 +202,11 @@
 											class="save-btn"
 											onclick={(e) => { e.preventDefault(); e.stopPropagation(); handleSaveRecipe(message.id, eu.id); }}
 										>Save Recipe</button>
+									{:else if canRetry(eu)}
+										<button
+											class="retry-btn"
+											onclick={(e) => { e.preventDefault(); e.stopPropagation(); handleRetry(message.id, eu.id); }}
+										>Retry</button>
 									{/if}
 								</div>
 							{/each}
@@ -251,11 +329,51 @@
 		white-space: nowrap;
 	}
 
+	/* The list shows the start of a caption; the message page has all of it. */
 	.shared-caption {
 		color: var(--text-secondary);
 		font-size: var(--text-sm);
 		font-style: italic;
 		margin-bottom: var(--space-2);
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.dismiss-btn {
+		margin-left: var(--space-1);
+		padding: 0 var(--space-2);
+		background: none;
+		border: none;
+		border-radius: var(--radius-sm);
+		color: var(--text-muted);
+		font-size: var(--text-lg);
+		line-height: 1;
+		cursor: pointer;
+	}
+
+	.dismiss-btn:hover {
+		background: var(--bg-surface);
+		color: var(--color-error);
+	}
+
+	.retry-btn {
+		margin-left: auto;
+		padding: var(--space-1) var(--space-3);
+		background: var(--bg-card);
+		color: var(--color-primary);
+		border: var(--border-width-thin) solid var(--color-primary);
+		border-radius: var(--radius-md);
+		font-size: var(--text-xs);
+		font-weight: var(--font-medium);
+		cursor: pointer;
+		flex-shrink: 0;
+	}
+
+	.retry-btn:hover {
+		background: var(--bg-surface);
 	}
 
 	.urls-section {
