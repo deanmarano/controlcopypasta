@@ -183,6 +183,15 @@
 			<button type="submit" disabled={adding || !newItemText.trim()}>Add</button>
 		</form>
 
+		{#if list.source_recipes && list.source_recipes.length > 0}
+			<p class="source-recipes">
+				From
+				{#each list.source_recipes as source, i}
+					<a href="/recipes/{source.id}">{source.title}</a>{i < list.source_recipes.length - 1 ? ', ' : ''}
+				{/each}
+			</p>
+		{/if}
+
 		{#if list.checked_count && list.checked_count > 0}
 			<button class="clear-checked-btn" onclick={clearChecked}>
 				Clear {list.checked_count} checked item{list.checked_count !== 1 ? 's' : ''}
@@ -279,6 +288,16 @@
 	.progress-text {
 		font-size: var(--text-sm);
 		color: var(--text-secondary);
+	}
+
+	.source-recipes {
+		margin: 0 0 var(--space-4);
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+	}
+
+	.source-recipes a {
+		color: var(--color-marinara-600);
 	}
 
 	.add-form {

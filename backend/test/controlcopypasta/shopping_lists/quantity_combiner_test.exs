@@ -149,4 +149,62 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombinerTest do
       assert {:incompatible, _} = QuantityCombiner.merge_items(existing, new_attrs)
     end
   end
+
+  describe "small units that add up" do
+    test "tablespoons step up to cups once there are enough of them" do
+      assert {:ok, {qty, "cup"}} =
+               QuantityCombiner.combine(Decimal.new("6"), "tbsp", Decimal.new("7"), "tbsp")
+
+      assert Decimal.equal?(qty, Decimal.new("0.8125"))
+    end
+
+    test "a few tablespoons stay tablespoons" do
+      assert {:ok, {qty, "tbsp"}} =
+               QuantityCombiner.combine(Decimal.new("1"), "tbsp", Decimal.new("2"), "tbsp")
+
+      assert Decimal.equal?(qty, Decimal.new("3"))
+    end
+
+    test "teaspoons step up to tablespoons" do
+      assert {:ok, {qty, "tbsp"}} =
+               QuantityCombiner.combine(Decimal.new("2"), "tsp", Decimal.new("4"), "tsp")
+
+      assert Decimal.equal?(qty, Decimal.new("2"))
+    end
+  end
+
+  describe "merging plain counts" do
+    test "adds two unitless quantities of the same thing" do
+      existing = %{
+        quantity: Decimal.new("2"),
+        unit: nil,
+        canonical_name: "avocado",
+        raw_name: "avocado",
+        source_recipe_ids: ["a"]
+      }
+
+      new_attrs = %{quantity: Decimal.new("3"), unit: nil, source_recipe_ids: ["b"]}
+
+      assert {:ok, merged} = QuantityCombiner.merge_items(existing, new_attrs)
+      assert Decimal.equal?(merged.quantity, Decimal.new("5"))
+      assert merged.unit == nil
+      assert merged.display_text == "5 avocado"
+      assert merged.source_recipe_ids == ["a", "b"]
+    end
+
+    test "writes a merged measure with fractions" do
+      existing = %{
+        quantity: Decimal.new("0.25"),
+        unit: "cup",
+        canonical_name: "water",
+        raw_name: "water",
+        source_recipe_ids: []
+      }
+
+      new_attrs = %{quantity: Decimal.new("0.25"), unit: "cup", source_recipe_ids: []}
+
+      assert {:ok, merged} = QuantityCombiner.merge_items(existing, new_attrs)
+      assert merged.display_text == "½ cup water"
+    end
+  end
 end

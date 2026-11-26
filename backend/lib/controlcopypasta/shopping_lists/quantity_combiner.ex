@@ -4,6 +4,7 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
   """
 
   alias Controlcopypasta.SafeDecimal
+  alias Controlcopypasta.ShoppingLists.QuantityFormat
 
   # Volume conversions to milliliters
   @volume_to_ml %{
@@ -77,9 +78,9 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
     unit2_norm = normalize_unit(unit2)
 
     cond do
-      # Same unit - just add
+      # Same unit - just add, then step up a small unit that has grown unwieldy
       unit1_norm == unit2_norm ->
-        {:ok, {Decimal.add(qty1, qty2), unit1}}
+        {:ok, promote_small_unit(Decimal.add(qty1, qty2), unit1)}
 
       # Both volume units
       is_volume_unit?(unit1_norm) and is_volume_unit?(unit2_norm) ->
@@ -129,7 +130,21 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
       is_nil(existing_item.quantity) or is_nil(new_item_attrs[:quantity]) ->
         {:incompatible, "Cannot combine items without quantities"}
 
-      # If either has no unit, we can't combine
+      # Two plain counts ("2 avocados" + "3 avocados") add up directly
+      is_nil(existing_item.unit) and is_nil(new_item_attrs[:unit]) ->
+        new_qty = Decimal.add(existing_item.quantity, new_item_attrs[:quantity])
+        name = existing_item.canonical_name || existing_item.raw_name
+
+        {:ok,
+         %{
+           quantity: new_qty,
+           unit: nil,
+           display_text: "#{QuantityFormat.format(new_qty)} #{name}",
+           source_recipe_ids:
+             merge_source_ids(existing_item.source_recipe_ids, new_item_attrs[:source_recipe_ids])
+         }}
+
+      # A count and a measure ("2 lemons" + "1 cup lemon juice") can't be added
       is_nil(existing_item.unit) or is_nil(new_item_attrs[:unit]) ->
         {:incompatible, "Cannot combine items without units"}
 
@@ -262,15 +277,26 @@ defmodule Controlcopypasta.ShoppingLists.QuantityCombiner do
   end
 
   defp format_display_text(quantity, unit, name) do
-    qty_str = format_quantity(quantity)
-    "#{qty_str} #{unit} #{name}"
+    "#{QuantityFormat.format(quantity, unit)} #{unit} #{name}"
   end
 
-  defp format_quantity(d) when is_struct(d, Decimal) do
-    d
-    |> Decimal.to_string(:normal)
-    |> String.replace(~r/\.0+$/, "")
-  end
+  # 13 tbsp reads better as cups, 6 tsp as tablespoons. Only sums go through
+  # here, so a recipe's own "6 tbsp" is left as written.
+  @tsp_units ~w(tsp teaspoon teaspoons)
+  @tbsp_units ~w(tbsp tablespoon tablespoons)
 
-  defp format_quantity(n), do: to_string(n)
+  defp promote_small_unit(qty, unit) do
+    norm = normalize_unit(unit)
+
+    cond do
+      norm in @tbsp_units and Decimal.compare(qty, Decimal.new(4)) != :lt ->
+        {Decimal.div(qty, Decimal.new(16)), "cup"}
+
+      norm in @tsp_units and Decimal.compare(qty, Decimal.new(3)) != :lt ->
+        promote_small_unit(Decimal.div(qty, Decimal.new(3)), "tbsp")
+
+      true ->
+        {qty, unit}
+    end
+  end
 end

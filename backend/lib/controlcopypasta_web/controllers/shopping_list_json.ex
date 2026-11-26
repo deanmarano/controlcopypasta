@@ -1,4 +1,5 @@
 defmodule ControlcopypastaWeb.ShoppingListJSON do
+  alias Controlcopypasta.ShoppingLists
   alias Controlcopypasta.ShoppingLists.{ShoppingList, ShoppingListItem}
 
   def index(%{shopping_lists: lists}) do
@@ -50,6 +51,7 @@ defmodule ControlcopypastaWeb.ShoppingListJSON do
     |> Map.merge(%{
       items: Enum.map(items, &item_data/1),
       items_by_category: items_by_category,
+      source_recipes: ShoppingLists.source_recipes(list),
       checked_count: checked_count,
       total_count: total_count
     })
