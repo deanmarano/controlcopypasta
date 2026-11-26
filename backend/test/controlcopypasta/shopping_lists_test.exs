@@ -242,4 +242,65 @@ defmodule Controlcopypasta.ShoppingListsTest do
       assert unarchived_list.archived_at == nil
     end
   end
+
+  describe "adding more than one recipe" do
+    test "merges plain counts of the same ingredient into one line" do
+      user = user_fixture()
+      list = shopping_list_fixture(%{user: user})
+      first = recipe_fixture(%{user: user, ingredients: [%{"text" => "2 avocados"}]})
+      second = recipe_fixture(%{user: user, ingredients: [%{"text" => "3 avocados"}]})
+
+      {:ok, list} = ShoppingLists.add_items_from_recipe(list, first.id)
+      {:ok, list} = ShoppingLists.add_items_from_recipe(list, second.id)
+
+      assert [item] = list.items
+      assert Decimal.equal?(item.quantity, Decimal.new("5"))
+      assert Enum.sort(item.source_recipe_ids) == Enum.sort([first.id, second.id])
+    end
+
+    test "writes half a cup as a fraction, not 0.50" do
+      user = user_fixture()
+      list = shopping_list_fixture(%{user: user})
+      recipe = recipe_fixture(%{user: user, ingredients: [%{"text" => "1/2 cup water"}]})
+
+      {:ok, list} = ShoppingLists.add_items_from_recipe(list, recipe.id)
+
+      assert [item] = list.items
+      assert String.starts_with?(item.display_text, "½ cup")
+      assert item.category == "beverages"
+    end
+  end
+
+  describe "source_recipes/1" do
+    test "lists the recipes a list was built from, by title" do
+      user = user_fixture()
+      list = shopping_list_fixture(%{user: user})
+
+      zucchini =
+        recipe_fixture(%{
+          user: user,
+          title: "Zucchini Bread",
+          ingredients: [%{"text" => "2 cups flour"}]
+        })
+
+      apple =
+        recipe_fixture(%{user: user, title: "Apple Pie", ingredients: [%{"text" => "3 apples"}]})
+
+      {:ok, list} = ShoppingLists.add_items_from_recipe(list, zucchini.id)
+      {:ok, list} = ShoppingLists.add_items_from_recipe(list, apple.id)
+
+      assert ShoppingLists.source_recipes(list) == [
+               %{id: apple.id, title: "Apple Pie"},
+               %{id: zucchini.id, title: "Zucchini Bread"}
+             ]
+    end
+
+    test "is empty for a list of hand-typed items" do
+      list = shopping_list_fixture()
+      shopping_list_item_fixture(%{shopping_list: list, display_text: "Milk"})
+
+      list = ShoppingLists.get_shopping_list!(list.id)
+      assert ShoppingLists.source_recipes(list) == []
+    end
+  end
 end

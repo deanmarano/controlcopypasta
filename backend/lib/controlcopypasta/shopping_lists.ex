@@ -5,7 +5,15 @@ defmodule Controlcopypasta.ShoppingLists do
 
   import Ecto.Query, warn: false
   alias Controlcopypasta.{Repo, SafeDecimal}
-  alias Controlcopypasta.ShoppingLists.{ShoppingList, ShoppingListItem, QuantityCombiner}
+
+  alias Controlcopypasta.ShoppingLists.{
+    ShoppingList,
+    ShoppingListItem,
+    QuantityCombiner,
+    QuantityFormat,
+    Categorizer
+  }
+
   alias Controlcopypasta.Recipes
   alias Controlcopypasta.Similarity.IngredientParser
 
@@ -156,6 +164,26 @@ defmodule Controlcopypasta.ShoppingLists do
     {:ok, get_shopping_list!(list.id)}
   end
 
+  @doc """
+  The recipes a list's items were added from, as `%{id, title}` maps in title
+  order. Recipes that have since been deleted are left out.
+  """
+  def source_recipes(%ShoppingList{items: items}) when is_list(items) do
+    ids = items |> Enum.flat_map(&(&1.source_recipe_ids || [])) |> Enum.uniq()
+
+    if ids == [] do
+      []
+    else
+      Recipes.Recipe
+      |> where([r], r.id in ^ids)
+      |> order_by([r], asc: r.title)
+      |> select([r], %{id: r.id, title: r.title})
+      |> Repo.all()
+    end
+  end
+
+  def source_recipes(_list), do: []
+
   # Add items from a recipe
 
   def add_items_from_recipe(%ShoppingList{} = list, recipe_id, scale \\ 1.0) do
@@ -250,50 +278,12 @@ defmodule Controlcopypasta.ShoppingLists do
   end
 
   defp format_display(nil, _unit, name), do: name
-  defp format_display(quantity, nil, name), do: "#{format_qty(quantity)} #{name}"
-  defp format_display(quantity, unit, name), do: "#{format_qty(quantity)} #{unit} #{name}"
 
-  defp format_qty(d) when is_struct(d, Decimal) do
-    d
-    |> Decimal.round(2)
-    |> Decimal.to_string(:normal)
-    |> String.replace(~r/\.0+$/, "")
-  end
+  defp format_display(quantity, nil, name),
+    do: "#{QuantityFormat.format(quantity)} #{name}"
 
-  defp format_qty(n), do: to_string(n)
+  defp format_display(quantity, unit, name),
+    do: "#{QuantityFormat.format(quantity, unit)} #{unit} #{name}"
 
-  # Ingredient categorization
-
-  @produce_keywords ~w(lettuce spinach kale arugula tomato onion garlic pepper carrot celery cucumber zucchini squash broccoli cauliflower potato sweet potato mushroom apple banana orange lemon lime avocado cilantro parsley basil mint ginger scallion leek cabbage corn peas beans asparagus)
-  @dairy_keywords ~w(milk cream butter cheese yogurt sour cream cream cheese cottage cheese ricotta mozzarella parmesan cheddar feta goat cheese)
-  @protein_keywords ~w(chicken beef pork lamb turkey bacon sausage ham salmon tuna shrimp fish steak ground meat tofu tempeh egg eggs)
-  @bakery_keywords ~w(bread roll bun bagel croissant muffin cake pie pastry tortilla pita naan)
-  @frozen_keywords ~w(frozen ice cream popsicle)
-  @spices_keywords ~w(salt pepper cumin paprika cinnamon nutmeg oregano thyme rosemary sage bay leaves cloves cardamom coriander turmeric curry chili powder cayenne)
-  @condiments_keywords ~w(ketchup mustard mayonnaise soy sauce hot sauce bbq sauce salsa vinegar oil olive oil sesame oil honey maple syrup)
-  @beverages_keywords ~w(juice soda water coffee tea wine beer)
-
-  defp categorize_ingredient(nil), do: "other"
-
-  defp categorize_ingredient(name) do
-    name_lower = String.downcase(name)
-
-    cond do
-      matches_any?(name_lower, @produce_keywords) -> "produce"
-      matches_any?(name_lower, @dairy_keywords) -> "dairy"
-      matches_any?(name_lower, @protein_keywords) -> "protein"
-      matches_any?(name_lower, @bakery_keywords) -> "bakery"
-      matches_any?(name_lower, @frozen_keywords) -> "frozen"
-      matches_any?(name_lower, @spices_keywords) -> "spices"
-      matches_any?(name_lower, @condiments_keywords) -> "condiments"
-      matches_any?(name_lower, @beverages_keywords) -> "beverages"
-      true -> "pantry"
-    end
-  end
-
-  defp matches_any?(name, keywords) do
-    Enum.any?(keywords, fn keyword ->
-      String.contains?(name, keyword)
-    end)
-  end
+  defp categorize_ingredient(name), do: Categorizer.categorize(name)
 end

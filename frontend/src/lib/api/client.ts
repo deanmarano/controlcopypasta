@@ -1063,6 +1063,7 @@ export interface ShoppingList {
   updated_at: string;
   items?: ShoppingListItem[];
   items_by_category?: ItemsByCategory[];
+  source_recipes?: { id: string; title: string }[];
   checked_count?: number;
   total_count?: number;
 }
