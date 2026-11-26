@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Capture every route and rebuild the map. Arguments go to capture.mjs.
+set -euo pipefail
+cd "$(dirname "$0")"
+node capture.mjs "$@"
+node build.mjs

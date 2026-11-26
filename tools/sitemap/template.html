@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ControlCopyPasta — app map</title>
+<style>
+  :root {
+    --canvas: #17181b; --panel: #202226; --panel-2: #292c31; --line: #353940;
+    --text: #e7e9ec; --muted: #9299a3; --faint: #646b75;
+    --accent: #6ea0ff; --accent-soft: rgba(110,160,255,.16); --in: #f0a35e; --warn: #e8b84a;
+    --section: rgba(255,255,255,.035); --section-line: rgba(255,255,255,.09);
+    --shadow: 0 2px 10px rgba(0,0,0,.45);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --canvas: #e9eaed; --panel: #fbfbfc; --panel-2: #f0f1f3; --line: #d9dce1;
+      --text: #1c1f24; --muted: #5d6570; --faint: #8b929c;
+      --accent: #2f6fed; --accent-soft: rgba(47,111,237,.12); --in: #c46a1b; --warn: #a97a09;
+      --section: rgba(0,0,0,.035); --section-line: rgba(0,0,0,.1);
+      --shadow: 0 2px 10px rgba(0,0,0,.14);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: var(--canvas); overflow: hidden; display: grid; grid-template-columns: 264px 1fr; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  button { font: inherit; color: inherit; }
+
+  /* ── outline ── */
+  #side { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; z-index: 3; }
+  #side header { padding: 14px 14px 10px; border-bottom: 1px solid var(--line); }
+  #side h1 { font-size: 14px; margin: 0 0 2px; font-weight: 650; letter-spacing: -.01em; }
+  #meta { color: var(--muted); font-size: 11.5px; }
+  #q { width: 100%; margin-top: 10px; padding: 6px 9px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font: inherit; outline: none; }
+  #q:focus { border-color: var(--accent); }
+  #list { overflow: auto; padding: 6px 6px 16px; flex: 1; }
+  .sec-h { margin: 12px 8px 3px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); font-weight: 650; display: flex; justify-content: space-between; cursor: pointer; }
+  .sec-h:hover { color: var(--muted); }
+  .item { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 12px; white-space: nowrap; }
+  .item span.p { overflow: hidden; text-overflow: ellipsis; }
+  .item:hover { background: var(--panel-2); }
+  .item.sel { background: var(--accent-soft); color: var(--accent); }
+  .item.ghost { color: var(--faint); }
+  .item.hide { display: none; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); flex: none; }
+  #side footer { padding: 9px 12px; border-top: 1px solid var(--line); color: var(--faint); font-size: 11px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: none; }
+  .link:hover { text-decoration: underline; }
+
+  /* ── canvas ── */
+  #stage { position: relative; overflow: hidden; min-width: 0; cursor: grab; touch-action: none; user-select: none; }
+  #stage.drag { cursor: grabbing; }
+  #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; --inv: 1; }
+  .sec { position: absolute; background: var(--section); border: calc(1px * var(--inv)) solid var(--section-line); border-radius: calc(10px * var(--inv)); }
+  .sec > b { position: absolute; left: 0; bottom: 100%; padding-bottom: calc(7px * var(--inv)); font-size: calc(14px * var(--inv)); font-weight: 650; white-space: nowrap; color: var(--text); }
+  .sec > b i { font-style: normal; font-weight: 400; color: var(--faint); margin-left: .5em; }
+  .frame { position: absolute; background: #fff; box-shadow: var(--shadow); outline: calc(1px * var(--inv)) solid var(--section-line); }
+  .frame img { display: block; width: 100%; height: 100%; }
+  .frame .lab { position: absolute; left: 0; bottom: 100%; max-width: 100%; padding-bottom: calc(5px * var(--inv)); font-size: calc(12px * var(--inv)); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .frame .lab em { font-style: normal; color: var(--faint); }
+  .frame .lab .bd { margin-left: .6em; color: var(--warn); }
+  .frame.ghost { background: transparent; box-shadow: none; outline: calc(1.5px * var(--inv)) dashed var(--faint); display: grid; place-items: center; text-align: center; color: var(--faint); }
+  .frame.ghost div { font-size: 34px; line-height: 1.35; max-width: 80%; }
+  .frame.ghost div small { display: block; font-size: 24px; opacity: .8; }
+  #world.far .frame .lab, #world.far .frame.ghost div small { display: none; }
+  .frame.sel { outline: calc(2px * var(--inv)) solid var(--accent); }
+  .frame.sel .lab { color: var(--accent); }
+  .frame.rel-out { outline: calc(2px * var(--inv)) solid var(--accent); }
+  .frame.rel-in { outline: calc(2px * var(--inv)) solid var(--in); }
+  .frame.dim { opacity: .28; }
+  .frame.noted::after { content: ""; position: absolute; right: calc(-5px * var(--inv)); top: calc(-5px * var(--inv)); width: calc(11px * var(--inv)); height: calc(11px * var(--inv)); border-radius: 50%; background: var(--warn); }
+  #edges { position: absolute; left: 0; top: 0; overflow: visible; z-index: 1; pointer-events: none; }
+  #edges path { fill: none; }
+
+  /* ── floating controls ── */
+  #bar { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 10px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 5px 8px; box-shadow: var(--shadow); z-index: 2; cursor: default; white-space: nowrap; }
+  #bar label { color: var(--faint); font-size: 11px; margin-right: -4px; }
+  .seg { display: flex; background: var(--panel-2); border-radius: 6px; padding: 2px; }
+  .seg button, .ib { border: 0; background: none; padding: 3px 9px; border-radius: 5px; cursor: pointer; color: var(--muted); }
+  .seg button.on { background: var(--panel); color: var(--text); box-shadow: 0 0 0 1px var(--line); }
+  .ib:hover, .seg button:hover { color: var(--text); }
+  #zoom { min-width: 44px; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .sep { width: 1px; height: 18px; background: var(--line); }
+
+  /* ── inspector ── */
+  #insp { position: absolute; right: 12px; top: 12px; bottom: 12px; width: 316px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); z-index: 2; overflow: auto; padding: 14px; cursor: default; user-select: text; display: none; }
+  #insp.on { display: block; }
+  #insp h2 { font-size: 14px; margin: 0 22px 2px 0; word-break: break-all; }
+  #insp .sub { color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+  #insp h3 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); margin: 16px 0 6px; font-weight: 650; }
+  #insp .x { position: absolute; right: 10px; top: 10px; }
+  .kv { display: grid; grid-template-columns: 84px 1fr; gap: 3px 8px; font-size: 12px; }
+  .kv dt { color: var(--muted); } .kv dd { margin: 0; word-break: break-word; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { background: var(--panel-2); border: 1px solid var(--line); border-radius: 20px; padding: 1px 8px; font-size: 11.5px; }
+  .rel { display: flex; gap: 6px; align-items: baseline; padding: 2px 0; font-size: 12px; }
+  .rel small { color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rel .sw { width: 8px; height: 8px; border-radius: 2px; flex: none; transform: translateY(-1px); }
+  .flag { background: color-mix(in srgb, var(--warn) 14%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); border-radius: 6px; padding: 6px 8px; font-size: 12px; margin-top: 8px; }
+  .acts { display: flex; gap: 12px; margin-bottom: 4px; }
+  #note { width: 100%; min-height: 84px; resize: vertical; border-radius: 6px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); padding: 7px 9px; font: inherit; outline: none; }
+  #note:focus { border-color: var(--accent); }
+  .empty { color: var(--faint); font-size: 12px; }
+</style>
+</head>
+<body>
+<aside id="side">
+  <header>
+    <h1>ControlCopyPasta — app map</h1>
+    <div id="meta"></div>
+    <input id="q" type="search" placeholder="Filter routes…  ( / )" autocomplete="off">
+  </header>
+  <div id="list"></div>
+  <footer><span id="hint">Drag to pan · Ctrl-scroll zooms</span><button class="link" id="copy-notes" title="Copy every note as Markdown">Copy notes</button></footer>
+</aside>
+<main id="stage">
+  <div id="world"><svg id="edges"></svg></div>
+  <div id="bar">
+    <label>Frames</label>
+    <div class="seg" id="seg-view"><button data-v="both">Both</button><button data-v="desktop">Desktop</button><button data-v="mobile">Mobile</button></div>
+    <label>Links</label>
+    <div class="seg" id="seg-links"><button data-v="selected">Selected</button><button data-v="all">All</button><button data-v="off">Off</button></div>
+    <span class="sep"></span>
+    <button class="ib" id="zo" title="Zoom out (−)">−</button><span id="zoom">100%</span><button class="ib" id="zi" title="Zoom in (+)">+</button>
+    <button class="ib" id="fit" title="Fit everything (1)">Fit</button>
+  </div>
+  <div id="insp"></div>
+</main>
+
+<script>
+const DATA = /*__DATA__*/null;
+const IMAGES = /*__IMAGES__*/null;
+</script>
+<script>
+(() => {
+  const $ = (s, el = document) => el.querySelector(s);
+  const h = (tag, attrs = {}, ...kids) => {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') el.className = v; else if (k.startsWith('on')) el.addEventListener(k.slice(2), v); else if (v != null) el.setAttribute(k, v);
+    }
+    for (const c of kids.flat()) if (c != null && c !== false) el.append(c.nodeType ? c : document.createTextNode(c));
+    return el;
+  };
+  const NS = 'http://www.w3.org/2000/svg';
+  const store = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } };
+
+  const routes = DATA.routes, byPattern = Object.fromEntries(routes.map((r) => [r.pattern, r]));
+  const vpDefs = Object.fromEntries(DATA.viewports.map((v) => [v.id, v]));
+  const outE = {}, inE = {};
+  for (const e of DATA.edges) { (outE[e.from] ||= []).push(e); (inE[e.to] ||= []).push(e); }
+  for (const r of routes) r.orphan = r.status === 'captured' && !r.inNav && !(inE[r.pattern] || []).length && r.pattern !== '/';
+
+  const S = { x: 0, y: 0, k: 1, view: store('ccp-map-view') || 'both', links: store('ccp-map-links') || 'selected', sel: null, hover: null, notes: store('ccp-map-notes') || {} };
+  const stage = $('#stage'), world = $('#world'), svg = $('#edges'), insp = $('#insp');
+  const GAP = 150, PAIR = 56, PAD = 150, SECGAP = 560, GHOST_H = 460;
+  const rects = {};   // pattern -> {x,y,w,h} of the whole group
+  const frames = {};  // pattern -> [elements]
+  let bounds = { w: 1, h: 1 };
+
+  // ── layout ──
+  function shown() { return S.view === 'both' ? ['desktop', 'mobile'] : [S.view]; }
+
+  function build() {
+    world.querySelectorAll('.sec, .frame').forEach((n) => n.remove());
+    const vps = shown();
+    const secs = DATA.sections.map((s) => {
+      const rs = routes.filter((r) => r.section === s.id);
+      let x = PAD, hmax = 0;
+      const items = rs.map((r) => {
+        const fs = vps.map((vp) => {
+          const shot = r.shots && r.shots[vp];
+          return { vp, shot, w: shot ? shot.width : vpDefs[vp].width, h: shot ? shot.height : GHOST_H };
+        });
+        const w = fs.reduce((a, f) => a + f.w, 0) + PAIR * (fs.length - 1);
+        const hh = Math.max(...fs.map((f) => f.h));
+        const it = { r, fs, x, w, h: hh };
+        x += w + GAP; hmax = Math.max(hmax, hh);
+        return it;
+      });
+      return { s, items, w: x - GAP + PAD, h: hmax + PAD * 2 };
+    }).filter((s) => s.items.length);
+
+    // Shelf-pack sections into rows, choosing the row width whose overall shape best matches the window.
+    const want = stage.clientWidth / Math.max(1, stage.clientHeight);
+    const widest = Math.max(...secs.map((s) => s.w)), total = secs.reduce((a, s) => a + s.w + SECGAP, 0);
+    let best = null;
+    for (let i = 0; i <= 40; i++) {
+      const target = widest + (total - widest) * (i / 40);
+      const rows = [[]]; let cx = 0;
+      for (const s of secs) {
+        if (cx && cx + s.w > target) { rows.push([]); cx = 0; }
+        rows[rows.length - 1].push(s); cx += s.w + SECGAP;
+      }
+      const W = Math.max(...rows.map((r) => r.reduce((a, s) => a + s.w + SECGAP, -SECGAP)));
+      const H = rows.reduce((a, r) => a + Math.max(...r.map((s) => s.h)) + SECGAP, -SECGAP);
+      const score = Math.abs(Math.log((W / H) / want));
+      if (!best || score < best.score) best = { score, rows, W, H };
+    }
+    bounds = { w: best.W, h: best.H };
+
+    let y = 0;
+    for (const row of best.rows) {
+      let x = 0;
+      for (const sec of row) {
+        const n = sec.items.filter((i) => i.r.status === 'captured').length;
+        world.append(h('div', { class: 'sec', style: `left:${x}px;top:${y}px;width:${sec.w}px;height:${sec.h}px` },
+          h('b', {}, sec.s.title, h('i', {}, n === sec.items.length ? `${n}` : `${n} of ${sec.items.length} captured`))));
+        for (const it of sec.items) {
+          const r = it.r; let fx = x + it.x; const fy = y + PAD;
+          rects[r.pattern] = { x: fx, y: fy, w: it.w, h: it.h };
+          frames[r.pattern] = it.fs.map((f, i) => {
+            const el = h('div', { class: 'frame' + (f.shot ? '' : ' ghost'), 'data-p': r.pattern, style: `left:${fx}px;top:${fy}px;width:${f.w}px;height:${f.h}px` });
+            const lab = h('div', { class: 'lab' });
+            if (i === 0) {
+              lab.append(r.pattern);
+              if (f.shot) lab.append(h('em', {}, `  ${f.vp} · ${f.shot.height.toLocaleString()}px`));
+              const bd = badges(r); if (bd) lab.append(h('span', { class: 'bd' }, bd));
+            } else lab.append(h('em', {}, f.shot ? `${f.vp} · ${f.shot.height.toLocaleString()}px` : f.vp));
+            el.append(lab);
+            if (f.shot) el.append(h('img', { src: IMAGES[`${r.pattern}|${f.vp}`] || '', alt: `${r.pattern} (${f.vp})`, draggable: 'false' }));
+            else if (i === 0) el.append(h('div', {}, r.status === 'skipped' ? 'Not captured' : r.status === 'unresolved' ? 'No example to open' : 'Capture failed', h('small', {}, r.reason || '')));
+            world.append(el); fx += f.w + PAIR;
+            return el;
+          });
+        }
+        x += sec.w + SECGAP;
+      }
+      y += Math.max(...row.map((s) => s.h)) + SECGAP;
+    }
+    svg.setAttribute('width', bounds.w); svg.setAttribute('height', bounds.h);
+    decorate();
+  }
+
+  function badges(r) {
+    const b = [];
+    if (r.anonymous) b.push('logged out');
+    if (r.finalPath && r.url && r.finalPath.split('?')[0] !== r.url.split('?')[0]) b.push('→ ' + r.finalPath.split('?')[0]);
+    if (r.shots && Object.values(r.shots).some((s) => s.truncated)) b.push('cut off');
+    if (r.orphan) b.push('no links in');
+    return b.join(' · ');
+  }
+
+  // ── selection, highlighting, edges ──
+  function decorate() {
+    const focus = S.sel || S.hover;
+    const q = $('#q').value.trim().toLowerCase();
+    const out = new Set((outE[focus] || []).map((e) => e.to)), inn = new Set((inE[focus] || []).map((e) => e.from));
+    for (const r of routes) {
+      const match = !q || matches(r, q);
+      for (const el of frames[r.pattern] || []) {
+        el.classList.toggle('sel', r.pattern === S.sel);
+        el.classList.toggle('rel-out', S.links !== 'off' && !!focus && r.pattern !== focus && out.has(r.pattern));
+        el.classList.toggle('rel-in', S.links !== 'off' && !!focus && r.pattern !== focus && !out.has(r.pattern) && inn.has(r.pattern));
+        el.classList.toggle('dim', !match);
+        el.classList.toggle('noted', !!S.notes[r.pattern] && el === frames[r.pattern][0]);
+      }
+    }
+    drawEdges();
+  }
+
+  function matches(r, q) {
+    return [r.pattern, r.h1, r.title, r.file, (r.actions || []).join(' '), (r.headings || []).join(' '), S.notes[r.pattern]].join(' ').toLowerCase().includes(q);
+  }
+
+  function drawEdges() {
+    svg.textContent = '';
+    if (S.links === 'off') return;
+    const focus = S.sel || S.hover, inv = 1 / S.k;
+    const list = S.links === 'all' ? DATA.edges : focus ? DATA.edges.filter((e) => e.from === focus || e.to === focus) : [];
+    const css = getComputedStyle(document.documentElement);
+    for (const e of list) {
+      const a = rects[e.from], b = rects[e.to];
+      if (!a || !b) continue;
+      const incoming = focus && e.to === focus && e.from !== focus;
+      const color = css.getPropertyValue(incoming ? '--in' : '--accent').trim();
+      const ay = a.y + Math.min(a.h, 900) / 2, by = b.y + Math.min(b.h, 900) / 2;
+      let p0, p1, c0, c1;
+      if (b.x >= a.x + a.w) { p0 = [a.x + a.w, ay]; p1 = [b.x, by]; const d = Math.max(120, (p1[0] - p0[0]) / 2); c0 = [p0[0] + d, p0[1]]; c1 = [p1[0] - d, p1[1]]; }
+      else if (b.x + b.w <= a.x) { p0 = [a.x, ay]; p1 = [b.x + b.w, by]; const d = Math.max(120, (p0[0] - p1[0]) / 2); c0 = [p0[0] - d, p0[1]]; c1 = [p1[0] + d, p1[1]]; }
+      else if (b.y >= a.y) { p0 = [a.x + a.w / 2, a.y + a.h]; p1 = [b.x + b.w / 2, b.y]; const d = Math.max(120, (p1[1] - p0[1]) / 2); c0 = [p0[0], p0[1] + d]; c1 = [p1[0], p1[1] - d]; }
+      else { p0 = [a.x + a.w / 2, a.y]; p1 = [b.x + b.w / 2, b.y + b.h]; const d = Math.max(120, (p0[1] - p1[1]) / 2); c0 = [p0[0], p0[1] - d]; c1 = [p1[0], p1[1] + d]; }
+      const path = document.createElementNS(NS, 'path');
+      path.setAttribute('d', `M${p0} C${c0} ${c1} ${p1}`);
+      path.setAttribute('stroke', color);
+      path.setAttribute('stroke-width', (S.links === 'all' && !focus ? 1.25 : 2) * inv);
+      path.setAttribute('opacity', S.links === 'all' && focus && e.from !== focus && e.to !== focus ? .15 : .9);
+      svg.append(path);
+      // arrowhead, pointing along the curve's final tangent
+      const ang = Math.atan2(p1[1] - c1[1], p1[0] - c1[0]), s = 9 * inv;
+      const tri = document.createElementNS(NS, 'path');
+      const pt = (da, len) => [p1[0] - Math.cos(ang + da) * len, p1[1] - Math.sin(ang + da) * len];
+      tri.setAttribute('d', `M${p1} L${pt(.42, s)} L${pt(-.42, s)} Z`);
+      tri.setAttribute('style', `fill:${color}`);
+      tri.setAttribute('opacity', path.getAttribute('opacity'));
+      svg.append(tri);
+    }
+  }
+
+  function select(p, zoom) {
+    S.sel = p && byPattern[p] ? p : null;
+    history.replaceState(null, '', S.sel ? '#' + S.sel : location.pathname + location.search);
+    document.querySelectorAll('.item').forEach((el) => el.classList.toggle('sel', el.dataset.p === S.sel));
+    inspector(); decorate();
+    if (S.sel && zoom) zoomTo(rects[S.sel], Math.max(S.k, .35));
+    const it = S.sel && $(`.item[data-p="${CSS.escape(S.sel)}"]`); if (it) it.scrollIntoView({ block: 'nearest' });
+  }
+
+  // ── inspector ──
+  function inspector() {
+    const r = byPattern[S.sel];
+    insp.classList.toggle('on', !!r);
+    insp.textContent = '';
+    if (!r) return;
+    const sec = DATA.sections.find((s) => s.id === r.section);
+    const jump = (p) => h('button', { class: 'link mono', onclick: () => select(p, true) }, p);
+    const vh = (vp) => r.shots && r.shots[vp] ? `${r.shots[vp].fullHeight.toLocaleString()}px · ${(r.shots[vp].fullHeight / vpDefs[vp].height).toFixed(1)} screens` : '—';
+    insp.append(
+      h('button', { class: 'ib x', title: 'Close (Esc)', onclick: () => select(null) }, '✕'),
+      h('h2', { class: 'mono' }, r.pattern),
+      h('div', { class: 'sub' }, [sec && sec.title, r.h1 && `“${r.h1}”`].filter(Boolean).join(' · ')),
+      h('div', { class: 'acts' },
+        r.url && h('a', { class: 'link', href: DATA.baseUrl + r.url, target: '_blank', rel: 'noopener' }, 'Open live ↗'),
+        r.saved && h('a', { class: 'link', href: r.saved, target: '_blank', rel: 'noopener' }, 'Saved page ↗'))
+    );
+    if (r.status !== 'captured') insp.append(h('div', { class: 'flag' }, r.reason || r.status));
+    if (r.orphan) insp.append(h('div', { class: 'flag' }, 'No captured page links here and it is not in the nav. It may only be reachable through a button, a redirect, or a link in an email.'));
+    if (r.shots && Object.values(r.shots).some((s) => s.truncated)) insp.append(h('div', { class: 'flag' }, 'The page is taller than the capture limit, so the screenshot is cut off.'));
+
+    insp.append(h('h3', {}, 'Page'), h('dl', { class: 'kv' },
+      h('dt', {}, 'Source'), h('dd', { class: 'mono' }, r.file),
+      r.url && h('dt', {}, 'Captured'), r.url && h('dd', { class: 'mono' }, r.url + (r.finalPath && r.finalPath !== r.url ? `  → ${r.finalPath}` : '')),
+      h('dt', {}, 'Access'), h('dd', {}, r.anonymous ? 'Logged out' : 'Logged in' + (r.inNav ? ' · in the main nav' : '')),
+      r.shots && h('dt', {}, 'Desktop'), r.shots && h('dd', {}, vh('desktop')),
+      r.shots && h('dt', {}, 'Mobile'), r.shots && h('dd', {}, vh('mobile')),
+      r.words != null && h('dt', {}, 'Content'), r.words != null && h('dd', {}, `${r.words.toLocaleString()} words · ${r.inputs} inputs · ${r.images} images`)
+    ));
+
+    if (r.actions && r.actions.length) insp.append(h('h3', {}, `Actions on the page (${r.actions.length})`), h('div', { class: 'chips' }, r.actions.map((a) => h('span', { class: 'chip' }, a))));
+    if (r.headings && r.headings.length) insp.append(h('h3', {}, 'Sections'), h('div', { class: 'chips' }, r.headings.map((a) => h('span', { class: 'chip' }, a))));
+
+    const rel = (list, key, cls, none) => list.length
+      ? h('div', {}, list.map((e) => h('div', { class: 'rel' }, h('span', { class: 'sw', style: `background:var(${cls})` }), jump(e[key]), h('small', {}, e.labels.join(', ')))))
+      : h('div', { class: 'empty' }, none);
+    insp.append(h('h3', {}, 'Links out'), rel(outE[r.pattern] || [], 'to', '--accent', r.status === 'captured' ? 'No in-page links to other routes.' : '—'));
+    insp.append(h('h3', {}, 'Linked from'), rel(inE[r.pattern] || [], 'from', '--in', r.inNav ? 'Only the main nav.' : 'Nothing captured links here.'));
+    if (r.external && r.external.length) insp.append(h('h3', {}, 'External sites'), h('div', { class: 'chips' }, r.external.map((a) => h('span', { class: 'chip' }, a))));
+
+    const ta = h('textarea', { id: 'note', placeholder: 'Keep, cut, merge, move? Notes stay in this browser.' });
+    ta.value = S.notes[r.pattern] || '';
+    ta.addEventListener('input', () => {
+      if (ta.value.trim()) S.notes[r.pattern] = ta.value; else delete S.notes[r.pattern];
+      store('ccp-map-notes', S.notes); sidebarDots(); decorate();
+    });
+    insp.append(h('h3', {}, 'Note'), ta);
+  }
+
+  // ── outline ──
+  function sidebar() {
+    const list = $('#list'); list.textContent = '';
+    for (const s of DATA.sections) {
+      const rs = routes.filter((r) => r.section === s.id); if (!rs.length) continue;
+      list.append(h('div', { class: 'sec-h', title: 'Zoom to section', onclick: () => zoomTo(union(rs.map((r) => rects[r.pattern])), 1) }, s.title, h('span', {}, rs.length)));
+      for (const r of rs) list.append(h('div', { class: 'item mono' + (r.status === 'captured' ? '' : ' ghost'), 'data-p': r.pattern, title: r.h1 || r.reason || '',
+        onclick: () => select(r.pattern, true), onmouseenter: () => { S.hover = r.pattern; decorate(); }, onmouseleave: () => { S.hover = null; decorate(); } },
+        h('span', { class: 'p' }, r.pattern)));
+    }
+    sidebarDots();
+  }
+  function sidebarDots() {
+    document.querySelectorAll('.item').forEach((el) => {
+      const has = !!S.notes[el.dataset.p], dot = $('.dot', el);
+      if (has && !dot) el.append(h('span', { class: 'dot', title: 'Has a note' })); else if (!has && dot) dot.remove();
+    });
+  }
+  function filter() {
+    const q = $('#q').value.trim().toLowerCase();
+    document.querySelectorAll('.item').forEach((el) => el.classList.toggle('hide', !!q && !matches(byPattern[el.dataset.p], q)));
+    decorate();
+  }
+
+  // ── camera ──
+  let raf = 0;
+  function apply() {
+    world.style.transform = `translate(${S.x}px,${S.y}px) scale(${S.k})`;
+    world.style.setProperty('--inv', 1 / S.k);
+    world.classList.toggle('far', S.k < .11);
+    $('#zoom').textContent = (S.k * 100 < 10 ? (S.k * 100).toFixed(1) : Math.round(S.k * 100)) + '%';
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(drawEdges);
+  }
+  function zoomAt(cx, cy, k) {
+    k = Math.min(4, Math.max(.01, k));
+    S.x = cx - (cx - S.x) * (k / S.k); S.y = cy - (cy - S.y) * (k / S.k); S.k = k; apply();
+  }
+  function union(rs) {
+    rs = rs.filter(Boolean);
+    const x = Math.min(...rs.map((r) => r.x)), y = Math.min(...rs.map((r) => r.y));
+    return { x, y, w: Math.max(...rs.map((r) => r.x + r.w)) - x, h: Math.max(...rs.map((r) => r.y + r.h)) - y };
+  }
+  function zoomTo(r, maxK = 1) {
+    if (!r) return;
+    const right = insp.classList.contains('on') ? 340 : 0;
+    const W = stage.clientWidth - right, H = stage.clientHeight, m = 70;
+    // Frame the top of tall pages rather than shrinking them to fit.
+    const k = Math.min(maxK, (W - m * 2) / r.w, Math.max((H - m * 2) / r.h, Math.min(maxK, (W - m * 2) / r.w, .5)));
+    S.k = k; S.x = (W - r.w * k) / 2 - r.x * k;
+    S.y = r.h * k > H - m * 2 ? m - r.y * k : (H - r.h * k) / 2 - r.y * k;
+    apply();
+  }
+  const fit = () => { const W = stage.clientWidth, H = stage.clientHeight, m = 60; S.k = Math.min((W - m * 2) / bounds.w, (H - m * 2) / bounds.h); S.x = (W - bounds.w * S.k) / 2; S.y = (H - bounds.h * S.k) / 2 + 8; apply(); };
+
+  stage.addEventListener('wheel', (e) => {
+    if (e.target.closest('#insp, #bar')) return;
+    e.preventDefault();
+    const b = stage.getBoundingClientRect();
+    if (e.ctrlKey || e.metaKey) zoomAt(e.clientX - b.left, e.clientY - b.top, S.k * Math.exp(-e.deltaY * (e.deltaMode ? .05 : .01)));
+    else { S.x -= e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX; S.y -= e.shiftKey && !e.deltaX ? 0 : e.deltaY; apply(); }
+  }, { passive: false });
+
+  let drag = null;
+  stage.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('#insp, #bar') || e.button > 1) return;
+    drag = { x: e.clientX, y: e.clientY, sx: S.x, sy: S.y, moved: false, target: e.target };
+    stage.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+    drag.moved = true; stage.classList.add('drag');
+    S.x = drag.sx + dx; S.y = drag.sy + dy; apply();
+  });
+  stage.addEventListener('pointerup', (e) => {
+    if (!drag) return;
+    stage.classList.remove('drag');
+    if (!drag.moved) { const f = drag.target.closest && drag.target.closest('.frame'); select(f ? f.dataset.p : null); }
+    drag = null;
+  });
+  stage.addEventListener('dblclick', (e) => { const f = e.target.closest('.frame'); if (f) { select(f.dataset.p); zoomTo(rects[f.dataset.p], 1); } });
+
+  const btnZoom = (f) => zoomAt(stage.clientWidth / 2, stage.clientHeight / 2, S.k * f);
+  $('#zi').onclick = () => btnZoom(1.4); $('#zo').onclick = () => btnZoom(1 / 1.4); $('#fit').onclick = fit;
+  function seg(id, key, after) {
+    const el = $(id), paint = () => el.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === S[key]));
+    el.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S[key] = b.dataset.v; store('ccp-map-' + key, S[key]); paint(); after(); });
+    paint();
+  }
+  seg('#seg-view', 'view', () => { build(); fit(); });
+  seg('#seg-links', 'links', decorate);
+  $('#q').addEventListener('input', filter);
+  $('#copy-notes').onclick = async (e) => {
+    const md = routes.filter((r) => S.notes[r.pattern]).map((r) => `- \`${r.pattern}\` — ${S.notes[r.pattern].trim().replace(/\n+/g, ' / ')}`).join('\n') || 'No notes yet.';
+    try { await navigator.clipboard.writeText(md); e.target.textContent = 'Copied'; } catch (_) { prompt('Copy your notes:', md); }
+    setTimeout(() => (e.target.textContent = 'Copy notes'), 1400);
+  };
+  addEventListener('keydown', (e) => {
+    const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName);
+    if (e.key === 'Escape') { if (typing) document.activeElement.blur(); else select(null); return; }
+    if (typing || e.metaKey || e.ctrlKey) return;
+    if (e.key === '/') { e.preventDefault(); $('#q').focus(); }
+    else if (e.key === '1') fit();
+    else if (e.key === '0') zoomAt(stage.clientWidth / 2, stage.clientHeight / 2, 1);
+    else if (e.key === '+' || e.key === '=') btnZoom(1.4);
+    else if (e.key === '-') btnZoom(1 / 1.4);
+  });
+  addEventListener('resize', () => apply());
+
+  // ── go ──
+  const n = routes.filter((r) => r.status === 'captured').length;
+  const when = new Date(DATA.capturedAt);
+  $('#meta').textContent = `${n} of ${routes.length} routes captured · ${when.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })} ${when.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })} · ${new URL(DATA.baseUrl).host}${DATA.commit ? ' · ' + DATA.commit : ''}`;
+  build(); sidebar(); fit();
+  const start = decodeURIComponent(location.hash.slice(1));
+  if (byPattern[start]) select(start, true);
+})();
+</script>
+</body>
+</html>
