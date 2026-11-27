@@ -238,21 +238,32 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     }
   end
 
-  # "2 rib-eye steaks (about 1 lb. each)" is 2 lb, and the detector reports the
-  # distinction correctly -- but acting on it is deliberately left out, because
-  # it is the one reading that depends on the count being right, and the count
-  # often is not:
+  # "2 rib-eye steaks (about 1 lb. each)" is 2 lb: the stated weight is per
+  # item, so it is multiplied by the count.
   #
-  #     2 1 1/4"-thick New York strip steaks (about 14 oz. each)  -> count 3
-  #     3 1 1/2-inch-thick boneless rib eyes (about 1 1/4 lb each) -> count 4
-  #     4 or 5 small red potatoes (about 3 ounces each)            -> count 9
+  # This is the one reading that depends on the count being right, which is why
+  # it was left out when `:total` shipped -- a thickness used to be absorbed
+  # into the count ("2 1 1/4\"-thick steaks" read as 3) and "4 or 5" was summed
+  # to 9. Both are fixed now (`strip_thickness/1` and the "or" range in
+  # `normalize_to_range/1`), so multiplying by the count no longer multiplies a
+  # known error.
   #
-  # The leading number absorbs a thickness, or sums an "or" range. Today that is
-  # harmless, because a count with no unit just fails to convert. Multiplying a
-  # real weight by it would turn a gap into a confidently wrong number, which is
-  # worse. `:total` has no such dependency -- it replaces the count outright --
-  # so that half ships and this half waits on the count being fixed. 758 rows.
-  defp apply_stated_weight(parsed, %{scope: :each}), do: parsed
+  # With no count at all the weight is taken as written, which is the same
+  # reading as one item.
+  defp apply_stated_weight(parsed, %{scope: :each} = weight) do
+    count = parsed.quantity || 1.0
+
+    # Each bound is multiplied by its own end of the count, so a range stays a
+    # range: "4 or 5 small red potatoes (about 3 ounces each)" is 12-15 oz, not
+    # 13.5 either way.
+    %{
+      parsed
+      | quantity: weight.quantity * count,
+        quantity_min: weight.quantity_min * (parsed.quantity_min || count),
+        quantity_max: weight.quantity_max * (parsed.quantity_max || count),
+        unit: weight.unit
+    }
+  end
 
   # Units that count things rather than measure them, so a stated weight is the
   # only real measurement on the line: "4 thin slices ham (about 4 oz. total)"
@@ -316,6 +327,7 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
         |> normalize_smart_quotes()
         |> normalize_british_spelling()
         |> normalize_to_range()
+        |> strip_thickness()
         |> normalize_slash_measurements()
         |> truncate_semicolon_parentheticals()
         |> normalize_gram_measurements()
@@ -332,6 +344,37 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
         |> strip_heaped_modifier()
         |> normalize_multi_or_adjective()
     end
+  end
+
+  # The dimension's unit and the word itself: `1/2"-thick`, `2-inch-thick`,
+  # `1 1/2 inch thick`.
+  @thickness "\\s*(?:\"|''|\\s*-?\\s*inch(?:es)?)\\s*-?\\s*thick(?:ly)?\\b"
+
+  # Remove a stated thickness, which is a dimension rather than an amount.
+  #
+  #     2 1 1/4"-thick New York strip steaks  -> 2 New York strip steaks
+  #     3 1 1/2-inch-thick boneless rib eyes  -> 3 boneless rib eyes
+  #     4 1/2-inch-thick slices country bread -> 4 slices country bread
+  #
+  # Left in place, the dimension's own number sits next to the count as a bare
+  # quantity token. `QuantityParser` adds a proper fraction to the number before
+  # it to read a mixed number, so "2" followed by "1" became three steaks; and
+  # the leftover `1/4"` stayed glued to the front of the ingredient name, where
+  # nothing in the catalog matches it.
+  #
+  # Only "thick" is matched, not every dimension: a length or a diameter is
+  # usually the whole description of the piece ("1 2-inch piece ginger"), which
+  # `normalize_ginger_size/1` handles by turning it into a unit instead.
+  defp strip_thickness(text) do
+    text
+    # A count, then the thickness. The count is kept and only the dimension
+    # removed, because "4 1/2\"-thick slices" is ambiguous on its face -- four
+    # half-inch slices, or four and a half inches? -- and the corpus means the
+    # first. Taking the leading number into the dimension lost the count.
+    |> String.replace(~r/^(\d+)\s+(?:\d+\s+)?\d+(?:\/\d+|[.,]\d+)?#{@thickness}/i, "\\1 ")
+    # No count in front: the whole dimension goes.
+    |> String.replace(~r/\s*\b\d+(?:\/\d+|[.,]\d+)?#{@thickness}/i, "")
+    |> String.trim()
   end
 
   # Normalize slash measurements: "1/2 cup/100 grams sugar" -> "1/2 cup sugar"
@@ -648,13 +691,18 @@ defmodule Controlcopypasta.Ingredients.TokenParser do
     end
   end
 
-  # Normalize "X to Y" quantity ranges to dash notation
+  # Normalize "X to Y" and "X or Y" quantity ranges to dash notation
   # "3 to 4 green onions" -> "3-4 green onions"
   # "1 to 2 teaspoons sesame oil" -> "1-2 teaspoons sesame oil"
+  # "4 or 5 small red potatoes" -> "4-5 small red potatoes"
   # Only matches when X and Y are numbers at the beginning of the string
+  #
+  # "or" is here because the tokenizer labels it a conjunction and drops it,
+  # leaving two bare quantities that used to be added together -- "4 or 5"
+  # became nine potatoes. Written as a range it means what the recipe says.
   defp normalize_to_range(text) do
     text
-    |> String.replace(~r/^(\d+(?:\/\d+)?)\s+to\s+(\d+(?:\/\d+)?)\b/i, "\\1-\\2")
+    |> String.replace(~r/^(\d+(?:\/\d+)?)\s+(?:to|or)\s+(\d+(?:\/\d+)?)\b/i, "\\1-\\2")
   end
 
   # Strip trailing "for X flavor" or "for X curry flavor!" noise

@@ -66,7 +66,10 @@ defmodule Controlcopypasta.Ingredients.Detection.StatedWeightTest do
 
       {micros, _} = :timer.tc(fn -> StatedWeight.detect(text) end)
 
-      assert micros < 100_000, "took #{micros}us"
+      # A second, not a tighter bound: the shape it guards against took minutes,
+      # and a wall-clock assertion this test ran alone in 60us failed at 153ms
+      # under the full suite's parallel load.
+      assert micros < 1_000_000, "took #{micros}us"
     end
   end
 end
