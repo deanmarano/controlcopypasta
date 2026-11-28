@@ -1348,13 +1348,105 @@ defmodule Controlcopypasta.Ingredients.TokenParserTest do
       assert parsed.container.size_value == 28.0
     end
 
-    test "a per-item weight is deliberately left alone" do
-      # The detector reports :each correctly, but acting on it needs the count,
-      # and the count absorbs thicknesses: "2 1 1/4\"-thick steaks" parses as
-      # three. Multiplying a real weight by that is worse than not converting.
+    test "a per-item weight is multiplied by the count" do
       parsed = TokenParser.parse("2 thick-cut boneless rib-eye steaks (about 1 lb. each)")
 
-      assert parsed.unit != "lb"
+      assert parsed.quantity == 2.0
+      assert parsed.unit == "lb"
+    end
+
+    test "a per-item weight is multiplied by a count that had a thickness in it" do
+      # The count used to read as three, because the "1" of the thickness was
+      # added to it. 14 oz each is 28 oz, never 42.
+      parsed = TokenParser.parse(~S|2 1 1/4"-thick New York strip steaks (about 14 oz. each)|)
+
+      assert parsed.quantity == 28.0
+      assert parsed.unit == "oz"
+    end
+
+    test "a per-item weight over a counted range stays a range" do
+      parsed = TokenParser.parse("4 or 5 small red potatoes (about 3 ounces each)")
+
+      assert parsed.quantity == 13.5
+      assert parsed.quantity_min == 12.0
+      assert parsed.quantity_max == 15.0
+      assert parsed.unit == "oz"
+    end
+
+    test "a per-item weight with no count is taken as written" do
+      parsed = TokenParser.parse("1 chicken breast (about 8 oz. each)")
+
+      assert parsed.quantity == 8.0
+      assert parsed.unit == "oz"
+    end
+  end
+
+  describe "a stated thickness is not an amount" do
+    test "a thickness after the count is dropped, the count kept" do
+      # All real stored lines. The thickness's own number sat next to the count
+      # as a bare quantity and was added to it.
+      for {text, quantity} <- [
+            {~S|2 1 1/4"-thick New York strip steaks|, 2.0},
+            {"3 1 1/2-inch-thick boneless rib eyes", 3.0},
+            {~S|4 1/2"-thick slices country bread|, 4.0},
+            {"4 1/2-inch-thick slices country bread", 4.0},
+            {~S|1 1 -pound 1 1/2-2-inch-thick piece smoked slab bacon|, 1.0}
+          ] do
+        assert TokenParser.parse(text).quantity == quantity, text
+      end
+    end
+
+    test "the ingredient name no longer carries the dimension" do
+      # The leftover `1/4"` was glued to the front of the name, where nothing
+      # in the catalog matches it.
+      parsed = TokenParser.parse(~S|3 1 1/2-inch-thick boneless rib eyes|)
+
+      assert parsed.primary_ingredient.name == "boneless rib eyes"
+    end
+
+    test "a thickness in a trailing preparation is dropped" do
+      parsed = TokenParser.parse("1 celery stalk, sliced crosswise 1/2-inch thick")
+
+      assert parsed.quantity == 1.0
+      assert "sliced" in parsed.preparations
+    end
+
+    test "a thick that is not a dimension is left alone" do
+      assert TokenParser.parse("2 thick-cut bacon slices").primary_ingredient.name ==
+               "thick-cut bacon slices"
+
+      assert TokenParser.parse("1 thick slice bread").unit == "slice"
+      assert TokenParser.parse("2 cups thickly sliced mushrooms").unit == "cup"
+    end
+
+    test "a length or diameter is left to the unit logic" do
+      # "1 2-inch piece ginger" is one piece; normalize_ginger_size/1 turns the
+      # dimension into the unit rather than deleting it.
+      parsed = TokenParser.parse("1 2-inch piece ginger")
+
+      assert parsed.quantity == 1.0
+      assert parsed.unit == "piece"
+    end
+  end
+
+  describe "\"X or Y\" is a range" do
+    test "two counts joined by or are not added" do
+      for {text, {q, min, max}} <- [
+            {"4 or 5 small red potatoes", {4.5, 4.0, 5.0}},
+            {"2 or 3 eggs", {2.5, 2.0, 3.0}},
+            {"1 or 2 tablespoons olive oil", {1.5, 1.0, 2.0}},
+            {"3 or 4 thyme sprigs", {3.5, 3.0, 4.0}}
+          ] do
+        parsed = TokenParser.parse(text)
+        assert {parsed.quantity, parsed.quantity_min, parsed.quantity_max} == {q, min, max}, text
+      end
+    end
+
+    test "or elsewhere in the line still separates alternatives" do
+      parsed = TokenParser.parse("2 tablespoons olive oil or vegetable oil")
+
+      assert parsed.quantity == 2.0
+      assert parsed.unit == "tbsp"
     end
   end
 end

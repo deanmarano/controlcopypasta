@@ -45,14 +45,7 @@ defmodule Controlcopypasta.Ingredients.Parsing.QuantityParser do
 
     case range_token do
       nil ->
-        # No range - sum all quantities (handles compound like "1 1/2" = 1.5)
-        total =
-          qty_list
-          |> Enum.map(&parse_single/1)
-          |> Enum.reject(&is_nil/1)
-          |> Enum.sum()
-
-        total = if total == 0, do: nil, else: total
+        total = sum_mixed_number(qty_list)
         {total, total, total}
 
       range_str ->
@@ -67,11 +60,17 @@ defmodule Controlcopypasta.Ingredients.Parsing.QuantityParser do
             # For "1-1 1/2", qty_list is ["1-1", "1/2"], so we add "1/2" to the upper bound
             idx = Enum.find_index(qty_list, &(&1 == range_str))
 
+            # Only a proper fraction, for the same reason as `sum_mixed_number/1`:
+            # in "1-1 1/2" the trailing "1/2" finishes the upper bound, but
+            # anything else after a range is not part of it.
             additional =
               qty_list
               |> Enum.drop(idx + 1)
-              |> Enum.map(&parse_single/1)
-              |> Enum.reject(&is_nil/1)
+              |> Enum.map(fn str -> {str, parse_single(str)} end)
+              |> Enum.take_while(fn {str, value} ->
+                not is_nil(value) and proper_fraction?(str, value)
+              end)
+              |> Enum.map(fn {_str, value} -> value end)
 
             high_val = if additional != [], do: high_val + Enum.sum(additional), else: high_val
             avg = if low_val && high_val, do: (low_val + high_val) / 2, else: low_val || high_val
@@ -82,6 +81,43 @@ defmodule Controlcopypasta.Ingredients.Parsing.QuantityParser do
             {val, val, val}
         end
     end
+  end
+
+  # A whole number followed by a proper fraction is one mixed number, so the
+  # parts are added: "1 1/2" is 1.5.
+  #
+  # Anything else that follows is NOT part of the quantity and is dropped,
+  # because adding it invents an amount the line never stated:
+  #
+  #     2 1 1/4"-thick strip steaks   tokens ["2", "1"] -> 2 steaks, not 3
+  #     4 or 5 small red potatoes     tokens ["4", "5"] -> 4-5, not 9
+  #
+  # The first of those is a dimension the tokenizer could not keep together;
+  # the second is a range (`normalize_or_range/1` in TokenParser now rewrites
+  # it to "4-5" before tokenizing, so it arrives here as a range token). Both
+  # used to be summed, and a count that is 2-3x too high reads straight through
+  # to the nutrition totals.
+  defp sum_mixed_number(qty_list) do
+    values = Enum.map(qty_list, fn str -> {str, parse_single(str)} end)
+
+    case Enum.reject(values, fn {_str, value} -> is_nil(value) end) do
+      [] ->
+        nil
+
+      [{_str, first} | rest] ->
+        total =
+          rest
+          |> Enum.take_while(fn {str, value} -> proper_fraction?(str, value) end)
+          |> Enum.reduce(first, fn {_str, value}, acc -> acc + value end)
+
+        if total == 0, do: nil, else: total
+    end
+  end
+
+  # Written as a fraction and worth less than one: the only shape that can be
+  # the tail of a mixed number. A bare "5" is not, however small.
+  defp proper_fraction?(str, value) do
+    String.contains?(str, "/") and value > 0 and value < 1
   end
 
   @doc """
